@@ -30,6 +30,7 @@ Move changes one cardinal cell. Normal Attack targets one adjacent cardinal cell
 | Child | Focus | Current document |
 | --- | --- | --- |
 | 03.1 | Pointer-driven Normal Attack aiming and Mobility preview without changing the command boundary | [Implementation Spec](port_03_1_pointer_input.implementation_spec.md) |
+| 03.2 | Mobility selection, Dash traversal through enemies, and two-stage Smash preview/action | [Implementation Spec](port_03_2_mobility_switch_and_smash_preview.implementation_spec.md) |
 
 ## Non-Goals
 

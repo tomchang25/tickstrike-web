@@ -2,7 +2,7 @@ import type { CombatEvent } from "../events/combat-events";
 import { isCardinalDirection, type Cell } from "../model/types";
 import type { World } from "../world/world";
 import type { GameCommand } from "./commands";
-import { attackTarget, previewDash } from "./action-preview";
+import { attackTarget, previewDash, previewSmash } from "./action-preview";
 
 export interface ActionResolution {
   readonly accepted: boolean;
@@ -26,10 +26,20 @@ function knockDirection(from: Cell, center: Cell): Cell {
   const dy = Math.sign(from.y - center.y);
 
   if (dx === 0 && dy === 0) return { x: 0, y: 0 };
-  if (Math.abs(from.x - center.x) >= Math.abs(from.y - center.y)) {
+  if (Math.abs(from.x - center.x) > Math.abs(from.y - center.y)) {
     return { x: dx, y: 0 };
   }
   return { x: 0, y: dy };
+}
+
+function knockbackDestination(world: World, from: Cell, direction: Cell): Cell | undefined {
+  for (const distance of [2, 1]) {
+    const destination = add(from, multiply(direction, distance));
+    if (!world.isInside(destination) || world.tileAt(destination) === "wall") continue;
+    if (world.findAliveAt(destination)) continue;
+    return destination;
+  }
+  return undefined;
 }
 
 function resolveMove(world: World, command: Extract<GameCommand, { type: "move" }>): ActionResolution {
@@ -104,8 +114,26 @@ function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash
     return { accepted: false, consumedTime: false, reason: "Actor is not active.", events: [] };
   }
 
-  const events: CombatEvent[] = [{ type: "smash_impact", cell: command.target }];
-  const centerEnemy = world.findAliveAt(command.target, "enemy");
+  const armedTarget = world.armedSmashTarget;
+  if (!armedTarget) {
+    const preview = previewSmash(world, command.actorId, command.target);
+    if (!preview.accepted) {
+      return { accepted: false, consumedTime: false, reason: preview.reason, events: [] };
+    }
+    world.armSmash(preview.target);
+    return finishAccepted(world, command.type, [
+      { type: "smash_armed", actorId: actor.id, target: preview.target },
+    ]);
+  }
+
+  const releasePreview = previewSmash(world, command.actorId, armedTarget);
+  if (!releasePreview.accepted) {
+    return { accepted: false, consumedTime: false, reason: releasePreview.reason, events: [] };
+  }
+  world.clearArmedSmash();
+
+  const events: CombatEvent[] = [{ type: "smash_impact", cell: armedTarget }];
+  const centerEnemy = world.findAliveAt(armedTarget, "enemy");
 
   if (centerEnemy) {
     world.setPhase(centerEnemy.id, "dead");
@@ -117,15 +145,15 @@ function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash
   }
 
   const nearbyEnemies = world
-    .listAliveEnemiesAround(command.target, 1)
+    .listAliveEnemiesAround(armedTarget, 1)
     .filter((enemy) => enemy.id !== centerEnemy?.id);
 
   for (const enemy of nearbyEnemies) {
-    const direction = knockDirection(enemy.cell, command.target);
+    const direction = knockDirection(enemy.cell, armedTarget);
     if (direction.x === 0 && direction.y === 0) continue;
 
-    const destination = add(enemy.cell, multiply(direction, 2));
-    if (!world.isInside(destination) || world.tileAt(destination) === "wall") continue;
+    const destination = knockbackDestination(world, enemy.cell, direction);
+    if (!destination) continue;
 
     if (world.tileAt(destination) === "water") {
       world.moveEntityToPhase(enemy.id, destination, "drowning");
@@ -148,6 +176,14 @@ function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash
       });
     }
   }
+
+  world.moveEntity(actor.id, armedTarget);
+  events.push({
+    type: "actor_moved",
+    entityId: actor.id,
+    from: actor.cell,
+    to: armedTarget,
+  });
 
   return finishAccepted(world, command.type, events);
 }

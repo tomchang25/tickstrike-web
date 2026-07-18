@@ -1,13 +1,27 @@
 import { Application, Container, Graphics, Text } from "pixi.js";
-import { previewAttack, previewDash, type AttackPreview, type DashPreview } from "../../core/actions/action-preview";
+import {
+  clampSmashTarget,
+  previewAttack,
+  previewDash,
+  previewSmash,
+  type AttackPreview,
+  type DashPreview,
+  type SmashPreview,
+} from "../../core/actions/action-preview";
 import type { Cell, EntityId, EntityState, WorldSnapshot } from "../../core/model/types";
 import { CELL_SIZE, INITIAL_AIM, resolveAimDirection, screenPointToCell } from "./pointer-aim";
 
 export type PointerMode = "attack" | "mobility";
+export type MobilityKind = "dash" | "smash";
+
+export type PointerCommit =
+  | { readonly kind: "attack"; readonly direction: Cell }
+  | { readonly kind: "dash"; readonly direction: Cell }
+  | { readonly kind: "smash"; readonly target: Cell };
 
 export interface PointerInputBinding {
   canInteract(): boolean;
-  onPrimaryClick(mode: PointerMode, direction: Cell): void | Promise<void>;
+  onPrimaryClick(commit: PointerCommit): void | Promise<void>;
 }
 
 interface EntityView {
@@ -52,11 +66,13 @@ export class PixiGameRenderer {
   private host: HTMLElement | undefined;
   private snapshot: WorldSnapshot | undefined;
   private pointerMode: PointerMode = "attack";
+  private selectedMobility: MobilityKind = "dash";
   private pointerCell: Cell | undefined;
   private lastAim: Cell = INITIAL_AIM;
   private attackPreview: AttackPreview | undefined;
-  private mobilityCandidate: DashPreview | undefined;
-  private retainedMobilityPreview: DashPreview | undefined;
+  private dashPreview: DashPreview | undefined;
+  private retainedDashPreview: DashPreview | undefined;
+  private smashPreview: SmashPreview | undefined;
   private pointerCleanup: (() => void) | undefined;
 
   get transientCount(): number {
@@ -103,7 +119,9 @@ export class PixiGameRenderer {
     this.snapshot = snapshot;
     if (snapshot.tick === 0) {
       this.lastAim = INITIAL_AIM;
-      this.retainedMobilityPreview = undefined;
+      this.dashPreview = undefined;
+      this.retainedDashPreview = undefined;
+      this.smashPreview = undefined;
     }
     this.drawArena(snapshot);
     this.drawReservations(snapshot);
@@ -144,8 +162,18 @@ export class PixiGameRenderer {
   setPointerMode(mode: PointerMode): void {
     if (this.pointerMode === mode) return;
     this.pointerMode = mode;
-    this.mobilityCandidate = undefined;
-    this.retainedMobilityPreview = undefined;
+    this.dashPreview = undefined;
+    this.retainedDashPreview = undefined;
+    this.smashPreview = undefined;
+    this.refreshPointerPreview();
+  }
+
+  setSelectedMobility(mobility: MobilityKind): void {
+    if (this.selectedMobility === mobility) return;
+    this.selectedMobility = mobility;
+    this.dashPreview = undefined;
+    this.retainedDashPreview = undefined;
+    this.smashPreview = undefined;
     this.refreshPointerPreview();
   }
 
@@ -160,18 +188,38 @@ export class PixiGameRenderer {
     const onPointerLeave = () => {
       this.pointerCell = undefined;
       this.attackPreview = undefined;
-      this.mobilityCandidate = undefined;
-      this.retainedMobilityPreview = undefined;
-      this.clearPointerPreview();
+      this.dashPreview = undefined;
+      this.retainedDashPreview = undefined;
+      this.smashPreview = undefined;
+      if (this.snapshot?.armedSmashTarget) this.refreshPointerPreview();
+      else this.clearPointerPreview();
     };
     const onClick = (event: MouseEvent) => {
       if (event.button !== 0 || !binding.canInteract()) return;
       this.refreshPointerPreview();
-      const preview = this.pointerMode === "attack" ? this.attackPreview : this.mobilityCandidate;
-      if (!preview?.accepted) return;
+      if (this.snapshot?.armedSmashTarget) {
+        if (!this.smashPreview?.accepted) return;
+        event.preventDefault();
+        void binding.onPrimaryClick({ kind: "smash", target: this.smashPreview.target });
+        return;
+      }
+      if (this.pointerMode === "attack") {
+        if (!this.attackPreview?.accepted) return;
+        event.preventDefault();
+        this.lastAim = this.attackPreview.direction;
+        void binding.onPrimaryClick({ kind: "attack", direction: this.attackPreview.direction });
+        return;
+      }
+      if (this.selectedMobility === "dash") {
+        if (!this.dashPreview?.accepted) return;
+        event.preventDefault();
+        this.lastAim = this.dashPreview.direction;
+        void binding.onPrimaryClick({ kind: "dash", direction: this.dashPreview.direction });
+        return;
+      }
+      if (!this.smashPreview?.accepted) return;
       event.preventDefault();
-      this.lastAim = preview.direction;
-      void binding.onPrimaryClick(this.pointerMode, preview.direction);
+      void binding.onPrimaryClick({ kind: "smash", target: this.smashPreview.target });
     };
 
     canvas.addEventListener("pointermove", onPointerMove);
@@ -259,9 +307,11 @@ export class PixiGameRenderer {
   }
 
   private refreshPointerPreview(): void {
-    if (!this.snapshot || !this.pointerCell) {
+    if (!this.snapshot) {
       this.attackPreview = undefined;
-      this.mobilityCandidate = undefined;
+      this.dashPreview = undefined;
+      this.retainedDashPreview = undefined;
+      this.smashPreview = undefined;
       this.clearPointerPreview();
       return;
     }
@@ -269,24 +319,45 @@ export class PixiGameRenderer {
     const player = this.snapshot.entities.find((entity) => entity.id === "player" && entity.phase === "alive");
     if (!player) {
       this.attackPreview = undefined;
-      this.mobilityCandidate = undefined;
+      this.dashPreview = undefined;
+      this.smashPreview = undefined;
+      this.clearPointerPreview();
+      return;
+    }
+
+    this.attackPreview = undefined;
+    this.dashPreview = undefined;
+    this.smashPreview = undefined;
+
+    if (this.snapshot.armedSmashTarget) {
+      this.smashPreview = previewSmash(this.snapshot, player.id, this.snapshot.armedSmashTarget);
+      this.drawPointerPreview();
+      return;
+    }
+
+    if (!this.pointerCell) {
       this.clearPointerPreview();
       return;
     }
 
     const direction = resolveAimDirection(this.pointerCell, player.cell, this.lastAim);
-    this.attackPreview = undefined;
-    this.mobilityCandidate = undefined;
 
-    if (this.pointerMode === "attack") {
+    if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
       this.attackPreview = previewAttack(this.snapshot, player.id, direction);
       this.drawPointerPreview();
       return;
     }
 
-    const candidate = previewDash(this.snapshot, player.id, direction);
-    this.mobilityCandidate = candidate;
-    if (candidate.accepted) this.retainedMobilityPreview = candidate;
+    if (this.selectedMobility === "dash") {
+      this.dashPreview = previewDash(this.snapshot, player.id, direction);
+      if (this.dashPreview.accepted) this.retainedDashPreview = this.dashPreview;
+    } else {
+      this.smashPreview = previewSmash(
+        this.snapshot,
+        player.id,
+        clampSmashTarget(this.pointerCell, player.cell),
+      );
+    }
     this.drawPointerPreview();
   }
 
@@ -295,12 +366,17 @@ export class PixiGameRenderer {
     const canvas = this.app.canvas;
     delete canvas.dataset.attackPreviewCell;
     delete canvas.dataset.attackTarget;
+    delete canvas.dataset.selectedMobility;
     delete canvas.dataset.mobilityPreviewCell;
     delete canvas.dataset.mobilityPreviewValid;
     delete canvas.dataset.mobilityPreviewRetained;
+    delete canvas.dataset.smashPreviewCell;
+    delete canvas.dataset.smashPreviewValid;
+    delete canvas.dataset.smashArmed;
     canvas.dataset.pointerMode = this.pointerMode;
+    canvas.dataset.selectedMobility = this.selectedMobility;
 
-    if (this.pointerMode === "attack") {
+    if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
       const preview = this.attackPreview;
       if (!preview?.accepted) return;
       const color = preview.hasTarget ? 0x72d4ff : 0xff6b6b;
@@ -315,20 +391,48 @@ export class PixiGameRenderer {
       return;
     }
 
-    const preview = this.retainedMobilityPreview;
-    const candidate = this.mobilityCandidate;
-    canvas.dataset.mobilityPreviewValid = String(Boolean(candidate?.accepted));
-    canvas.dataset.mobilityPreviewRetained = String(Boolean(!candidate?.accepted && preview));
-    if (!preview?.landing) return;
+    if (this.selectedMobility === "smash" || this.snapshot?.armedSmashTarget) {
+      const preview = this.smashPreview;
+      canvas.dataset.smashPreviewValid = String(Boolean(preview?.accepted));
+      canvas.dataset.smashArmed = String(Boolean(this.snapshot?.armedSmashTarget));
+      if (!preview) return;
+      for (const cell of preview.area) {
+        const marker = new Graphics()
+          .rect(cell.x * CELL_SIZE + 8, cell.y * CELL_SIZE + 8, CELL_SIZE - 16, CELL_SIZE - 16)
+          .fill({ color: preview.accepted ? 0x72d4ff : 0x8791a4, alpha: preview.accepted ? 0.2 : 0.12 });
+        this.pointerPreviewLayer.addChild(marker);
+      }
+      const center = preview.target;
+      const centerMarker = new Graphics()
+        .rect(center.x * CELL_SIZE + 5, center.y * CELL_SIZE + 5, CELL_SIZE - 10, CELL_SIZE - 10)
+        .stroke({ color: preview.accepted ? 0x72d4ff : 0xff6b6b, width: 5, alpha: 0.95 });
+      this.pointerPreviewLayer.addChild(centerMarker);
+      if (preview.accepted) {
+        const virtualPlayer = new Graphics()
+          .circle(center.x * CELL_SIZE + CELL_SIZE / 2, center.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE * 0.28)
+          .fill({ color: 0xf4fbff, alpha: 0.38 })
+          .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
+        this.pointerPreviewLayer.addChild(virtualPlayer);
+      }
+      canvas.dataset.smashPreviewCell = `${center.x},${center.y}`;
+      return;
+    }
 
-    for (const cell of preview.path) {
+    const preview = this.dashPreview;
+    const retainedPreview = this.retainedDashPreview;
+    canvas.dataset.mobilityPreviewValid = String(Boolean(preview?.accepted));
+    canvas.dataset.mobilityPreviewRetained = String(Boolean(!preview?.accepted && retainedPreview));
+    const visiblePreview = preview?.accepted ? preview : retainedPreview;
+    if (!visiblePreview?.landing) return;
+
+    for (const cell of visiblePreview.path) {
       const marker = new Graphics()
         .rect(cell.x * CELL_SIZE + 10, cell.y * CELL_SIZE + 10, CELL_SIZE - 20, CELL_SIZE - 20)
         .fill({ color: 0x72d4ff, alpha: 0.22 });
       this.pointerPreviewLayer.addChild(marker);
     }
 
-    const landing = preview.landing;
+    const landing = visiblePreview.landing;
     const landingMarker = new Graphics()
       .rect(landing.x * CELL_SIZE + 6, landing.y * CELL_SIZE + 6, CELL_SIZE - 12, CELL_SIZE - 12)
       .stroke({ color: 0x72d4ff, width: 5, alpha: 0.95 });
@@ -347,9 +451,13 @@ export class PixiGameRenderer {
     delete canvas.dataset.pointerMode;
     delete canvas.dataset.attackPreviewCell;
     delete canvas.dataset.attackTarget;
+    delete canvas.dataset.selectedMobility;
     delete canvas.dataset.mobilityPreviewCell;
     delete canvas.dataset.mobilityPreviewValid;
     delete canvas.dataset.mobilityPreviewRetained;
+    delete canvas.dataset.smashPreviewCell;
+    delete canvas.dataset.smashPreviewValid;
+    delete canvas.dataset.smashArmed;
   }
 
   private drawArena(snapshot: WorldSnapshot): void {

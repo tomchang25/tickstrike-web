@@ -3,57 +3,59 @@ import { resolveCommand } from "../../../../src/core/actions/action-resolver";
 import { commandConsumesTime, type GameCommand } from "../../../../src/core/actions/commands";
 import { createFoundationArena } from "../../../../src/harness/fixtures/shipped-arena";
 import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
-import { spawnTrainingEnemies } from "../../../../src/harness/fixtures/spawn-training-enemies";
-
-function createWorld() {
-  const world = createTrainingArena();
-  world.spawn({
-    id: "player",
-    kind: "player",
-    archetype: "training-player",
-    cell: { x: 3, y: 3 },
-    hp: 100,
-  });
-  spawnTrainingEnemies(world);
-  return world;
-}
 
 describe("Smash action", () => {
-  it("crushes the center, knocks one enemy, and sends one into water", () => {
-    const world = createWorld();
+  it("arms on the first action and releases the locked landing on the second", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 3, y: 3 },
+      hp: 100,
+    });
+    world.spawn({ id: "enemy-center", kind: "enemy", archetype: "training-grunt", cell: { x: 3, y: 2 }, hp: 10 });
+    world.spawn({ id: "enemy-right", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 3 }, hp: 10 });
+    world.spawn({ id: "enemy-water", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 4 }, hp: 10 });
 
-    const result = resolveCommand(world, {
+    const armed = resolveCommand(world, {
       type: "smash",
       actorId: "player",
       target: { x: 4, y: 3 },
     });
 
+    expect(armed.accepted).toBe(true);
+    expect(armed.events).toEqual([
+      { type: "smash_armed", actorId: "player", target: { x: 4, y: 3 } },
+    ]);
+    expect(world.snapshot()).toMatchObject({ tick: 1, armedSmashTarget: { x: 4, y: 3 } });
+
+    const result = resolveCommand(world, {
+      type: "smash",
+      actorId: "player",
+      target: { x: 0, y: 0 },
+    });
+
     expect(result.accepted).toBe(true);
     expect(result.events.map((event) => event.type)).toEqual([
       "smash_impact",
-      "enemy_crushed",
+      "enemy_knocked",
       "enemy_knocked",
       "enemy_entered_water",
+      "actor_moved",
     ]);
-    expect(world.requireEntity("enemy-center").phase).toBe("dead");
+    expect(world.requireEntity("enemy-center").phase).toBe("alive");
+    expect(world.requireEntity("enemy-center").cell).toEqual({ x: 3, y: 1 });
     expect(world.requireEntity("enemy-right").cell).toEqual({ x: 7, y: 3 });
     expect(world.requireEntity("enemy-water")).toMatchObject({
       cell: { x: 4, y: 6 },
       phase: "drowning",
     });
-    expect(world.getOccupantAt({ x: 4, y: 3 })).toBeUndefined();
+    expect(world.playerCell).toEqual({ x: 4, y: 3 });
     expect(world.getOccupantAt({ x: 4, y: 6 })).toBeUndefined();
     expect(world.listEntities()).toHaveLength(4);
-
-    world.spawn({
-      id: "replacement",
-      kind: "enemy",
-      archetype: "training-grunt",
-      cell: { x: 4, y: 3 },
-      hp: 10,
-    });
-    expect(world.getOccupantAt({ x: 4, y: 3 })?.id).toBe("replacement");
-    expect(world.snapshot().tick).toBe(1);
+    expect(world.snapshot().armedSmashTarget).toBeUndefined();
+    expect(world.snapshot().tick).toBe(2);
   });
 });
 
@@ -93,7 +95,7 @@ describe("player verbs", () => {
     expect(world.snapshot().tick).toBe(2);
   });
 
-  it("dashes through legal cells and stops before an occupied cell", () => {
+  it("dashes through an enemy and lands on the farthest later empty cell", () => {
     const world = createFoundationArena();
 
     const result = resolveCommand(world, {
@@ -108,17 +110,53 @@ describe("player verbs", () => {
         type: "player_dashed",
         actorId: "player",
         from: { x: 6, y: 6 },
-        to: { x: 7, y: 6 },
-        path: [{ x: 7, y: 6 }],
+        to: { x: 9, y: 6 },
+        path: [{ x: 7, y: 6 }, { x: 8, y: 6 }, { x: 9, y: 6 }],
       },
     ]);
-    expect(world.playerCell).toEqual({ x: 7, y: 6 });
+    expect(world.playerCell).toEqual({ x: 9, y: 6 });
     expect(world.getOccupantAt({ x: 8, y: 6 })?.id).toBe("enemy-slash");
+    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 10, phase: "alive" });
     expect(world.snapshot().tick).toBe(1);
   });
 
-  it("rejects a Dash with no legal first cell and preserves the snapshot", () => {
+  it("keeps Smash armed when its locked landing becomes blocked", () => {
     const world = createFoundationArena();
+    const armed = resolveCommand(world, {
+      type: "smash",
+      actorId: "player",
+      target: { x: 7, y: 7 },
+    });
+    expect(armed.accepted).toBe(true);
+
+    world.spawn({ id: "smash-blocker", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 7 }, hp: 10 });
+    const beforeRelease = world.snapshot();
+    const release = resolveCommand(world, {
+      type: "smash",
+      actorId: "player",
+      target: { x: 0, y: 0 },
+    });
+
+    expect(release).toMatchObject({
+      accepted: false,
+      consumedTime: false,
+      reason: "Smash landing is blocked.",
+      events: [],
+    });
+    expect(world.snapshot()).toMatchObject({
+      tick: beforeRelease.tick,
+      armedSmashTarget: { x: 7, y: 7 },
+    });
+  });
+
+  it("rejects a Dash when every traversed cell is occupied by an enemy", () => {
+    const world = createFoundationArena();
+    world.removeEntity("enemy-thrust");
+    world.removeEntity("enemy-slash");
+    world.removeEntity("enemy-ranged");
+    world.spawn({ id: "enemy-a", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 6 }, hp: 10 });
+    world.spawn({ id: "enemy-b", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 6 }, hp: 10 });
+    world.spawn({ id: "enemy-c", kind: "enemy", archetype: "training-grunt", cell: { x: 3, y: 6 }, hp: 10 });
     const before = world.snapshot();
 
     const result = resolveCommand(world, {

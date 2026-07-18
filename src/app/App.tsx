@@ -3,7 +3,7 @@ import type { Cell, WorldSnapshot } from "../core/model/types";
 import { installDebugApi } from "../harness/debug-api";
 import { requireScenario, scenarios } from "../harness/scenario-registry";
 import { GameRuntime } from "../runtime/GameRuntime";
-import type { PointerMode } from "../presentation/pixi/PixiGameRenderer";
+import type { MobilityKind, PointerCommit, PointerMode } from "../presentation/pixi/PixiGameRenderer";
 import { SemanticMirror } from "../ui/SemanticMirror";
 import { TestbedPanel } from "../ui/TestbedPanel";
 
@@ -21,6 +21,7 @@ export function App() {
   const [snapshot, setSnapshot] = useState<WorldSnapshot>();
   const [busy, setBusy] = useState(false);
   const [pointerMode, setPointerMode] = useState<PointerMode>("attack");
+  const [selectedMobility, setSelectedMobility] = useState<MobilityKind>("dash");
   const selectedScenario = useMemo(
     () => requireScenario(selectedScenarioId),
     [selectedScenarioId],
@@ -58,6 +59,7 @@ export function App() {
     if (!runtime) return;
     const scenario = requireScenario(id);
     setPointerMode("attack");
+    setSelectedMobility("dash");
     setSelectedScenarioId(id);
     runtime.loadScenario(scenario);
     const url = new URL(window.location.href);
@@ -67,6 +69,7 @@ export function App() {
 
   const reset = useCallback(() => {
     setPointerMode("attack");
+    setSelectedMobility("dash");
     runtimeRef.current?.reset();
   }, []);
 
@@ -109,7 +112,7 @@ export function App() {
     [commandsEnabled, execute],
   );
 
-  const smash = useCallback(async () => {
+  const smash = useCallback(async (target: Cell) => {
     if (!commandsEnabled) return;
     const runtime = runtimeRef.current;
     if (!runtime) return;
@@ -119,10 +122,15 @@ export function App() {
       runtime.execute({
         type: "smash",
         actorId: player.id,
-        target: { x: player.cell.x + 1, y: player.cell.y },
+        target,
       }),
     );
   }, [commandsEnabled, execute]);
+
+  const toggleMobility = useCallback(() => {
+    if (busy || !commandsEnabled || snapshot?.armedSmashTarget) return;
+    setSelectedMobility((current) => (current === "dash" ? "smash" : "dash"));
+  }, [busy, commandsEnabled, snapshot?.armedSmashTarget]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -152,11 +160,6 @@ export function App() {
       };
       const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
       const direction = directions[key];
-      if (direction && event.shiftKey) {
-        event.preventDefault();
-        void dash(direction);
-        return;
-      }
       if (direction) {
         event.preventDefault();
         void move(direction);
@@ -166,10 +169,6 @@ export function App() {
       if (attackDirection) {
         event.preventDefault();
         void attack(attackDirection);
-      }
-      if (event.code === "Space") {
-        event.preventDefault();
-        void smash();
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
@@ -181,17 +180,22 @@ export function App() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [attack, busy, commandsEnabled, dash, move, smash]);
+  }, [attack, busy, commandsEnabled, move]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
     if (!runtime || !snapshot) return;
     runtime.renderer.setPointerMode(pointerMode);
+    runtime.renderer.setSelectedMobility(selectedMobility);
     return runtime.renderer.bindPointerInput({
       canInteract: () => commandsEnabled && !busy,
-      onPrimaryClick: (mode, direction) => (mode === "attack" ? attack(direction) : dash(direction)),
+      onPrimaryClick: (commit: PointerCommit) => {
+        if (commit.kind === "attack") return attack(commit.direction);
+        if (commit.kind === "dash") return dash(commit.direction);
+        return smash(commit.target);
+      },
     });
-  }, [attack, busy, commandsEnabled, dash, pointerMode, snapshot]);
+  }, [attack, busy, commandsEnabled, dash, pointerMode, selectedMobility, smash, snapshot]);
 
   return (
     <main className="app-shell">
@@ -216,7 +220,7 @@ export function App() {
             ) : null}
           </div>
           <p className="hint">
-            {commandsEnabled ? "WASD / arrows move · IJKL attack · Hold Alt + hover for Mobility · Space Smash" : "Static inspection: gameplay commands disabled"}
+            {commandsEnabled ? "WASD / arrows move · IJKL attack · Hold Alt + hover for selected Mobility" : "Static inspection: gameplay commands disabled"}
           </p>
         </section>
 
@@ -227,12 +231,11 @@ export function App() {
             snapshot={snapshot}
             busy={busy}
             commandsEnabled={commandsEnabled}
+            selectedMobility={selectedMobility}
             inspection={selectedScenario.inspection}
             onScenarioChange={changeScenario}
-            onMove={move}
             onAttack={attack}
-            onDash={dash}
-            onSmash={smash}
+            onMobilityToggle={toggleMobility}
             onReset={reset}
           />
         ) : (

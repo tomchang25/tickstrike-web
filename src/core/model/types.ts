@@ -55,6 +55,7 @@ export interface WorldSnapshot {
   readonly tick: number;
   readonly arena: ArenaState;
   readonly playerCell: Cell | undefined;
+  readonly armedSmashTarget: Cell | undefined;
   readonly entities: readonly EntityState[];
   readonly reservations: readonly Reservation[];
   readonly telegraphs: readonly Telegraph[];

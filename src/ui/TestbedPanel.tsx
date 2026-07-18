@@ -1,5 +1,6 @@
 import type { Cell, WorldSnapshot } from "../core/model/types";
 import type { ContentInspection } from "../harness/content-inspection";
+import type { MobilityKind } from "../presentation/pixi/PixiGameRenderer";
 import type { TestScenario } from "../harness/types";
 
 export interface TestbedPanelProps {
@@ -8,12 +9,11 @@ export interface TestbedPanelProps {
   readonly snapshot: WorldSnapshot;
   readonly busy: boolean;
   readonly commandsEnabled: boolean;
+  readonly selectedMobility: MobilityKind;
   readonly inspection?: ContentInspection;
   onScenarioChange(id: string): void;
-  onMove(direction: Cell): Promise<void>;
   onAttack(direction: Cell): Promise<void>;
-  onDash(direction: Cell): Promise<void>;
-  onSmash(): Promise<void>;
+  onMobilityToggle(): void;
   onReset(): void;
 }
 
@@ -48,13 +48,6 @@ export function TestbedPanel(props: TestbedPanelProps) {
       <section>
         <h2>Commands</h2>
         {!props.commandsEnabled ? <p data-testid="commands-disabled">Commands disabled for static inspection.</p> : null}
-        <h3>Move</h3>
-        <div className="movement-grid">
-          <button data-testid="move-up" type="button" aria-label="Move up" disabled={props.busy || !props.commandsEnabled} onClick={() => void props.onMove({ x: 0, y: -1 })}>↑</button>
-          <button data-testid="move-left" type="button" aria-label="Move left" disabled={props.busy || !props.commandsEnabled} onClick={() => void props.onMove({ x: -1, y: 0 })}>←</button>
-          <button data-testid="move-down" type="button" aria-label="Move down" disabled={props.busy || !props.commandsEnabled} onClick={() => void props.onMove({ x: 0, y: 1 })}>↓</button>
-          <button data-testid="move-right" type="button" aria-label="Move right" disabled={props.busy || !props.commandsEnabled} onClick={() => void props.onMove({ x: 1, y: 0 })}>→</button>
-        </div>
         <h3>Normal Attack</h3>
         <div className="movement-grid">
           <button data-testid="attack-up" type="button" aria-label="Attack up" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onAttack({ x: 0, y: -1 })}>↑</button>
@@ -62,21 +55,15 @@ export function TestbedPanel(props: TestbedPanelProps) {
           <button data-testid="attack-down" type="button" aria-label="Attack down" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onAttack({ x: 0, y: 1 })}>↓</button>
           <button data-testid="attack-right" type="button" aria-label="Attack right" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onAttack({ x: 1, y: 0 })}>→</button>
         </div>
-        <h3>Dash</h3>
-        <div className="movement-grid">
-          <button data-testid="dash-up" type="button" aria-label="Dash up" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onDash({ x: 0, y: -1 })}>↑</button>
-          <button data-testid="dash-left" type="button" aria-label="Dash left" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onDash({ x: -1, y: 0 })}>←</button>
-          <button data-testid="dash-down" type="button" aria-label="Dash down" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onDash({ x: 0, y: 1 })}>↓</button>
-          <button data-testid="dash-right" type="button" aria-label="Dash right" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onDash({ x: 1, y: 0 })}>→</button>
-        </div>
         <button
           type="button"
           className="primary-command"
-          data-testid="smash-button"
-          disabled={props.busy || !props.commandsEnabled || !player}
-          onClick={() => void props.onSmash()}
+          data-testid="mobility-toggle"
+          aria-pressed={props.selectedMobility === "smash"}
+          disabled={props.busy || !props.commandsEnabled || !player || Boolean(props.snapshot.armedSmashTarget)}
+          onClick={props.onMobilityToggle}
         >
-          Smash right cell
+          Mobility: {props.selectedMobility === "dash" ? "Dash" : "Smash"}
         </button>
         <button type="button" disabled={props.busy} onClick={props.onReset}>Reset scenario</button>
       </section>

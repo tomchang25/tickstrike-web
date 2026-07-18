@@ -17,6 +17,13 @@ export interface DashPreview {
   readonly reason?: string;
 }
 
+export interface SmashPreview {
+  readonly accepted: boolean;
+  readonly target: Cell;
+  readonly area: readonly Cell[];
+  readonly reason?: string;
+}
+
 type PreviewSource = World | WorldSnapshot;
 
 function snapshotOf(source: PreviewSource): WorldSnapshot {
@@ -38,12 +45,13 @@ function entityAt(snapshot: WorldSnapshot, cell: Cell, kind?: EntityState["kind"
   });
 }
 
-function isWalkable(snapshot: WorldSnapshot, cell: Cell): boolean {
+function isWalkable(snapshot: WorldSnapshot, cell: Cell, allowEnemyTraversal = false): boolean {
   if (!Number.isInteger(cell.x) || !Number.isInteger(cell.y)) return false;
   if (cell.x < 0 || cell.y < 0 || cell.x >= snapshot.arena.width || cell.y >= snapshot.arena.height) return false;
   if (snapshot.arena.terrain[cell.y * snapshot.arena.width + cell.x] !== "land") return false;
   if (snapshot.reservations.some((reservation) => reservation.cells.some((reserved) => sameCell(reserved, cell)))) return false;
-  return !entityAt(snapshot, cell);
+  const occupant = entityAt(snapshot, cell);
+  return !occupant || (allowEnemyTraversal && occupant.kind === "enemy");
 }
 
 export function attackTarget(origin: Cell, direction: Cell): Cell {
@@ -91,13 +99,15 @@ export function previewDash(source: PreviewSource, actorId: string, direction: C
   }
 
   const path: Cell[] = [];
+  let landing: Cell | undefined;
   for (let step = 1; step <= 3; step += 1) {
     const candidate = add(actor.cell, multiply(direction, step));
-    if (!isWalkable(snapshot, candidate)) break;
+    if (!isWalkable(snapshot, candidate, true)) break;
     path.push(candidate);
+    if (!entityAt(snapshot, candidate, "enemy")) landing = candidate;
   }
 
-  if (path.length === 0) {
+  if (!landing) {
     return { accepted: false, direction, path, reason: "Dash has no legal landing cell." };
   }
 
@@ -105,6 +115,36 @@ export function previewDash(source: PreviewSource, actorId: string, direction: C
     accepted: true,
     direction,
     path,
-    landing: path[path.length - 1],
+    landing,
   };
+}
+
+export function clampSmashTarget(mouseCell: Cell, origin: Cell, maxRange = 3): Cell {
+  return {
+    x: origin.x + Math.max(-maxRange, Math.min(maxRange, mouseCell.x - origin.x)),
+    y: origin.y + Math.max(-maxRange, Math.min(maxRange, mouseCell.y - origin.y)),
+  };
+}
+
+export function smashArea(center: Cell): readonly Cell[] {
+  const area: Cell[] = [];
+  for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+    for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+      area.push({ x: center.x + offsetX, y: center.y + offsetY });
+    }
+  }
+  return area;
+}
+
+export function previewSmash(source: PreviewSource, actorId: string, target: Cell): SmashPreview {
+  const snapshot = snapshotOf(source);
+  const actor = snapshot.entities.find((entity) => entity.id === actorId);
+  const area = smashArea(target);
+  if (!actor || actor.phase !== "alive") {
+    return { accepted: false, target, area, reason: "Actor is not active." };
+  }
+  if (!isWalkable(snapshot, target)) {
+    return { accepted: false, target, area, reason: "Smash landing is blocked." };
+  }
+  return { accepted: true, target, area };
 }

@@ -31,6 +31,11 @@ export type CombatEvent =
       readonly path: readonly Cell[];
     }
   | {
+      readonly type: "smash_armed";
+      readonly actorId: EntityId;
+      readonly target: Cell;
+    }
+  | {
       readonly type: "smash_impact";
       readonly cell: Cell;
     }

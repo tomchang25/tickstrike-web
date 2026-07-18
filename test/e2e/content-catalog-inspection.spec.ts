@@ -21,7 +21,7 @@ test("content catalog inspection is visible and read-only", async ({ page }) => 
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
   await expect(page.getByTestId("event-log")).toContainText("No command executed.");
   await expect(page.locator(".semantic-mirror [data-testid^='entity-']")).toHaveCount(0);
-  await expect(page.getByTestId("smash-button")).toBeDisabled();
+  await expect(page.getByTestId("mobility-toggle")).toBeDisabled();
 
   const debugProjection = await page.evaluate(() => window.__TICKSTRIKE__?.getContentInspection());
   expect(debugProjection).toMatchObject({
@@ -32,7 +32,7 @@ test("content catalog inspection is visible and read-only", async ({ page }) => 
   });
 
   await page.keyboard.press("ArrowRight");
-  await page.getByTestId("smash-button").click({ force: true });
+  await page.getByTestId("mobility-toggle").click({ force: true });
   await expect(page.getByTestId("tick-value")).toHaveText("0");
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
 
@@ -46,6 +46,6 @@ test("training scenario keeps its existing controls and hides inspection", async
   await page.goto("/?scenario=smash-water");
 
   await expect(page.getByTestId("content-inspection")).toHaveCount(0);
-  await expect(page.getByTestId("smash-button")).toBeEnabled();
+  await expect(page.getByTestId("mobility-toggle")).toBeEnabled();
   await expect(page.getByTestId("enemy-count")).toHaveText("3");
 });

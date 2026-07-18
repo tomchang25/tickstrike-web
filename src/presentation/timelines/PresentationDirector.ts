@@ -60,6 +60,16 @@ export class PresentationDirector {
           ));
           break;
         }
+        case "smash_armed": {
+          const view = this.renderer.getEntityView(event.actorId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view.scale, { x: 1.12, y: 1.12, duration: 0.1, ease: "power2.out" })
+              .to(view.scale, { x: 1, y: 1, duration: 0.12, ease: "power2.in" }),
+          ));
+          break;
+        }
         case "smash_impact": {
           const effect = this.renderer.createImpact(event.cell);
           animations.push(this.timelineDone(

@@ -18,6 +18,30 @@ export const scenarios: readonly TestScenario[] = [
         hp: 100,
       });
       spawnTrainingEnemies(world);
+      world.removeEntity("enemy-center");
+      world.removeEntity("enemy-right");
+      world.removeEntity("enemy-water");
+      world.spawn({
+        id: "enemy-center",
+        kind: "enemy",
+        archetype: "training-grunt",
+        cell: { x: 3, y: 2 },
+        hp: 10,
+      });
+      world.spawn({
+        id: "enemy-right",
+        kind: "enemy",
+        archetype: "training-grunt",
+        cell: { x: 5, y: 3 },
+        hp: 10,
+      });
+      world.spawn({
+        id: "enemy-water",
+        kind: "enemy",
+        archetype: "training-grunt",
+        cell: { x: 4, y: 4 },
+        hp: 10,
+      });
       return world;
     },
   },

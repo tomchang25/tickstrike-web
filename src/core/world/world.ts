@@ -93,6 +93,7 @@ export class World {
   private readonly reservations = new Map<string, Reservation>();
   private readonly telegraphs = new Map<string, Telegraph>();
   private currentPlayerCell: Cell | undefined;
+  private currentArmedSmashTarget: Cell | undefined;
   private currentTick = 0;
   private nextRegistrationIndex = 0;
   private lastEvents: readonly CombatEvent[] = [];
@@ -176,6 +177,19 @@ export class World {
     return this.currentTick;
   }
 
+  get armedSmashTarget(): Cell | undefined {
+    return this.currentArmedSmashTarget ? cloneCell(this.currentArmedSmashTarget) : undefined;
+  }
+
+  armSmash(target: Cell): void {
+    if (this.currentArmedSmashTarget) throw new Error("Smash is already armed.");
+    this.currentArmedSmashTarget = cloneCell(target);
+  }
+
+  clearArmedSmash(): void {
+    this.currentArmedSmashTarget = undefined;
+  }
+
   getOccupantAt(cell: Cell): EntityState | undefined {
     const id = this.occupancy.get(cellKey(cell));
     return id ? this.getEntity(id) : undefined;
@@ -223,6 +237,7 @@ export class World {
       this.releaseFootprint(entity.id, entity.footprint);
       this.releaseReservation(entity.id);
       this.clearTelegraph(entity.id);
+      if (entity.kind === "player") this.clearArmedSmash();
       this.entities.set(id, { ...entity, phase });
       return;
     }
@@ -256,7 +271,10 @@ export class World {
     this.releaseReservation(id);
     this.clearTelegraph(id);
     this.entities.delete(id);
-    if (entity.kind === "player") this.currentPlayerCell = undefined;
+    if (entity.kind === "player") {
+      this.currentPlayerCell = undefined;
+      this.clearArmedSmash();
+    }
   }
 
   tileAt(cell: Cell): TileKind {
@@ -441,6 +459,7 @@ export class World {
         tiles: [...this.arena.tiles],
       },
       playerCell: this.playerCell,
+      armedSmashTarget: this.armedSmashTarget,
       entities: this.listEntities(),
       reservations: this.listReservations(),
       telegraphs: this.listTelegraphs(),
