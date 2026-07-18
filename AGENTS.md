@@ -10,6 +10,10 @@ If `dev/foundation/` is missing or uninitialized, stop and request `git submodul
 
 Read `dev/standards/project_structure.md` before adding, moving, or reorganizing source, tests, assets, build output, or project documentation. That standard is the canonical owner for repository layout and dependency boundaries.
 
+## Human-only reports
+
+`dev/docs/reports/` is human-facing historical/report material and may be stale. Agents must not read, search, cite, summarize, or use files in this directory as a source of truth. Use current source, tests, standards, and agent rules instead.
+
 ## Feature completion contract
 
 A feature is complete only when it has:

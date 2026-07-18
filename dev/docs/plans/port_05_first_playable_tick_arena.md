@@ -26,6 +26,14 @@ The player can win by clearing the enabled enemies and can lose by standing in a
 
 Logical death is immediate. Visual death is an event timeline that must finish before reset or scenario replacement is considered idle.
 
+### Child Sketches
+
+| Child | Focus | Current document |
+| --- | --- | --- |
+| 05.z | Post-playable architecture-consolidation decision gate | [Sketch](port_05_z_architecture_consolidation_decision.sketch.md) |
+
+Do not execute an architecture reorganization while Port 05 is incomplete. Revisit this sketch after the Port 05 acceptance criteria pass and before starting Port 06; a later implementation spec must select and verify any code change.
+
 ## Non-Goals
 
 1. Do not add waves, rewards, class selection, permanent progression, or production menus.

@@ -54,6 +54,8 @@ One line, no rationale, no backing document.
 
 One line, no rationale, no backing document.
 
+- [dash] Dash can't choose the grid before final destination
+
 ---
 
 ## Port Draft
