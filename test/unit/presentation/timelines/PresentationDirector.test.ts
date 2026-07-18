@@ -135,4 +135,15 @@ describe("PresentationDirector combat feedback", () => {
     expect(renderer.createImpact).not.toHaveBeenCalled();
     expect(director.isIdle).toBe(true);
   });
+
+  it("removes the player view after a terminal defeat timeline", async () => {
+    const { renderer } = createRenderer();
+
+    await new PresentationDirector(renderer).play([
+      { type: "player_died", playerId: "player", cell: { x: 6, y: 6 } },
+      { type: "encounter_ended", outcome: "defeat" },
+    ]);
+
+    expect(renderer.removeEntityView).toHaveBeenCalledWith("player");
+  });
 });

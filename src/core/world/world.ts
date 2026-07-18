@@ -14,6 +14,7 @@ import {
   type EnemyDecision,
   type EntityId,
   type EntityState,
+  type EncounterOutcome,
   type GuardRuntime,
   isTerminalPhase,
   type Reservation,
@@ -130,6 +131,7 @@ export class World {
   private currentPlayerCell: Cell | undefined;
   private currentArmedSmashTarget: Cell | undefined;
   private currentTick = 0;
+  private currentOutcome: EncounterOutcome = "running";
   private nextRegistrationIndex = 0;
   private lastEvents: readonly CombatEvent[] = [];
 
@@ -232,6 +234,30 @@ export class World {
 
   get tick(): number {
     return this.currentTick;
+  }
+
+  get outcome(): EncounterOutcome {
+    return this.currentOutcome;
+  }
+
+  updateEncounterOutcome(): EncounterOutcome | undefined {
+    if (this.currentOutcome !== "running") return undefined;
+
+    const player = [...this.entities.values()].find((entity) => entity.kind === "player");
+    if (player && player.phase !== "alive") {
+      this.currentOutcome = "defeat";
+      return this.currentOutcome;
+    }
+
+    const enabledEnemies = [...this.entities.values()].filter(
+      (entity) => entity.kind === "enemy" && entity.enemyAction !== undefined,
+    );
+    if (enabledEnemies.length > 0 && enabledEnemies.every((enemy) => isTerminalPhase(enemy.phase))) {
+      this.currentOutcome = "victory";
+      return this.currentOutcome;
+    }
+
+    return undefined;
   }
 
   get armedSmashTarget(): Cell | undefined {
@@ -737,6 +763,7 @@ export class World {
   snapshot(): WorldSnapshot {
     return {
       tick: this.currentTick,
+      outcome: this.currentOutcome,
       arena: {
         ...this.arena,
         terrain: [...this.arena.terrain],

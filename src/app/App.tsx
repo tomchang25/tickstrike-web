@@ -28,6 +28,7 @@ export function App() {
     [selectedScenarioId],
   );
   const commandsEnabled = selectedScenario.commandsEnabled !== false;
+  const encounterRunning = snapshot?.outcome === "running";
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -85,36 +86,36 @@ export function App() {
 
   const move = useCallback(
     async (direction: Cell) => {
-      if (!commandsEnabled) return;
+      if (!commandsEnabled || !encounterRunning) return;
       const runtime = runtimeRef.current;
       if (!runtime) return;
       await execute(() => runtime.execute({ type: "move", actorId: "player", direction }));
     },
-    [commandsEnabled, execute],
+    [commandsEnabled, encounterRunning, execute],
   );
 
   const attack = useCallback(
     async (direction: Cell) => {
-      if (!commandsEnabled) return;
+      if (!commandsEnabled || !encounterRunning) return;
       const runtime = runtimeRef.current;
       if (!runtime) return;
       await execute(() => runtime.execute({ type: "attack", actorId: "player", direction }));
     },
-    [commandsEnabled, execute],
+    [commandsEnabled, encounterRunning, execute],
   );
 
   const dash = useCallback(
     async (direction: Cell) => {
-      if (!commandsEnabled) return;
+      if (!commandsEnabled || !encounterRunning) return;
       const runtime = runtimeRef.current;
       if (!runtime) return;
       await execute(() => runtime.execute({ type: "dash", actorId: "player", direction }));
     },
-    [commandsEnabled, execute],
+    [commandsEnabled, encounterRunning, execute],
   );
 
   const smash = useCallback(async (target: Cell) => {
-    if (!commandsEnabled) return;
+    if (!commandsEnabled || !encounterRunning) return;
     const runtime = runtimeRef.current;
     if (!runtime) return;
     const player = runtime.snapshot().entities.find((entity) => entity.id === "player");
@@ -126,23 +127,23 @@ export function App() {
         target,
       }),
     );
-  }, [commandsEnabled, execute]);
+  }, [commandsEnabled, encounterRunning, execute]);
 
   const toggleMobility = useCallback(() => {
-    if (!commandsEnabled || snapshot?.armedSmashTarget) return;
+    if (!commandsEnabled || !encounterRunning || snapshot?.armedSmashTarget) return;
     setSelectedMobility((current) => (current === "dash" ? "smash" : "dash"));
-  }, [commandsEnabled, snapshot?.armedSmashTarget]);
+  }, [commandsEnabled, encounterRunning, snapshot?.armedSmashTarget]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Alt") {
-        if (commandsEnabled) {
+        if (commandsEnabled && encounterRunning) {
           event.preventDefault();
           setPointerMode("mobility");
         }
         return;
       }
-      if (!commandsEnabled || event.repeat) return;
+      if (!commandsEnabled || !encounterRunning || event.repeat) return;
       const directions: Record<string, Cell | undefined> = {
         ArrowUp: { x: 0, y: -1 },
         ArrowDown: { x: 0, y: 1 },
@@ -181,7 +182,7 @@ export function App() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [attack, commandsEnabled, move]);
+  }, [attack, commandsEnabled, encounterRunning, move]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -190,14 +191,14 @@ export function App() {
     runtime.renderer.setPointerMode(pointerMode);
     runtime.renderer.setSelectedMobility(selectedMobility);
     return runtime.renderer.bindPointerInput({
-      canInteract: () => commandsEnabled,
+      canInteract: () => commandsEnabled && encounterRunning,
       onPrimaryClick: (commit: PointerCommit) => {
         if (commit.kind === "attack") return attack(commit.direction);
         if (commit.kind === "dash") return dash(commit.direction);
         return smash(commit.target);
       },
     });
-  }, [attack, commandsEnabled, dash, debugMode, pointerMode, selectedMobility, smash, snapshot]);
+  }, [attack, commandsEnabled, dash, debugMode, encounterRunning, pointerMode, selectedMobility, smash, snapshot]);
 
   return (
     <main className="app-shell">
@@ -213,11 +214,23 @@ export function App() {
         <section className="game-column" aria-label="Game viewport">
           <div className="canvas-frame" data-testid="game-canvas-host">
             <div ref={canvasHostRef} className="canvas-host" />
+            {snapshot && snapshot.outcome !== "running" ? (
+              <div
+                className={`terminal-banner terminal-banner-${snapshot.outcome}`}
+                data-testid="encounter-result"
+                data-outcome={snapshot.outcome}
+                role="status"
+                aria-live="polite"
+              >
+                <strong>{snapshot.outcome === "victory" ? "Victory" : "Defeat"}</strong>
+                <span>{snapshot.outcome === "victory" ? "Arena cleared." : "The player fell."}</span>
+              </div>
+            ) : null}
             {snapshot ? (
               <SemanticMirror
                 snapshot={snapshot}
                 generation={runtimeRef.current?.generation}
-    isIdle={Boolean(runtimeRef.current?.isIdle)}
+                isIdle={Boolean(runtimeRef.current?.isIdle)}
               />
             ) : null}
           </div>
@@ -235,6 +248,7 @@ export function App() {
             commandsEnabled={commandsEnabled}
             selectedMobility={selectedMobility}
             debugMode={debugMode}
+            outcome={snapshot.outcome}
             inspection={selectedScenario.inspection}
             onScenarioChange={changeScenario}
             onMobilityToggle={toggleMobility}

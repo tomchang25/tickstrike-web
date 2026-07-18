@@ -351,6 +351,9 @@ function resolveEnemyPhase(world: World): CombatEvent[] {
         hp: player.hp,
         maxHp: player.maxHp,
       });
+      if (resolution.damage.killed) {
+        events.push({ type: "player_died", playerId: player.id, cell: player.cell });
+      }
     }
     events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: true });
     events.push({ type: "enemy_recovering", enemyId: enemy.id, recoveryTicks: resolution.attack.recoveryTicks });
@@ -429,6 +432,7 @@ function finishAccepted(
 ): ActionResolution {
   const advanced = world.advancePlayerAction();
   const enemyEvents = resolveEnemyPhase(world);
+  const outcome = world.updateEncounterOutcome();
   const completeEvents: CombatEvent[] = [
     {
       type: "command_resolved",
@@ -438,6 +442,7 @@ function finishAccepted(
     },
     ...events,
     ...enemyEvents,
+    ...(outcome && outcome !== "running" ? [{ type: "encounter_ended", outcome } as const] : []),
     advanced,
   ];
   world.recordEvents(completeEvents);
@@ -449,6 +454,10 @@ function finishAccepted(
 }
 
 export function resolveCommand(world: World, command: GameCommand): ActionResolution {
+  if (world.outcome !== "running") {
+    return { accepted: false, consumedTime: false, reason: "Encounter has ended.", events: [] };
+  }
+
   switch (command.type) {
     case "move":
       return resolveMove(world, command);

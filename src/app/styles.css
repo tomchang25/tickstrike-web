@@ -104,6 +104,44 @@ header > p {
   height: auto;
 }
 
+.terminal-banner {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  padding: 16px 22px;
+  border: 1px solid #72d4ff;
+  border-radius: 10px;
+  background: rgb(12 14 19 / 90%);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 35%);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.terminal-banner strong {
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.terminal-banner span {
+  color: #b7c1d0;
+  font-size: 0.85rem;
+}
+
+.terminal-banner-defeat {
+  border-color: #ff6b6b;
+}
+
+.terminal-banner-victory strong {
+  color: #72d4ff;
+}
+
+.terminal-banner-defeat strong {
+  color: #ff9b9b;
+}
+
 .semantic-mirror {
   position: absolute;
   width: 1px;
@@ -176,6 +214,31 @@ header > p {
 
 .metrics strong {
   font-size: 1rem;
+}
+
+.encounter-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #293142;
+  border-radius: 8px;
+  background: #0f1218;
+  color: #8e99aa;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.encounter-status strong {
+  color: #e8eef7;
+}
+
+.encounter-status-victory strong {
+  color: #72d4ff;
+}
+
+.encounter-status-defeat strong {
+  color: #ff9b9b;
 }
 
 .combat-status {

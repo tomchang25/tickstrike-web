@@ -18,6 +18,7 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
       data-height={snapshot.arena.height}
       data-generation={generation}
       data-idle={isIdle}
+      data-outcome={snapshot.outcome}
       data-reservation-count={snapshot.reservations.length}
       data-telegraph-count={snapshot.telegraphs.length}
       data-committed-attack-count={snapshot.entities.filter((entity) => entity.committedAttack).length}

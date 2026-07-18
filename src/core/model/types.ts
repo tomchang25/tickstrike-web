@@ -11,6 +11,7 @@ export type TileKind = "floor" | "wall" | "water";
 export type EntityKind = "player" | "enemy";
 export type EntityPhase = "alive" | "drowning" | "dead";
 export type TerminalEntityPhase = Exclude<EntityPhase, "alive">;
+export type EncounterOutcome = "running" | "victory" | "defeat";
 export type EnemyActivity = "ready" | "telegraphing" | "recovering" | "staggered";
 export type EnemyDecision = "move" | "attack" | "wait";
 export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
@@ -124,6 +125,7 @@ export interface ArenaState {
 
 export interface WorldSnapshot {
   readonly tick: number;
+  readonly outcome: EncounterOutcome;
   readonly arena: ArenaState;
   readonly playerCell: Cell | undefined;
   readonly armedSmashTarget: Cell | undefined;

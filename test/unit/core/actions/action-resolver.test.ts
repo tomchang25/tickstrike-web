@@ -404,3 +404,88 @@ describe("player-clocked action boundary", () => {
     expect(commands.every(commandConsumesTime)).toBe(true);
   });
 });
+
+describe("playable encounter outcomes", () => {
+  it("ends in victory when every enabled enemy is terminal and rejects later commands", () => {
+    const world = createFoundationArena();
+    world.applyDamage("enemy-thrust", 100);
+    world.applyDamage("enemy-slash", 100);
+
+    const result = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(world.snapshot()).toMatchObject({ tick: 1, outcome: "victory", telegraphs: [] });
+    expect(result.events.map((event) => event.type)).toContain("encounter_ended");
+    expect(result.events.at(-1)).toEqual({ type: "world_advanced", tick: 1, phases: ["foundation", "enemy"] });
+
+    const beforeRejected = world.snapshot();
+    const rejected = resolveCommand(world, {
+      type: "attack",
+      actorId: "player",
+      direction: { x: -1, y: 0 },
+    });
+
+    expect(rejected).toEqual({
+      accepted: false,
+      consumedTime: false,
+      reason: "Encounter has ended.",
+      events: [],
+    });
+    expect(world.snapshot()).toEqual(beforeRejected);
+  });
+
+  it("lets the player escape a locked Telegraph and later resolves a defeat", () => {
+    const createDuel = () => {
+      const world = createTrainingArena();
+      world.spawn({
+        id: "player",
+        kind: "player",
+        archetype: "training-player",
+        cell: { x: 3, y: 3 },
+        hp: 10,
+      });
+      world.spawn({
+        id: "enemy-thrust",
+        kind: "enemy",
+        archetype: "thrust",
+        cell: { x: 2, y: 3 },
+        hp: 100,
+        enemyAction: {
+          role: "thrust",
+          attackId: "thrust",
+          damage: 10,
+          warningTicks: 2,
+          recoveryTicks: 2,
+          offsets: [{ x: 1, y: 0 }],
+        },
+        facing: { x: 1, y: 0 },
+      });
+      return world;
+    };
+
+    const escaped = createDuel();
+    resolveCommand(escaped, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    resolveCommand(escaped, { type: "move", actorId: "player", direction: { x: 0, y: 1 } });
+    const escapedResult = resolveCommand(escaped, { type: "move", actorId: "player", direction: { x: 0, y: 1 } });
+
+    expect(escapedResult.accepted).toBe(true);
+    expect(escaped.requireEntity("player")).toMatchObject({ hp: 10, phase: "alive" });
+    expect(escaped.snapshot()).toMatchObject({ outcome: "running", telegraphs: [] });
+    expect(escapedResult.events.some((event) => event.type === "player_damaged")).toBe(false);
+
+    const defeated = createDuel();
+    for (let index = 0; index < 3; index += 1) {
+      resolveCommand(defeated, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    }
+
+    const lastEvents = defeated.snapshot().lastEvents;
+    expect(defeated.snapshot()).toMatchObject({ outcome: "defeat", telegraphs: [] });
+    expect(defeated.requireEntity("player")).toMatchObject({ hp: 0, phase: "dead" });
+    expect(lastEvents.map((event) => event.type)).toContain("player_died");
+    expect(lastEvents).toContainEqual({ type: "encounter_ended", outcome: "defeat" });
+  });
+});

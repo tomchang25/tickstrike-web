@@ -4,6 +4,7 @@ import type {
   CommittedAttack,
   DirectionalHitResult,
   EntityId,
+  EncounterOutcome,
   Reservation,
   Telegraph,
 } from "../model/types";
@@ -116,6 +117,15 @@ export type CombatEvent =
       readonly damage: DamageEvent;
       readonly hp: number;
       readonly maxHp: number;
+    }
+  | {
+      readonly type: "player_died";
+      readonly playerId: EntityId;
+      readonly cell: Cell;
+    }
+  | {
+      readonly type: "encounter_ended";
+      readonly outcome: Exclude<EncounterOutcome, "running">;
     }
   | {
       readonly type: "enemy_recovering";

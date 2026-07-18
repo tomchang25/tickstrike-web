@@ -173,6 +173,17 @@ export class PresentationDirector {
           ));
           break;
         }
+        case "player_died": {
+          const view = this.renderer.getEntityView(event.playerId);
+          terminalIds.add(event.playerId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view.scale, { x: 1.3, y: 0.25, duration: 0.09, ease: "power3.in" })
+              .to(view, { alpha: 0, duration: 0.16, delay: 0.06 }),
+          ));
+          break;
+        }
         case "player_dashed": {
           const view = this.renderer.getEntityView(event.actorId);
           if (!view) break;
@@ -253,6 +264,7 @@ export class PresentationDirector {
         case "enemy_protection_ended":
         case "enemy_recovering":
         case "enemy_recovered":
+        case "encounter_ended":
         case "enemy_waited":
         case "reservation_changed":
         case "telegraph_changed":

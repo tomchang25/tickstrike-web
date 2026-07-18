@@ -1,4 +1,4 @@
-import type { WorldSnapshot } from "../core/model/types";
+import type { EncounterOutcome, WorldSnapshot } from "../core/model/types";
 import type { ContentInspection } from "../harness/content-inspection";
 import type { MobilityKind } from "../presentation/pixi/PixiGameRenderer";
 import type { TestScenario } from "../harness/types";
@@ -11,6 +11,7 @@ export interface TestbedPanelProps {
   readonly commandsEnabled: boolean;
   readonly selectedMobility: MobilityKind;
   readonly debugMode: boolean;
+  readonly outcome: EncounterOutcome;
   readonly inspection?: ContentInspection;
   onScenarioChange(id: string): void;
   onMobilityToggle(): void;
@@ -45,6 +46,11 @@ export function TestbedPanel(props: TestbedPanelProps) {
         <div><span>Enemies</span><strong data-testid="enemy-count">{enemies.length}</strong></div>
         <div><span>Telegraphs</span><strong data-testid="enemy-telegraph-count">{props.snapshot.telegraphs.length}</strong></div>
         <div><span>Player</span><strong>{player ? `${player.cell.x},${player.cell.y}` : "—"}</strong></div>
+      </div>
+
+      <div className={`encounter-status encounter-status-${props.outcome}`} data-testid="encounter-status">
+        <span>Encounter</span>
+        <strong>{outcomeLabel(props.outcome)}</strong>
       </div>
 
       <section className="combat-status" data-testid="enemy-statuses" aria-labelledby="enemy-status-title">
@@ -112,12 +118,14 @@ export function TestbedPanel(props: TestbedPanelProps) {
           className="primary-command"
           data-testid="mobility-toggle"
           aria-pressed={props.selectedMobility === "smash"}
-          disabled={!props.commandsEnabled || !player || Boolean(props.snapshot.armedSmashTarget)}
+          disabled={props.outcome !== "running" || !props.commandsEnabled || !player || Boolean(props.snapshot.armedSmashTarget)}
           onClick={props.onMobilityToggle}
         >
           Mobility: {props.selectedMobility === "dash" ? "Dash" : "Smash"}
         </button>
-        <button type="button" disabled={props.busy} onClick={props.onReset}>Reset scenario</button>
+        <button type="button" data-testid="reset-scenario" disabled={props.busy} onClick={props.onReset}>
+          {props.outcome === "running" ? "Reset scenario" : "Restart encounter"}
+        </button>
       </section>
 
       {props.inspection ? <ContentInspectionSection inspection={props.inspection} /> : null}
@@ -136,6 +144,12 @@ export function TestbedPanel(props: TestbedPanelProps) {
       </section>
     </aside>
   );
+}
+
+function outcomeLabel(outcome: EncounterOutcome): string {
+  if (outcome === "victory") return "Victory";
+  if (outcome === "defeat") return "Defeat";
+  return "Running";
 }
 
 function StatusBar({
