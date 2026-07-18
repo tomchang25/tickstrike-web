@@ -1,4 +1,4 @@
-import type { Cell, WorldSnapshot } from "../core/model/types";
+import type { WorldSnapshot } from "../core/model/types";
 import type { ContentInspection } from "../harness/content-inspection";
 import type { MobilityKind } from "../presentation/pixi/PixiGameRenderer";
 import type { TestScenario } from "../harness/types";
@@ -13,7 +13,6 @@ export interface TestbedPanelProps {
   readonly debugMode: boolean;
   readonly inspection?: ContentInspection;
   onScenarioChange(id: string): void;
-  onAttack(direction: Cell): Promise<void>;
   onMobilityToggle(): void;
   onDebugModeChange(enabled: boolean): void;
   onReset(): void;
@@ -60,13 +59,6 @@ export function TestbedPanel(props: TestbedPanelProps) {
       <section>
         <h2>Commands</h2>
         {!props.commandsEnabled ? <p data-testid="commands-disabled">Commands disabled for static inspection.</p> : null}
-        <h3>Normal Attack</h3>
-        <div className="movement-grid">
-          <button data-testid="attack-up" type="button" aria-label="Attack up" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onAttack({ x: 0, y: -1 })}>↑</button>
-          <button data-testid="attack-left" type="button" aria-label="Attack left" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onAttack({ x: -1, y: 0 })}>←</button>
-          <button data-testid="attack-down" type="button" aria-label="Attack down" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onAttack({ x: 0, y: 1 })}>↓</button>
-          <button data-testid="attack-right" type="button" aria-label="Attack right" disabled={props.busy || !props.commandsEnabled || !player} onClick={() => void props.onAttack({ x: 1, y: 0 })}>→</button>
-        </div>
         <button
           type="button"
           className="primary-command"
