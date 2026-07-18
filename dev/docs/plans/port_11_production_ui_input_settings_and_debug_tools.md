@@ -1,6 +1,7 @@
 # Production UI, Input, Settings, and Debug Tools
 
 Roadmap: [Tickstrike Full Port Roadmap](tickstrike_full_port_roadmap.md)
+Reference baseline: [port-ref/tickstrike](../../port-ref/tickstrike)
 
 ## Goal
 

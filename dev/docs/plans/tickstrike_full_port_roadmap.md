@@ -9,6 +9,7 @@ Batch 0, reference capture, is intentionally outside this roadmap's Main Plan se
 ## Reference Baseline
 
 - Source: Godot `main`
+- Baseline codebase: [port-ref/tickstrike](../../port-ref/tickstrike)
 - Reference commit: `742f50678af54300fa41b0b983d0abfeb1befb29`
 - Status: Batch 0 complete; Batch 1 is the next execution item.
 
