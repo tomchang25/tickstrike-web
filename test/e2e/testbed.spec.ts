@@ -1,4 +1,11 @@
 import { expect, test } from "@playwright/test";
+import type { TickstrikeDebugApi } from "../../src/harness/debug-api";
+
+declare global {
+  interface Window {
+    __TICKSTRIKE__?: TickstrikeDebugApi;
+  }
+}
 
 test("Smash scenario completes through the browser harness", async ({ page }) => {
   await page.goto("/?scenario=smash-water");
@@ -42,7 +49,7 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-height", "12");
 
   const initial = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  await page.getByRole("button", { name: "→" }).click();
+  await page.getByTestId("move-right").click();
   await expect(page.getByTestId("tick-value")).toHaveText("1");
   await page.getByRole("button", { name: "Reset scenario" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
@@ -52,4 +59,30 @@ test("Foundation arena resets its generation without stale presentation state", 
   expect(reset).toEqual(initial);
   expect(await page.getByTestId("semantic-mirror").getAttribute("data-reservation-count")).toBe("0");
   expect(await page.getByTestId("semantic-mirror").getAttribute("data-telegraph-count")).toBe("0");
+});
+
+test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence", async ({ page }) => {
+  await page.goto("/?scenario=tick-arena");
+
+  await page.getByTestId("move-right").click();
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
+
+  await page.getByTestId("attack-right").click();
+  await expect(page.getByTestId("tick-value")).toHaveText("2");
+  await expect(page.getByTestId("event-log")).toContainText("player_attacked");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-state", "alive");
+
+  await page.getByTestId("dash-left").click();
+  await expect(page.getByTestId("tick-value")).toHaveText("3");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
+  await expect(page.getByTestId("event-log")).toContainText("player_dashed");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+
+  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toEqual([
+    "command_resolved",
+    "player_dashed",
+    "world_advanced",
+  ]);
 });

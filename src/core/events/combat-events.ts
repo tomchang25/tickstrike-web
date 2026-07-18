@@ -19,6 +19,18 @@ export type CombatEvent =
       readonly to: Cell;
     }
   | {
+      readonly type: "player_attacked";
+      readonly actorId: EntityId;
+      readonly target: Cell;
+    }
+  | {
+      readonly type: "player_dashed";
+      readonly actorId: EntityId;
+      readonly from: Cell;
+      readonly to: Cell;
+      readonly path: readonly Cell[];
+    }
+  | {
       readonly type: "smash_impact";
       readonly cell: Cell;
     }

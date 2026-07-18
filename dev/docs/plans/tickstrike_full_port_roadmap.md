@@ -38,7 +38,7 @@ Use one fixed deterministic scenario:
 | Plan | Focus | Result in the same Tick Arena |
 | --- | --- | --- |
 | 02 | Deterministic arena and runtime seam | A resettable board with one player and three enemy fixtures. |
-| 03 | Player verbs and Tick boundary | Move, Normal Attack, Dash, accepted/rejected commands, and one-tick advancement. |
+| 03 | [Player verbs and Tick boundary](port_03_player_verbs_and_player_clock.md) -> [Implementation Spec](port_03_player_verbs_and_player_clock.implementation_spec.md) | Move, Normal Attack, Dash, accepted/rejected commands, and one-tick advancement. |
 | 04 | Enemy state machine | Movement, WindupAttackPrep, Telegraph, locked attacks, and post-player-action decisions. |
 | 05 | First playable Tick Arena | Player damage, enemy damage, death, presentation, and cleanup form one playable loop. |
 | 06 | Basic combat expansion | Directional results, Guard/Stagger, and Dash refinement are added without changing the entry point. |

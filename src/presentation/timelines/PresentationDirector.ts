@@ -38,6 +38,28 @@ export class PresentationDirector {
           ));
           break;
         }
+        case "player_attacked": {
+          const effect = this.renderer.createImpact(event.target);
+          animations.push(this.timelineDone(
+            gsap
+              .timeline()
+              .fromTo(effect.scale, { x: 0.35, y: 0.35 }, { x: 1.8, y: 1.8, duration: 0.14 })
+              .to(effect, { alpha: 0, duration: 0.1 }, "<0.06"),
+            () => this.renderer.releaseTransient(effect),
+          ));
+          break;
+        }
+        case "player_dashed": {
+          const view = this.renderer.getEntityView(event.actorId);
+          if (!view) break;
+          const from = this.renderer.cellToPixels(event.from);
+          const to = this.renderer.cellToPixels(event.to);
+          view.position.set(from.x, from.y);
+          animations.push(this.timelineDone(
+            gsap.timeline().to(view, { x: to.x, y: to.y, duration: 0.12, ease: "power3.out" }),
+          ));
+          break;
+        }
         case "smash_impact": {
           const effect = this.renderer.createImpact(event.cell);
           animations.push(this.timelineDone(

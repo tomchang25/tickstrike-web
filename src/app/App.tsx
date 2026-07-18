@@ -72,11 +72,31 @@ export function App() {
   }, []);
 
   const move = useCallback(
-      async (direction: Cell) => {
-        if (!commandsEnabled) return;
-        const runtime = runtimeRef.current;
+    async (direction: Cell) => {
+      if (!commandsEnabled) return;
+      const runtime = runtimeRef.current;
       if (!runtime) return;
       await execute(() => runtime.execute({ type: "move", actorId: "player", direction }));
+    },
+    [commandsEnabled, execute],
+  );
+
+  const attack = useCallback(
+    async (direction: Cell) => {
+      if (!commandsEnabled) return;
+      const runtime = runtimeRef.current;
+      if (!runtime) return;
+      await execute(() => runtime.execute({ type: "attack", actorId: "player", direction }));
+    },
+    [commandsEnabled, execute],
+  );
+
+  const dash = useCallback(
+    async (direction: Cell) => {
+      if (!commandsEnabled) return;
+      const runtime = runtimeRef.current;
+      if (!runtime) return;
+      await execute(() => runtime.execute({ type: "dash", actorId: "player", direction }));
     },
     [commandsEnabled, execute],
   );
@@ -109,10 +129,28 @@ export function App() {
         a: { x: -1, y: 0 },
         d: { x: 1, y: 0 },
       };
-      const direction = directions[event.key];
+      const attackDirections: Record<string, Cell> = {
+        i: { x: 0, y: -1 },
+        j: { x: -1, y: 0 },
+        k: { x: 0, y: 1 },
+        l: { x: 1, y: 0 },
+      };
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      const direction = directions[key];
+      if (direction && event.shiftKey) {
+        event.preventDefault();
+        void dash(direction);
+        return;
+      }
       if (direction) {
         event.preventDefault();
         void move(direction);
+        return;
+      }
+      const attackDirection = attackDirections[key];
+      if (attackDirection) {
+        event.preventDefault();
+        void attack(attackDirection);
       }
       if (event.code === "Space") {
         event.preventDefault();
@@ -121,7 +159,7 @@ export function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [busy, commandsEnabled, move, smash]);
+  }, [attack, busy, commandsEnabled, dash, move, smash]);
 
   return (
     <main className="app-shell">
@@ -146,7 +184,7 @@ export function App() {
             ) : null}
           </div>
           <p className="hint">
-            {commandsEnabled ? "WASD / arrows to move · Space to Smash" : "Static inspection: gameplay commands disabled"}
+            {commandsEnabled ? "WASD / arrows move · IJKL attack · Shift + WASD / arrows dash · Space Smash" : "Static inspection: gameplay commands disabled"}
           </p>
         </section>
 
@@ -160,6 +198,8 @@ export function App() {
             inspection={selectedScenario.inspection}
             onScenarioChange={changeScenario}
             onMove={move}
+            onAttack={attack}
+            onDash={dash}
             onSmash={smash}
             onReset={() => runtimeRef.current?.reset()}
           />

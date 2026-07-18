@@ -21,7 +21,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     id: "enemy-thrust",
     kind: "enemy",
     archetype: "thrust",
-    cell: { x: 4, y: 6 },
+    cell: { x: 5, y: 6 },
     hp: 10,
   });
   world.spawn({

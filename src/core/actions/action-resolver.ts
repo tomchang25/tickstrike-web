@@ -57,6 +57,59 @@ function resolveMove(world: World, command: Extract<GameCommand, { type: "move" 
   return finishAccepted(world, command.type, events);
 }
 
+function resolveAttack(world: World, command: Extract<GameCommand, { type: "attack" }>): ActionResolution {
+  const actor = world.requireEntity(command.actorId);
+  if (actor.phase !== "alive") {
+    return { accepted: false, consumedTime: false, reason: "Actor is not active.", events: [] };
+  }
+  if (!isCardinalDirection(command.direction)) {
+    return { accepted: false, consumedTime: false, reason: "Direction must be cardinal.", events: [] };
+  }
+
+  const events: readonly CombatEvent[] = [
+    {
+      type: "player_attacked",
+      actorId: actor.id,
+      target: add(actor.cell, command.direction),
+    },
+  ];
+  return finishAccepted(world, command.type, events);
+}
+
+function resolveDash(world: World, command: Extract<GameCommand, { type: "dash" }>): ActionResolution {
+  const actor = world.requireEntity(command.actorId);
+  if (actor.phase !== "alive") {
+    return { accepted: false, consumedTime: false, reason: "Actor is not active.", events: [] };
+  }
+  if (!isCardinalDirection(command.direction)) {
+    return { accepted: false, consumedTime: false, reason: "Direction must be cardinal.", events: [] };
+  }
+
+  const path: Cell[] = [];
+  for (let step = 1; step <= 3; step += 1) {
+    const candidate = add(actor.cell, multiply(command.direction, step));
+    if (!world.isWalkable(candidate)) break;
+    path.push(candidate);
+  }
+
+  if (path.length === 0) {
+    return { accepted: false, consumedTime: false, reason: "Dash has no legal landing cell.", events: [] };
+  }
+
+  const landing = path[path.length - 1]!;
+  world.moveEntity(actor.id, landing);
+  const events: readonly CombatEvent[] = [
+    {
+      type: "player_dashed",
+      actorId: actor.id,
+      from: actor.cell,
+      to: landing,
+      path,
+    },
+  ];
+  return finishAccepted(world, command.type, events);
+}
+
 function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash" }>): ActionResolution {
   const actor = world.requireEntity(command.actorId);
   if (actor.phase !== "alive") {
@@ -141,5 +194,9 @@ export function resolveCommand(world: World, command: GameCommand): ActionResolu
       return resolveMove(world, command);
     case "smash":
       return resolveSmash(world, command);
+    case "attack":
+      return resolveAttack(world, command);
+    case "dash":
+      return resolveDash(world, command);
   }
 }
