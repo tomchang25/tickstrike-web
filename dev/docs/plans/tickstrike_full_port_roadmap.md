@@ -47,8 +47,9 @@ Use one fixed deterministic scenario:
 | 09 | Rewards and run build | Rewards modify the existing player state after an encounter; no parallel combat state. |
 | 10 | Run lifecycle | Start, wave completion, death, restart, and the endless branch reuse the same runtime. |
 | 11 | Production shell | HUD, input, settings, and debug controls project the existing runtime. |
-| 12 | Presentation and release | Assets, audio, responsive behavior, teardown, and packaging harden the same path. |
+| 12 | Audio, platform, and release hardening | Audio delivery, responsive behavior, teardown, and packaging harden the same path. |
+| 13 | Reference visual parity and polish | The same Tick Arena matches the audited reference board, entities, feedback, HUD, and presentation quality. |
 
 ## Done When
 
-The port is complete when the single Tick Arena can run the intended content from start to terminal outcome, deterministic scenarios reproduce the same command sequence, browser assertions observe the result, and reset/restart leaves no pending animation, callback, telegraph, or orphan visual.
+The port is complete when the single Tick Arena can run the intended content from start to terminal outcome, deterministic scenarios reproduce the same command sequence, browser assertions observe the result, the audited reference presentation is represented at the approved parity target, and reset/restart leaves no pending animation, callback, telegraph, or orphan visual.

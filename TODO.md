@@ -41,6 +41,7 @@ Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from 
 - [port_10_run] Connect wave completion, rewards, death, restart, and the milestone branch through the same runtime - [ref plans/port_10_complete_run_lifecycle.md]
 - [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
 - [port_12_hardening] Harden assets, audio, responsive behavior, teardown, browser delivery, and Windows packaging for the same path - [ref plans/port_12_assets_audio_platform_and_release_hardening.md]
+- [port_13_visual_parity] Audit port-ref and match the reference board, entities, feedback, HUD, and presentation quality - [ref plans/port_13_visual_parity_and_polish.md]
 
 ---
 
