@@ -54,3 +54,37 @@ describe("Smash action", () => {
     expect(world.snapshot().tick).toBe(1);
   });
 });
+
+describe("player-clocked action boundary", () => {
+  it("advances once after an accepted action and not after rejection", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 1, y: 2 },
+      hp: 100,
+    });
+
+    const rejected = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: -1, y: 0 },
+    });
+    expect(rejected.accepted).toBe(false);
+    expect(world.snapshot().tick).toBe(0);
+
+    const accepted = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+    });
+    expect(accepted.accepted).toBe(true);
+    expect(accepted.semanticEvents?.map((event) => event.type)).toEqual([
+      "command_resolved",
+      "actor_moved",
+      "world_advanced",
+    ]);
+    expect(world.snapshot().tick).toBe(1);
+  });
+});

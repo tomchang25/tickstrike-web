@@ -9,6 +9,8 @@ export interface TickstrikeDebugApi {
   loadScenario(id: string): void;
   reset(): void;
   getState(): WorldSnapshot;
+  getGeneration(): number;
+  isIdle(): boolean;
   getEntity(id: string): EntityState | undefined;
   getEntityBounds(id: string): ReturnType<GameRuntime["getEntityBounds"]>;
   getContentInspection(): ContentInspection | undefined;
@@ -27,6 +29,8 @@ export function installDebugApi(runtime: GameRuntime): () => void {
     loadScenario: (id) => runtime.loadScenario(requireScenario(id)),
     reset: () => runtime.reset(),
     getState: () => runtime.snapshot(),
+    getGeneration: () => runtime.generation,
+    isIdle: () => runtime.isIdle,
     getEntity: (id) => runtime.snapshot().entities.find((entity) => entity.id === id),
     getEntityBounds: (id) => runtime.getEntityBounds(id),
     getContentInspection: () => runtime.getContentInspection(),

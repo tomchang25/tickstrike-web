@@ -1,4 +1,5 @@
 import type { TileKind } from "../../core/model/types";
+import type { Seed } from "../../core/model/types";
 import { World } from "../../core/world/world";
 
 const ROWS = [
@@ -23,9 +24,9 @@ function parseTile(char: string): TileKind {
   }
 }
 
-export function createTrainingArena(): World {
+export function createTrainingArena(seed?: Seed): World {
   const width = ROWS[0].length;
   const height = ROWS.length;
   const tiles = ROWS.flatMap((row) => [...row].map(parseTile));
-  return new World(width, height, tiles);
+  return new World(width, height, tiles, seed);
 }

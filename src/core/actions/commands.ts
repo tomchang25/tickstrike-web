@@ -11,3 +11,7 @@ export type GameCommand =
       readonly actorId: EntityId;
       readonly target: Cell;
     };
+
+export function commandConsumesTime(command: GameCommand): boolean {
+  return command.type === "move" || command.type === "smash";
+}

@@ -34,18 +34,25 @@ export class PixiGameRenderer {
   readonly app = new Application();
   readonly worldLayer = new Container();
   readonly gridLayer = new Container();
+  readonly telegraphLayer = new Container();
+  readonly reservationLayer = new Container();
   readonly actorLayer = new Container();
   readonly effectsLayer = new Container();
 
   private readonly entityViews = new Map<EntityId, EntityView>();
+  private readonly transientEffects = new Set<Graphics>();
   private host: HTMLElement | undefined;
   private snapshot: WorldSnapshot | undefined;
+
+  get transientCount(): number {
+    return this.transientEffects.size;
+  }
 
   async mount(host: HTMLElement): Promise<void> {
     this.host = host;
     await this.app.init({
-      width: 640,
-      height: 512,
+      width: 768,
+      height: 768,
       antialias: true,
       background: 0x11131a,
       resolution: window.devicePixelRatio || 1,
@@ -56,12 +63,19 @@ export class PixiGameRenderer {
     this.app.canvas.setAttribute("aria-label", "Tickstrike arena");
     host.replaceChildren(this.app.canvas);
 
-    this.worldLayer.addChild(this.gridLayer, this.actorLayer, this.effectsLayer);
+    this.worldLayer.addChild(
+      this.gridLayer,
+      this.reservationLayer,
+      this.telegraphLayer,
+      this.actorLayer,
+      this.effectsLayer,
+    );
     this.app.stage.addChild(this.worldLayer);
   }
 
   destroy(): void {
     this.entityViews.clear();
+    this.clearTransient();
     this.app.destroy(true, { children: true });
     this.host = undefined;
   }
@@ -69,6 +83,8 @@ export class PixiGameRenderer {
   sync(snapshot: WorldSnapshot): void {
     this.snapshot = snapshot;
     this.drawArena(snapshot);
+    this.drawReservations(snapshot);
+    this.drawTelegraphs(snapshot);
 
     const liveIds = new Set(snapshot.entities.map((entity) => entity.id));
     for (const [id, view] of this.entityViews) {
@@ -131,7 +147,21 @@ export class PixiGameRenderer {
       .stroke({ color: 0xffffff, width: 5, alpha: 0.9 });
     effect.position.set(pixels.x, pixels.y);
     this.effectsLayer.addChild(effect);
+    this.transientEffects.add(effect);
     return effect;
+  }
+
+  releaseTransient(effect: Graphics): void {
+    this.transientEffects.delete(effect);
+    if (!effect.destroyed) effect.destroy({ children: true });
+  }
+
+  clearTransient(): void {
+    for (const effect of this.transientEffects) {
+      if (!effect.destroyed) effect.destroy({ children: true });
+    }
+    this.transientEffects.clear();
+    this.effectsLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
   }
 
   cellToPixels(cell: Cell): { x: number; y: number } {
@@ -151,6 +181,31 @@ export class PixiGameRenderer {
           .fill(color)
           .stroke({ color: 0x343b4c, width: 1, alpha: 0.8 });
         this.gridLayer.addChild(tileView);
+      }
+    }
+  }
+
+  private drawReservations(snapshot: WorldSnapshot): void {
+    this.reservationLayer.removeChildren().forEach((child) => child.destroy());
+    for (const reservation of snapshot.reservations) {
+      for (const cell of reservation.cells) {
+        const color = reservation.purpose === "attack" ? 0xff9c5c : 0x9a7cff;
+        const marker = new Graphics()
+          .rect(cell.x * CELL_SIZE + 5, cell.y * CELL_SIZE + 5, CELL_SIZE - 10, CELL_SIZE - 10)
+          .stroke({ color, width: 3, alpha: 0.8 });
+        this.reservationLayer.addChild(marker);
+      }
+    }
+  }
+
+  private drawTelegraphs(snapshot: WorldSnapshot): void {
+    this.telegraphLayer.removeChildren().forEach((child) => child.destroy());
+    for (const telegraph of snapshot.telegraphs) {
+      for (const cell of telegraph.cells) {
+        const marker = new Graphics()
+          .rect(cell.x * CELL_SIZE + 12, cell.y * CELL_SIZE + 12, CELL_SIZE - 24, CELL_SIZE - 24)
+          .fill({ color: telegraph.phase === "active" ? 0xff5c7a : 0xffd166, alpha: 0.22 });
+        this.telegraphLayer.addChild(marker);
       }
     }
   }

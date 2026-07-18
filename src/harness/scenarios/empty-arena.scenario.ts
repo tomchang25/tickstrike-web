@@ -6,8 +6,9 @@ export const scenarios: readonly TestScenario[] = [
     id: "empty-arena",
     title: "Arena / Movement",
     description: "The shipped twelve-by-twelve arena with no enemies.",
-    createWorld() {
-      const world = createShippedArena();
+    seed: "tick-arena-empty",
+    createWorld(seed) {
+      const world = createShippedArena(seed);
       world.spawn({
         id: "player",
         kind: "player",

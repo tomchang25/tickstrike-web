@@ -9,8 +9,9 @@ export const scenarios: readonly TestScenario[] = [
     description: "A static parity-content inspection with no gameplay state.",
     commandsEnabled: false,
     inspection: contentInspection,
-    createWorld() {
-      return createTrainingArena();
+    seed: "content-catalog-inspection",
+    createWorld(seed) {
+      return createTrainingArena(seed);
     },
   },
 ];

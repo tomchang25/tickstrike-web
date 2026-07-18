@@ -16,20 +16,34 @@ export class GameRuntime {
   private world: World | undefined;
   private scenario: TestScenario | undefined;
   private readonly listeners = new Set<RuntimeListener>();
-  private actionQueue: Promise<void> = Promise.resolve();
+  private readonly queuedCommands: QueuedCommand[] = [];
+  private activeCommand: QueuedCommand | undefined;
+  private processingCommands = false;
+  private currentGeneration = 0;
+
+  get generation(): number {
+    return this.currentGeneration;
+  }
+
+  get isIdle(): boolean {
+    return !this.processingCommands && this.queuedCommands.length === 0 && this.presentation.isIdle;
+  }
 
   async mount(host: HTMLElement): Promise<void> {
     await this.renderer.mount(host);
   }
 
   destroy(): void {
+    this.invalidateWork("Runtime destroyed.");
     this.listeners.clear();
     this.renderer.destroy();
   }
 
   loadScenario(scenario: TestScenario): void {
+    this.invalidateWork("Scenario replaced.");
     this.scenario = scenario;
-    this.world = scenario.createWorld();
+    this.world = scenario.createWorld(scenario.seed);
+    this.presentation.setGeneration(this.currentGeneration);
     this.renderer.sync(this.world.snapshot());
     this.emit();
   }
@@ -48,19 +62,12 @@ export class GameRuntime {
       });
     }
 
-    let resolution: ActionResolution = { accepted: false, reason: "Not executed.", events: [] };
-
-    this.actionQueue = this.actionQueue.then(async () => {
-      const world = this.requireWorld();
-      resolution = resolveCommand(world, command);
-      this.emit();
-
-      if (resolution.accepted) {
-        await this.presentation.play(resolution.events);
-      }
+    if (!this.world) return Promise.reject(new Error("No world loaded."));
+    const generation = this.currentGeneration;
+    return new Promise<ActionResolution>((resolve, reject) => {
+      this.queuedCommands.push({ command, generation, resolve, reject });
+      void this.drainCommands();
     });
-
-    return this.actionQueue.then(() => resolution);
   }
 
   snapshot(): WorldSnapshot {
@@ -81,6 +88,53 @@ export class GameRuntime {
     return this.scenario?.inspection;
   }
 
+  private async drainCommands(): Promise<void> {
+    if (this.processingCommands) return;
+    this.processingCommands = true;
+    try {
+      while (this.queuedCommands.length > 0) {
+        const job = this.queuedCommands.shift();
+        if (!job) continue;
+        if (job.generation !== this.currentGeneration) {
+          job.reject(new Error("Command cancelled by scenario replacement."));
+          continue;
+        }
+
+        this.activeCommand = job;
+        try {
+          const resolution = resolveCommand(this.requireWorld(), job.command);
+          this.emit();
+          if (resolution.accepted) {
+            await this.presentation.play(resolution.semanticEvents ?? resolution.events, job.generation);
+          }
+          if (job.generation !== this.currentGeneration) {
+            job.reject(new Error("Command cancelled by scenario replacement."));
+          } else {
+            job.resolve(resolution);
+          }
+        } catch (error) {
+          job.reject(error);
+        } finally {
+          if (this.activeCommand === job) this.activeCommand = undefined;
+        }
+      }
+    } finally {
+      this.processingCommands = false;
+      if (this.queuedCommands.length > 0) void this.drainCommands();
+    }
+  }
+
+  private invalidateWork(reason: string): void {
+    this.currentGeneration += 1;
+    this.presentation.cancel();
+    if (this.activeCommand) {
+      this.activeCommand.reject(new Error(reason));
+      this.activeCommand = undefined;
+    }
+    for (const job of this.queuedCommands) job.reject(new Error(reason));
+    this.queuedCommands.length = 0;
+  }
+
   private requireWorld(): World {
     if (!this.world) throw new Error("No world loaded.");
     return this.world;
@@ -91,4 +145,11 @@ export class GameRuntime {
     const snapshot = this.world.snapshot();
     for (const listener of this.listeners) listener(snapshot);
   }
+}
+
+interface QueuedCommand {
+  readonly command: GameCommand;
+  readonly generation: number;
+  readonly resolve: (resolution: ActionResolution) => void;
+  readonly reject: (reason: unknown) => void;
 }

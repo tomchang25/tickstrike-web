@@ -2,11 +2,23 @@ import type { WorldSnapshot } from "../core/model/types";
 
 export interface SemanticMirrorProps {
   readonly snapshot: WorldSnapshot;
+  readonly generation?: number;
+  readonly isIdle?: boolean;
 }
 
-export function SemanticMirror({ snapshot }: SemanticMirrorProps) {
+export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorProps) {
   return (
-    <div className="semantic-mirror" aria-hidden="true">
+    <div
+      className="semantic-mirror"
+      aria-hidden="true"
+      data-testid="semantic-mirror"
+      data-width={snapshot.arena.width}
+      data-height={snapshot.arena.height}
+      data-generation={generation}
+      data-idle={isIdle}
+      data-reservation-count={snapshot.reservations.length}
+      data-telegraph-count={snapshot.telegraphs.length}
+    >
       {snapshot.entities.map((entity) => (
         <span
           key={entity.id}

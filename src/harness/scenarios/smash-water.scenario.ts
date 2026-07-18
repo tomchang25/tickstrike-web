@@ -7,8 +7,9 @@ export const scenarios: readonly TestScenario[] = [
     id: "smash-water",
     title: "Smash / Knockback / Water",
     description: "Crush the center enemy, knock one aside, and throw one into water.",
-    createWorld() {
-      const world = createTrainingArena();
+    seed: "smash-water-foundation",
+    createWorld(seed) {
+      const world = createTrainingArena(seed);
       world.spawn({
         id: "player",
         kind: "player",

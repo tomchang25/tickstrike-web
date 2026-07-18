@@ -6,7 +6,7 @@ import { GameRuntime } from "../runtime/GameRuntime";
 import { SemanticMirror } from "../ui/SemanticMirror";
 import { TestbedPanel } from "../ui/TestbedPanel";
 
-const DEFAULT_SCENARIO = "smash-water";
+const DEFAULT_SCENARIO = "tick-arena";
 
 function scenarioFromUrl(): string {
   const id = new URLSearchParams(window.location.search).get("scenario");
@@ -137,7 +137,13 @@ export function App() {
         <section className="game-column" aria-label="Game viewport">
           <div className="canvas-frame" data-testid="game-canvas-host">
             <div ref={canvasHostRef} className="canvas-host" />
-            {snapshot ? <SemanticMirror snapshot={snapshot} /> : null}
+            {snapshot ? (
+              <SemanticMirror
+                snapshot={snapshot}
+                generation={runtimeRef.current?.generation}
+                isIdle={!busy && Boolean(runtimeRef.current?.isIdle)}
+              />
+            ) : null}
           </div>
           <p className="hint">
             {commandsEnabled ? "WASD / arrows to move · Space to Smash" : "Static inspection: gameplay commands disabled"}

@@ -1,4 +1,5 @@
 export type EntityId = string;
+export type Seed = number | string;
 
 export interface Cell {
   readonly x: number;
@@ -10,6 +11,8 @@ export type TileKind = "floor" | "wall" | "water";
 export type EntityKind = "player" | "enemy";
 export type EntityPhase = "alive" | "drowning" | "dead";
 export type TerminalEntityPhase = Exclude<EntityPhase, "alive">;
+export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
+export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | string;
 
 export interface EntityState {
   readonly id: EntityId;
@@ -21,6 +24,22 @@ export interface EntityState {
   readonly hp: number;
   readonly maxHp: number;
   readonly phase: EntityPhase;
+}
+
+export interface Reservation {
+  readonly ownerId: string;
+  readonly purpose: ReservationPurpose;
+  readonly cells: readonly Cell[];
+  /** True for the currently executing movement step. */
+  readonly activeStep: boolean;
+  /** Stable world-local order used as the final arbitration tie-breaker. */
+  readonly registrationIndex: number;
+}
+
+export interface Telegraph {
+  readonly sourceId: string;
+  readonly phase: TelegraphPhase;
+  readonly cells: readonly Cell[];
 }
 
 export interface ArenaState {
@@ -37,6 +56,9 @@ export interface WorldSnapshot {
   readonly arena: ArenaState;
   readonly playerCell: Cell | undefined;
   readonly entities: readonly EntityState[];
+  readonly reservations: readonly Reservation[];
+  readonly telegraphs: readonly Telegraph[];
+  readonly seed: number;
   readonly lastEvents: readonly import("../events/combat-events").CombatEvent[];
 }
 

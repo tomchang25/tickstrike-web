@@ -1,12 +1,15 @@
 import type { CombatEvent } from "../events/combat-events";
-import type { Cell } from "../model/types";
+import { isCardinalDirection, type Cell } from "../model/types";
 import type { World } from "../world/world";
 import type { GameCommand } from "./commands";
 
 export interface ActionResolution {
   readonly accepted: boolean;
+  readonly consumedTime?: boolean;
   readonly reason?: string;
   readonly events: readonly CombatEvent[];
+  /** Full ordered event stream. `events` remains the gameplay-only compatibility view. */
+  readonly semanticEvents?: readonly CombatEvent[];
 }
 
 function add(a: Cell, b: Cell): Cell {
@@ -33,10 +36,13 @@ function resolveMove(world: World, command: Extract<GameCommand, { type: "move" 
   const destination = add(actor.cell, command.direction);
 
   if (actor.phase !== "alive") {
-    return { accepted: false, reason: "Actor is not active.", events: [] };
+    return { accepted: false, consumedTime: false, reason: "Actor is not active.", events: [] };
+  }
+  if (!isCardinalDirection(command.direction)) {
+    return { accepted: false, consumedTime: false, reason: "Direction must be cardinal.", events: [] };
   }
   if (!world.isWalkable(destination)) {
-    return { accepted: false, reason: "Destination is blocked.", events: [] };
+    return { accepted: false, consumedTime: false, reason: "Destination is blocked.", events: [] };
   }
 
   world.moveEntity(actor.id, destination);
@@ -48,15 +54,13 @@ function resolveMove(world: World, command: Extract<GameCommand, { type: "move" 
       to: destination,
     },
   ];
-  world.advanceTick();
-  world.recordEvents(events);
-  return { accepted: true, events };
+  return finishAccepted(world, command.type, events);
 }
 
 function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash" }>): ActionResolution {
   const actor = world.requireEntity(command.actorId);
   if (actor.phase !== "alive") {
-    return { accepted: false, reason: "Actor is not active.", events: [] };
+    return { accepted: false, consumedTime: false, reason: "Actor is not active.", events: [] };
   }
 
   const events: CombatEvent[] = [{ type: "smash_impact", cell: command.target }];
@@ -104,9 +108,31 @@ function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash
     }
   }
 
-  world.advanceTick();
-  world.recordEvents(events);
-  return { accepted: true, events };
+  return finishAccepted(world, command.type, events);
+}
+
+function finishAccepted(
+  world: World,
+  commandType: GameCommand["type"],
+  events: readonly CombatEvent[],
+): ActionResolution {
+  const semanticEvents: CombatEvent[] = [
+    {
+      type: "command_resolved",
+      commandType,
+      accepted: true,
+      consumedTime: true,
+    },
+    ...events,
+    world.advancePlayerAction(),
+  ];
+  world.recordEvents(semanticEvents);
+  return {
+    accepted: true,
+    consumedTime: true,
+    events,
+    semanticEvents,
+  };
 }
 
 export function resolveCommand(world: World, command: GameCommand): ActionResolution {
