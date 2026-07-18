@@ -34,6 +34,17 @@ The initial inventory is:
 
 The existing Web training content may remain as harness-only material only when it is clearly separated from parity content and cannot be selected by the production run.
 
+### Child Overview
+
+| Child | Focus | Current document |
+| --- | --- | --- |
+| 01 | Complete Character, Enemy, Attack, and Guard content with concrete validation | [Implementation Spec](port_01_web_native_content_foundation_01_actor_content.implementation_spec.md) |
+| 02 | Spawn Groups, demo waves, Endless, and progression content | [Implementation Spec](port_01_web_native_content_foundation_02_wave_content.implementation_spec.md) |
+| 03 | Artifact definitions, effects, categories, eligibility, and restrictions | [Implementation Spec](port_01_web_native_content_foundation_03_artifact_content.implementation_spec.md) |
+| 04 | Integrated catalog and deterministic browser content inspection | [Implementation Spec](port_01_web_native_content_foundation_04_catalog_inspection.implementation_spec.md) |
+
+Recommended landing order: 01 -> 02 -> 03 -> 04. Each child extends the concrete shipped catalog; no child creates a speculative general content framework.
+
 ## Non-Goals
 
 1. Do not implement mutable combat, wave, reward, or run behavior.

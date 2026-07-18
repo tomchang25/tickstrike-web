@@ -22,7 +22,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > Ship a phase: remove it from that file and append its outcome to `CHANGELOG.md`, leaving this line until every phase ships.
 > When every phase ships: archive the plan file and delete this line.
 
-Nothing currently in progress.
+- [port_01_content] Convert the shipped Godot content inventory into validated Web-native definitions after the reference capture completes - [ref plans/port_01_web_native_content_foundation.md]
 
 ---
 
@@ -30,7 +30,6 @@ Nothing currently in progress.
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_01_content] Convert the shipped Godot content inventory into validated Web-native definitions after the reference capture completes - [ref plans/port_01_web_native_content_foundation.md]
 - [port_02_world] Establish the shipped deterministic grid, world ownership, occupancy, reservations, random streams, and player-clock boundary - [ref plans/port_02_deterministic_grid_world_and_tick_foundation.md]
 - [port_03_player_verbs] Port Move, Wait, Normal Attack, aiming, Speed, cooldown upkeep, and command-to-tick behavior - [ref plans/port_03_player_verbs_and_player_clock.md]
 - [port_04_combat] Port directional damage, Guard, Defense, Stagger, Protection, prediction, and committed hit resolution - [ref plans/port_04_directional_guard_combat.md]
