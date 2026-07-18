@@ -13,9 +13,10 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "alive");
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "100");
+  await expect(page.getByTestId("entity-enemy-blocked")).toHaveAttribute("data-state", "alive");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-hp", "100");
   await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-hp", "100");
-  await expect(page.getByTestId("enemy-count")).toHaveText("3");
+  await expect(page.getByTestId("enemy-count")).toHaveText("4");
 
   const canvas = page.getByTestId("game-canvas");
   const pointForCell = async (x: number, y: number) => {
@@ -37,7 +38,7 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await page.keyboard.up("Alt");
 
   await expect(page.getByTestId("tick-value")).toHaveText("1");
-  await expect(page.getByTestId("enemy-count")).toHaveText("3");
+  await expect(page.getByTestId("enemy-count")).toHaveText("4");
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "alive");
   await expect(canvas).toHaveAttribute("data-smash-armed", "true");
   await expect(page.getByTestId("event-log")).toContainText("smash_armed");
@@ -46,16 +47,27 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
 
   await page.mouse.click(smashTarget.x, smashTarget.y);
   await expect(page.getByTestId("tick-value")).toHaveText("2");
-  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "94");
-  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-guard", "16");
+  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "dead");
+  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "70");
+  await expect(page.getByTestId("entity-enemy-blocked")).toHaveAttribute("data-cell-x", "4");
+  await expect(page.getByTestId("entity-enemy-blocked")).toHaveAttribute("data-cell-y", "2");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-hp", "70");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-guard", "0");
+  await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-cell-x", "7");
+  await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-cell-y", "3");
+  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
+  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-cell-x", "4");
+  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-hp", "94");
-  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-guard", "16");
+  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-guard", "0");
   await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
+  await expect(page.getByTestId("event-log")).toContainText("enemy_crushed");
+  await expect(page.getByTestId("event-log")).toContainText("enemy_knocked");
+  await expect(page.getByTestId("event-log")).toContainText("enemy_entered_water");
   await expect(page.getByTestId("event-log")).toContainText("directional_hit");
   await expect(page.getByTestId("event-log")).toContainText("enemy_guard_broken");
   await expect(page.getByTestId("mobility-status")).toHaveText("Cooldown 6");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
 test("Empty arena presents the shipped board and deterministic start", async ({ page }) => {

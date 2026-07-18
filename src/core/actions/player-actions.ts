@@ -12,6 +12,7 @@ import {
   previewDash,
   previewSmash,
   type MobilityHitPreview,
+  type SmashVictimPreview,
 } from "./action-preview";
 
 export interface PlayerActionResult {
@@ -96,6 +97,30 @@ function appendEnemyHitEvents(
     });
   }
   return true;
+}
+
+function resolveSmashVictim(world: World, events: CombatEvent[], victim: SmashVictimPreview): void {
+  if (victim.displacement === "crush") {
+    const enemy = world.requireEntity(victim.enemyId);
+    if (victim.hit) appendEnemyHitEvents(world, events, { hit: victim.hit });
+    if (world.requireEntity(enemy.id).phase === "alive") world.setPhase(enemy.id, "dead");
+    events.push({ type: "enemy_crushed", enemyId: enemy.id, cell: victim.origin });
+    return;
+  }
+
+  if (!victim.hit || !appendEnemyHitEvents(world, events, { hit: victim.hit })) return;
+  if ((victim.displacement !== "knockback" && victim.displacement !== "water") || !victim.destination) return;
+
+  const enemy = world.requireEntity(victim.enemyId);
+  if (enemy.phase !== "alive") return;
+  if (victim.displacement === "water") {
+    world.moveEntityToPhase(enemy.id, victim.destination, "drowning");
+    events.push({ type: "enemy_entered_water", enemyId: enemy.id, from: victim.origin, waterCell: victim.destination });
+    return;
+  }
+
+  world.moveEntity(enemy.id, victim.destination);
+  events.push({ type: "enemy_knocked", enemyId: enemy.id, from: victim.origin, to: victim.destination });
 }
 
 function resolveMove(world: World, command: Extract<GameCommand, { type: "move" }>): PlayerActionResult {
@@ -280,7 +305,7 @@ function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash
 
   const events: CombatEvent[] = [{ type: "smash_impact", cell: armedTarget }];
   for (const victim of releasePreview.victims) {
-    appendEnemyHitEvents(world, events, victim);
+    resolveSmashVictim(world, events, victim);
   }
 
   world.setMobilityCooldown(actor.id, actor.mobility?.cooldown ?? 0);

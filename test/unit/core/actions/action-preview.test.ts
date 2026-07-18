@@ -112,4 +112,35 @@ describe("action previews", () => {
       reason: "Smash landing is blocked.",
     });
   });
+
+  it("previews crush, stable two-cell displacement, blocked fallback, and water terminalization", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "viking",
+      cell: { x: 3, y: 3 },
+      hp: 100,
+      mobility: { kind: "smash", damage: 30, range: 3, cooldown: 6, staggerMultiplier: 2 },
+    });
+    world.spawn({ id: "enemy-center", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 3 }, hp: 100 });
+    world.spawn({ id: "enemy-blocked", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 2 }, hp: 100 });
+    world.spawn({ id: "enemy-right", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 3 }, hp: 100 });
+    world.spawn({ id: "enemy-water", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 4 }, hp: 100 });
+    expect(world.requestReservation({
+      ownerId: "fixture-blocker",
+      purpose: "movement",
+      cells: [{ x: 4, y: 1 }],
+    }).granted).toBe(true);
+
+    const preview = previewSmash(world, "player", { x: 4, y: 3 });
+
+    expect(preview).toMatchObject({ accepted: true, target: { x: 4, y: 3 } });
+    expect(preview.victims).toMatchObject([
+      { enemyId: "enemy-center", displacement: "crush" },
+      { enemyId: "enemy-blocked", displacement: "blocked" },
+      { enemyId: "enemy-right", displacement: "knockback", destination: { x: 7, y: 3 } },
+      { enemyId: "enemy-water", displacement: "water", destination: { x: 4, y: 6 } },
+    ]);
+  });
 });

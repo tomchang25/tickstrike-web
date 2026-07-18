@@ -5,8 +5,8 @@ import type { TestScenario } from "../types";
 export const scenarios: readonly TestScenario[] = [
   {
     id: "smash-water",
-    title: "Smash / Directional Guard",
-    description: "A fixed Smash player previews and commits a 3x3 directional Guard hit.",
+    title: "Smash / Displacement and Water",
+    description: "A fixed Smash player crushes the impact victim, knocks back a land victim, blocks a reserved victim, and sends one victim into water.",
     seed: "smash-water-foundation",
     createWorld(seed) {
       const world = createTrainingArena(seed);
@@ -29,6 +29,15 @@ export const scenarios: readonly TestScenario[] = [
       });
       world.spawn({
         id: "enemy-center",
+        kind: "enemy",
+        archetype: "training-grunt",
+        cell: { x: 4, y: 3 },
+        hp: 100,
+        guardDefinition: guard,
+        facing: { x: 1, y: 0 },
+      });
+      world.spawn({
+        id: "enemy-blocked",
         kind: "enemy",
         archetype: "training-grunt",
         cell: { x: 4, y: 2 },
@@ -54,6 +63,12 @@ export const scenarios: readonly TestScenario[] = [
         guardDefinition: guard,
         facing: { x: 1, y: 0 },
       });
+      const reservation = world.requestReservation({
+        ownerId: "smash-fixture-blocker",
+        purpose: "movement",
+        cells: [{ x: 4, y: 1 }],
+      });
+      if (!reservation.granted) throw new Error("Smash fixture reservation was not granted.");
       return world;
     },
   },

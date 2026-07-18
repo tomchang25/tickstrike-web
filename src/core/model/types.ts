@@ -19,6 +19,7 @@ export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | s
 export type HitAngle = "front" | "side" | "back";
 export type HitFeedback = "guarded" | "guard_break" | "staggered" | "unblocked";
 export type MobilityKind = "dash" | "smash";
+export type SmashDisplacementKind = "crush" | "knockback" | "water" | "blocked" | "none";
 
 export interface PlayerMobilityState {
   readonly kind: MobilityKind;

@@ -46,5 +46,5 @@ test("training scenario keeps its existing controls and hides inspection", async
 
   await expect(page.getByTestId("content-inspection")).toHaveCount(0);
   await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Smash");
-  await expect(page.getByTestId("enemy-count")).toHaveText("3");
+  await expect(page.getByTestId("enemy-count")).toHaveText("4");
 });

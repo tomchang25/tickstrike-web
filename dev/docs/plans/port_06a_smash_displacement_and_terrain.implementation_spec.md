@@ -1,7 +1,7 @@
 # Smash Displacement and Terrain
 
 Parent Plan: `port_06_character_classes_and_mobility.md`
-Status: Draft implementation spec
+Status: Implemented
 
 ## Goal
 

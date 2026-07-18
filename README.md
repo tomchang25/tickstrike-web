@@ -106,8 +106,11 @@ The default scenario starts with:
 
 The deterministic Smash scenario starts with a fixed Viking at `(3,3)` and a legal landing at `(4,3)`. Releasing Smash produces:
 
-- A shared directional hit on each enemy in the 3x3 area.
-- A back-angle Guard break on the right-side enemy.
+- A shared Mobility hit result for each eligible enemy in the 3x3 area.
+- A crush result for the enemy occupying the impact cell.
+- A two-cell land knockback for the right-side enemy, ending at `(7,3)`.
+- A reservation-blocked victim that remains at `(4,2)`.
+- A water-fall for the lower victim at `(4,6)`, entering the `drowning` phase and releasing occupancy.
 - A six-tick authored Mobility cooldown.
 - Logical tick advances exactly once.
 

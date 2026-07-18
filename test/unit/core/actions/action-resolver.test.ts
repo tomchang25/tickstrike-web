@@ -44,17 +44,20 @@ describe("Smash action", () => {
       "command_resolved",
       "smash_impact",
       "enemy_damaged",
+      "enemy_knocked",
       "enemy_damaged",
+      "enemy_knocked",
       "enemy_damaged",
+      "enemy_entered_water",
       "actor_moved",
       "world_advanced",
     ]);
     expect(world.requireEntity("enemy-center").phase).toBe("alive");
     expect(world.requireEntity("enemy-center").hp).toBe(70);
-    expect(world.requireEntity("enemy-center").cell).toEqual({ x: 3, y: 2 });
+    expect(world.requireEntity("enemy-center").cell).toEqual({ x: 3, y: 1 });
     expect(world.requireEntity("enemy-right").hp).toBe(70);
-    expect(world.requireEntity("enemy-right").cell).toEqual({ x: 5, y: 3 });
-    expect(world.requireEntity("enemy-water")).toMatchObject({ cell: { x: 4, y: 4 }, hp: 70, phase: "alive" });
+    expect(world.requireEntity("enemy-right").cell).toEqual({ x: 7, y: 3 });
+    expect(world.requireEntity("enemy-water")).toMatchObject({ cell: { x: 4, y: 6 }, hp: 70, phase: "drowning" });
     expect(world.playerCell).toEqual({ x: 4, y: 3 });
     expect(world.getOccupantAt({ x: 4, y: 6 })).toBeUndefined();
     expect(world.listEntities()).toHaveLength(4);
@@ -267,7 +270,7 @@ describe("player verbs", () => {
     expect(world.snapshot().tick).toBe(1);
   });
 
-  it("keeps Smash armed when its locked landing becomes blocked", () => {
+  it("crushes an enemy occupying the locked impact cell before landing", () => {
     const world = createTrainingArena();
     world.spawn({
       id: "player",
@@ -284,7 +287,7 @@ describe("player verbs", () => {
     });
     expect(armed.accepted).toBe(true);
 
-    world.spawn({ id: "smash-blocker", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 5 }, hp: 10 });
+    world.spawn({ id: "smash-blocker", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 5 }, hp: 100 });
     const beforeRelease = world.snapshot();
     const release = resolveCommand(world, {
       type: "smash",
@@ -292,16 +295,11 @@ describe("player verbs", () => {
       target: { x: 0, y: 0 },
     });
 
-    expect(release).toMatchObject({
-      accepted: false,
-      consumedTime: false,
-      reason: "Smash landing is blocked.",
-      events: [],
-    });
-    expect(world.snapshot()).toMatchObject({
-      tick: beforeRelease.tick,
-      armedSmashTarget: { x: 5, y: 5 },
-    });
+    expect(release.accepted).toBe(true);
+    expect(release.events.map((event) => event.type)).toContain("enemy_crushed");
+    expect(world.requireEntity("smash-blocker")).toMatchObject({ phase: "dead", hp: 70 });
+    expect(world.playerCell).toEqual({ x: 5, y: 5 });
+    expect(world.snapshot().tick).toBe(beforeRelease.tick + 1);
   });
 
   it("rejects a Dash when every traversed cell is occupied by an enemy", () => {

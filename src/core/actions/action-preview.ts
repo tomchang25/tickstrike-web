@@ -7,6 +7,7 @@ import {
   type EntityId,
   type EntityState,
   type MobilityKind,
+  type SmashDisplacementKind,
   type WorldSnapshot,
 } from "../model/types";
 import { calculateDirectionalHit } from "../combat/directional-hit";
@@ -34,7 +35,7 @@ export interface SmashPreview {
   readonly accepted: boolean;
   readonly target: Cell;
   readonly area: readonly Cell[];
-  readonly victims: readonly MobilityHitPreview[];
+  readonly victims: readonly SmashVictimPreview[];
   readonly reason?: string;
 }
 
@@ -42,6 +43,14 @@ export interface MobilityHitPreview {
   readonly enemyId: EntityId;
   readonly origin: Cell;
   readonly hit: BasicHitResult | DirectionalHitResult;
+}
+
+export interface SmashVictimPreview {
+  readonly enemyId: EntityId;
+  readonly origin: Cell;
+  readonly hit?: BasicHitResult | DirectionalHitResult;
+  readonly displacement: SmashDisplacementKind;
+  readonly destination?: Cell;
 }
 
 type PreviewSource = World | WorldSnapshot;
@@ -112,6 +121,111 @@ function previewMobilityHit(
     origin,
     hit: directional ?? previewBasicHit(actor.id, target, damage),
   };
+}
+
+function knockDirection(from: Cell, center: Cell): Cell {
+  const dx = Math.sign(from.x - center.x);
+  const dy = Math.sign(from.y - center.y);
+  if (dx === 0 && dy === 0) return { x: 0, y: 0 };
+  if (Math.abs(from.x - center.x) > Math.abs(from.y - center.y)) return { x: dx, y: 0 };
+  return { x: 0, y: dy };
+}
+
+function translatedFootprint(entity: EntityState, destination: Cell): readonly Cell[] {
+  const dx = destination.x - entity.cell.x;
+  const dy = destination.y - entity.cell.y;
+  return entity.footprint.map((cell) => ({ x: cell.x + dx, y: cell.y + dy }));
+}
+
+function footprintKeys(cells: readonly Cell[]): readonly string[] {
+  return cells.map((cell) => `${cell.x},${cell.y}`);
+}
+
+function displacementCandidate(
+  snapshot: WorldSnapshot,
+  entity: EntityState,
+  destination: Cell,
+  occupied: ReadonlySet<string>,
+): boolean {
+  const footprint = translatedFootprint(entity, destination);
+  return footprint.every((cell) => {
+    if (cell.x < 0 || cell.y < 0 || cell.x >= snapshot.arena.width || cell.y >= snapshot.arena.height) return false;
+    if (snapshot.arena.tiles[cell.y * snapshot.arena.width + cell.x] === "wall") return false;
+    if (snapshot.reservations.some((reservation) => reservation.cells.some((reserved) => sameCell(reserved, cell)))) return false;
+    return !occupied.has(`${cell.x},${cell.y}`);
+  });
+}
+
+function smashVictimPreviews(
+  snapshot: WorldSnapshot,
+  actor: EntityState,
+  target: Cell,
+  mobility: { readonly damage: number; readonly staggerMultiplier: number },
+): readonly SmashVictimPreview[] {
+  const victimsById = new Map<string, EntityState>();
+  for (const cell of smashArea(target)) {
+    const enemy = entityAt(snapshot, cell, "enemy");
+    if (enemy) victimsById.set(enemy.id, enemy);
+  }
+
+  const victims = [...victimsById.values()].sort((a, b) => {
+    const aCenter = sameCell(a.cell, target) ? 0 : 1;
+    const bCenter = sameCell(b.cell, target) ? 0 : 1;
+    return aCenter - bCenter || a.id.localeCompare(b.id);
+  });
+  const occupied = new Set(
+    snapshot.entities
+      .filter((entity) => entity.phase === "alive")
+      .flatMap((entity) => footprintKeys(entity.footprint)),
+  );
+  const results: SmashVictimPreview[] = [];
+
+  for (const enemy of victims) {
+    for (const key of footprintKeys(enemy.footprint)) occupied.delete(key);
+    const direction = knockDirection(enemy.cell, target);
+    const hit = mobility.damage > 0
+      ? previewMobilityHit(actor, enemy, target, mobility.damage, mobility.staggerMultiplier).hit
+      : undefined;
+    if (direction.x === 0 && direction.y === 0) {
+      results.push({
+        enemyId: enemy.id,
+        origin: enemy.cell,
+        ...(hit ? { hit } : {}),
+        displacement: hit?.killed ? "none" : "crush",
+      });
+      continue;
+    }
+
+    if (!hit || hit.killed) {
+      results.push({ enemyId: enemy.id, origin: enemy.cell, ...(hit ? { hit } : {}), displacement: "none" });
+      continue;
+    }
+
+    let destination: Cell | undefined;
+    for (const distance of [2, 1]) {
+      const candidate = add(enemy.cell, multiply(direction, distance));
+      if (displacementCandidate(snapshot, enemy, candidate, occupied)) {
+        destination = candidate;
+        break;
+      }
+    }
+    if (!destination) {
+      for (const key of footprintKeys(enemy.footprint)) occupied.add(key);
+      results.push({ enemyId: enemy.id, origin: enemy.cell, hit, displacement: "blocked" });
+      continue;
+    }
+
+    const isWater = snapshot.arena.tiles[destination.y * snapshot.arena.width + destination.x] === "water";
+    if (!isWater) for (const key of footprintKeys(translatedFootprint(enemy, destination))) occupied.add(key);
+    results.push({
+      enemyId: enemy.id,
+      origin: enemy.cell,
+      hit,
+      displacement: isWater ? "water" : "knockback",
+      destination,
+    });
+  }
+  return results;
 }
 
 export function attackTarget(origin: Cell, direction: Cell): Cell {
@@ -268,14 +382,22 @@ export function previewSmash(source: PreviewSource, actorId: string, target: Cel
   if (Math.abs(target.x - actor.cell.x) > mobility.range || Math.abs(target.y - actor.cell.y) > mobility.range) {
     return { accepted: false, target, area, victims: [], reason: "Smash target is out of range." };
   }
-  if (!isWalkable(snapshot, target)) {
+  const landingOccupant = entityAt(snapshot, target);
+  const landingReserved = snapshot.reservations.some((reservation) => reservation.cells.some((cell) => sameCell(cell, target)));
+  const targetTile = snapshot.arena.tiles[target.y * snapshot.arena.width + target.x];
+  const landingLegal = Number.isInteger(target.x)
+    && Number.isInteger(target.y)
+    && target.x >= 0
+    && target.y >= 0
+    && target.x < snapshot.arena.width
+    && target.y < snapshot.arena.height
+    && targetTile !== "wall"
+    && targetTile !== "water"
+    && !landingReserved
+    && (!landingOccupant || landingOccupant.kind === "enemy");
+  if (!landingLegal) {
     return { accepted: false, target, area, victims: [], reason: "Smash landing is blocked." };
   }
-  const victims = area.flatMap((cell) => {
-    const enemy = entityAt(snapshot, cell, "enemy");
-    return enemy && mobility.damage > 0
-      ? [previewMobilityHit(actor, enemy, target, mobility.damage, mobility.staggerMultiplier)]
-      : [];
-  });
+  const victims = smashVictimPreviews(snapshot, actor, target, mobility);
   return { accepted: true, target, area, victims };
 }
