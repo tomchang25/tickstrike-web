@@ -179,6 +179,8 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
     "enemy_recovering",
     "world_advanced",
   ]);
+  const observedEventTypes = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents.map((event) => event.type));
+  expect(observedEventTypes).toEqual(await page.getByTestId("event-log").locator("li").allTextContents());
 });
 
 test("Pointer aiming previews attack and Mobility without advancing until click", async ({ page }) => {

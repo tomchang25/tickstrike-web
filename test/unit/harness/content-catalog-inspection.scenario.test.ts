@@ -49,6 +49,7 @@ describe("content catalog inspection scenario", () => {
 
     expect(resolution).toEqual({
       accepted: false,
+      consumedTime: false,
       reason: "Commands are disabled for this scenario.",
       events: [],
     });

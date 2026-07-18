@@ -18,8 +18,6 @@ export interface ActionResolution {
   readonly consumedTime?: boolean;
   readonly reason?: string;
   readonly events: readonly CombatEvent[];
-  /** Full ordered event stream. `events` remains the gameplay-only compatibility view. */
-  readonly semanticEvents?: readonly CombatEvent[];
 }
 
 function add(a: Cell, b: Cell): Cell {
@@ -431,23 +429,22 @@ function finishAccepted(
 ): ActionResolution {
   const advanced = world.advancePlayerAction();
   const enemyEvents = resolveEnemyPhase(world);
-  const gameplayEvents = [...events, ...enemyEvents];
-  const semanticEvents: CombatEvent[] = [
+  const completeEvents: CombatEvent[] = [
     {
       type: "command_resolved",
       commandType,
       accepted: true,
       consumedTime: true,
     },
-    ...gameplayEvents,
+    ...events,
+    ...enemyEvents,
     advanced,
   ];
-  world.recordEvents(semanticEvents);
+  world.recordEvents(completeEvents);
   return {
     accepted: true,
     consumedTime: true,
-    events: gameplayEvents,
-    semanticEvents,
+    events: completeEvents,
   };
 }
 

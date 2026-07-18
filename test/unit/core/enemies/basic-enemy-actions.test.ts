@@ -113,10 +113,12 @@ describe("basic enemy tick lifecycle", () => {
 
     const dodge = resolveCommand(world, { type: "move", actorId: "player", direction: { x: 0, y: -1 } });
     expect(dodge.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "actor_moved",
       "enemy_attack_detonated",
       "telegraph_changed",
       "enemy_recovering",
+      "world_advanced",
     ]);
     expect(world.requireEntity("player")).toMatchObject({ hp: 100, cell: { x: 6, y: 5 } });
     expect(world.requireEntity("enemy")).toMatchObject({ activity: "recovering", recoveryTicks: 1 });
@@ -124,10 +126,12 @@ describe("basic enemy tick lifecycle", () => {
 
     const recovered = resolveCommand(world, { type: "move", actorId: "player", direction: { x: -1, y: 0 } });
     expect(recovered.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "actor_moved",
       "enemy_recovered",
       "enemy_attack_committed",
       "telegraph_changed",
+      "world_advanced",
     ]);
     expect(world.requireEntity("enemy")).toMatchObject({ activity: "telegraphing", lastDecision: "attack" });
   });
@@ -138,11 +142,13 @@ describe("basic enemy tick lifecycle", () => {
     const result = resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
 
     expect(result.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "player_attacked",
       "enemy_attack_detonated",
       "player_damaged",
       "telegraph_changed",
       "enemy_recovering",
+      "world_advanced",
     ]);
     expect(world.requireEntity("player")).toMatchObject({ hp: 90, phase: "alive" });
     expect(world.requireEntity("enemy").committedAttack).toBeUndefined();
@@ -169,7 +175,11 @@ describe("basic enemy tick lifecycle", () => {
       actorId: "player",
       direction: { x: 0, y: -1 },
     });
-    expect(firstWindupTurn.events.map((event) => event.type)).toEqual(["actor_moved"]);
+    expect(firstWindupTurn.events.map((event) => event.type)).toEqual([
+      "command_resolved",
+      "actor_moved",
+      "world_advanced",
+    ]);
     expect(world.requireEntity("enemy").committedAttack).toMatchObject({ warningTicks: 1 });
 
     const secondWindupTurn = resolveCommand(world, {
@@ -178,10 +188,12 @@ describe("basic enemy tick lifecycle", () => {
       direction: { x: 0, y: -1 },
     });
     expect(secondWindupTurn.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "actor_moved",
       "enemy_attack_detonated",
       "telegraph_changed",
       "enemy_recovering",
+      "world_advanced",
     ]);
     expect(world.requireEntity("enemy")).toMatchObject({ activity: "recovering", recoveryTicks: 2 });
   });

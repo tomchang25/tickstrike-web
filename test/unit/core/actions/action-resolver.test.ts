@@ -27,7 +27,9 @@ describe("Smash action", () => {
 
     expect(armed.accepted).toBe(true);
     expect(armed.events).toEqual([
+      { type: "command_resolved", commandType: "smash", accepted: true, consumedTime: true },
       { type: "smash_armed", actorId: "player", target: { x: 4, y: 3 } },
+      { type: "world_advanced", tick: 1, phases: ["foundation", "enemy"] },
     ]);
     expect(world.snapshot()).toMatchObject({ tick: 1, armedSmashTarget: { x: 4, y: 3 } });
 
@@ -39,6 +41,7 @@ describe("Smash action", () => {
 
     expect(result.accepted).toBe(true);
     expect(result.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "smash_impact",
       "enemy_damaged",
       "enemy_knocked",
@@ -47,6 +50,7 @@ describe("Smash action", () => {
       "enemy_damaged",
       "enemy_entered_water",
       "actor_moved",
+      "world_advanced",
     ]);
     expect(world.requireEntity("enemy-center").phase).toBe("alive");
     expect(world.requireEntity("enemy-center").hp).toBe(70);
@@ -77,7 +81,7 @@ describe("player verbs", () => {
     });
 
     expect(occupied.accepted).toBe(true);
-    expect(occupied.events.slice(0, 4)).toEqual([
+    expect(occupied.events.slice(1, 5)).toEqual([
       {
         type: "player_attacked",
         actorId: "player",
@@ -140,6 +144,7 @@ describe("player verbs", () => {
       },
     ]);
     expect(occupied.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "player_attacked",
       "directional_hit",
       "enemy_guard_damaged",
@@ -147,8 +152,9 @@ describe("player verbs", () => {
       "enemy_attack_committed",
       "telegraph_changed",
       "enemy_moved",
+      "world_advanced",
     ]);
-    expect(occupied.semanticEvents?.map((event) => event.type)).toEqual([
+    expect(occupied.events.map((event) => event.type)).toEqual([
       "command_resolved",
       "player_attacked",
       "directional_hit",
@@ -161,7 +167,7 @@ describe("player verbs", () => {
     ]);
     expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 96, phase: "alive", guard: { current: 28 } });
     expect(world.snapshot().tick).toBe(1);
-    expect(world.snapshot().lastEvents).toEqual(occupied.semanticEvents);
+    expect(world.snapshot().lastEvents).toEqual(occupied.events);
 
     const whiff = resolveCommand(world, {
       type: "attack",
@@ -171,9 +177,11 @@ describe("player verbs", () => {
 
     expect(whiff.accepted).toBe(true);
     expect(whiff.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "player_attacked",
       "enemy_attack_committed",
       "telegraph_changed",
+      "world_advanced",
     ]);
     expect(world.snapshot().tick).toBe(2);
   });
@@ -190,6 +198,7 @@ describe("player verbs", () => {
 
     expect(result.accepted).toBe(true);
     expect(result.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "player_attacked",
       "directional_hit",
       "enemy_guard_damaged",
@@ -197,6 +206,7 @@ describe("player verbs", () => {
       "enemy_attack_committed",
       "telegraph_changed",
       "enemy_moved",
+      "world_advanced",
     ]);
     expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 1, maxHp: 100, phase: "alive", guard: { current: 28 } });
     expect(world.getOccupantAt({ x: 5, y: 6 })?.id).toBe("enemy-thrust");
@@ -213,7 +223,7 @@ describe("player verbs", () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.events.slice(0, 2)).toEqual([
+    expect(result.events.slice(1, 3)).toEqual([
       {
         type: "player_dashed",
         actorId: "player",
@@ -237,11 +247,13 @@ describe("player verbs", () => {
       },
     ]);
     expect(result.events.map((event) => event.type)).toEqual([
+      "command_resolved",
       "player_dashed",
       "enemy_damaged",
       "enemy_moved",
       "enemy_attack_committed",
       "telegraph_changed",
+      "world_advanced",
     ]);
     expect(world.playerCell).toEqual({ x: 9, y: 6 });
     expect(world.getOccupantAt({ x: 8, y: 6 })?.id).toBe("enemy-slash");
@@ -321,7 +333,7 @@ describe("player verbs", () => {
 
     expect(result.accepted).toBe(true);
     expect(world.playerCell).toEqual({ x: 4, y: 1 });
-    expect(result.events[0]).toMatchObject({
+    expect(result.events[1]).toMatchObject({
       type: "player_dashed",
       path: [{ x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }],
     });
@@ -374,7 +386,7 @@ describe("player-clocked action boundary", () => {
       direction: { x: 1, y: 0 },
     });
     expect(accepted.accepted).toBe(true);
-    expect(accepted.semanticEvents?.map((event) => event.type)).toEqual([
+    expect(accepted.events.map((event) => event.type)).toEqual([
       "command_resolved",
       "actor_moved",
       "world_advanced",

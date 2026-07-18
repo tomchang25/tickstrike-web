@@ -57,6 +57,7 @@ export class GameRuntime {
     if (this.scenario?.commandsEnabled === false) {
       return Promise.resolve({
         accepted: false,
+        consumedTime: false,
         reason: "Commands are disabled for this scenario.",
         events: [],
       });
@@ -106,7 +107,7 @@ export class GameRuntime {
           this.emit();
           if (resolution.accepted) {
             void this.presentation
-              .play(resolution.semanticEvents ?? resolution.events, job.generation)
+              .play(resolution.events, job.generation)
               .then(
                 () => this.notifyPresentationSettled(job.generation),
                 () => this.notifyPresentationSettled(job.generation),
