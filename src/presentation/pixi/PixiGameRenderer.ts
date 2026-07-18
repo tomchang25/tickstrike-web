@@ -35,6 +35,7 @@ interface EntityView {
   readonly label: Text;
   readonly facingMarker: Text;
   readonly debugLabel: Text;
+  readonly statusLabel: Text;
   readonly hpBar: Graphics;
   readonly guardBar: Graphics;
 }
@@ -57,6 +58,9 @@ function entityColor(entity: EntityState): number {
   if (entity.kind === "player") return 0x6ed0ff;
   if (entity.phase === "drowning") return 0xf2d06b;
   if (entity.phase === "dead") return 0xff6b6b;
+  if (entity.activity === "staggered") return 0xc79cff;
+  if (entity.activity === "telegraphing") return 0xffb86b;
+  if (entity.activity === "recovering") return 0xb5bfce;
   return 0xe8eef7;
 }
 
@@ -72,6 +76,15 @@ function debugStateLabel(entity: EntityState): string {
   if (entity.phase !== "alive") return entity.phase;
   if (entity.activity && entity.activity !== "ready") return entity.activity;
   return entity.lastDecision ?? "idle";
+}
+
+function combatStatusLabel(entity: EntityState): string {
+  if (entity.phase !== "alive") return entity.phase.toUpperCase();
+  if (entity.staggerTicks !== undefined) return `STAGGER ${entity.staggerTicks}`;
+  if (entity.protectionTicks !== undefined) return `PROTECT ${entity.protectionTicks}`;
+  if (entity.activity === "telegraphing") return `TELEGRAPH ${entity.committedAttack?.warningTicks ?? 0}`;
+  if (entity.activity === "recovering") return `RECOVER ${entity.recoveryTicks ?? 0}`;
+  return "";
 }
 
 function drawStatusBar(
@@ -220,6 +233,8 @@ export class PixiGameRenderer {
       if (entity.facing) view.facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
       view.debugLabel.visible = this.debugMode && entity.kind === "enemy";
       view.debugLabel.text = debugStateLabel(entity);
+      view.statusLabel.visible = entity.kind === "enemy" && Boolean(combatStatusLabel(entity));
+      view.statusLabel.text = combatStatusLabel(entity);
     }
   }
 
@@ -640,6 +655,10 @@ export class PixiGameRenderer {
           return `${placement.cell.x},${placement.cell.y}:${placement.ticks}${multiplier}${position}`;
         })
         .join("|");
+      this.app.canvas.dataset.telegraphSourceCount = String(snapshot.telegraphs.length);
+      this.app.canvas.dataset.committedAttackCount = String(
+        snapshot.entities.filter((entity) => entity.committedAttack !== undefined).length,
+      );
     }
   }
 
@@ -681,6 +700,19 @@ export class PixiGameRenderer {
     debugLabel.position.set(0, -32);
     debugLabel.visible = this.debugMode && entity.kind === "enemy";
 
+    const statusLabel = new Text({
+      text: combatStatusLabel(entity),
+      style: {
+        fill: 0xffd166,
+        fontFamily: "monospace",
+        fontSize: 10,
+        fontWeight: "700",
+      },
+    });
+    statusLabel.anchor.set(0.5);
+    statusLabel.position.set(0, 29);
+    statusLabel.visible = entity.kind === "enemy" && Boolean(combatStatusLabel(entity));
+
     const facingMarker = new Text({
       text: facingGlyph(entity.facing),
       style: {
@@ -694,7 +726,7 @@ export class PixiGameRenderer {
     facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
     if (entity.facing) facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
 
-    root.addChild(hpBar, guardBar, body, label, facingMarker, debugLabel);
-    return { root, body, label, facingMarker, debugLabel, hpBar, guardBar };
+    root.addChild(hpBar, guardBar, body, label, facingMarker, debugLabel, statusLabel);
+    return { root, body, label, facingMarker, debugLabel, statusLabel, hpBar, guardBar };
   }
 }

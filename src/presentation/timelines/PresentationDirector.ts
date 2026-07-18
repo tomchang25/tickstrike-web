@@ -30,6 +30,7 @@ export class PresentationDirector {
     const animations: Promise<void>[] = [];
 
     for (const event of events) {
+      if (generation !== this.generation) return;
       switch (event.type) {
         case "actor_moved": {
           const view = this.renderer.getEntityView(event.entityId);
@@ -69,6 +70,27 @@ export class PresentationDirector {
           ));
           break;
         }
+        case "enemy_attack_committed": {
+          const view = this.renderer.getEntityView(event.enemyId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view.scale, { x: 1.1, y: 1.1, duration: 0.09, ease: "power2.out" })
+              .to(view.scale, { x: 1, y: 1, duration: 0.13, ease: "power2.in" }),
+          ));
+          break;
+        }
+        case "enemy_attack_detonated": {
+          const effect = this.renderer.createImpact(event.target);
+          animations.push(this.timelineDone(
+            gsap
+              .timeline()
+              .fromTo(effect.scale, { x: 0.25, y: 0.25 }, { x: 2, y: 2, duration: 0.16, ease: "power2.out" })
+              .to(effect, { alpha: 0, duration: 0.12 }, "<0.06"),
+            () => this.renderer.releaseTransient(effect),
+          ));
+          break;
+        }
         case "enemy_damaged": {
           if (event.hit.killed) break;
           const view = this.renderer.getEntityView(event.enemyId);
@@ -77,6 +99,60 @@ export class PresentationDirector {
             gsap.timeline()
               .to(view.scale, { x: 1.2, y: 1.2, duration: 0.06, ease: "power2.out" })
               .to(view.scale, { x: 1, y: 1, duration: 0.1, ease: "power2.in" }),
+          ));
+          break;
+        }
+        case "enemy_guard_damaged": {
+          const view = this.renderer.getEntityView(event.enemyId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view, { x: "+=4", duration: 0.04, ease: "power1.out" })
+              .to(view, { x: "-=8", duration: 0.05, ease: "power1.inOut" })
+              .to(view, { x: "+=4", duration: 0.04, ease: "power1.in" }),
+          ));
+          break;
+        }
+        case "enemy_guard_broken": {
+          const view = this.renderer.getEntityView(event.enemyId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view.scale, { x: 1.22, y: 1.22, duration: 0.08, ease: "power3.out" })
+              .to(view, { rotation: 0.14, duration: 0.06 })
+              .to(view, { rotation: -0.14, duration: 0.06, repeat: 2, yoyo: true })
+              .to(view.scale, { x: 1, y: 1, duration: 0.1, ease: "power3.in" })
+              .to(view, { rotation: 0, duration: 0.05 }),
+          ));
+          break;
+        }
+        case "enemy_staggered": {
+          const view = this.renderer.getEntityView(event.enemyId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view, { alpha: 0.55, duration: 0.06 })
+              .to(view, { alpha: 1, duration: 0.08, repeat: 2, yoyo: true }),
+          ));
+          break;
+        }
+        case "enemy_protection_started": {
+          const view = this.renderer.getEntityView(event.enemyId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view, { alpha: 0.7, duration: 0.08 })
+              .to(view, { alpha: 1, duration: 0.12 }),
+          ));
+          break;
+        }
+        case "player_damaged": {
+          const view = this.renderer.getEntityView(event.playerId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view, { alpha: 0.45, duration: 0.06 })
+              .to(view, { alpha: 1, duration: 0.12, repeat: 2, yoyo: true }),
           ));
           break;
         }
@@ -166,13 +242,12 @@ export class PresentationDirector {
         case "command_resolved":
         case "world_advanced":
         case "directional_hit":
-        case "enemy_guard_damaged":
-        case "enemy_guard_broken":
         case "enemy_attack_interrupted":
-        case "enemy_staggered":
         case "enemy_stagger_ended":
-        case "enemy_protection_started":
         case "enemy_protection_ended":
+        case "enemy_recovering":
+        case "enemy_recovered":
+        case "enemy_waited":
         case "reservation_changed":
         case "telegraph_changed":
           break;

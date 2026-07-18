@@ -7,6 +7,8 @@ export interface SemanticMirrorProps {
 }
 
 export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorProps) {
+  const telegraphSources = new Set(snapshot.telegraphs.map((telegraph) => telegraph.sourceId));
+
   return (
     <div
       className="semantic-mirror"
@@ -18,6 +20,7 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
       data-idle={isIdle}
       data-reservation-count={snapshot.reservations.length}
       data-telegraph-count={snapshot.telegraphs.length}
+      data-committed-attack-count={snapshot.entities.filter((entity) => entity.committedAttack).length}
     >
       {snapshot.entities.map((entity) => (
         <span
@@ -28,11 +31,13 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
           data-archetype={entity.archetype}
           data-state={entity.phase}
           data-activity={entity.activity}
+          data-status={entity.staggerTicks !== undefined ? "staggered" : entity.protectionTicks !== undefined ? "protected" : entity.activity}
           data-facing-x={entity.facing?.x}
           data-facing-y={entity.facing?.y}
           data-recovery-ticks={entity.recoveryTicks}
           data-committed-attack={entity.committedAttack?.attackId}
           data-attack-warning-ticks={entity.committedAttack?.warningTicks}
+          data-telegraph={telegraphSources.has(entity.id)}
           data-hp={entity.hp}
           data-max-hp={entity.maxHp}
           data-defense={entity.defense}

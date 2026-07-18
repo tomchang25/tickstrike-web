@@ -43,6 +43,7 @@ export function TestbedPanel(props: TestbedPanelProps) {
       <div className="metrics">
         <div><span>Tick</span><strong data-testid="tick-value">{props.snapshot.tick}</strong></div>
         <div><span>Enemies</span><strong data-testid="enemy-count">{enemies.length}</strong></div>
+        <div><span>Telegraphs</span><strong data-testid="enemy-telegraph-count">{props.snapshot.telegraphs.length}</strong></div>
         <div><span>Player</span><strong>{player ? `${player.cell.x},${player.cell.y}` : "—"}</strong></div>
       </div>
 
@@ -54,6 +55,12 @@ export function TestbedPanel(props: TestbedPanelProps) {
               <div className="enemy-status-heading">
                 <strong>{enemy.archetype}</strong>
                 <span data-testid={`enemy-activity-${enemy.id}`}>{enemy.activity ?? enemy.phase}</span>
+              </div>
+              <div className="enemy-status-meta">
+                <span data-testid={`enemy-facing-${enemy.id}`}>
+                  Facing {enemy.facing ? `${enemy.facing.x},${enemy.facing.y}` : "-"}
+                </span>
+                <span data-testid={`enemy-cell-${enemy.id}`}>Cell {enemy.cell.x},{enemy.cell.y}</span>
               </div>
               <StatusBar
                 testId={`enemy-hp-${enemy.id}`}
@@ -71,8 +78,17 @@ export function TestbedPanel(props: TestbedPanelProps) {
                   color="#72d4ff"
                 />
               ) : null}
-              {enemy.staggerTicks !== undefined ? <small>Stagger {enemy.staggerTicks}</small> : null}
-              {enemy.protectionTicks !== undefined ? <small>Protection {enemy.protectionTicks}</small> : null}
+              {enemy.committedAttack ? (
+                <small data-testid={`enemy-telegraph-${enemy.id}`}>
+                  Telegraph {enemy.committedAttack.warningTicks} tick(s)
+                </small>
+              ) : null}
+              {enemy.staggerTicks !== undefined ? (
+                <small data-testid={`enemy-stagger-${enemy.id}`}>Stagger {enemy.staggerTicks}</small>
+              ) : null}
+              {enemy.protectionTicks !== undefined ? (
+                <small data-testid={`enemy-protection-${enemy.id}`}>Protection {enemy.protectionTicks}</small>
+              ) : null}
             </article>
           ))}
         </div>

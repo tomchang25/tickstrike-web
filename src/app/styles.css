@@ -209,6 +209,14 @@ header > p {
   font-size: 0.82rem;
 }
 
+.enemy-status-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #8e99aa;
+  font-size: 0.7rem;
+}
+
 .enemy-status-heading span,
 .enemy-status-card small {
   color: #8e99aa;
