@@ -6,6 +6,7 @@ This directory is the entry point for Tickstrike Web development governance, doc
 - `agent_rules/` contains project operating constraints.
 - `standards/` contains durable project-specific output contracts.
 - `docs/` contains product, migration, system, and tracking documents.
-- `workflows/`, `skills/`, and `tools/` are reserved for project-owned additions of those artifact types.
+- `workflows/` contains project-owned workflow addenda, including the draft implementation-spec lifecycle.
+- `skills/` and `tools/` are reserved for project-owned additions of those artifact types.
 
 Use `foundation/core/standards/governance_structure_standard.md` to classify additions. The canonical repository layout is `standards/project_structure.md`.

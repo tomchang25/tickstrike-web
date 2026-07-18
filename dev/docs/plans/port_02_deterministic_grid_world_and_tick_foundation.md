@@ -24,6 +24,19 @@ The world owns canonical entities and terminal phases. Presentation may retain a
 
 Randomness uses explicit seeded streams. Wave placement, rewards, and debug actions must be able to consume independent streams so a reward roll cannot alter a later encounter.
 
+### Child Overview
+
+| Child | Focus | Current document |
+| --- | --- | --- |
+| 01 | Deterministic cell rules and the shipped twelve-by-twelve arena | [Draft Implementation Spec](port_02_01_grid_geometry_and_shipped_arena.implementation_spec.md) |
+| 02 | Canonical entities, footprints, terminal phases, and immediate occupancy | [Draft Implementation Spec](port_02_02_canonical_world_and_immediate_occupancy.implementation_spec.md) |
+| 03 | Movement and spawning reservations plus source-owned telegraphs | [Draft Implementation Spec](port_02_03_reservations_and_telegraph_ownership.implementation_spec.md) |
+| 04 | Seeded replay and isolated gameplay-domain random streams | [Draft Implementation Spec](port_02_04_seeded_and_isolated_random_streams.implementation_spec.md) |
+| 05 | One player-clocked world-advance boundary and ordered semantic events | [Draft Implementation Spec](port_02_05_player_clocked_world_advance.implementation_spec.md) |
+| 06 | Deterministic browser scenario, Pixi projection, and reset-generation safety | [Draft Implementation Spec](port_02_06_runtime_board_presentation_and_reset_safety.implementation_spec.md) |
+
+Recommended landing order is 01 through 06. The six draft implementation specs are prepared from the current codebase for review, but remain non-executable until the next child is rechecked against the live codebase, promoted, and made the sole executable handoff.
+
 ## Non-Goals
 
 1. Do not implement player damage, Guard, enemy AI, waves, or rewards.
