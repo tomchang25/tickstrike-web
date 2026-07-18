@@ -1,54 +1,41 @@
-# Deterministic Grid, World, and Tick Foundation
+# Deterministic Tick Arena Foundation
 
-Roadmap: [Tickstrike Full Port Roadmap](tickstrike_full_port_roadmap.md)
+Roadmap: [Tickstrike Web Port Roadmap](tickstrike_full_port_roadmap.md)
 Reference baseline: [port-ref/tickstrike](../../../port-ref/tickstrike)
+Draft Implementation Spec: [Merged deterministic Tick Arena foundation spec](port_02_deterministic_grid_world_and_tick_foundation.implementation_spec.md)
 
 ## Goal
 
-Deliver Batch 2 of the Tickstrike Full Port Roadmap by establishing the deterministic board, world-state ownership, occupancy, reservations, and player-clocked time model required by all later combat. This batch replaces prototype assumptions with the shipped arena contract.
+Create the one resettable Tick Arena used by every later plan. This is the smallest deterministic world that can host the player, three basic enemy fixtures, reservations, Telegraph ownership, seeded replay, and the shared Tick boundary without introducing a second runtime or speculative systems.
 
 ## Requirements
 
-1. Model the shipped twelve-by-twelve logical board with its initial centered ten-by-ten land area and surrounding sea.
-2. Own terrain, player cell, entity occupancy, movement reservations, spawning reservations, and telegraph sources as deterministic gameplay state.
-3. Resolve coordinate, cardinal direction, distance, bounds, walkability, and cell-footprint rules without renderer or browser dependencies.
-4. Establish immediate terminal gameplay resolution so presentation lifetime never determines occupancy or whether an entity remains logically active.
-5. Establish deterministic random streams that can be isolated by gameplay domain and reproduced by scenarios.
-6. Establish a player-clocked world-advance boundary and ordered semantic events without implementing later combat rules prematurely.
+1. Provide a deterministic twelve-by-twelve arena with stable land, sea, bounds, cardinal directions, and walkability.
+2. Own one player and three enemy fixtures in the same canonical world state; the scenario must always start from the same cells.
+3. Make occupancy authoritative for movement and spawning, and release terminal entities from occupancy immediately.
+4. Own all-or-nothing movement/spawn reservations and source-owned Telegraph state without making visible Telegraphs occupancy authority.
+5. Carry an explicit scenario seed with independent named streams so reset and replay return to the same sequence.
+6. Expose one accepted-action boundary that can advance the world exactly once and publish a snapshot plus semantic events.
+7. Allow the scenario to reset to the exact initial state without old commands, claims, Telegraphs, or presentation work changing the new state.
 
 ## Design
 
-The board distinguishes land and sea and has no shipped per-wave terrain mutation. Occupancy is authoritative for legal movement and spawning. Reservations are explicit claims used by movement and spawning rather than temporary visual markers.
+The scenario is intentionally boring: one player, one Thrust enemy, one Slash enemy, and one Ranged enemy on legal land cells. The fixtures, claims, and Telegraph data are visible before combat behavior exists so the integration point is established first.
 
-The world owns canonical entities and terminal phases. Presentation may retain a visual after logical death while its semantic timeline completes, but it cannot remove or mutate canonical gameplay state.
-
-Randomness uses explicit seeded streams. Wave placement, rewards, and debug actions must be able to consume independent streams so a reward roll cannot alter a later encounter.
-
-### Child Overview
-
-| Child | Focus | Current document |
-| --- | --- | --- |
-| 01 | Deterministic cell rules and the shipped twelve-by-twelve arena | [Draft Implementation Spec](port_02_01_grid_geometry_and_shipped_arena.implementation_spec.md) |
-| 02 | Canonical entities, footprints, terminal phases, and immediate occupancy | [Draft Implementation Spec](port_02_02_canonical_world_and_immediate_occupancy.implementation_spec.md) |
-| 03 | Movement and spawning reservations plus source-owned telegraphs | [Draft Implementation Spec](port_02_03_reservations_and_telegraph_ownership.implementation_spec.md) |
-| 04 | Seeded replay and isolated gameplay-domain random streams | [Draft Implementation Spec](port_02_04_seeded_and_isolated_random_streams.implementation_spec.md) |
-| 05 | One player-clocked world-advance boundary and ordered semantic events | [Draft Implementation Spec](port_02_05_player_clocked_world_advance.implementation_spec.md) |
-| 06 | Deterministic browser scenario, Pixi projection, and reset-generation safety | [Draft Implementation Spec](port_02_06_runtime_board_presentation_and_reset_safety.implementation_spec.md) |
-
-Recommended landing order is 01 through 06. The six draft implementation specs are prepared from the current codebase for review, but remain non-executable until the next child is rechecked against the live codebase, promoted, and made the sole executable handoff.
+The core stores state and outcomes without React, PixiJS, GSAP, or browser APIs. The runtime loads the scenario, sends snapshots to the renderer, serializes commands, and owns reset. The seed contract exists for replay and future content, but no wave or reward randomization is part of this plan.
 
 ## Non-Goals
 
-1. Do not implement player damage, Guard, enemy AI, waves, or rewards.
-2. Do not port terrain mutation scaffolds or proposed obstacle-grid mechanics.
-3. Do not reproduce Godot terrain-rendering, scene-tree, signal, or tween ownership.
-4. Do not finalize production terrain art in this batch.
+1. Do not add waves, rewards, classes, Guard, enemy AI, or production menus.
+2. Do not create child plans or separate per-enemy scenarios.
+3. Do not add pathfinding, combat damage, or enemy decision behavior.
+4. Do not polish final art or audio.
 
 ## Acceptance Criteria
 
-1. Deterministic scenarios reproduce the shipped arena dimensions, terrain, bounds, and initial legal cells.
-2. Occupancy and reservation conflicts resolve identically for the same initial state and command sequence.
-3. Terminal entities stop affecting gameplay occupancy immediately even when their visuals remain temporarily present.
-4. Reset and scenario replacement cannot allow an older presentation timeline to mutate the new world.
-5. Unit coverage proves board geometry, walkability, occupancy, reservations, seeded replay, and terminal-state ownership.
-6. Browser acceptance proves the board and representative entity state are visible and leave no stale visual after reset.
+1. The same scenario setup produces the same board, cells, entities, and initial snapshot every time.
+2. Occupied and illegal cells reject movement without partial state changes.
+3. Reservation conflicts are deterministic and failed multi-cell claims acquire nothing; overlapping Telegraph sources clear independently.
+4. A terminal entity no longer blocks a cell before its visual cleanup finishes.
+5. The same seed and command setup reproduce the same world and reset sequence.
+6. The browser shows one board with one player and three enemies, and reset returns to the identical starting view with no stale claim, Telegraph, or visual.

@@ -1,48 +1,36 @@
-# Complete Enemy Roster and Navigation
+# Additional Enemy Roles on the Shared State Machine
 
-Roadmap: [Tickstrike Full Port Roadmap](tickstrike_full_port_roadmap.md)
+Roadmap: [Tickstrike Web Port Roadmap](tickstrike_full_port_roadmap.md)
 Reference baseline: [port-ref/tickstrike](../../../port-ref/tickstrike)
 
 ## Goal
 
-Deliver Batch 7 of the Tickstrike Full Port Roadmap by porting every shipped enemy role and the shared navigation, reservation, facing, and combat-runtime rules they require. This establishes complete encounter vocabulary before authored waves are introduced.
+Expand the three basic enemies into the remaining authored roles without changing the Tick Arena entry point. Every new enemy must reuse the existing movement, WindupAttackPrep, Telegraph, Attack, Recover, Stunned, and Dead states.
 
 ## Requirements
 
-1. Implement deterministic pathfinding, step consumption, attack-position intent, and movement reservation arbitration for all shipped enemy movement.
-2. Preserve reservation priority: active movement step, then attack-position intent, then shorter distance to the player, then earlier registration order.
-3. Implement Slash, Ranged, Charge, Bomb, Mode, and Mode Boss behavior in addition to the accepted Thrust foundation.
-4. Preserve each role's shipped target locking, attack footprint, warning, movement, recovery, self-destruction, attack-cycle, and retaliation behavior.
-5. Apply class combat, Guard, the shipped delayed hit-facing response, Stagger, Protection, death, and level-ready stat seams consistently across every role.
-6. Present each shipped enemy identity, facing, prepare/commit state, attack telegraph, damage response, status, and terminal sequence.
+1. Add Charge, Bomb, Mode, and Boss data one role at a time to the shared enemy decision contract.
+2. Add deterministic navigation and reservations only where multiple enemies can actually compete for a cell.
+3. Preserve each role's target lock, attack shape, warning, movement, recovery, and terminal behavior as content data plus small explicit rules.
+4. Keep all enemies in the same arena scenario and process them in stable order.
+5. Make role identity visible through the same snapshot and event projection already used by the basic three.
 
 ## Design
 
-Role contracts include:
+The state machine is the boundary; roles supply decisions and attack definitions. A role may choose a different attack or movement target, but it may not bypass the shared Tick order or resolve directly through presentation. Add roles in the smallest useful group and keep the original three active as regression fixtures.
 
-| Role | Distinguishing shipped behavior |
-| --- | --- |
-| Slash | Front lateral three-cell sweep with its authored warning. |
-| Ranged | Maintains Manhattan distance three to five and locks a five-cell cross on the player's commit-time cell. |
-| Charge | Commits a forward line up to five cells, then travels to the farthest legal cell with authored damage and recovery. |
-| Bomb | Commits a radius-four blast when adjacent and self-destructs after detonation. |
-| Mode | Selects among its authored attack cycle and gains post-Stagger retaliation for ten ticks. |
-| Mode Boss | Uses the Mode behavior with Boss data, scale, Guard, Defense, and presentation; it is not a separate Boss AI. |
-
-Navigation is deterministic and board-authoritative. Enemy decision behavior should be represented as explicit gameplay state and decisions, not recreated Godot state-machine nodes.
+Navigation remains board-authoritative. If two enemies want one cell, the world resolves a deterministic winner and the loser stays in its current state for that Tick. Do not add a general pathfinding framework until a real role needs more than a one-step legal move.
 
 ## Non-Goals
 
-1. Do not implement a proposed backline ambusher, collision Charge redesign, multi-step action redesign, or forced displacement.
-2. Do not invent a distinct Mode Boss behavior.
-3. Do not implement wave scheduling, spawn warnings, or level formulas beyond the seams needed by enemies.
-4. Do not preserve scene inheritance or per-scene lifecycle wiring.
+1. Do not create one scene, runtime, or vertical slice per enemy.
+2. Do not add wave scheduling, level scaling, rewards, or new player classes here.
+3. Do not invent enemy roles or redesign the shared state transitions.
+4. Do not preserve engine lifecycle patterns as gameplay ownership.
 
 ## Acceptance Criteria
 
-1. Every shipped enemy role has deterministic scenarios matching its decision, commitment, attack, movement, recovery, and terminal outcomes.
-2. Contested navigation and reservation scenarios produce the reference winner and loser behavior in every priority tier.
-3. Ranged, Charge, Bomb, Mode, and Mode Boss preserve their role-specific target-locking and state transitions.
-4. The shipped delayed hit-facing response waits for a funded enemy action and does not advance on a free player action.
-5. Unit coverage proves each role and the shared path, reservation, attack, and retaliation contracts.
-6. Pixi/GSAP and Playwright acceptance prove browser-visible identity and combat behavior for every role with no stale reservation, telegraph, or terminal visual.
+1. Every added role runs through the same Tick order and leaves the original three unchanged.
+2. Contested movement is deterministic and produces no duplicate occupancy or stale Telegraph.
+3. Role-specific attack cells remain locked from WindupAttackPrep through resolution.
+4. The same browser scenario can spawn and exercise all currently enabled roles without another entry point.

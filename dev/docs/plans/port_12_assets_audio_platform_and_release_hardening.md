@@ -1,43 +1,36 @@
-# Assets, Audio, Platform, and Release Hardening
+# Presentation and Release Hardening
 
-Roadmap: [Tickstrike Full Port Roadmap](tickstrike_full_port_roadmap.md)
+Roadmap: [Tickstrike Web Port Roadmap](tickstrike_full_port_roadmap.md)
 Reference baseline: [port-ref/tickstrike](../../../port-ref/tickstrike)
 
 ## Goal
 
-Deliver Batch 12 of the Tickstrike Full Port Roadmap by completing shipped visual and audio identity, hardening browser and desktop lifecycle behavior, and establishing release-ready validation. This closes parity without importing Godot runtime architecture or unshipped platform ambitions.
+Polish and ship the same Tick Arena path after its rules and lifecycle are stable. Presentation work must clarify semantic state without adding gameplay ownership.
 
 ## Requirements
 
-1. Package and present the shipped terrain, Ninja, Viking, enemy, Artifact, and combat-feedback assets through their owning Web content domains.
-2. Reproduce shipped semantic animation and VFX timing for movement, attacks, Guard results, Stagger, death, Dash, Smash, Major triggers, telegraphs, warnings, and run transitions.
-3. Implement event-driven combat audio presentation with shipped spatial SFX selection, random variation, rate limits, active volume behavior, and browser audio unlock.
-4. Harden responsive layout, reduced motion, focus, visibility, canvas lifecycle, fullscreen, reset, route change, and renderer/audio teardown for the configured Chromium acceptance target and Windows desktop shell.
-5. Harden Tauri packaging and the production build path with release metadata and platform-appropriate behavior for browser-only actions such as Quit.
-6. Establish full-run regression, presentation-idle assertions, asset-load failure handling, and release checks for browser and desktop targets.
+1. Package the approved terrain, player, enemy, reward, Telegraph, impact, and terminal assets through their owning content boundaries.
+2. Drive movement, WindupAttackPrep, Telegraph, attack, damage, Stagger, death, rewards, and lifecycle effects from semantic snapshots/events.
+3. Add event-driven combat audio with safe browser unlock, volume control, rate limits, and teardown.
+4. Harden responsive layout, reduced motion, focus, visibility, reset, route changes, canvas lifecycle, and renderer cleanup.
+5. Validate the browser build and desktop shell with one full deterministic run and a reliable idle signal.
 
 ## Design
 
-Runtime assets are optimized package inputs owned by the feature that consumes them. General source packs, editable material, Godot imports, generated exports, and vendor references do not enter the runtime graph directly.
+Visual timing may be redesigned, but it must never decide whether a command hit, a Telegraph exists, an entity is dead, or a Tick advanced. Assets are runtime inputs owned by the feature that uses them. General source material and generated output remain outside the runtime graph.
 
-Presentation preserves semantic identity and timing rather than recreating Godot drawing nodes. Temporary polygon effects may be redesigned visually, but blocked hit, Guard break, full damage, windup, commitment, impact, retaliation, and terminal meanings must remain clear.
-
-Audio starts only after browser user activation. Active Master and SFX behavior preserves the reference, while visible but unused music settings remain inert. The shipped game has no active background music or UI click/hover calls, so those capability scaffolds do not enter parity.
-
-The release gate covers the configured Chromium Playwright target and the Tauri Windows shell backed by current WebView2. Other browser engines and desktop operating systems are best-effort rather than supported release targets. Steamworks, achievements, cloud save, analytics, PWA, service worker, and offline support remain deferred unless separately promoted.
+Release validation covers the supported Chromium browser and Windows desktop shell. Other platforms remain unclaimed until separately tested and approved.
 
 ## Non-Goals
 
-1. Do not package Godot import metadata, engine UIDs, build output, test addons, or root reference assets as runtime content.
-2. Do not introduce background music, UI sounds, Steamworks, achievements, cloud saves, analytics, PWA, or offline behavior solely because scaffolds exist.
-3. Do not redesign gameplay, balance, content, or run progression during presentation polish.
-4. Do not claim mobile, touch, gamepad, non-Chromium browser, or non-Windows desktop compatibility without an explicit support decision and validation.
+1. Do not add gameplay balance changes during polish.
+2. Do not add music, platform services, cloud saves, analytics, PWA behavior, or offline support without a separate decision.
+3. Do not package engine metadata, generated build output, or reference-only source material as runtime content.
+4. Do not claim unsupported browsers, mobile, touch, or gamepad compatibility.
 
 ## Acceptance Criteria
 
-1. Every shipped gameplay role and interface uses its intended terrain, sprite, icon, animation, VFX, and combat SFX identity or an explicitly approved Web-native equivalent.
-2. Responsive and reduced-motion modes remain playable and preserve all semantic combat information.
-3. Audio unlock, category volume, rate limiting, focus loss, and teardown behave safely without duplicated or orphaned playback.
-4. Reset, scenario replacement, run restart, route change, visibility change, and application teardown leave no pending timeline, stale callback, orphan display object, or active audio source.
-5. Production Chromium and Tauri Windows builds complete with validated packaged assets and platform-appropriate fullscreen, focus, and exit behavior.
-6. Unit, Playwright, full-run, and packaging acceptance cover the declared Chromium and Windows targets and expose a reliable runtime-idle signal.
+1. The full run presents every active combat state clearly, including WindupAttackPrep and Telegraph.
+2. Reduced motion preserves all gameplay information and remains playable.
+3. Reset, restart, route change, visibility change, and teardown leave no pending timeline, callback, audio source, or orphan visual.
+4. Browser and Windows builds complete the same deterministic run and report presentation idle reliably.

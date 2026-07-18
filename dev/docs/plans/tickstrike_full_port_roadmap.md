@@ -1,61 +1,54 @@
-# Tickstrike Full Port Roadmap
+# Tickstrike Web Port Roadmap
 
 ## Purpose
 
-This roadmap coordinates the behavior-complete port of Tickstrike from the Godot `main` reference into the Web-native runtime. It is an ordering and scope map only; each batch has a separate Main Plan that owns its requirements, design, non-goals, and acceptance criteria.
+Build one playable Tickstrike integration point first, then extend that same point until the full run exists. The first milestone is not a collection of enemy demos: it is one deterministic Tick Arena containing one player, three basic enemies, player movement, Normal Attack, Dash, enemy movement, enemy state transitions, WindupAttackPrep, Telegraph, and attack resolution.
 
-Batch 0, reference capture, is intentionally outside this roadmap's Main Plan set and is complete. Batch 1 is now complete; the remaining Main Plans are the ordered execution scope.
+## Single Integration Point
 
-## Reference Baseline
+There is one gameplay entry point: the Tick Arena screen and its runtime. Every command follows this path:
 
-- Source: Godot `main`
-- Baseline codebase: [port-ref/tickstrike](../../../port-ref/tickstrike)
-- Reference commit: `742f50678af54300fa41b0b983d0abfeb1befb29`
-- Status: Batch 0 and Batch 1 complete; Batch 2 is the next execution item.
+```text
+input -> player command -> player result -> enemy phase -> tick snapshot/events -> Pixi/GSAP presentation
+```
 
-## Source Authority
+An accepted player action advances exactly one world tick. The enemy phase reads the player's post-action cell. Rejected commands do not advance time. The runtime owns the command queue and reset boundary; the deterministic core owns outcomes; Pixi/GSAP only presents snapshots and events.
 
-- The Godot `main` behavior at the recorded reference commit is the parity authority.
-- When Web input, content, timing, state, or presentation semantics disagree with the reference, the Godot behavior wins unless the user explicitly approves a product change.
-- Godot plans, drafts, dormant scaffolds, and unshipped systems are not parity requirements. They remain tracked in the Web TODO Future Draft section.
-- The port reproduces behavior and content, not Godot scenes, nodes, autoloads, signals, resources, UIDs, or lifecycle patterns.
+## First Playable Target
 
-## Execution Contract
+Use one fixed deterministic scenario:
 
-1. Execute the twelve Main Plans in numeric order.
-2. Keep later Main Plans queued until every acceptance criterion of the preceding Main Plan is satisfied or the user explicitly accepts a documented gap.
-3. Add child sketches only beneath the Main Plan that owns the behavior; each child sketch references this roadmap and its parent Main Plan, and child sketches do not receive independent TODO entries.
-4. Create implementation specifications lazily against the live codebase when a child is next to implement.
-5. Preserve one forward-work owner: the TODO points to Main Plans, Main Plans point to any child handoff, and shipped history belongs in the changelog.
+- One player with Move, Normal Attack, and cardinal Dash.
+- Three basic enemy roles: Thrust, Slash, and Ranged.
+- One shared enemy state machine: Move, WindupAttackPrep, Telegraph, Attack, Recover, Stunned, and Dead.
+- Enemy movement and attack choice happen once per accepted player action.
+- Windup locks the attack intent. Telegraph exposes the locked cells. Player movement changes the next enemy decision, not an already committed attack.
+- The browser shows the board, player, enemy movement, telegraph cells, damage, death, and reset on this same screen.
 
-## Completion Contract
+## Execution Rules
 
-Every applicable gameplay slice must include:
+1. `port_02` through `port_05` form one implementation milestone. Do not split them into independent vertical slices.
+2. Every later plan changes the same Tick Arena and deterministic scenario. No plan may create a second combat runtime or separate integration path.
+3. Add the smallest rule that makes the next visible behavior work. Do not add waves, rewards, classes, save data, or production menus before the basic Tick loop is playable.
+4. Keep one scenario, one command boundary, and one presentation boundary until the first playable target passes.
+5. Each plan has one focused logic test set and one browser assertion against the shared scenario. Do not create a separate testbed for every enemy or mechanic.
 
-1. A core rule or authored content definition.
-2. A deterministic scenario setup.
-3. Unit assertions for logical results and event order.
-4. Pixi/GSAP presentation driven by semantic state and events.
-5. Playwright assertion for the browser-visible result.
-6. No pending animation, stale callback, or orphan visual after completion, reset, or route change.
+## Ordered Plans
 
-## Ordered Main Plans
+| Plan | Focus | Result in the same Tick Arena |
+| --- | --- | --- |
+| 02 | Deterministic arena and runtime seam | A resettable board with one player and three enemy fixtures. |
+| 03 | Player verbs and Tick boundary | Move, Normal Attack, Dash, accepted/rejected commands, and one-tick advancement. |
+| 04 | Enemy state machine | Movement, WindupAttackPrep, Telegraph, locked attacks, and post-player-action decisions. |
+| 05 | First playable Tick Arena | Player damage, enemy damage, death, presentation, and cleanup form one playable loop. |
+| 06 | Basic combat expansion | Directional results, Guard/Stagger, and Dash refinement are added without changing the entry point. |
+| 07 | Additional enemies | More roles reuse the same state machine and navigation contracts; no role-specific runtime. |
+| 08 | Waves and spawning | Authored waves and spawn warnings feed the same world and Tick boundary. |
+| 09 | Rewards and run build | Rewards modify the existing player state after an encounter; no parallel combat state. |
+| 10 | Run lifecycle | Start, wave completion, death, restart, and the endless branch reuse the same runtime. |
+| 11 | Production shell | HUD, input, settings, and debug controls project the existing runtime. |
+| 12 | Presentation and release | Assets, audio, responsive behavior, teardown, and packaging harden the same path. |
 
-| Batch | Main Plan | Depends on | Roadmap outcome |
-| --- | --- | --- | --- |
-| 1 | Web-Native Content Foundation | Reference baseline complete | Canonical Web content represents the shipped Godot data and defaults. |
-| 2 | Deterministic Grid, World, and Tick Foundation | Batch 1 | Board state, occupancy, reservations, time, and semantic outcomes have stable ownership. |
-| 3 | Player Verbs and Player Clock | Batch 2 | Move, Wait, Normal Attack, aiming, Speed, and cooldown timing match the reference. |
-| 4 | Directional Guard Combat | Batch 3 | Damage, Guard, Defense, Stagger, Protection, prediction, and resolution match the reference. |
-| 5 | First Enemy Combat Vertical Slice | Batch 4 | One complete enemy proves player action through enemy detonation and presentation. |
-| 6 | Character Classes and Mobility | Batch 5 | Ninja Dash and Viking Smash match their reference command and combat contracts. |
-| 7 | Complete Enemy Roster and Navigation | Batch 6 | Every shipped enemy role, path rule, reservation rule, and presentation is available. |
-| 8 | Authored Waves, Spawning, and Enemy Levels | Batch 7 | The ten-wave demo and Endless encounter grammar run deterministically. |
-| 9 | Artifacts, Rewards, and Run Build | Batch 8 | The shipped reward pool and run-scoped build projection are complete. |
-| 10 | Complete Run Lifecycle | Batch 9 | A run can progress, branch at the demo milestone, end, restart, and return safely. |
-| 11 | Production UI, Input, Settings, and Debug Tools | Batch 10 | The testbed is complemented by the shipped player-facing shell and controls. |
-| 12 | Assets, Audio, Platform, and Release Hardening | Batch 11 | The port reaches presentation parity and robust browser/desktop delivery readiness. |
+## Done When
 
-## Deferred Scope
-
-Future Godot plans and dormant scaffolds remain outside these Main Plans unless a shipped reference behavior depends on them. They may be promoted from Future Draft only after the twelve parity batches complete or the user explicitly changes the roadmap.
+The port is complete when the single Tick Arena can run the intended content from start to terminal outcome, deterministic scenarios reproduce the same command sequence, browser assertions observe the result, and reset/restart leaves no pending animation, callback, telegraph, or orphan visual.

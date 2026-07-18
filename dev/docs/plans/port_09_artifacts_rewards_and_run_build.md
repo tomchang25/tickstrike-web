@@ -1,47 +1,33 @@
-# Artifacts, Rewards, and Run Build
+# Rewards and Run Build in the Same Runtime
 
-Roadmap: [Tickstrike Full Port Roadmap](tickstrike_full_port_roadmap.md)
+Roadmap: [Tickstrike Web Port Roadmap](tickstrike_full_port_roadmap.md)
 Reference baseline: [port-ref/tickstrike](../../../port-ref/tickstrike)
 
 ## Goal
 
-Deliver Batch 9 of the Tickstrike Full Port Roadmap by porting the shipped Artifact pool, three-choice rewards, cadence, eligibility, and run-scoped build projection. This allows authored waves to modify player capability without dispersing mutable reward state across combat systems.
+Let completed waves offer rewards that modify the existing player and combat state. Rewards are a pause between encounters, not a new gameplay path.
 
 ## Requirements
 
-1. Own acquired Artifacts, stacks, legendary count, effect channels, and Mobility triggers in one resettable run-scoped build state.
-2. Implement the six shipped Minor Artifacts and their exact damage, Speed, cooldown, range, and maximum-health contributions.
-3. Implement Guard Shredder, Execution, and Chain Dash with their shipped Dash-only eligibility and trigger behavior.
-4. Generate three distinct eligible offers using the shipped ordinary and every-third-wave reward cadence, including doubled Minor offers where authored.
-5. Enforce the shipped legendary cap, uniqueness, required Mobility, and exclusivity behavior while preserving the reference behavior that stackable Artifacts may exceed their declared stack caps.
-6. Present reward cards, acquisition, Artifact ownership, stacks, build inspection, and immediate stat effects without making UI the state owner.
+1. Keep acquired rewards, stacks, and derived player effects in one resettable run state.
+2. Generate eligible offers deterministically at the existing wave boundary.
+3. Apply a selected reward before the next wave and expose its effect through the same snapshot used by the arena HUD.
+4. Keep reward presentation and dismissal outside the deterministic combat resolver.
 
 ## Design
 
-The shipped Minor set is Sharpened Edge, Fleet Step, Impact Dash, Light Footwork, Extended Mobility, and Vital Spark. Impact Dash modifies shared Mobility damage despite its name, so it also affects Viking Smash. Vital Spark raises maximum health and heals the exact gained amount immediately.
-
-The Major set is Dash-only:
-
-- Guard Shredder bypasses Protection reduction only for qualifying Back Dash hits.
-- Execution kills an already Staggered target.
-- Chain Dash qualifies on kill, Guard break, already-Staggered target, or Back hit; it clears Dash cooldown and prepares one Speed-funded follow-up.
-
-The reference declares stack limits but does not enforce them for stackable Artifacts. The parity runtime therefore permits stacks beyond the declaration; enforcing those limits is a later product correction rather than part of this port.
-
-Wave 10 grants an ordinary Minor offer after Continue Endless. Major cadence remains tied to every third wave.
+The flow is `wave complete -> offer -> selection -> build update -> resume same arena`. Start with one small reward that visibly changes player damage or Dash cooldown. Add the remaining authored pool only after this flow is stable. Reward randomness must use a separate deterministic stream when it is introduced.
 
 ## Non-Goals
 
-1. Do not add Coin, permanent unlocks, shops, card rarity, weighted decks, curses, or meta progression.
-2. Do not add future Mobility-specific Major effects.
-3. Do not redesign names, descriptions, balance, Minor/Major categories, cadence, or stack behavior without an explicit product decision.
-4. Do not persist the active run.
+1. Do not add shops, coins, permanent unlocks, save data, or meta progression.
+2. Do not create a reward simulator or a second player-stat owner.
+3. Do not add every Artifact trigger before the basic offer-to-combat flow works.
+4. Do not let React calculate combat outcomes.
 
 ## Acceptance Criteria
 
-1. Every shipped Artifact has deterministic acquisition and effect scenarios matching the reference.
-2. Offers are distinct, eligible for the active class and Mobility, and follow the ordinary and third-wave cadence.
-3. Legendary cap, uniqueness, exclusions, unbounded stackable acquisition, and independent reward RNG match captured reference behavior.
-4. Build projections update all consumers consistently, including immediate Vital Spark healing and all three Major triggers.
-5. Unit coverage proves registry validity, offer generation, Wave 10 ordinary rewards, acquisition beyond declared stack caps, reset, channels, and trigger results.
-6. React, Pixi/GSAP, and Playwright acceptance prove reward selection, build inspection, combat-visible effects, and complete dismissal/animation cleanup.
+1. A completed wave pauses the same Tick Arena, presents valid offers, and resumes after one selection.
+2. The selected reward changes the existing player/combat result deterministically.
+3. Reset clears rewards and restores the initial player state.
+4. Dismissal and reset remove every reward card and animation without stale input or callbacks.

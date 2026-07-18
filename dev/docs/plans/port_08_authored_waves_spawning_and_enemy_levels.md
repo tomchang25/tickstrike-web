@@ -1,41 +1,36 @@
-# Authored Waves, Spawning, and Enemy Levels
+# Waves and Spawning in the Same Tick Arena
 
-Roadmap: [Tickstrike Full Port Roadmap](tickstrike_full_port_roadmap.md)
+Roadmap: [Tickstrike Web Port Roadmap](tickstrike_full_port_roadmap.md)
 Reference baseline: [port-ref/tickstrike](../../../port-ref/tickstrike)
 
 ## Goal
 
-Deliver Batch 8 of the Tickstrike Full Port Roadmap by running the shipped ten-wave demo and Endless encounter grammar from authored content. This adds deterministic group scheduling, spawn warning, placement, population, and enemy-level projection on top of the complete roster.
+Replace the fixed three-enemy fixture with authored waves while preserving the existing world, command boundary, enemy state machine, and presentation path.
 
 ## Requirements
 
-1. Process authored wave slots in order with their group, warning, level offset, role, and start condition.
-2. Admit a group only when population headroom and a complete legal placement plan exist, because partial group spawning changes authored encounter composition.
-3. Reserve warned spawn cells, block enemy pathing through them, count warnings only on world-advancing player actions, and revalidate placement at resolution.
-4. Implement Player Ring, Anchor Cluster, and Scatter placement with deterministic tie-breaking and replacement behavior.
-5. Project enemy health, damage, Defense, Guard, and post-wave-ten lethal growth from the correct base wave and final level inputs.
-6. Keep wave, reward, and debug random streams independent and support deterministic replay from scenario seeds.
+1. Schedule authored groups in order and advance their warnings only on accepted world ticks.
+2. Admit a group atomically when all required cells can be placed; never create a partial authored group.
+3. Reserve warned cells, show them in the same Telegraph layer, and revalidate them before enemies appear.
+4. Keep enemy stat growth and placement deterministic from the scenario seed and wave inputs.
+5. Preserve the same enemy phase after every player action regardless of whether enemies came from a fixture or a wave.
 
 ## Design
 
-The ten demo waves preserve their authored group order and roster introduction. Wave 10 contains the Mode Boss role with warning two and a positive level offset. Wave 11 and later use the fixed Endless grammar and population cap from authored content.
+Wave scheduling is a producer of enemy spawn intents, not a second combat system. A warning is a temporary world claim with a visible expiry. When it expires, the group either spawns completely or remains pending according to the placement rule. Spawned enemies immediately enter the existing enemy state machine.
 
-Group admission is atomic. A warning reserves every planned cell. At warning completion, invalid cells are replaced using the original placement strategy and anchor rules; failure does not silently spawn a partial group.
-
-Final enemy level combines base wave and slot offset. Health, damage, and Defense use their shipped standard and post-ten growth formulas. Guard growth uses base wave rather than final level, and its lethal tier advances on the shipped five-wave cadence beginning after wave twenty.
+Start with the first authored wave in the current browser scenario. Add later waves and Endless only after wave completion and cleanup are observable in that same scenario. Keep wave and reward random choices separate when randomness is first required.
 
 ## Non-Goals
 
-1. Do not add procedural wave generation beyond the shipped Endless template.
-2. Do not add terrain mutation, obstacles, curses, Nemesis, or spawn-owned forced displacement.
-3. Do not implement rewards or run-completion overlays.
-4. Do not rebalance encounter composition, population caps, or growth formulas.
+1. Do not add procedural encounter generation, terrain mutation, curses, or new spawn mechanics.
+2. Do not add rewards or lifecycle overlays here.
+3. Do not create a wave simulator outside the Tick Arena runtime.
+4. Do not optimize population or pathfinding before the authored behavior is correct.
 
 ## Acceptance Criteria
 
-1. Deterministic scenarios reproduce all ten authored demo waves, their ordered groups, warnings, level offsets, and population behavior.
-2. Atomic admission, warning countdown, reserved path blocking, revalidation, and replacement match the reference.
-3. Speed-funded free actions do not advance spawn warnings or wave-facing time.
-4. Enemy stat projection matches reference values across ordinary, offset, wave-ten, and late-Endless examples.
-5. Unit coverage proves catalog validity, scheduler ordering, placements, population pressure, warning resolution, independent RNG, and growth formulas.
-6. Pixi/GSAP and Playwright acceptance prove visible spawn warnings, group arrival, wave progression, and complete cleanup of expired warnings and defeated waves.
+1. The same scenario can progress from a fixed fixture to authored groups without a route or runtime change.
+2. Spawn warnings are visible, block conflicting movement, expire deterministically, and never leave stale cells.
+3. Group admission is all-or-nothing and spawned enemies use the existing state machine.
+4. Browser acceptance observes one wave ending and the next group entering the same arena.

@@ -30,17 +30,17 @@ Nothing currently in progress.
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_02_world] Establish the shipped deterministic grid, world ownership, occupancy, reservations, random streams, and player-clock boundary - [ref plans/port_02_deterministic_grid_world_and_tick_foundation.md]
-- [port_03_player_verbs] Port Move, Wait, Normal Attack, aiming, Speed, cooldown upkeep, and command-to-tick behavior - [ref plans/port_03_player_verbs_and_player_clock.md]
-- [port_04_combat] Port directional damage, Guard, Defense, Stagger, Protection, prediction, and committed hit resolution - [ref plans/port_04_directional_guard_combat.md]
-- [port_05_first_enemy] Complete the Thrust enemy vertical slice from decision and commitment through browser-visible resolution - [ref plans/port_05_first_enemy_combat_vertical_slice.md]
-- [port_06_mobility] Port Ninja Dash and Viking Smash with their shipped class, targeting, timing, damage, cooldown, and presentation contracts - [ref plans/port_06_character_classes_and_mobility.md]
-- [port_07_enemy_roster] Port the complete shipped enemy roster with deterministic navigation, reservations, role behavior, and presentation - [ref plans/port_07_complete_enemy_roster_and_navigation.md]
-- [port_08_waves] Port the authored ten-wave demo, Endless grammar, atomic group spawning, warnings, placement, and enemy levels - [ref plans/port_08_authored_waves_spawning_and_enemy_levels.md]
-- [port_09_rewards] Port the nine shipped Artifacts, reward cadence, eligibility, acquisition, and run-scoped build projection - [ref plans/port_09_artifacts_rewards_and_run_build.md]
-- [port_10_run] Connect waves, rewards, milestone branching, death, restart, and navigation into the complete shipped run lifecycle - [ref plans/port_10_complete_run_lifecycle.md]
-- [port_11_shell] Port the production HUD, overlays, input grammar, settings, navigation, toasts, and debug tools - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
-- [port_12_hardening] Complete shipped assets and audio plus browser, Tauri, accessibility, lifecycle, regression, and release hardening - [ref plans/port_12_assets_audio_platform_and_release_hardening.md]
+- [port_02_arena] Establish one deterministic Tick Arena with one player and three basic enemy fixtures - [ref plans/port_02_deterministic_grid_world_and_tick_foundation.md]
+- [port_03_player_verbs] Add Move, Normal Attack, Dash, command rejection, and one-tick player advancement to that arena - [ref plans/port_03_player_verbs_and_player_clock.md]
+- [port_04_enemy_tick] Add one shared enemy state machine with movement, WindupAttackPrep, Telegraph, and locked attack resolution - [ref plans/port_04_directional_guard_combat.md]
+- [port_05_playable_arena] Connect player damage, enemy damage, death, reset, Pixi/GSAP presentation, and Playwright acceptance in one playable loop - [ref plans/port_05_first_playable_tick_arena.md]
+- [port_06_combat_expansion] Add directional combat, Guard/Stagger, and Dash refinement without changing the arena entry point - [ref plans/port_06_character_classes_and_mobility.md]
+- [port_07_enemy_roles] Extend the shared enemy state machine with the remaining authored roles - [ref plans/port_07_complete_enemy_roster_and_navigation.md]
+- [port_08_waves] Feed authored waves and spawn warnings into the same world and Tick boundary - [ref plans/port_08_authored_waves_spawning_and_enemy_levels.md]
+- [port_09_rewards] Add deterministic reward selection and run-scoped build effects to the same arena - [ref plans/port_09_artifacts_rewards_and_run_build.md]
+- [port_10_run] Connect wave completion, rewards, death, restart, and the milestone branch through the same runtime - [ref plans/port_10_complete_run_lifecycle.md]
+- [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
+- [port_12_hardening] Harden assets, audio, responsive behavior, teardown, browser delivery, and Windows packaging for the same path - [ref plans/port_12_assets_audio_platform_and_release_hardening.md]
 
 ---
 
