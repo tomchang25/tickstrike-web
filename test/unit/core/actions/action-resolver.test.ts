@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createTrainingArena } from "../../../../src/content/arenas/training-arena";
-import { spawnTrainingEnemies } from "../../../../src/content/enemies/spawn-training-enemies";
+import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
+import { spawnTrainingEnemies } from "../../../../src/harness/fixtures/spawn-training-enemies";
 import { resolveCommand } from "../../../../src/core/actions/action-resolver";
 
 function createWorld() {
@@ -8,7 +8,7 @@ function createWorld() {
   world.spawn({
     id: "player",
     kind: "player",
-    archetype: "viking",
+    archetype: "training-player",
     cell: { x: 3, y: 3 },
     hp: 100,
   });

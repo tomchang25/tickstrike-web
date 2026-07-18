@@ -1,0 +1,97 @@
+import { describe, expect, it } from "vitest";
+import { actorContent } from "../../../src/content/actor-content";
+
+describe("canonical actor content", () => {
+  it("contains the complete shipped inventory", () => {
+    expect(actorContent.characters.map((entry) => entry.id)).toEqual(["ninja", "viking"]);
+    expect(actorContent.guards.map((entry) => entry.id)).toEqual(["small", "heavy", "elite", "boss"]);
+    expect(actorContent.attacks).toHaveLength(15);
+    expect(actorContent.enemies.map((entry) => entry.id)).toEqual([
+      "thrust_enemy",
+      "slash_enemy",
+      "ranged_enemy",
+      "charge_enemy",
+      "bomb_enemy",
+      "mode_enemy",
+      "mode_boss",
+    ]);
+  });
+
+  it("records the effective character values", () => {
+    expect(actorContent.characters).toMatchObject([
+      {
+        id: "ninja",
+        name: "Ninja",
+        hp: 100,
+        speedFill: 20,
+        normalAttack: { damage: 20, range: 1, staggerMultiplier: 1 },
+        mobility: { kind: "dash", damage: 30, range: 5, cooldown: 4, staggerMultiplier: 2 },
+        presentation: { id: "character.ninja" },
+        audio: { id: "player.combat" },
+      },
+      {
+        id: "viking",
+        name: "Viking",
+        hp: 100,
+        speedFill: 10,
+        normalAttack: { damage: 20, range: 1, staggerMultiplier: 1 },
+        mobility: { kind: "smash", damage: 30, range: 3, cooldown: 6, staggerMultiplier: 2 },
+        presentation: { id: "character.viking" },
+        audio: { id: "player.combat" },
+      },
+    ]);
+  });
+
+  it("records guard values, attack payloads, and every enemy assignment", () => {
+    expect(actorContent.guards.map(({ id, base, lethalTierGain }) => ({ id, base, lethalTierGain }))).toEqual([
+      { id: "small", base: 32, lethalTierGain: 8 },
+      { id: "heavy", base: 64, lethalTierGain: 16 },
+      { id: "elite", base: 96, lethalTierGain: 24 },
+      { id: "boss", base: 128, lethalTierGain: 32 },
+    ]);
+
+    const rangedCross = actorContent.attacks.find((attack) => attack.id === "ranged_cross");
+    expect(rangedCross?.shape).toEqual({
+      shape: "custom-offsets",
+      offsets: [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: -1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 0, y: -1 },
+      ],
+    });
+    expect(actorContent.attacks.find((attack) => attack.id === "mode_charge")?.damage).toBe(10);
+    expect(actorContent.attacks.find((attack) => attack.id === "mode_boss_charge")?.damage).toBe(10);
+
+    expect(actorContent.enemies.map(({ id, guardId, attackIds }) => ({ id, guardId, attackIds }))).toEqual([
+      { id: "thrust_enemy", guardId: "small", attackIds: ["thrust"] },
+      { id: "slash_enemy", guardId: "small", attackIds: ["slash"] },
+      { id: "ranged_enemy", guardId: "small", attackIds: ["ranged_cross"] },
+      { id: "charge_enemy", guardId: "heavy", attackIds: ["charge"] },
+      { id: "bomb_enemy", guardId: null, attackIds: ["bomb_area"] },
+      {
+        id: "mode_enemy",
+        guardId: "elite",
+        attackIds: ["mode_tile_wide", "mode_tile_square", "mode_tile_line", "mode_charge", "mode_area"],
+      },
+      {
+        id: "mode_boss",
+        guardId: "boss",
+        attackIds: [
+          "mode_boss_tile_wide",
+          "mode_boss_tile_square",
+          "mode_boss_tile_line",
+          "mode_boss_charge",
+          "mode_boss_area",
+        ],
+      },
+    ]);
+    expect(actorContent.enemies.find((enemy) => enemy.id === "mode_boss")?.roleTuning).toEqual({
+      type: "mode",
+      retaliationTicks: 10,
+      warningReduction: 1,
+      damageMultiplier: 1.25,
+    });
+  });
+});

@@ -1,5 +1,5 @@
-import { createTrainingArena } from "../../content/arenas/training-arena";
-import { spawnTrainingEnemies } from "../../content/enemies/spawn-training-enemies";
+import { createTrainingArena } from "../fixtures/training-arena";
+import { spawnTrainingEnemies } from "../fixtures/spawn-training-enemies";
 import type { TestScenario } from "../types";
 
 export const scenarios: readonly TestScenario[] = [
@@ -12,7 +12,7 @@ export const scenarios: readonly TestScenario[] = [
       world.spawn({
         id: "player",
         kind: "player",
-        archetype: "viking",
+        archetype: "training-player",
         cell: { x: 3, y: 3 },
         hp: 100,
       });
