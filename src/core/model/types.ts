@@ -11,10 +11,12 @@ export type TileKind = "floor" | "wall" | "water";
 export type EntityKind = "player" | "enemy";
 export type EntityPhase = "alive" | "drowning" | "dead";
 export type TerminalEntityPhase = Exclude<EntityPhase, "alive">;
-export type EnemyActivity = "ready" | "telegraphing" | "recovering";
+export type EnemyActivity = "ready" | "telegraphing" | "recovering" | "staggered";
 export type EnemyDecision = "move" | "attack" | "wait";
 export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
 export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | string;
+export type HitAngle = "front" | "side" | "back";
+export type HitFeedback = "guarded" | "guard_break" | "staggered" | "unblocked";
 
 export interface BasicEnemyActionDefinition {
   readonly role: "thrust" | "slash";
@@ -34,6 +36,15 @@ export interface CommittedAttack {
   readonly recoveryTicks: number;
 }
 
+export interface GuardRuntime {
+  readonly id: string;
+  readonly current: number;
+  readonly max: number;
+  readonly staggerDuration: number;
+  readonly protectionDuration: number;
+  readonly protectionMultiplier: number;
+}
+
 export interface EntityState {
   readonly id: EntityId;
   readonly kind: EntityKind;
@@ -43,6 +54,10 @@ export interface EntityState {
   readonly footprint: readonly Cell[];
   readonly hp: number;
   readonly maxHp: number;
+  readonly defense?: number;
+  readonly guard?: GuardRuntime;
+  readonly staggerTicks?: number;
+  readonly protectionTicks?: number;
   /** Authored player Normal Attack damage, when this entity is the player. */
   readonly normalAttackDamage?: number;
   /** Authored player Mobility damage, when this entity is the player. */
@@ -67,6 +82,19 @@ export interface DamageResult {
 
 export interface BasicHitResult extends DamageResult {
   readonly attackerId: EntityId;
+}
+
+export interface DirectionalHitResult extends BasicHitResult {
+  readonly angle: HitAngle;
+  readonly baseDamage: number;
+  readonly guardDamage: number;
+  readonly guardBefore: number;
+  readonly guardAfter: number;
+  readonly hpDamage: number;
+  readonly defenseAdjustedDamage: number;
+  readonly guardBroken: boolean;
+  readonly staggerBurst: boolean;
+  readonly feedback: HitFeedback;
 }
 
 export interface Reservation {

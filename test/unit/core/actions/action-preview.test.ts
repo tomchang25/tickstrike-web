@@ -14,9 +14,9 @@ describe("action previews", () => {
       hit: {
         attackerId: "player",
         targetId: "enemy-thrust",
-        damage: 20,
+        damage: 4,
         hpBefore: 100,
-        hpAfter: 80,
+        hpAfter: 96,
         killed: false,
       },
     });

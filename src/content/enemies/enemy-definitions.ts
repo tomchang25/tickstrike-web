@@ -49,8 +49,8 @@ export const attackDefinitions: readonly AttackDefinition[] = [
     name: "Thrust",
     kind: "tile",
     damage: 10,
-    warningTicks: 1,
-    recoveryTicks: 1,
+    warningTicks: 2,
+    recoveryTicks: 2,
     shape: {
       shape: "custom-offsets",
       offsets: [
@@ -66,7 +66,7 @@ export const attackDefinitions: readonly AttackDefinition[] = [
     kind: "tile",
     damage: 10,
     warningTicks: 2,
-    recoveryTicks: 1,
+    recoveryTicks: 2,
     shape: {
       shape: "custom-offsets",
       offsets: [

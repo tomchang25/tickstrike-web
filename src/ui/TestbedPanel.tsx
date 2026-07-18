@@ -46,6 +46,38 @@ export function TestbedPanel(props: TestbedPanelProps) {
         <div><span>Player</span><strong>{player ? `${player.cell.x},${player.cell.y}` : "—"}</strong></div>
       </div>
 
+      <section className="combat-status" data-testid="enemy-statuses" aria-labelledby="enemy-status-title">
+        <h2 id="enemy-status-title">Enemy Status</h2>
+        <div className="enemy-status-list">
+          {enemies.map((enemy) => (
+            <article className="enemy-status-card" key={enemy.id} data-testid={`enemy-status-${enemy.id}`}>
+              <div className="enemy-status-heading">
+                <strong>{enemy.archetype}</strong>
+                <span data-testid={`enemy-activity-${enemy.id}`}>{enemy.activity ?? enemy.phase}</span>
+              </div>
+              <StatusBar
+                testId={`enemy-hp-${enemy.id}`}
+                label="HP"
+                current={enemy.hp}
+                maximum={enemy.maxHp}
+                color="#ff5c7a"
+              />
+              {enemy.guard ? (
+                <StatusBar
+                  testId={`enemy-guard-${enemy.id}`}
+                  label="Guard"
+                  current={enemy.guard.current}
+                  maximum={enemy.guard.max}
+                  color="#72d4ff"
+                />
+              ) : null}
+              {enemy.staggerTicks !== undefined ? <small>Stagger {enemy.staggerTicks}</small> : null}
+              {enemy.protectionTicks !== undefined ? <small>Protection {enemy.protectionTicks}</small> : null}
+            </article>
+          ))}
+        </div>
+      </section>
+
       <label className="debug-toggle">
         <input
           data-testid="debug-mode"
@@ -87,6 +119,38 @@ export function TestbedPanel(props: TestbedPanelProps) {
         </ol>
       </section>
     </aside>
+  );
+}
+
+function StatusBar({
+  testId,
+  label,
+  current,
+  maximum,
+  color,
+}: {
+  readonly testId: string;
+  readonly label: string;
+  readonly current: number;
+  readonly maximum: number;
+  readonly color: string;
+}) {
+  const ratio = maximum > 0 ? Math.max(0, Math.min(1, current / maximum)) : 0;
+  return (
+    <div className="status-bar-row" data-testid={testId}>
+      <span>{label}</span>
+      <div
+        className="status-bar"
+        role="progressbar"
+        aria-label={`${label} ${current} of ${maximum}`}
+        aria-valuemin={0}
+        aria-valuemax={maximum}
+        aria-valuenow={current}
+      >
+        <span className="status-bar-fill" style={{ width: `${ratio * 100}%`, backgroundColor: color }} />
+      </div>
+      <strong>{current}/{maximum}</strong>
+    </div>
   );
 }
 

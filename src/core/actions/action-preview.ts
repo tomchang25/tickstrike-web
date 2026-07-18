@@ -3,10 +3,12 @@ import {
   sameCell,
   type BasicHitResult,
   type Cell,
+  type DirectionalHitResult,
   type EntityId,
   type EntityState,
   type WorldSnapshot,
 } from "../model/types";
+import { calculateDirectionalHit } from "../combat/directional-hit";
 import type { World } from "../world/world";
 
 export interface AttackPreview {
@@ -14,7 +16,7 @@ export interface AttackPreview {
   readonly direction: Cell;
   readonly target: Cell;
   readonly hasTarget: boolean;
-  readonly hit?: BasicHitResult;
+  readonly hit?: BasicHitResult | DirectionalHitResult;
   readonly reason?: string;
 }
 
@@ -102,14 +104,22 @@ export function previewAttack(source: PreviewSource, actorId: string, direction:
     };
   }
   const targetEntity = entityAt(snapshot, target, "enemy");
+  const hit = targetEntity && actor.normalAttackDamage && actor.normalAttackDamage > 0
+    ? targetEntity.enemyAction
+      ? calculateDirectionalHit({
+          attackerId: actor.id,
+          attackerCell: actor.cell,
+          target: targetEntity,
+          damage: actor.normalAttackDamage,
+        })
+      : previewBasicHit(actor.id, targetEntity, actor.normalAttackDamage)
+    : undefined;
   return {
     accepted: true,
     direction,
     target,
     hasTarget: Boolean(targetEntity),
-    ...(targetEntity && actor.normalAttackDamage && actor.normalAttackDamage > 0
-      ? { hit: previewBasicHit(actor.id, targetEntity, actor.normalAttackDamage) }
-      : {}),
+    ...(hit ? { hit } : {}),
   };
 }
 

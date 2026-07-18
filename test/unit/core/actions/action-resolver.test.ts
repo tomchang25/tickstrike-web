@@ -77,7 +77,7 @@ describe("player verbs", () => {
     });
 
     expect(occupied.accepted).toBe(true);
-    expect(occupied.events.slice(0, 2)).toEqual([
+    expect(occupied.events.slice(0, 4)).toEqual([
       {
         type: "player_attacked",
         actorId: "player",
@@ -85,29 +85,64 @@ describe("player verbs", () => {
         hit: {
           attackerId: "player",
           targetId: "enemy-thrust",
-          damage: 20,
+          damage: 4,
+          baseDamage: 20,
+          angle: "front",
+          guardDamage: 4,
+          guardBefore: 32,
+          guardAfter: 28,
+          hpDamage: 4,
+          defenseAdjustedDamage: 4,
+          guardBroken: false,
+          staggerBurst: false,
+          feedback: "guarded",
           hpBefore: 100,
-          hpAfter: 80,
+          hpAfter: 96,
           killed: false,
         },
       },
       {
-        type: "enemy_damaged",
-        enemyId: "enemy-thrust",
+        type: "directional_hit",
+        attackerId: "player",
+        targetId: "enemy-thrust",
         hit: {
           attackerId: "player",
           targetId: "enemy-thrust",
-          damage: 20,
+          damage: 4,
+          baseDamage: 20,
+          angle: "front",
+          guardDamage: 4,
+          guardBefore: 32,
+          guardAfter: 28,
+          hpDamage: 4,
+          defenseAdjustedDamage: 4,
+          guardBroken: false,
+          staggerBurst: false,
+          feedback: "guarded",
           hpBefore: 100,
-          hpAfter: 80,
+          hpAfter: 96,
           killed: false,
         },
-        hp: 80,
+      },
+      {
+        type: "enemy_guard_damaged",
+        enemyId: "enemy-thrust",
+        damage: 4,
+        guard: 28,
+        maxGuard: 32,
+      },
+      {
+        type: "enemy_damaged",
+        enemyId: "enemy-thrust",
+        hit: expect.any(Object),
+        hp: 96,
         maxHp: 100,
       },
     ]);
     expect(occupied.events.map((event) => event.type)).toEqual([
       "player_attacked",
+      "directional_hit",
+      "enemy_guard_damaged",
       "enemy_damaged",
       "enemy_attack_committed",
       "telegraph_changed",
@@ -116,13 +151,15 @@ describe("player verbs", () => {
     expect(occupied.semanticEvents?.map((event) => event.type)).toEqual([
       "command_resolved",
       "player_attacked",
+      "directional_hit",
+      "enemy_guard_damaged",
       "enemy_damaged",
       "enemy_attack_committed",
       "telegraph_changed",
       "enemy_moved",
       "world_advanced",
     ]);
-    expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 80, phase: "alive" });
+    expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 96, phase: "alive", guard: { current: 28 } });
     expect(world.snapshot().tick).toBe(1);
     expect(world.snapshot().lastEvents).toEqual(occupied.semanticEvents);
 
@@ -135,10 +172,6 @@ describe("player verbs", () => {
     expect(whiff.accepted).toBe(true);
     expect(whiff.events.map((event) => event.type)).toEqual([
       "player_attacked",
-      "enemy_attack_detonated",
-      "player_damaged",
-      "telegraph_changed",
-      "enemy_recovering",
       "enemy_attack_committed",
       "telegraph_changed",
     ]);
@@ -158,12 +191,15 @@ describe("player verbs", () => {
     expect(result.accepted).toBe(true);
     expect(result.events.map((event) => event.type)).toEqual([
       "player_attacked",
+      "directional_hit",
+      "enemy_guard_damaged",
       "enemy_damaged",
-      "enemy_died",
+      "enemy_attack_committed",
+      "telegraph_changed",
       "enemy_moved",
     ]);
-    expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 0, maxHp: 100, phase: "dead" });
-    expect(world.getOccupantAt({ x: 5, y: 6 })).toBeUndefined();
+    expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 1, maxHp: 100, phase: "alive", guard: { current: 28 } });
+    expect(world.getOccupantAt({ x: 5, y: 6 })?.id).toBe("enemy-thrust");
     expect(world.snapshot().tick).toBe(1);
   });
 

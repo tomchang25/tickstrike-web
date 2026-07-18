@@ -165,6 +165,14 @@ export class PresentationDirector {
         }
         case "command_resolved":
         case "world_advanced":
+        case "directional_hit":
+        case "enemy_guard_damaged":
+        case "enemy_guard_broken":
+        case "enemy_attack_interrupted":
+        case "enemy_staggered":
+        case "enemy_stagger_ended":
+        case "enemy_protection_started":
+        case "enemy_protection_ended":
         case "reservation_changed":
         case "telegraph_changed":
           break;

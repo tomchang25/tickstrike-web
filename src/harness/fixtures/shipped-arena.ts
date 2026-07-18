@@ -15,7 +15,8 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
   const thrust = actorCatalog.enemies.find((enemy) => enemy.id === "thrust_enemy");
   const slash = actorCatalog.enemies.find((enemy) => enemy.id === "slash_enemy");
   const ranged = actorCatalog.enemies.find((enemy) => enemy.id === "ranged_enemy");
-  if (!player || !thrust || !slash || !ranged) throw new Error("Shipped combat content is incomplete.");
+  const smallGuard = actorCatalog.guards.find((guard) => guard.id === "small");
+  if (!player || !thrust || !slash || !ranged || !smallGuard) throw new Error("Shipped combat content is incomplete.");
   const actionFor = (enemy: typeof thrust | typeof slash): BasicEnemyActionDefinition => {
     if (enemy.role !== "thrust" && enemy.role !== "slash") {
       throw new Error(`Unsupported basic enemy role: ${enemy.role}`);
@@ -49,6 +50,8 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     archetype: "thrust",
     cell: { x: 5, y: 6 },
     hp: thrust.hp,
+    defense: thrust.defense,
+    guardDefinition: smallGuard,
     enemyAction: actionFor(thrust),
     facing: { x: 1, y: 0 },
   });
@@ -58,6 +61,8 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     archetype: "slash",
     cell: { x: 8, y: 6 },
     hp: slash.hp,
+    defense: slash.defense,
+    guardDefinition: smallGuard,
     enemyAction: actionFor(slash),
     facing: { x: -1, y: 0 },
   });

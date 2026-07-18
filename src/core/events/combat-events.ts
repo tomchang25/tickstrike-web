@@ -2,6 +2,7 @@ import type {
   BasicHitResult,
   Cell,
   CommittedAttack,
+  DirectionalHitResult,
   EntityId,
   Reservation,
   Telegraph,
@@ -32,11 +33,54 @@ export type CombatEvent =
       readonly hit?: BasicHitResult;
     }
   | {
+      readonly type: "directional_hit";
+      readonly attackerId: EntityId;
+      readonly targetId: EntityId;
+      readonly hit: DirectionalHitResult;
+    }
+  | {
       readonly type: "enemy_damaged";
       readonly enemyId: EntityId;
       readonly hit: BasicHitResult;
       readonly hp: number;
       readonly maxHp: number;
+    }
+  | {
+      readonly type: "enemy_guard_damaged";
+      readonly enemyId: EntityId;
+      readonly damage: number;
+      readonly guard: number;
+      readonly maxGuard: number;
+      readonly protectionTicks?: number;
+    }
+  | {
+      readonly type: "enemy_guard_broken";
+      readonly enemyId: EntityId;
+      readonly staggerTicks?: number;
+    }
+  | {
+      readonly type: "enemy_attack_interrupted";
+      readonly enemyId: EntityId;
+    }
+  | {
+      readonly type: "enemy_staggered";
+      readonly enemyId: EntityId;
+      readonly ticks: number;
+    }
+  | {
+      readonly type: "enemy_stagger_ended";
+      readonly enemyId: EntityId;
+      readonly guard: number;
+      readonly maxGuard: number;
+    }
+  | {
+      readonly type: "enemy_protection_started";
+      readonly enemyId: EntityId;
+      readonly ticks: number;
+    }
+  | {
+      readonly type: "enemy_protection_ended";
+      readonly enemyId: EntityId;
     }
   | {
       readonly type: "enemy_died";

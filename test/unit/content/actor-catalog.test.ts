@@ -63,6 +63,10 @@ describe("canonical actor content", () => {
     });
     expect(actorCatalog.attacks.find((attack) => attack.id === "mode_charge")?.damage).toBe(10);
     expect(actorCatalog.attacks.find((attack) => attack.id === "mode_boss_charge")?.damage).toBe(10);
+    expect(actorCatalog.attacks.filter((attack) => attack.id === "thrust" || attack.id === "slash")).toMatchObject([
+      { id: "thrust", warningTicks: 2, recoveryTicks: 2 },
+      { id: "slash", warningTicks: 2, recoveryTicks: 2 },
+    ]);
 
     expect(actorCatalog.enemies.map(({ id, guardId, attackIds }) => ({ id, guardId, attackIds }))).toEqual([
       { id: "thrust_enemy", guardId: "small", attackIds: ["thrust"] },

@@ -148,6 +148,44 @@ describe("basic enemy tick lifecycle", () => {
     expect(world.requireEntity("enemy").committedAttack).toBeUndefined();
   });
 
+  it("keeps a two-tick windup visible for two player turns", () => {
+    const world = createWorld();
+    world.removeEntity("enemy");
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "thrust",
+      cell: { x: 5, y: 6 },
+      hp: 100,
+      enemyAction: { ...thrust, warningTicks: 2, recoveryTicks: 2 },
+      facing: { x: 1, y: 0 },
+    });
+
+    resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    expect(world.requireEntity("enemy").committedAttack).toMatchObject({ warningTicks: 2 });
+
+    const firstWindupTurn = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 0, y: -1 },
+    });
+    expect(firstWindupTurn.events.map((event) => event.type)).toEqual(["actor_moved"]);
+    expect(world.requireEntity("enemy").committedAttack).toMatchObject({ warningTicks: 1 });
+
+    const secondWindupTurn = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 0, y: -1 },
+    });
+    expect(secondWindupTurn.events.map((event) => event.type)).toEqual([
+      "actor_moved",
+      "enemy_attack_detonated",
+      "telegraph_changed",
+      "enemy_recovering",
+    ]);
+    expect(world.requireEntity("enemy")).toMatchObject({ activity: "recovering", recoveryTicks: 2 });
+  });
+
   it("does not let rejected commands advance enemy state", () => {
     const world = createWorld();
     resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });

@@ -237,7 +237,6 @@ export function App() {
             debugMode={debugMode}
             inspection={selectedScenario.inspection}
             onScenarioChange={changeScenario}
-            onAttack={attack}
             onMobilityToggle={toggleMobility}
             onDebugModeChange={setDebugMode}
             onReset={reset}

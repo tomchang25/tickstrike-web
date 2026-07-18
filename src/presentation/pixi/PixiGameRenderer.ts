@@ -30,6 +30,8 @@ interface EntityView {
   readonly label: Text;
   readonly facingMarker: Text;
   readonly debugLabel: Text;
+  readonly hpBar: Graphics;
+  readonly guardBar: Graphics;
 }
 
 export interface ScreenBounds {
@@ -65,6 +67,23 @@ function debugStateLabel(entity: EntityState): string {
   if (entity.phase !== "alive") return entity.phase;
   if (entity.activity && entity.activity !== "ready") return entity.activity;
   return entity.lastDecision ?? "idle";
+}
+
+function drawStatusBar(
+  bar: Graphics,
+  current: number,
+  maximum: number,
+  color: number,
+  y: number,
+): void {
+  const width = 52;
+  const height = 4;
+  const ratio = maximum > 0 ? Math.max(0, Math.min(1, current / maximum)) : 0;
+  bar.clear()
+    .roundRect(-width / 2, y, width, height, 2)
+    .fill({ color: 0x080a0f, alpha: 0.92 })
+    .roundRect(-width / 2 + 1, y + 1, (width - 2) * ratio, height - 2, 1)
+    .fill(color);
 }
 
 export class PixiGameRenderer {
@@ -185,6 +204,9 @@ export class PixiGameRenderer {
       view.body.tint = entityColor(entity);
       view.root.alpha = 1;
       view.root.scale.set(1);
+      drawStatusBar(view.hpBar, entity.hp, entity.maxHp, 0xff5c7a, entity.kind === "enemy" ? -42 : -34);
+      view.guardBar.visible = Boolean(entity.guard);
+      if (entity.guard) drawStatusBar(view.guardBar, entity.guard.current, entity.guard.max, 0x72d4ff, -36);
       view.label.text = entity.kind === "player" ? "P" : "E";
       view.facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
       view.facingMarker.text = facingGlyph(entity.facing);
@@ -558,6 +580,9 @@ export class PixiGameRenderer {
     const root = new Container();
     root.label = entity.id;
     root.eventMode = "none";
+    const hpBar = new Graphics();
+    const guardBar = new Graphics();
+    guardBar.visible = Boolean(entity.guard);
 
     const body = new Graphics()
       .roundRect(-22, -22, 44, 44, 10)
@@ -602,7 +627,7 @@ export class PixiGameRenderer {
     facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
     if (entity.facing) facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
 
-    root.addChild(body, label, facingMarker, debugLabel);
-    return { root, body, label, facingMarker, debugLabel };
+    root.addChild(hpBar, guardBar, body, label, facingMarker, debugLabel);
+    return { root, body, label, facingMarker, debugLabel, hpBar, guardBar };
   }
 }

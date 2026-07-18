@@ -35,6 +35,11 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
           data-attack-warning-ticks={entity.committedAttack?.warningTicks}
           data-hp={entity.hp}
           data-max-hp={entity.maxHp}
+          data-defense={entity.defense}
+          data-guard={entity.guard?.current}
+          data-max-guard={entity.guard?.max}
+          data-stagger-ticks={entity.staggerTicks}
+          data-protection-ticks={entity.protectionTicks}
           data-cell-x={entity.cell.x}
           data-cell-y={entity.cell.y}
         />

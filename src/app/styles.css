@@ -178,6 +178,78 @@ header > p {
   font-size: 1rem;
 }
 
+.combat-status {
+  min-width: 0;
+}
+
+.enemy-status-list {
+  display: grid;
+  gap: 8px;
+}
+
+.enemy-status-card {
+  display: grid;
+  gap: 6px;
+  padding: 9px 10px;
+  border: 1px solid #293142;
+  border-radius: 8px;
+  background: #0f1218;
+}
+
+.enemy-status-heading,
+.status-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.enemy-status-heading {
+  justify-content: space-between;
+  color: #e8eef7;
+  font-size: 0.82rem;
+}
+
+.enemy-status-heading span,
+.enemy-status-card small {
+  color: #8e99aa;
+  font-size: 0.72rem;
+}
+
+.status-bar-row {
+  min-width: 0;
+  color: #8e99aa;
+  font-size: 0.7rem;
+}
+
+.status-bar-row > span {
+  width: 38px;
+  flex: 0 0 38px;
+  text-transform: uppercase;
+}
+
+.status-bar {
+  height: 7px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #080a0f;
+  box-shadow: inset 0 0 0 1px #293142;
+}
+
+.status-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 160ms ease;
+}
+
+.status-bar-row strong {
+  min-width: 42px;
+  color: #e8eef7;
+  font-size: 0.72rem;
+  text-align: right;
+}
+
 .debug-toggle {
   display: flex;
   align-items: center;
@@ -188,12 +260,6 @@ header > p {
 
 .debug-toggle input {
   accent-color: #72d4ff;
-}
-
-.movement-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
 }
 
 .primary-command {

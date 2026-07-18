@@ -1,4 +1,5 @@
 import type { CombatEvent } from "../events/combat-events";
+import type { BasicHitResult, DirectionalHitResult } from "../model/types";
 import {
   isCardinalDirection,
   type Cell,
@@ -23,6 +24,10 @@ export interface ActionResolution {
 
 function add(a: Cell, b: Cell): Cell {
   return { x: a.x + b.x, y: a.y + b.y };
+}
+
+function isDirectionalHit(hit: BasicHitResult | DirectionalHitResult): hit is DirectionalHitResult {
+  return "angle" in hit && "guardDamage" in hit;
 }
 
 function multiply(cell: Cell, amount: number): Cell {
@@ -125,10 +130,33 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
   const events: CombatEvent[] = [attackEvent];
 
   if (preview.hit) {
-    const hit = world.applyBasicHit(preview.hit);
+    const targetBefore = world.requireEntity(preview.hit.targetId);
+    const reservationBefore = world.getReservation(preview.hit.targetId);
+    const telegraphBefore = world.getTelegraph(preview.hit.targetId);
+    const hit = isDirectionalHit(preview.hit)
+      ? world.applyDirectionalHit(preview.hit)
+      : world.applyBasicHit(preview.hit);
     if (hit) {
       events[0] = { ...attackEvent, hit };
       const target = world.requireEntity(hit.targetId);
+      if (isDirectionalHit(hit)) {
+        events.push({
+          type: "directional_hit",
+          attackerId: hit.attackerId,
+          targetId: hit.targetId,
+          hit,
+        });
+        if (hit.guardDamage > 0 && target.guard) {
+          events.push({
+            type: "enemy_guard_damaged",
+            enemyId: target.id,
+            damage: hit.guardDamage,
+            guard: target.guard.current,
+            maxGuard: target.guard.max,
+            ...(target.protectionTicks !== undefined ? { protectionTicks: target.protectionTicks } : {}),
+          });
+        }
+      }
       events.push({
         type: "enemy_damaged",
         enemyId: target.id,
@@ -136,6 +164,26 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
         hp: target.hp,
         maxHp: target.maxHp,
       });
+      if (isDirectionalHit(hit) && hit.guardBroken) {
+        events.push({
+          type: "enemy_guard_broken",
+          enemyId: target.id,
+          ...(target.staggerTicks !== undefined ? { staggerTicks: target.staggerTicks } : {}),
+        });
+        if (!hit.killed && hit.staggerBurst) {
+          if (targetBefore.committedAttack || targetBefore.recoveryTicks !== undefined || reservationBefore || telegraphBefore) {
+            events.push({ type: "enemy_attack_interrupted", enemyId: target.id });
+          }
+          const staggered = world.requireEntity(target.id);
+          if (staggered.staggerTicks !== undefined) {
+            events.push({
+              type: "enemy_staggered",
+              enemyId: target.id,
+              ticks: staggered.staggerTicks,
+            });
+          }
+        }
+      }
       if (hit.killed) {
         events.push({
           type: "enemy_died",
@@ -284,7 +332,7 @@ function resolveEnemyPhase(world: World): CombatEvent[] {
     const current = world.getEntity(enemy.id);
     if (!current || current.phase !== "alive" || current.activity !== "telegraphing") continue;
     const attack = world.decrementEnemyAttackWarning(enemy.id);
-    if (!attack || attack.warningTicks > 1) continue;
+    if (!attack || attack.warningTicks > 0) continue;
 
     const resolution = world.resolveCommittedEnemyAttack(enemy.id);
     if (!resolution) continue;
@@ -309,6 +357,8 @@ function resolveEnemyPhase(world: World): CombatEvent[] {
     events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: true });
     events.push({ type: "enemy_recovering", enemyId: enemy.id, recoveryTicks: resolution.attack.recoveryTicks });
   }
+
+  events.push(...world.advanceEnemyStatuses());
 
   for (const enemy of enemies) {
     if (!recoveringAtStart.has(enemy.id)) continue;

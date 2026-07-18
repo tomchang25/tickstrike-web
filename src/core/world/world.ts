@@ -10,9 +10,11 @@ import {
   type Cell,
   type CommittedAttack,
   type DamageResult,
+  type DirectionalHitResult,
   type EnemyDecision,
   type EntityId,
   type EntityState,
+  type GuardRuntime,
   isTerminalPhase,
   type Reservation,
   type ReservationPurpose,
@@ -31,6 +33,8 @@ export interface SpawnEntityInput {
   readonly cell: Cell;
   readonly footprint?: readonly Cell[];
   readonly hp: number;
+  readonly defense?: number;
+  readonly guardDefinition?: import("../content/actor-schema").GuardDefinition;
   readonly normalAttackDamage?: number;
   readonly mobilityAttackDamage?: number;
   readonly enemyAction?: BasicEnemyActionDefinition;
@@ -84,11 +88,16 @@ function cloneCommittedAttack(attack: CommittedAttack): CommittedAttack {
   return { ...attack, cells: attack.cells.map(cloneCell) };
 }
 
+function cloneGuard(guard: GuardRuntime): GuardRuntime {
+  return { ...guard };
+}
+
 function cloneEntity(entity: EntityState): EntityState {
   return {
     ...entity,
     cell: cloneCell(entity.cell),
     footprint: entity.footprint.map(cloneCell),
+    ...(entity.guard ? { guard: cloneGuard(entity.guard) } : {}),
     ...(entity.enemyAction ? { enemyAction: cloneEnemyAction(entity.enemyAction) } : {}),
     ...(entity.facing ? { facing: cloneCell(entity.facing) } : {}),
     ...(entity.committedAttack ? { committedAttack: cloneCommittedAttack(entity.committedAttack) } : {}),
@@ -166,6 +175,19 @@ export class World {
       footprint,
       hp: input.hp,
       maxHp: input.hp,
+      defense: input.defense ?? 0,
+      ...(input.guardDefinition
+        ? {
+            guard: {
+              id: input.guardDefinition.id,
+              current: input.guardDefinition.base,
+              max: input.guardDefinition.base,
+              staggerDuration: input.guardDefinition.stagger,
+              protectionDuration: input.guardDefinition.protection,
+              protectionMultiplier: input.guardDefinition.protectionMultiplier,
+            },
+          }
+        : {}),
       normalAttackDamage: input.normalAttackDamage,
       mobilityAttackDamage: input.mobilityAttackDamage,
       ...(input.enemyAction
@@ -280,6 +302,9 @@ export class World {
         recoveryTicks: undefined,
         committedAttack: undefined,
         lastDecision: undefined,
+        guard: entity.guard ? { ...entity.guard, current: 0 } : undefined,
+        staggerTicks: undefined,
+        protectionTicks: undefined,
       });
       return;
     }
@@ -315,6 +340,35 @@ export class World {
     return { ...damage, attackerId: hit.attackerId };
   }
 
+  applyDirectionalHit(hit: DirectionalHitResult): DirectionalHitResult | undefined {
+    const entity = this.entities.get(hit.targetId);
+    if (!entity || isTerminalPhase(entity.phase)) return undefined;
+
+    this.entities.set(hit.targetId, {
+      ...entity,
+      hp: hit.hpAfter,
+      ...(entity.guard ? { guard: { ...entity.guard, current: hit.guardAfter } } : {}),
+    });
+
+    if (hit.guardBroken && !hit.killed && entity.enemyAction && entity.activity !== "staggered") {
+      this.releaseReservation(entity.id);
+      this.clearTelegraph(entity.id);
+      const current = this.entities.get(entity.id)!;
+      const staggerTicks = current.guard?.staggerDuration ?? 0;
+      this.entities.set(entity.id, {
+        ...current,
+        activity: "staggered",
+        recoveryTicks: undefined,
+        committedAttack: undefined,
+        staggerTicks,
+        protectionTicks: undefined,
+      });
+    }
+
+    if (hit.killed) this.setPhase(hit.targetId, "dead");
+    return { ...hit };
+  }
+
   setEnemyFacing(id: EntityId, facing: Cell): void {
     const entity = this.entities.get(id);
     if (!entity?.enemyAction) throw new Error(`Entity is not an enabled basic enemy: ${id}`);
@@ -339,7 +393,74 @@ export class World {
       ...entity,
       activity,
       recoveryTicks: recoveryTicks === undefined ? undefined : recoveryTicks,
+      ...(activity !== "staggered" ? { staggerTicks: undefined } : {}),
     });
+  }
+
+  resetEnemyCombatState(id: EntityId): void {
+    const entity = this.entities.get(id);
+    if (!entity?.enemyAction || entity.phase !== "alive") return;
+    this.releaseReservation(id);
+    this.clearTelegraph(id);
+    this.entities.set(id, {
+      ...entity,
+      activity: "ready",
+      lastDecision: undefined,
+      recoveryTicks: undefined,
+      committedAttack: undefined,
+      staggerTicks: undefined,
+      protectionTicks: undefined,
+      ...(entity.guard ? { guard: { ...entity.guard, current: entity.guard.max } } : {}),
+    });
+  }
+
+  resetEnemyGuard(id: EntityId): void {
+    this.resetEnemyCombatState(id);
+  }
+
+  advanceEnemyStatuses(): readonly CombatEvent[] {
+    const events: CombatEvent[] = [];
+    for (const entity of this.entities.values()) {
+      if (entity.phase !== "alive" || !entity.enemyAction || !entity.guard) continue;
+      if (entity.activity === "staggered") {
+        const ticks = entity.staggerTicks ?? 0;
+        if (ticks > 1) {
+          this.entities.set(entity.id, { ...entity, staggerTicks: ticks - 1 });
+          continue;
+        }
+
+        const guard = { ...entity.guard, current: entity.guard.max };
+        this.entities.set(entity.id, {
+          ...entity,
+          guard,
+          activity: "ready",
+          staggerTicks: undefined,
+          protectionTicks: guard.protectionDuration,
+        });
+        events.push({
+          type: "enemy_stagger_ended",
+          enemyId: entity.id,
+          guard: guard.current,
+          maxGuard: guard.max,
+        });
+        events.push({
+          type: "enemy_protection_started",
+          enemyId: entity.id,
+          ticks: guard.protectionDuration,
+        });
+        continue;
+      }
+
+      const protectionTicks = entity.protectionTicks ?? 0;
+      if (protectionTicks <= 0) continue;
+      if (protectionTicks === 1) {
+        this.entities.set(entity.id, { ...entity, protectionTicks: undefined });
+        events.push({ type: "enemy_protection_ended", enemyId: entity.id });
+      } else {
+        this.entities.set(entity.id, { ...entity, protectionTicks: protectionTicks - 1 });
+      }
+    }
+    return events;
   }
 
   commitEnemyAttack(id: EntityId, attack: CommittedAttack): CommittedAttack {
@@ -362,8 +483,7 @@ export class World {
     const entity = this.entities.get(id);
     const attack = entity?.committedAttack;
     if (!entity || !attack || entity.activity !== "telegraphing") return undefined;
-    if (attack.warningTicks <= 1) return cloneCommittedAttack(attack);
-    const next = { ...attack, warningTicks: attack.warningTicks - 1 };
+    const next = { ...attack, warningTicks: Math.max(0, attack.warningTicks - 1) };
     this.entities.set(id, { ...entity, committedAttack: next });
     return cloneCommittedAttack(next);
   }
@@ -422,6 +542,9 @@ export class World {
       recoveryTicks: undefined,
       committedAttack: undefined,
       lastDecision: undefined,
+      staggerTicks: undefined,
+      protectionTicks: undefined,
+      guard: entity.guard ? { ...entity.guard, current: 0 } : undefined,
     });
   }
 

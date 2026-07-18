@@ -78,6 +78,9 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-enemy-thrust")).toBeAttached();
   await expect(page.getByTestId("entity-enemy-slash")).toBeAttached();
+  await expect(page.getByTestId("enemy-statuses")).toBeVisible();
+  await expect(page.getByTestId("enemy-hp-enemy-thrust")).toContainText("100/100");
+  await expect(page.getByTestId("enemy-guard-enemy-thrust")).toContainText("32/32");
   await expect(page.getByTestId("entity-enemy-ranged")).toBeAttached();
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-activity", "ready");
@@ -102,25 +105,30 @@ test("Foundation arena resets its generation without stale presentation state", 
   expect(await page.getByTestId("semantic-mirror").getAttribute("data-telegraph-count")).toBe("0");
 });
 
-test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence", async ({ page }) => {
+test("Tick Arena presents mobility controls without a Normal Attack panel", async ({ page }) => {
   await page.goto("/?scenario=tick-arena");
 
   await expect(page.getByRole("heading", { name: "Move" })).toHaveCount(0);
   await expect(page.getByTestId("move-right")).toHaveCount(0);
   await expect(page.getByTestId("dash-right")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Normal Attack" })).toHaveCount(0);
+  await expect(page.getByTestId("attack-right")).toHaveCount(0);
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("tick-value")).toHaveText("1");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "2");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "telegraphing");
-  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "1");
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "2");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-attack-warning-ticks", "2");
 
-  await page.getByTestId("attack-right").click();
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  await page.keyboard.press("l");
   await expect(page.getByTestId("tick-value")).toHaveText("2");
   await expect(page.getByTestId("event-log")).toContainText("player_attacked");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-state", "alive");
-  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "80");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "96");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-guard", "28");
+  await expect(page.getByTestId("enemy-guard-enemy-slash")).toContainText("28/32");
   await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
 
   const canvas = page.getByTestId("game-canvas");
@@ -138,7 +146,7 @@ test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence"
   await expect(page.getByTestId("tick-value")).toHaveText("3");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "10");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
-  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "50");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "66");
   await expect(page.getByTestId("event-log")).toContainText("player_dashed");
   const dashEvent = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents[1]);
   expect(dashEvent).toMatchObject({
@@ -151,10 +159,12 @@ test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence"
     "command_resolved",
     "player_dashed",
     "enemy_damaged",
-    "enemy_recovered",
-    "enemy_recovered",
-    "enemy_moved",
-    "enemy_moved",
+    "enemy_attack_detonated",
+    "telegraph_changed",
+    "enemy_recovering",
+    "enemy_attack_detonated",
+    "telegraph_changed",
+    "enemy_recovering",
     "world_advanced",
   ]);
 });
