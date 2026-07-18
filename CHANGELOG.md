@@ -16,6 +16,10 @@ Rules:
 
 ## [unreleased]
 
+### Web-Native Content Foundation
+
+- 2026-07-18 - [content] Shipped gameplay content is now validated through immutable actor, wave, Artifact, and browser inspection catalogs
+
 ### Initial Web Vertical Slice
 
 - 2026-07-18 - [migration] A Web-native Smash scenario now resolves center crush, knockback, and water drowning through deterministic core events with completed Pixi/GSAP presentation and browser acceptance coverage

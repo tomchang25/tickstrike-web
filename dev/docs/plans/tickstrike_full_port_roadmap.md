@@ -4,14 +4,14 @@
 
 This roadmap coordinates the behavior-complete port of Tickstrike from the Godot `main` reference into the Web-native runtime. It is an ordering and scope map only; each batch has a separate Main Plan that owns its requirements, design, non-goals, and acceptance criteria.
 
-Batch 0, reference capture, is intentionally outside this roadmap's Main Plan set and is complete. The twelve Main Plans are the remaining ordered execution scope.
+Batch 0, reference capture, is intentionally outside this roadmap's Main Plan set and is complete. Batch 1 is now complete; the remaining Main Plans are the ordered execution scope.
 
 ## Reference Baseline
 
 - Source: Godot `main`
 - Baseline codebase: [port-ref/tickstrike](../../../port-ref/tickstrike)
 - Reference commit: `742f50678af54300fa41b0b983d0abfeb1befb29`
-- Status: Batch 0 complete; Batch 1 is the next execution item.
+- Status: Batch 0 and Batch 1 complete; Batch 2 is the next execution item.
 
 ## Source Authority
 

@@ -22,7 +22,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > Ship a phase: remove it from that file and append its outcome to `CHANGELOG.md`, leaving this line until every phase ships.
 > When every phase ships: archive the plan file and delete this line.
 
-- [port_01_content] Convert the shipped Godot content inventory into validated Web-native definitions after the reference capture completes - [ref plans/port_01_web_native_content_foundation.md]
+Nothing currently in progress.
 
 ---
 
