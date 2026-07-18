@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { clampSmashTarget, previewAttack, previewDash, previewSmash, smashArea } from "../../../../src/core/actions/action-preview";
+import {
+  clampSmashTarget,
+  previewAttack,
+  previewAttackVictimMarkers,
+  previewDash,
+  previewDashVictimMarkers,
+  previewSmash,
+  previewSmashVictimMarkers,
+  smashArea,
+} from "../../../../src/core/actions/action-preview";
 import { createFoundationArena } from "../../../../src/harness/fixtures/shipped-arena";
 import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
 import { resolveCommand } from "../../../../src/core/actions/action-resolver";
@@ -142,5 +151,58 @@ describe("action previews", () => {
       { enemyId: "enemy-right", displacement: "knockback", destination: { x: 7, y: 3 } },
       { enemyId: "enemy-water", displacement: "water", destination: { x: 4, y: 6 } },
     ]);
+    expect(previewSmashVictimMarkers(preview)).toEqual([
+      { enemyId: "enemy-center", from: { x: 4, y: 3 }, outcome: "crush" },
+      { enemyId: "enemy-blocked", from: { x: 4, y: 2 }, outcome: "blocked" },
+      { enemyId: "enemy-right", from: { x: 5, y: 3 }, to: { x: 7, y: 3 }, outcome: "knockback" },
+      { enemyId: "enemy-water", from: { x: 4, y: 4 }, to: { x: 4, y: 6 }, outcome: "water" },
+    ]);
+  });
+
+  it("projects lethal Attack and Dash hits into shared kill markers", () => {
+    const attackWorld = createTrainingArena();
+    attackWorld.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 3, y: 3 },
+      hp: 100,
+      normalAttackDamage: 4,
+    });
+    attackWorld.spawn({ id: "enemy", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 3 }, hp: 1 });
+    const attackPreview = previewAttack(attackWorld, "player", { x: 1, y: 0 });
+    expect(previewAttackVictimMarkers(attackPreview)).toEqual([
+      { enemyId: "enemy", from: { x: 4, y: 3 }, outcome: "kill" },
+    ]);
+
+    const dashWorld = createTrainingArena();
+    dashWorld.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 1, y: 1 },
+      hp: 100,
+      mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 1 },
+    });
+    dashWorld.spawn({ id: "enemy", kind: "enemy", archetype: "training-grunt", cell: { x: 2, y: 1 }, hp: 1 });
+    const dashPreview = previewDash(dashWorld, "player", { x: 1, y: 0 }, 3);
+    expect(previewDashVictimMarkers(dashPreview)).toEqual([
+      { enemyId: "enemy", from: { x: 2, y: 1 }, outcome: "kill" },
+    ]);
+  });
+
+  it("does not project a kill marker for a non-lethal shared hit", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 3, y: 3 },
+      hp: 100,
+      normalAttackDamage: 4,
+    });
+    world.spawn({ id: "enemy", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 3 }, hp: 100 });
+
+    expect(previewAttackVictimMarkers(previewAttack(world, "player", { x: 1, y: 0 }))).toEqual([]);
   });
 });

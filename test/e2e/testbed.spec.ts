@@ -34,6 +34,10 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await page.mouse.move(smashTarget.x, smashTarget.y);
   await expect(canvas).toHaveAttribute("data-smash-preview-cell", "4,3");
   await expect(canvas).toHaveAttribute("data-smash-preview-valid", "true");
+  await expect(canvas).toHaveAttribute("data-preview-kills", "");
+  await expect(canvas).toHaveAttribute("data-preview-displacements", "enemy-right:5,3>7,3;enemy-water:4,4>4,6");
+  await expect(canvas).toHaveAttribute("data-preview-terminal", "enemy-center:crush;enemy-water:water");
+  await expect(canvas).toHaveAttribute("data-preview-blocked", "enemy-blocked");
   await page.mouse.click(smashTarget.x, smashTarget.y);
   await page.keyboard.up("Alt");
 
@@ -67,6 +71,10 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(page.getByTestId("event-log")).toContainText("directional_hit");
   await expect(page.getByTestId("event-log")).toContainText("enemy_guard_broken");
   await expect(page.getByTestId("mobility-status")).toHaveText("Cooldown 6");
+  await expect(canvas).toHaveAttribute("data-preview-kills", "");
+  await expect(canvas).toHaveAttribute("data-preview-displacements", "");
+  await expect(canvas).toHaveAttribute("data-preview-terminal", "");
+  await expect(canvas).toHaveAttribute("data-preview-blocked", "");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 

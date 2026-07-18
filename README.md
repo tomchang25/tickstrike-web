@@ -115,3 +115,5 @@ The deterministic Smash scenario starts with a fixed Viking at `(3,3)` and a leg
 - Logical tick advances exactly once.
 
 The unit and Playwright tests encode this as the first migration parity contract.
+
+While aiming, lethal Attack and Dash victims show kill markers. Smash previews show crush markers, predicted knockback destinations, and water terminal destinations before the action is committed.

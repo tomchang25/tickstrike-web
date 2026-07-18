@@ -42,6 +42,7 @@ export interface SmashPreview {
 export interface MobilityHitPreview {
   readonly enemyId: EntityId;
   readonly origin: Cell;
+  readonly victimCell: Cell;
   readonly hit: BasicHitResult | DirectionalHitResult;
 }
 
@@ -51,6 +52,15 @@ export interface SmashVictimPreview {
   readonly hit?: BasicHitResult | DirectionalHitResult;
   readonly displacement: SmashDisplacementKind;
   readonly destination?: Cell;
+}
+
+export type PreviewVictimOutcome = "kill" | "crush" | "knockback" | "water" | "blocked";
+
+export interface PreviewVictimMarker {
+  readonly enemyId: EntityId;
+  readonly from: Cell;
+  readonly to?: Cell;
+  readonly outcome: PreviewVictimOutcome;
 }
 
 type PreviewSource = World | WorldSnapshot;
@@ -119,6 +129,7 @@ function previewMobilityHit(
   return {
     enemyId: target.id,
     origin,
+    victimCell: target.cell,
     hit: directional ?? previewBasicHit(actor.id, target, damage),
   };
 }
@@ -242,6 +253,41 @@ export function previewBasicHit(attackerId: EntityId, target: EntityState, damag
     hpAfter,
     killed: hpAfter === 0,
   };
+}
+
+export function previewAttackVictimMarkers(preview: AttackPreview): readonly PreviewVictimMarker[] {
+  return preview.accepted && preview.hit?.killed
+    ? [{ enemyId: preview.hit.targetId, from: preview.target, outcome: "kill" }]
+    : [];
+}
+
+export function previewDashVictimMarkers(preview: DashPreview): readonly PreviewVictimMarker[] {
+  return preview.accepted
+    ? preview.victims
+        .filter((victim) => victim.hit.killed)
+        .map((victim) => ({ enemyId: victim.enemyId, from: victim.victimCell, outcome: "kill" }))
+    : [];
+}
+
+export function previewSmashVictimMarkers(preview: SmashPreview): readonly PreviewVictimMarker[] {
+  return preview.accepted
+    ? preview.victims.flatMap((victim): readonly PreviewVictimMarker[] => {
+        if (victim.displacement === "crush") {
+          return [{ enemyId: victim.enemyId, from: victim.origin, outcome: "crush" as const }];
+        }
+        if (victim.displacement === "knockback" || victim.displacement === "water") {
+          return victim.destination
+            ? [{ enemyId: victim.enemyId, from: victim.origin, to: victim.destination, outcome: victim.displacement }]
+            : [];
+        }
+        if (victim.displacement === "blocked") {
+          return [{ enemyId: victim.enemyId, from: victim.origin, outcome: "blocked" as const }];
+        }
+        return victim.hit?.killed
+          ? [{ enemyId: victim.enemyId, from: victim.origin, outcome: "kill" as const }]
+          : [];
+      })
+    : [];
 }
 
 export function previewAttack(source: PreviewSource, actorId: string, direction: Cell): AttackPreview {

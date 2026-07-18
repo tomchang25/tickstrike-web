@@ -78,6 +78,10 @@ Remove the current facing action tax, replace the shipped delayed hit-facing res
 
 Rework Charge into a collision charge, add a DashEnemy backline role, and establish shared forced displacement. Keep Smash knockback and spawn displacement behind the shared contract rather than introducing isolated displacement rules during parity.
 
+### Knockback Collision Damage
+
+When knockback is blocked by another entity, apply collision damage to the blocked entity regardless of faction and apply double damage to the knocked-back entity; define ordering, terminal handling, and preview/commit behavior before implementation.
+
 ### Execution Resistance
 
 Replace Execution instant kills with triple Mobility damage against bosses and other resistant enemies after the shipped instant-kill behavior has been ported and verified.

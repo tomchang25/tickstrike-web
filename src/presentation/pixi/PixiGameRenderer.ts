@@ -2,10 +2,14 @@ import { Application, Container, Graphics, Text } from "pixi.js";
 import {
   clampSmashTarget,
   previewAttack,
+  previewAttackVictimMarkers,
   previewDash,
+  previewDashVictimMarkers,
   previewSmash,
+  previewSmashVictimMarkers,
   type AttackPreview,
   type DashPreview,
+  type PreviewVictimMarker,
   type SmashPreview,
 } from "../../core/actions/action-preview";
 import type { Cell, EntityId, EntityState, MobilityKind, WorldSnapshot } from "../../core/model/types";
@@ -132,6 +136,7 @@ export class PixiGameRenderer {
   private dashPreview: DashPreview | undefined;
   private retainedDashPreview: DashPreview | undefined;
   private smashPreview: SmashPreview | undefined;
+  private victimPreviewMarkers: readonly PreviewVictimMarker[] = [];
   private pointerCleanup: (() => void) | undefined;
 
   get transientCount(): number {
@@ -157,9 +162,9 @@ export class PixiGameRenderer {
       this.gridLayer,
       this.reservationLayer,
       this.telegraphLayer,
-      this.pointerPreviewLayer,
       this.actorLayer,
       this.telegraphLabelLayer,
+      this.pointerPreviewLayer,
       this.effectsLayer,
     );
     this.app.stage.addChild(this.worldLayer);
@@ -182,6 +187,7 @@ export class PixiGameRenderer {
       this.dashPreview = undefined;
       this.retainedDashPreview = undefined;
       this.smashPreview = undefined;
+      this.victimPreviewMarkers = [];
     }
     this.drawArena(snapshot);
     this.projectSnapshot(snapshot);
@@ -282,6 +288,7 @@ export class PixiGameRenderer {
       this.dashPreview = undefined;
       this.retainedDashPreview = undefined;
       this.smashPreview = undefined;
+      this.victimPreviewMarkers = [];
       if (this.snapshot?.armedSmashTarget) this.refreshPointerPreview();
       else this.clearPointerPreview();
     };
@@ -407,6 +414,7 @@ export class PixiGameRenderer {
       this.dashPreview = undefined;
       this.retainedDashPreview = undefined;
       this.smashPreview = undefined;
+      this.victimPreviewMarkers = [];
       this.clearPointerPreview();
       return;
     }
@@ -416,6 +424,7 @@ export class PixiGameRenderer {
       this.attackPreview = undefined;
       this.dashPreview = undefined;
       this.smashPreview = undefined;
+      this.victimPreviewMarkers = [];
       this.clearPointerPreview();
       return;
     }
@@ -423,9 +432,11 @@ export class PixiGameRenderer {
     this.attackPreview = undefined;
     this.dashPreview = undefined;
     this.smashPreview = undefined;
+    this.victimPreviewMarkers = [];
 
     if (this.snapshot.armedSmashTarget) {
       this.smashPreview = previewSmash(this.snapshot, player.id, this.snapshot.armedSmashTarget);
+      this.victimPreviewMarkers = previewSmashVictimMarkers(this.smashPreview);
       this.drawPointerPreview();
       return;
     }
@@ -439,6 +450,7 @@ export class PixiGameRenderer {
 
     if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
       this.attackPreview = previewAttack(this.snapshot, player.id, direction);
+      this.victimPreviewMarkers = previewAttackVictimMarkers(this.attackPreview);
       this.drawPointerPreview();
       return;
     }
@@ -448,6 +460,7 @@ export class PixiGameRenderer {
     if (mobility === "dash") {
       this.dashDistance = resolveAimDistance(this.pointerCell, player.cell, range);
       this.dashPreview = previewDash(this.snapshot, player.id, direction, this.dashDistance);
+      this.victimPreviewMarkers = previewDashVictimMarkers(this.dashPreview);
       if (this.dashPreview.accepted) this.retainedDashPreview = this.dashPreview;
     } else {
       this.smashPreview = previewSmash(
@@ -455,6 +468,7 @@ export class PixiGameRenderer {
         player.id,
         clampSmashTarget(this.pointerCell, player.cell, range),
       );
+      this.victimPreviewMarkers = previewSmashVictimMarkers(this.smashPreview);
     }
     this.drawPointerPreview();
   }
@@ -476,7 +490,10 @@ export class PixiGameRenderer {
 
     if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
       const preview = this.attackPreview;
-      if (!preview?.accepted) return;
+      if (!preview?.accepted) {
+        this.drawVictimMarkers();
+        return;
+      }
       const color = preview.hasTarget ? 0x72d4ff : 0xff6b6b;
       const target = preview.target;
       const marker = new Graphics()
@@ -486,6 +503,7 @@ export class PixiGameRenderer {
       this.pointerPreviewLayer.addChild(marker);
       canvas.dataset.attackPreviewCell = `${target.x},${target.y}`;
       canvas.dataset.attackTarget = preview.hasTarget ? "enemy" : "empty";
+      this.drawVictimMarkers();
       return;
     }
 
@@ -493,7 +511,10 @@ export class PixiGameRenderer {
       const preview = this.smashPreview;
       canvas.dataset.smashPreviewValid = String(Boolean(preview?.accepted));
       canvas.dataset.smashArmed = String(Boolean(this.snapshot?.armedSmashTarget));
-      if (!preview) return;
+      if (!preview) {
+        this.drawVictimMarkers();
+        return;
+      }
       for (const cell of preview.area) {
         const marker = new Graphics()
           .rect(cell.x * CELL_SIZE + 8, cell.y * CELL_SIZE + 8, CELL_SIZE - 16, CELL_SIZE - 16)
@@ -513,6 +534,7 @@ export class PixiGameRenderer {
         this.pointerPreviewLayer.addChild(virtualPlayer);
       }
       canvas.dataset.smashPreviewCell = `${center.x},${center.y}`;
+      this.drawVictimMarkers();
       return;
     }
 
@@ -521,7 +543,10 @@ export class PixiGameRenderer {
     canvas.dataset.mobilityPreviewValid = String(Boolean(preview?.accepted));
     canvas.dataset.mobilityPreviewRetained = String(Boolean(!preview?.accepted && retainedPreview));
     const visiblePreview = preview?.accepted ? preview : retainedPreview;
-    if (!visiblePreview?.landing) return;
+    if (!visiblePreview?.landing) {
+      this.drawVictimMarkers();
+      return;
+    }
 
     for (const cell of visiblePreview.path) {
       const marker = new Graphics()
@@ -540,6 +565,88 @@ export class PixiGameRenderer {
       .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
     this.pointerPreviewLayer.addChild(landingMarker, virtualPlayer);
     canvas.dataset.mobilityPreviewCell = `${landing.x},${landing.y}`;
+    this.drawVictimMarkers();
+  }
+
+  private drawVictimMarkers(): void {
+    const canvas = this.app.canvas;
+    const markers = this.victimPreviewMarkers;
+    const kills = markers.filter((marker) => marker.outcome === "kill");
+    const displacements = markers.filter(
+      (marker) => (marker.outcome === "knockback" || marker.outcome === "water") && marker.to,
+    );
+    const terminal = markers.filter((marker) => marker.outcome === "crush" || marker.outcome === "water");
+    const blocked = markers.filter((marker) => marker.outcome === "blocked");
+
+    canvas.dataset.previewKills = kills.map((marker) => marker.enemyId).join(",");
+    canvas.dataset.previewDisplacements = displacements
+      .map((marker) => `${marker.enemyId}:${marker.from.x},${marker.from.y}>${marker.to?.x},${marker.to?.y}`)
+      .join(";");
+    canvas.dataset.previewTerminal = terminal.map((marker) => `${marker.enemyId}:${marker.outcome}`).join(";");
+    canvas.dataset.previewBlocked = blocked.map((marker) => marker.enemyId).join(",");
+
+    for (const marker of markers) {
+      const from = cellToPixels(marker.from);
+      if (marker.outcome === "kill") {
+        this.pointerPreviewLayer.addChild(
+          new Graphics()
+            .circle(from.x, from.y, 25)
+            .fill({ color: 0x11131a, alpha: 0.82 })
+            .stroke({ color: 0xff5c7a, width: 3, alpha: 0.95 })
+            .moveTo(from.x - 16, from.y - 16)
+            .lineTo(from.x + 16, from.y + 16)
+            .moveTo(from.x + 16, from.y - 16)
+            .lineTo(from.x - 16, from.y + 16)
+            .stroke({ color: 0xff5c7a, width: 5, alpha: 0.95 }),
+        );
+        continue;
+      }
+
+      if (marker.outcome === "crush") {
+        this.pointerPreviewLayer.addChild(
+          new Graphics()
+            .rect(marker.from.x * CELL_SIZE + 7, marker.from.y * CELL_SIZE + 7, CELL_SIZE - 14, CELL_SIZE - 14)
+            .fill({ color: 0xff8c42, alpha: 0.28 })
+            .stroke({ color: 0xffd27d, width: 5, alpha: 1 }),
+        );
+        continue;
+      }
+
+      if (marker.outcome === "blocked") {
+        this.pointerPreviewLayer.addChild(
+          new Graphics()
+            .circle(from.x, from.y, 13)
+            .fill({ color: 0x11131a, alpha: 0.76 })
+            .stroke({ color: 0x8791a4, width: 3, alpha: 0.9 }),
+        );
+        continue;
+      }
+
+      if (!marker.to) continue;
+      const to = cellToPixels(marker.to);
+      const color = marker.outcome === "water" ? 0xf2d06b : 0xffb86b;
+      const directionX = to.x - from.x;
+      const directionY = to.y - from.y;
+      const length = Math.hypot(directionX, directionY) || 1;
+      const unitX = directionX / length;
+      const unitY = directionY / length;
+      this.pointerPreviewLayer.addChild(
+        new Graphics()
+          .circle(from.x, from.y, 10)
+          .fill({ color: 0x11131a, alpha: 0.72 })
+          .moveTo(from.x, from.y)
+          .lineTo(to.x, to.y)
+          .moveTo(to.x, to.y)
+          .lineTo(to.x - unitX * 16 - unitY * 8, to.y - unitY * 16 + unitX * 8)
+          .moveTo(to.x, to.y)
+          .lineTo(to.x - unitX * 16 + unitY * 8, to.y - unitY * 16 - unitX * 8)
+          .stroke({ color, width: 4, alpha: 0.85 }),
+        new Graphics()
+          .rect(marker.to.x * CELL_SIZE + 6, marker.to.y * CELL_SIZE + 6, CELL_SIZE - 12, CELL_SIZE - 12)
+          .fill({ color, alpha: 0.28 })
+          .stroke({ color, width: 5, alpha: 1 }),
+      );
+    }
   }
 
   private clearPointerPreview(): void {
@@ -556,6 +663,10 @@ export class PixiGameRenderer {
     delete canvas.dataset.smashPreviewCell;
     delete canvas.dataset.smashPreviewValid;
     delete canvas.dataset.smashArmed;
+    delete canvas.dataset.previewKills;
+    delete canvas.dataset.previewDisplacements;
+    delete canvas.dataset.previewTerminal;
+    delete canvas.dataset.previewBlocked;
   }
 
   private activeMobility(): MobilityKind {
