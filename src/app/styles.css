@@ -200,6 +200,44 @@ header > p {
   font-size: 0.82rem;
 }
 
+.content-inspection {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid #333b4c;
+  padding-top: 16px;
+}
+
+.content-inspection h3 {
+  margin: 0 0 6px;
+  color: #72d4ff;
+  font-size: 0.9rem;
+}
+
+.inspection-block {
+  padding: 10px;
+  border-radius: 8px;
+  background: #0f1218;
+}
+
+.inspection-block dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.inspection-block dt {
+  color: #8e99aa;
+}
+
+.inspection-block dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #e8eef7;
+  text-align: right;
+}
+
 @media (max-width: 850px) {
   header {
     display: grid;

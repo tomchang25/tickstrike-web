@@ -3,6 +3,7 @@ import type { GameCommand } from "../core/actions/commands";
 import type { WorldSnapshot } from "../core/model/types";
 import type { World } from "../core/world/world";
 import type { TestScenario } from "../harness/types";
+import type { ContentInspection } from "../harness/content-inspection";
 import { PixiGameRenderer, type ScreenBounds } from "../presentation/pixi/PixiGameRenderer";
 import { PresentationDirector } from "../presentation/timelines/PresentationDirector";
 
@@ -39,6 +40,14 @@ export class GameRuntime {
   }
 
   execute(command: GameCommand): Promise<ActionResolution> {
+    if (this.scenario?.commandsEnabled === false) {
+      return Promise.resolve({
+        accepted: false,
+        reason: "Commands are disabled for this scenario.",
+        events: [],
+      });
+    }
+
     let resolution: ActionResolution = { accepted: false, reason: "Not executed.", events: [] };
 
     this.actionQueue = this.actionQueue.then(async () => {
@@ -68,6 +77,10 @@ export class GameRuntime {
 
   getEntityBounds(id: string): ScreenBounds | undefined {
     return this.renderer.getEntityBounds(id);
+  }
+
+  getContentInspection(): ContentInspection | undefined {
+    return this.scenario?.inspection;
   }
 
   private requireWorld(): World {

@@ -23,6 +23,7 @@ export function App() {
     () => requireScenario(selectedScenarioId),
     [selectedScenarioId],
   );
+  const commandsEnabled = selectedScenario.commandsEnabled !== false;
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -71,15 +72,17 @@ export function App() {
   }, []);
 
   const move = useCallback(
-    async (direction: Cell) => {
-      const runtime = runtimeRef.current;
+      async (direction: Cell) => {
+        if (!commandsEnabled) return;
+        const runtime = runtimeRef.current;
       if (!runtime) return;
       await execute(() => runtime.execute({ type: "move", actorId: "player", direction }));
     },
-    [execute],
+    [commandsEnabled, execute],
   );
 
   const smash = useCallback(async () => {
+    if (!commandsEnabled) return;
     const runtime = runtimeRef.current;
     if (!runtime) return;
     const player = runtime.snapshot().entities.find((entity) => entity.id === "player");
@@ -91,11 +94,11 @@ export function App() {
         target: { x: player.cell.x + 1, y: player.cell.y },
       }),
     );
-  }, [execute]);
+  }, [commandsEnabled, execute]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (busy || event.repeat) return;
+      if (!commandsEnabled || busy || event.repeat) return;
       const directions: Record<string, Cell | undefined> = {
         ArrowUp: { x: 0, y: -1 },
         ArrowDown: { x: 0, y: 1 },
@@ -118,7 +121,7 @@ export function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [busy, move, smash]);
+  }, [busy, commandsEnabled, move, smash]);
 
   return (
     <main className="app-shell">
@@ -136,7 +139,9 @@ export function App() {
             <div ref={canvasHostRef} className="canvas-host" />
             {snapshot ? <SemanticMirror snapshot={snapshot} /> : null}
           </div>
-          <p className="hint">WASD / arrows to move · Space to Smash</p>
+          <p className="hint">
+            {commandsEnabled ? "WASD / arrows to move · Space to Smash" : "Static inspection: gameplay commands disabled"}
+          </p>
         </section>
 
         {snapshot ? (
@@ -145,6 +150,8 @@ export function App() {
             selectedScenarioId={selectedScenarioId}
             snapshot={snapshot}
             busy={busy}
+            commandsEnabled={commandsEnabled}
+            inspection={selectedScenario.inspection}
             onScenarioChange={changeScenario}
             onMove={move}
             onSmash={smash}
