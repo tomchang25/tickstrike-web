@@ -10,6 +10,11 @@ import {
 } from "../../core/actions/action-preview";
 import type { Cell, EntityId, EntityState, WorldSnapshot } from "../../core/model/types";
 import { CELL_SIZE, INITIAL_AIM, resolveAimDirection, screenPointToCell } from "./pointer-aim";
+import {
+  aggregateTelegraphLabels,
+  formatTelegraphMultiplier,
+  placeTelegraphLabels,
+} from "./telegraph-labels";
 
 export type PointerMode = "attack" | "mobility";
 export type MobilityKind = "dash" | "smash";
@@ -94,6 +99,7 @@ export class PixiGameRenderer {
   readonly pointerPreviewLayer = new Container();
   readonly reservationLayer = new Container();
   readonly actorLayer = new Container();
+  readonly telegraphLabelLayer = new Container();
   readonly effectsLayer = new Container();
 
   private readonly entityViews = new Map<EntityId, EntityView>();
@@ -136,6 +142,7 @@ export class PixiGameRenderer {
       this.telegraphLayer,
       this.pointerPreviewLayer,
       this.actorLayer,
+      this.telegraphLabelLayer,
       this.effectsLayer,
     );
     this.app.stage.addChild(this.worldLayer);
@@ -566,6 +573,7 @@ export class PixiGameRenderer {
 
   private drawTelegraphs(snapshot: WorldSnapshot): void {
     this.telegraphLayer.removeChildren().forEach((child) => child.destroy());
+    this.telegraphLabelLayer.removeChildren().forEach((child) => child.destroy());
     for (const telegraph of snapshot.telegraphs) {
       for (const cell of telegraph.cells) {
         const marker = new Graphics()
@@ -573,6 +581,65 @@ export class PixiGameRenderer {
           .fill({ color: telegraph.phase === "active" ? 0xff5c7a : 0xffd166, alpha: 0.22 });
         this.telegraphLayer.addChild(marker);
       }
+    }
+
+    const entitiesById = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
+    const sources = snapshot.telegraphs.flatMap((telegraph) => {
+      const ticks = entitiesById.get(telegraph.sourceId)?.committedAttack?.warningTicks;
+      return ticks === undefined ? [] : [{ cells: telegraph.cells, ticks }];
+    });
+    const summaries = aggregateTelegraphLabels(sources);
+    const occupiedCells = snapshot.entities.flatMap((entity) => [entity.cell, ...entity.footprint]);
+    const placements = placeTelegraphLabels(summaries, occupiedCells);
+
+    for (const placement of placements) {
+      const primaryFontSize = placement.primary && placement.offset.y < 0 ? 36 : placement.primary ? 52 : 26;
+      const multiplierFontSize = placement.primary && placement.offset.y < 0 ? 16 : placement.primary ? 22 : 14;
+      const label = new Container();
+      label.label = `telegraph-${placement.cell.x}-${placement.cell.y}-${placement.ticks}`;
+      label.position.set(
+        placement.cell.x * CELL_SIZE + CELL_SIZE / 2 + placement.offset.x * CELL_SIZE,
+        placement.cell.y * CELL_SIZE + CELL_SIZE / 2 + placement.offset.y * CELL_SIZE,
+      );
+
+      const number = new Text({
+        text: String(placement.ticks),
+        style: {
+          fill: 0xffffff,
+          fontFamily: "monospace",
+          fontSize: primaryFontSize,
+          fontWeight: "700",
+        },
+      });
+      number.anchor.set(0.5);
+      label.addChild(number);
+
+      const multiplier = formatTelegraphMultiplier(placement.count);
+      if (multiplier) {
+        const suffix = new Text({
+          text: multiplier,
+          style: {
+            fill: 0xffffff,
+            fontFamily: "monospace",
+            fontSize: multiplierFontSize,
+            fontWeight: "700",
+          },
+        });
+        suffix.anchor.set(0, 0.5);
+        suffix.position.set(number.width / 2 + primaryFontSize * 0.08, 0);
+        label.addChild(suffix);
+      }
+      this.telegraphLabelLayer.addChild(label);
+    }
+
+    if (this.host) {
+      this.app.canvas.dataset.telegraphLabels = placements
+        .map((placement) => {
+          const multiplier = formatTelegraphMultiplier(placement.count) ?? "";
+          const position = placement.primary && placement.offset.y < 0 ? "@head" : placement.primary ? "@center" : "@side";
+          return `${placement.cell.x},${placement.cell.y}:${placement.ticks}${multiplier}${position}`;
+        })
+        .join("|");
     }
   }
 

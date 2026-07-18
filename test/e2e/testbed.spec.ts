@@ -117,6 +117,10 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("tick-value")).toHaveText("1");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "2");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
+    "data-telegraph-labels",
+    /7,6:2x2@head.*8,6:2@head/,
+  );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "telegraphing");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "2");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-attack-warning-ticks", "2");
