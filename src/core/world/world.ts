@@ -9,6 +9,7 @@ import {
   type TileKind,
   type WorldSnapshot,
 } from "../model/types";
+import { Arena } from "./arena";
 
 export interface SpawnEntityInput {
   readonly id: EntityId;
@@ -31,20 +32,23 @@ function cloneEntity(entity: EntityState): EntityState {
 
 export class World {
   readonly arena: ArenaState;
+  private readonly geometry: Arena;
   private readonly entities = new Map<EntityId, EntityState>();
   private currentTick = 0;
   private lastEvents: readonly CombatEvent[] = [];
 
-  constructor(width: number, height: number, tiles: readonly TileKind[]) {
-    if (tiles.length !== width * height) {
-      throw new Error(`Expected ${width * height} tiles, received ${tiles.length}.`);
-    }
-
-    this.arena = {
-      width,
-      height,
-      tiles: [...tiles],
-    };
+  constructor(arena: Arena);
+  constructor(width: number, height: number, tiles: readonly TileKind[]);
+  constructor(
+    arenaOrWidth: Arena | number,
+    height?: number,
+    tiles?: readonly TileKind[],
+  ) {
+    this.geometry =
+      arenaOrWidth instanceof Arena
+        ? arenaOrWidth
+        : Arena.fromTiles(arenaOrWidth, height ?? 0, tiles ?? []);
+    this.arena = this.geometry.toState();
   }
 
   spawn(input: SpawnEntityInput): EntityState {
@@ -123,18 +127,15 @@ export class World {
   }
 
   tileAt(cell: Cell): TileKind {
-    if (!this.isInside(cell)) return "wall";
-    const index = cell.y * this.arena.width + cell.x;
-    return this.arena.tiles[index] ?? "wall";
+    return this.geometry.tileAt(cell);
   }
 
   isInside(cell: Cell): boolean {
-    return (
-      cell.x >= 0 &&
-      cell.y >= 0 &&
-      cell.x < this.arena.width &&
-      cell.y < this.arena.height
-    );
+    return this.geometry.isInBounds(cell);
+  }
+
+  isLegalCell(cell: Cell): boolean {
+    return this.geometry.isLegalCell(cell);
   }
 
   isWalkable(cell: Cell): boolean {
@@ -154,6 +155,7 @@ export class World {
       tick: this.currentTick,
       arena: {
         ...this.arena,
+        terrain: [...this.arena.terrain],
         tiles: [...this.arena.tiles],
       },
       entities: this.listEntities(),
