@@ -11,6 +11,14 @@ describe("action previews", () => {
       accepted: true,
       target: { x: 5, y: 6 },
       hasTarget: true,
+      hit: {
+        attackerId: "player",
+        targetId: "enemy-thrust",
+        damage: 20,
+        hpBefore: 100,
+        hpAfter: 80,
+        killed: false,
+      },
     });
     expect(previewAttack(world, "player", { x: 1, y: 0 })).toMatchObject({
       accepted: true,
@@ -18,6 +26,18 @@ describe("action previews", () => {
       hasTarget: false,
     });
     expect(world.snapshot()).toEqual(before);
+  });
+
+  it("does not project a hit for a terminal adjacent target", () => {
+    const world = createFoundationArena();
+    world.setPhase("enemy-thrust", "dead");
+
+    expect(previewAttack(world, "player", { x: -1, y: 0 })).toMatchObject({
+      accepted: true,
+      target: { x: 5, y: 6 },
+      hasTarget: false,
+    });
+    expect(previewAttack(world, "player", { x: -1, y: 0 }).hit).toBeUndefined();
   });
 
   it("shares Port 03 Dash landing and blocking rules", () => {

@@ -126,6 +126,41 @@ describe("canonical world occupancy", () => {
     expect(world.listEntities().map((entity) => entity.id)).toEqual(["enemy", "replacement"]);
   });
 
+  it("applies atomic clamped damage and cleans terminal ownership", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 2, y: 2 },
+      hp: 10,
+    });
+    world.reserve({ ownerId: "enemy", purpose: "attack", cells: [{ x: 2, y: 2 }] });
+    world.setTelegraph({ sourceId: "enemy", phase: "warning", cells: [{ x: 2, y: 2 }] });
+
+    expect(world.applyDamage("enemy", 4)).toEqual({
+      targetId: "enemy",
+      damage: 4,
+      hpBefore: 10,
+      hpAfter: 6,
+      killed: false,
+    });
+    expect(world.requireEntity("enemy")).toMatchObject({ hp: 6, phase: "alive" });
+
+    expect(world.applyDamage("enemy", 99)).toEqual({
+      targetId: "enemy",
+      damage: 99,
+      hpBefore: 6,
+      hpAfter: 0,
+      killed: true,
+    });
+    expect(world.requireEntity("enemy")).toMatchObject({ hp: 0, phase: "dead" });
+    expect(world.getOccupantAt({ x: 2, y: 2 })).toBeUndefined();
+    expect(world.getReservation("enemy")).toBeUndefined();
+    expect(world.getTelegraph("enemy")).toBeUndefined();
+    expect(world.applyDamage("enemy", 1)).toBeUndefined();
+  });
+
   it("does not expose mutable canonical cells through snapshots", () => {
     const world = createTrainingArena();
     world.spawn({

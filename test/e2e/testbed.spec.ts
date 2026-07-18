@@ -102,6 +102,8 @@ test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence"
   await expect(page.getByTestId("tick-value")).toHaveText("2");
   await expect(page.getByTestId("event-log")).toContainText("player_attacked");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-state", "alive");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "80");
+  await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
 
   const canvas = page.getByTestId("game-canvas");
   const box = await canvas.boundingBox();

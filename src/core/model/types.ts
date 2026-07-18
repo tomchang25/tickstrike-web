@@ -23,7 +23,21 @@ export interface EntityState {
   readonly footprint: readonly Cell[];
   readonly hp: number;
   readonly maxHp: number;
+  /** Authored player Normal Attack damage, when this entity is the player. */
+  readonly normalAttackDamage?: number;
   readonly phase: EntityPhase;
+}
+
+export interface DamageResult {
+  readonly targetId: EntityId;
+  readonly damage: number;
+  readonly hpBefore: number;
+  readonly hpAfter: number;
+  readonly killed: boolean;
+}
+
+export interface BasicHitResult extends DamageResult {
+  readonly attackerId: EntityId;
 }
 
 export interface Reservation {

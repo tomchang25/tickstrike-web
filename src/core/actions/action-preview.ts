@@ -1,4 +1,12 @@
-import { isCardinalDirection, sameCell, type Cell, type EntityState, type WorldSnapshot } from "../model/types";
+import {
+  isCardinalDirection,
+  sameCell,
+  type BasicHitResult,
+  type Cell,
+  type EntityId,
+  type EntityState,
+  type WorldSnapshot,
+} from "../model/types";
 import type { World } from "../world/world";
 
 export interface AttackPreview {
@@ -6,6 +14,7 @@ export interface AttackPreview {
   readonly direction: Cell;
   readonly target: Cell;
   readonly hasTarget: boolean;
+  readonly hit?: BasicHitResult;
   readonly reason?: string;
 }
 
@@ -58,6 +67,18 @@ export function attackTarget(origin: Cell, direction: Cell): Cell {
   return add(origin, direction);
 }
 
+export function previewBasicHit(attackerId: EntityId, target: EntityState, damage: number): BasicHitResult {
+  const hpAfter = Math.max(0, target.hp - damage);
+  return {
+    attackerId,
+    targetId: target.id,
+    damage,
+    hpBefore: target.hp,
+    hpAfter,
+    killed: hpAfter === 0,
+  };
+}
+
 export function previewAttack(source: PreviewSource, actorId: string, direction: Cell): AttackPreview {
   const snapshot = snapshotOf(source);
   const actor = snapshot.entities.find((entity) => entity.id === actorId);
@@ -80,11 +101,15 @@ export function previewAttack(source: PreviewSource, actorId: string, direction:
       reason: "Direction must be cardinal.",
     };
   }
+  const targetEntity = entityAt(snapshot, target, "enemy");
   return {
     accepted: true,
     direction,
     target,
-    hasTarget: Boolean(entityAt(snapshot, target, "enemy")),
+    hasTarget: Boolean(targetEntity),
+    ...(targetEntity && actor.normalAttackDamage && actor.normalAttackDamage > 0
+      ? { hit: previewBasicHit(actor.id, targetEntity, actor.normalAttackDamage) }
+      : {}),
   };
 }
 

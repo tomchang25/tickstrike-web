@@ -49,6 +49,28 @@ export class PresentationDirector {
           ));
           break;
         }
+        case "enemy_damaged": {
+          if (event.hit.killed) break;
+          const view = this.renderer.getEntityView(event.enemyId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view.scale, { x: 1.2, y: 1.2, duration: 0.06, ease: "power2.out" })
+              .to(view.scale, { x: 1, y: 1, duration: 0.1, ease: "power2.in" }),
+          ));
+          break;
+        }
+        case "enemy_died": {
+          const view = this.renderer.getEntityView(event.enemyId);
+          terminalIds.add(event.enemyId);
+          if (!view) break;
+          animations.push(this.timelineDone(
+            gsap.timeline()
+              .to(view.scale, { x: 1.3, y: 0.25, duration: 0.09, ease: "power3.in" })
+              .to(view, { alpha: 0, duration: 0.16, delay: 0.06 }),
+          ));
+          break;
+        }
         case "player_dashed": {
           const view = this.renderer.getEntityView(event.actorId);
           if (!view) break;

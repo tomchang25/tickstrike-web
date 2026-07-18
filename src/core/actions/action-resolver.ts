@@ -2,7 +2,7 @@ import type { CombatEvent } from "../events/combat-events";
 import { isCardinalDirection, type Cell } from "../model/types";
 import type { World } from "../world/world";
 import type { GameCommand } from "./commands";
-import { attackTarget, previewDash, previewSmash } from "./action-preview";
+import { attackTarget, previewAttack, previewDash, previewSmash } from "./action-preview";
 
 export interface ActionResolution {
   readonly accepted: boolean;
@@ -77,13 +77,36 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
     return { accepted: false, consumedTime: false, reason: "Direction must be cardinal.", events: [] };
   }
 
-  const events: readonly CombatEvent[] = [
-    {
-      type: "player_attacked",
-      actorId: actor.id,
-      target: attackTarget(actor.cell, command.direction),
-    },
-  ];
+  const preview = previewAttack(world, actor.id, command.direction);
+  const attackEvent: CombatEvent = {
+    type: "player_attacked",
+    actorId: actor.id,
+    target: attackTarget(actor.cell, command.direction),
+  };
+  const events: CombatEvent[] = [attackEvent];
+
+  if (preview.hit) {
+    const hit = world.applyBasicHit(preview.hit);
+    if (hit) {
+      events[0] = { ...attackEvent, hit };
+      const target = world.requireEntity(hit.targetId);
+      events.push({
+        type: "enemy_damaged",
+        enemyId: target.id,
+        hit,
+        hp: target.hp,
+        maxHp: target.maxHp,
+      });
+      if (hit.killed) {
+        events.push({
+          type: "enemy_died",
+          enemyId: target.id,
+          attackerId: hit.attackerId,
+          cell: target.cell,
+        });
+      }
+    }
+  }
   return finishAccepted(world, command.type, events);
 }
 

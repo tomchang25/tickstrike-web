@@ -5,7 +5,9 @@ import {
   manhattanDistance,
   sameCell,
   type ArenaState,
+  type BasicHitResult,
   type Cell,
+  type DamageResult,
   type EntityId,
   type EntityState,
   isTerminalPhase,
@@ -26,6 +28,7 @@ export interface SpawnEntityInput {
   readonly cell: Cell;
   readonly footprint?: readonly Cell[];
   readonly hp: number;
+  readonly normalAttackDamage?: number;
 }
 
 export interface ReservationRequest {
@@ -140,6 +143,7 @@ export class World {
       footprint,
       hp: input.hp,
       maxHp: input.hp,
+      normalAttackDamage: input.normalAttackDamage,
       phase: "alive",
     };
     this.entities.set(entity.id, entity);
@@ -245,6 +249,32 @@ export class World {
     this.validateActiveFootprint(id, entity.footprint);
     this.claimFootprint(id, entity.footprint);
     this.entities.set(id, { ...entity, phase });
+  }
+
+  applyDamage(targetId: EntityId, damage: number): DamageResult | undefined {
+    if (!Number.isFinite(damage) || damage <= 0) throw new Error("Damage must be a positive finite number.");
+
+    const entity = this.entities.get(targetId);
+    if (!entity || isTerminalPhase(entity.phase)) return undefined;
+
+    const hpAfter = Math.max(0, entity.hp - damage);
+    const killed = hpAfter === 0;
+    if (killed) this.setPhase(targetId, "dead");
+
+    this.entities.set(targetId, { ...this.entities.get(targetId)!, hp: hpAfter });
+    return {
+      targetId,
+      damage,
+      hpBefore: entity.hp,
+      hpAfter,
+      killed,
+    };
+  }
+
+  applyBasicHit(hit: BasicHitResult): BasicHitResult | undefined {
+    const damage = this.applyDamage(hit.targetId, hit.damage);
+    if (!damage) return undefined;
+    return { ...damage, attackerId: hit.attackerId };
   }
 
   moveEntityToPhase(id: EntityId, to: Cell, phase: EntityState["phase"]): void {

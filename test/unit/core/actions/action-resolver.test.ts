@@ -71,14 +71,41 @@ describe("player verbs", () => {
 
     expect(occupied.accepted).toBe(true);
     expect(occupied.events).toEqual([
-      { type: "player_attacked", actorId: "player", target: { x: 5, y: 6 } },
+      {
+        type: "player_attacked",
+        actorId: "player",
+        target: { x: 5, y: 6 },
+        hit: {
+          attackerId: "player",
+          targetId: "enemy-thrust",
+          damage: 20,
+          hpBefore: 100,
+          hpAfter: 80,
+          killed: false,
+        },
+      },
+      {
+        type: "enemy_damaged",
+        enemyId: "enemy-thrust",
+        hit: {
+          attackerId: "player",
+          targetId: "enemy-thrust",
+          damage: 20,
+          hpBefore: 100,
+          hpAfter: 80,
+          killed: false,
+        },
+        hp: 80,
+        maxHp: 100,
+      },
     ]);
     expect(occupied.semanticEvents?.map((event) => event.type)).toEqual([
       "command_resolved",
       "player_attacked",
+      "enemy_damaged",
       "world_advanced",
     ]);
-    expect(world.requireEntity("enemy-thrust").phase).toBe("alive");
+    expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 80, phase: "alive" });
     expect(world.snapshot().tick).toBe(1);
     expect(world.snapshot().lastEvents).toEqual(occupied.semanticEvents);
 
@@ -93,6 +120,27 @@ describe("player verbs", () => {
       { type: "player_attacked", actorId: "player", target: { x: 6, y: 5 } },
     ]);
     expect(world.snapshot().tick).toBe(2);
+  });
+
+  it("kills an enemy on an overkill Normal Attack and releases its cell immediately", () => {
+    const world = createFoundationArena();
+    world.applyDamage("enemy-thrust", 95);
+
+    const result = resolveCommand(world, {
+      type: "attack",
+      actorId: "player",
+      direction: { x: -1, y: 0 },
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.events.map((event) => event.type)).toEqual([
+      "player_attacked",
+      "enemy_damaged",
+      "enemy_died",
+    ]);
+    expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 0, maxHp: 100, phase: "dead" });
+    expect(world.getOccupantAt({ x: 5, y: 6 })).toBeUndefined();
+    expect(world.snapshot().tick).toBe(1);
   });
 
   it("dashes through an enemy and lands on the farthest later empty cell", () => {
@@ -116,7 +164,7 @@ describe("player verbs", () => {
     ]);
     expect(world.playerCell).toEqual({ x: 9, y: 6 });
     expect(world.getOccupantAt({ x: 8, y: 6 })?.id).toBe("enemy-slash");
-    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 10, phase: "alive" });
+    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 100, phase: "alive" });
     expect(world.snapshot().tick).toBe(1);
   });
 

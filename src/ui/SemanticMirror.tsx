@@ -27,6 +27,8 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
           data-kind={entity.kind}
           data-archetype={entity.archetype}
           data-state={entity.phase}
+          data-hp={entity.hp}
+          data-max-hp={entity.maxHp}
           data-cell-x={entity.cell.x}
           data-cell-y={entity.cell.y}
         />

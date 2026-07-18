@@ -1,4 +1,4 @@
-import type { Cell, EntityId, Reservation, Telegraph } from "../model/types";
+import type { BasicHitResult, Cell, EntityId, Reservation, Telegraph } from "../model/types";
 
 export type CombatEvent =
   | {
@@ -22,6 +22,20 @@ export type CombatEvent =
       readonly type: "player_attacked";
       readonly actorId: EntityId;
       readonly target: Cell;
+      readonly hit?: BasicHitResult;
+    }
+  | {
+      readonly type: "enemy_damaged";
+      readonly enemyId: EntityId;
+      readonly hit: BasicHitResult;
+      readonly hp: number;
+      readonly maxHp: number;
+    }
+  | {
+      readonly type: "enemy_died";
+      readonly enemyId: EntityId;
+      readonly attackerId: EntityId;
+      readonly cell: Cell;
     }
   | {
       readonly type: "player_dashed";
