@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Build one playable Tickstrike integration point first, then extend that same point until the full run exists. The first milestone is not a collection of enemy demos: it is one deterministic Tick Arena containing one player, three basic enemies, player movement, Normal Attack, Dash, enemy movement, enemy state transitions, WindupAttackPrep, Telegraph, and attack resolution.
+Build one playable Tickstrike integration point first, then extend that same point until the full run exists. The first milestone is not a collection of enemy demos: it is one deterministic Tick Arena containing one player, Thrust and Slash enemies, player movement, Normal Attack, enemy movement, data-owned enemy activity, locked Telegraphs, attack resolution, and directional Guard.
 
 ## Single Integration Point
 
@@ -19,8 +19,8 @@ An accepted player action advances exactly one world tick. The enemy phase reads
 Use one fixed deterministic scenario:
 
 - One player with Move, Normal Attack, and cardinal Dash.
-- Three basic enemy roles: Thrust, Slash, and Ranged.
-- One shared enemy state machine: Move, WindupAttackPrep, Telegraph, Attack, Recover, Stunned, and Dead.
+- Two initial enemy roles: Thrust and Slash; Ranged joins with the additional enemy roles.
+- One shared data-owned enemy activity model: Ready, Telegraphing, Recovering, and Staggered; movement, turn, attack commitment, attack resolution, and death are semantic actions or lifecycle transitions.
 - Enemy movement and attack choice happen once per accepted player action.
 - Windup locks the attack intent. Telegraph exposes the locked cells. Player movement changes the next enemy decision, not an already committed attack.
 - The browser shows the board, player, enemy movement, telegraph cells, damage, death, and reset on this same screen.
@@ -39,10 +39,10 @@ Use one fixed deterministic scenario:
 | --- | --- | --- |
 | 02 | Deterministic arena and runtime seam | A resettable board with one player and three enemy fixtures. |
 | 03 | [Player verbs and Tick boundary](port_03_player_verbs_and_player_clock.md) -> [Implementation Spec](port_03_player_verbs_and_player_clock.implementation_spec.md) | Move, Normal Attack, Dash, accepted/rejected commands, and one-tick advancement. |
-| 04 | Enemy state machine | Movement, WindupAttackPrep, Telegraph, locked attacks, and post-player-action decisions. |
-| 05 | First playable Tick Arena | Player damage, enemy damage, death, presentation, and cleanup form one playable loop. |
-| 06 | Basic combat expansion | Directional results, Guard/Stagger, and Dash refinement are added without changing the entry point. |
-| 07 | Additional enemies | More roles reuse the same state machine and navigation contracts; no role-specific runtime. |
+| 04 | Basic enemy tick combat and Guard | Thrust/Slash HP, tick actions, locked attacks, directional Guard, presentation, and browser acceptance. |
+| 05 | First playable Tick Arena | Encounter win, defeat, restart, terminal presentation, and cleanup form one playable loop. |
+| 06 | Mobility combat refinement | Dash and Smash extend the existing combat rules without changing the entry point. |
+| 07 | Additional enemies | Ranged and later roles reuse the same activity and navigation contracts; no role-specific runtime. |
 | 08 | Waves and spawning | Authored waves and spawn warnings feed the same world and Tick boundary. |
 | 09 | Rewards and run build | Rewards modify the existing player state after an encounter; no parallel combat state. |
 | 10 | Run lifecycle | Start, wave completion, death, restart, and the endless branch reuse the same runtime. |
