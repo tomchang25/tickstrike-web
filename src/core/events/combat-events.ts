@@ -1,4 +1,11 @@
-import type { BasicHitResult, Cell, EntityId, Reservation, Telegraph } from "../model/types";
+import type {
+  BasicHitResult,
+  Cell,
+  CommittedAttack,
+  EntityId,
+  Reservation,
+  Telegraph,
+} from "../model/types";
 
 export type CombatEvent =
   | {
@@ -36,6 +43,44 @@ export type CombatEvent =
       readonly enemyId: EntityId;
       readonly attackerId: EntityId;
       readonly cell: Cell;
+    }
+  | {
+      readonly type: "enemy_moved";
+      readonly enemyId: EntityId;
+      readonly from: Cell;
+      readonly to: Cell;
+    }
+  | {
+      readonly type: "enemy_waited";
+      readonly enemyId: EntityId;
+    }
+  | {
+      readonly type: "enemy_attack_committed";
+      readonly enemyId: EntityId;
+      readonly attack: CommittedAttack;
+    }
+  | {
+      readonly type: "enemy_attack_detonated";
+      readonly enemyId: EntityId;
+      readonly attack: CommittedAttack;
+      readonly target: Cell;
+      readonly hit?: DamageEvent;
+    }
+  | {
+      readonly type: "player_damaged";
+      readonly playerId: EntityId;
+      readonly damage: DamageEvent;
+      readonly hp: number;
+      readonly maxHp: number;
+    }
+  | {
+      readonly type: "enemy_recovering";
+      readonly enemyId: EntityId;
+      readonly recoveryTicks: number;
+    }
+  | {
+      readonly type: "enemy_recovered";
+      readonly enemyId: EntityId;
     }
   | {
       readonly type: "player_dashed";
@@ -82,3 +127,11 @@ export type CombatEvent =
       readonly sourceId: string;
       readonly cleared: boolean;
     };
+
+export interface DamageEvent {
+  readonly targetId: EntityId;
+  readonly damage: number;
+  readonly hpBefore: number;
+  readonly hpAfter: number;
+  readonly killed: boolean;
+}

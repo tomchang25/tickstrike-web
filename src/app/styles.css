@@ -178,6 +178,18 @@ header > p {
   font-size: 1rem;
 }
 
+.debug-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #aeb8c8;
+  font-size: 0.85rem;
+}
+
+.debug-toggle input {
+  accent-color: #72d4ff;
+}
+
 .movement-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

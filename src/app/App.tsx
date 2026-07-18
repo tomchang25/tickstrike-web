@@ -20,6 +20,7 @@ export function App() {
   const [selectedScenarioId, setSelectedScenarioId] = useState(scenarioFromUrl);
   const [snapshot, setSnapshot] = useState<WorldSnapshot>();
   const [busy, setBusy] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   const [pointerMode, setPointerMode] = useState<PointerMode>("attack");
   const [selectedMobility, setSelectedMobility] = useState<MobilityKind>("dash");
   const selectedScenario = useMemo(
@@ -185,6 +186,7 @@ export function App() {
   useEffect(() => {
     const runtime = runtimeRef.current;
     if (!runtime || !snapshot) return;
+    runtime.renderer.setDebugMode(debugMode);
     runtime.renderer.setPointerMode(pointerMode);
     runtime.renderer.setSelectedMobility(selectedMobility);
     return runtime.renderer.bindPointerInput({
@@ -195,7 +197,7 @@ export function App() {
         return smash(commit.target);
       },
     });
-  }, [attack, busy, commandsEnabled, dash, pointerMode, selectedMobility, smash, snapshot]);
+  }, [attack, busy, commandsEnabled, dash, debugMode, pointerMode, selectedMobility, smash, snapshot]);
 
   return (
     <main className="app-shell">
@@ -232,10 +234,12 @@ export function App() {
             busy={busy}
             commandsEnabled={commandsEnabled}
             selectedMobility={selectedMobility}
+            debugMode={debugMode}
             inspection={selectedScenario.inspection}
             onScenarioChange={changeScenario}
             onAttack={attack}
             onMobilityToggle={toggleMobility}
+            onDebugModeChange={setDebugMode}
             onReset={reset}
           />
         ) : (

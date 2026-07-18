@@ -27,6 +27,12 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
           data-kind={entity.kind}
           data-archetype={entity.archetype}
           data-state={entity.phase}
+          data-activity={entity.activity}
+          data-facing-x={entity.facing?.x}
+          data-facing-y={entity.facing?.y}
+          data-recovery-ticks={entity.recoveryTicks}
+          data-committed-attack={entity.committedAttack?.attackId}
+          data-attack-warning-ticks={entity.committedAttack?.warningTicks}
           data-hp={entity.hp}
           data-max-hp={entity.maxHp}
           data-cell-x={entity.cell.x}

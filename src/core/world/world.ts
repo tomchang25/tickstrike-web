@@ -5,9 +5,12 @@ import {
   manhattanDistance,
   sameCell,
   type ArenaState,
+  type BasicEnemyActionDefinition,
   type BasicHitResult,
   type Cell,
+  type CommittedAttack,
   type DamageResult,
+  type EnemyDecision,
   type EntityId,
   type EntityState,
   isTerminalPhase,
@@ -30,6 +33,8 @@ export interface SpawnEntityInput {
   readonly hp: number;
   readonly normalAttackDamage?: number;
   readonly mobilityAttackDamage?: number;
+  readonly enemyAction?: BasicEnemyActionDefinition;
+  readonly facing?: Cell;
 }
 
 export interface ReservationRequest {
@@ -53,6 +58,12 @@ export interface TelegraphInput {
   readonly cells: readonly Cell[];
 }
 
+export interface EnemyAttackResolution {
+  readonly attack: CommittedAttack;
+  readonly target: Cell;
+  readonly damage?: DamageResult;
+}
+
 function cloneCell(cell: Cell): Cell {
   return { x: cell.x, y: cell.y };
 }
@@ -65,11 +76,22 @@ function cloneTelegraph(telegraph: Telegraph): Telegraph {
   return { ...telegraph, cells: telegraph.cells.map(cloneCell) };
 }
 
+function cloneEnemyAction(action: BasicEnemyActionDefinition): BasicEnemyActionDefinition {
+  return { ...action, offsets: action.offsets.map(cloneCell) };
+}
+
+function cloneCommittedAttack(attack: CommittedAttack): CommittedAttack {
+  return { ...attack, cells: attack.cells.map(cloneCell) };
+}
+
 function cloneEntity(entity: EntityState): EntityState {
   return {
     ...entity,
     cell: cloneCell(entity.cell),
     footprint: entity.footprint.map(cloneCell),
+    ...(entity.enemyAction ? { enemyAction: cloneEnemyAction(entity.enemyAction) } : {}),
+    ...(entity.facing ? { facing: cloneCell(entity.facing) } : {}),
+    ...(entity.committedAttack ? { committedAttack: cloneCommittedAttack(entity.committedAttack) } : {}),
   };
 }
 
@@ -146,6 +168,13 @@ export class World {
       maxHp: input.hp,
       normalAttackDamage: input.normalAttackDamage,
       mobilityAttackDamage: input.mobilityAttackDamage,
+      ...(input.enemyAction
+        ? {
+            enemyAction: cloneEnemyAction(input.enemyAction),
+            activity: "ready" as const,
+            facing: cloneCell(input.facing ?? { x: 1, y: 0 }),
+          }
+        : {}),
       phase: "alive",
     };
     this.entities.set(entity.id, entity);
@@ -244,7 +273,14 @@ export class World {
       this.releaseReservation(entity.id);
       this.clearTelegraph(entity.id);
       if (entity.kind === "player") this.clearArmedSmash();
-      this.entities.set(id, { ...entity, phase });
+      this.entities.set(id, {
+        ...entity,
+        phase,
+        activity: undefined,
+        recoveryTicks: undefined,
+        committedAttack: undefined,
+        lastDecision: undefined,
+      });
       return;
     }
 
@@ -279,6 +315,90 @@ export class World {
     return { ...damage, attackerId: hit.attackerId };
   }
 
+  setEnemyFacing(id: EntityId, facing: Cell): void {
+    const entity = this.entities.get(id);
+    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled basic enemy: ${id}`);
+    if (entity.phase !== "alive") throw new Error(`Cannot turn terminal entity: ${id}`);
+    if (!Number.isInteger(facing.x) || !Number.isInteger(facing.y) || Math.abs(facing.x) + Math.abs(facing.y) !== 1) {
+      throw new Error("Enemy facing must be cardinal.");
+    }
+    this.entities.set(id, { ...entity, facing: cloneCell(facing) });
+  }
+
+  setEnemyDecision(id: EntityId, decision: EnemyDecision): void {
+    const entity = this.entities.get(id);
+    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled basic enemy: ${id}`);
+    this.entities.set(id, { ...entity, lastDecision: decision });
+  }
+
+  setEnemyActivity(id: EntityId, activity: EntityState["activity"], recoveryTicks?: number): void {
+    const entity = this.entities.get(id);
+    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled basic enemy: ${id}`);
+    if (entity.phase !== "alive") return;
+    this.entities.set(id, {
+      ...entity,
+      activity,
+      recoveryTicks: recoveryTicks === undefined ? undefined : recoveryTicks,
+    });
+  }
+
+  commitEnemyAttack(id: EntityId, attack: CommittedAttack): CommittedAttack {
+    const entity = this.entities.get(id);
+    if (!entity?.enemyAction || entity.phase !== "alive" || entity.activity !== "ready") {
+      throw new Error(`Enemy cannot commit an attack: ${id}`);
+    }
+    const committed = cloneCommittedAttack(attack);
+    this.setTelegraph({ sourceId: id, phase: "warning", cells: committed.cells });
+    this.entities.set(id, {
+      ...entity,
+      activity: "telegraphing",
+      recoveryTicks: undefined,
+      committedAttack: committed,
+    });
+    return cloneCommittedAttack(committed);
+  }
+
+  decrementEnemyAttackWarning(id: EntityId): CommittedAttack | undefined {
+    const entity = this.entities.get(id);
+    const attack = entity?.committedAttack;
+    if (!entity || !attack || entity.activity !== "telegraphing") return undefined;
+    if (attack.warningTicks <= 1) return cloneCommittedAttack(attack);
+    const next = { ...attack, warningTicks: attack.warningTicks - 1 };
+    this.entities.set(id, { ...entity, committedAttack: next });
+    return cloneCommittedAttack(next);
+  }
+
+  resolveCommittedEnemyAttack(id: EntityId): EnemyAttackResolution | undefined {
+    const entity = this.entities.get(id);
+    const attack = entity?.committedAttack;
+    if (!entity || !attack || entity.activity !== "telegraphing") return undefined;
+    const playerCell = this.playerCell;
+    const target = playerCell ?? attack.cells[0] ?? { x: 0, y: 0 };
+    this.clearTelegraph(id);
+    this.entities.set(id, {
+      ...entity,
+      activity: "recovering",
+      recoveryTicks: attack.recoveryTicks,
+      committedAttack: undefined,
+    });
+    const damage = playerCell && attack.cells.some((cell) => sameCell(cell, playerCell))
+      ? this.applyDamage("player", attack.damage)
+      : undefined;
+    return { attack: cloneCommittedAttack(attack), target: cloneCell(target), damage };
+  }
+
+  advanceEnemyRecovery(id: EntityId): boolean {
+    const entity = this.entities.get(id);
+    if (!entity || entity.activity !== "recovering") return false;
+    const ticks = entity.recoveryTicks ?? 0;
+    if (ticks > 1) {
+      this.entities.set(id, { ...entity, recoveryTicks: ticks - 1 });
+      return false;
+    }
+    this.entities.set(id, { ...entity, activity: "ready", recoveryTicks: undefined });
+    return true;
+  }
+
   moveEntityToPhase(id: EntityId, to: Cell, phase: EntityState["phase"]): void {
     const entity = this.entities.get(id);
     if (!entity) throw new Error(`Unknown entity: ${id}`);
@@ -293,7 +413,16 @@ export class World {
     this.releaseFootprint(entity.id, entity.footprint);
     this.releaseReservation(entity.id);
     this.clearTelegraph(entity.id);
-    this.entities.set(id, { ...entity, cell: cloneCell(to), footprint, phase });
+    this.entities.set(id, {
+      ...entity,
+      cell: cloneCell(to),
+      footprint,
+      phase,
+      activity: undefined,
+      recoveryTicks: undefined,
+      committedAttack: undefined,
+      lastDecision: undefined,
+    });
   }
 
   removeEntity(id: EntityId): void {
@@ -470,7 +599,7 @@ export class World {
     return {
       type: "world_advanced",
       tick: this.currentTick,
-      phases: ["foundation"],
+      phases: ["foundation", "enemy"],
     };
   }
 

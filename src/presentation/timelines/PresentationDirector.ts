@@ -3,6 +3,8 @@ import type { CombatEvent } from "../../core/events/combat-events";
 import type { EntityId } from "../../core/model/types";
 import type { PixiGameRenderer } from "../pixi/PixiGameRenderer";
 
+const MOVE_DURATION = 0.26;
+
 interface ActiveTimeline {
   readonly timeline: gsap.core.Timeline;
   readonly resolve: () => void;
@@ -34,7 +36,25 @@ export class PresentationDirector {
           if (!view) break;
           const to = this.renderer.cellToPixels(event.to);
           animations.push(this.timelineDone(
-            gsap.timeline().to(view, { x: to.x, y: to.y, duration: 0.12, ease: "power2.out" }),
+            gsap.timeline().fromTo(
+              view,
+              { x: this.renderer.cellToPixels(event.from).x, y: this.renderer.cellToPixels(event.from).y },
+              { x: to.x, y: to.y, duration: MOVE_DURATION, ease: "power2.out" },
+            ),
+          ));
+          break;
+        }
+        case "enemy_moved": {
+          const view = this.renderer.getEntityView(event.enemyId);
+          if (!view) break;
+          const from = this.renderer.cellToPixels(event.from);
+          const to = this.renderer.cellToPixels(event.to);
+          animations.push(this.timelineDone(
+            gsap.timeline().fromTo(
+              view,
+              { x: from.x, y: from.y },
+              { x: to.x, y: to.y, duration: MOVE_DURATION, ease: "power2.out" },
+            ),
           ));
           break;
         }

@@ -10,10 +10,12 @@ export interface TestbedPanelProps {
   readonly busy: boolean;
   readonly commandsEnabled: boolean;
   readonly selectedMobility: MobilityKind;
+  readonly debugMode: boolean;
   readonly inspection?: ContentInspection;
   onScenarioChange(id: string): void;
   onAttack(direction: Cell): Promise<void>;
   onMobilityToggle(): void;
+  onDebugModeChange(enabled: boolean): void;
   onReset(): void;
 }
 
@@ -44,6 +46,16 @@ export function TestbedPanel(props: TestbedPanelProps) {
         <div><span>Enemies</span><strong data-testid="enemy-count">{enemies.length}</strong></div>
         <div><span>Player</span><strong>{player ? `${player.cell.x},${player.cell.y}` : "—"}</strong></div>
       </div>
+
+      <label className="debug-toggle">
+        <input
+          data-testid="debug-mode"
+          type="checkbox"
+          checked={props.debugMode}
+          onChange={(event) => props.onDebugModeChange(event.target.checked)}
+        />
+        <span>Debug mode</span>
+      </label>
 
       <section>
         <h2>Commands</h2>

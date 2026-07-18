@@ -28,6 +28,8 @@ interface EntityView {
   readonly root: Container;
   readonly body: Graphics;
   readonly label: Text;
+  readonly facingMarker: Text;
+  readonly debugLabel: Text;
 }
 
 export interface ScreenBounds {
@@ -51,6 +53,20 @@ function entityColor(entity: EntityState): number {
   return 0xe8eef7;
 }
 
+function facingGlyph(facing: Cell | undefined): string {
+  if (!facing) return "";
+  if (facing.x > 0) return "→";
+  if (facing.x < 0) return "←";
+  if (facing.y > 0) return "↓";
+  return "↑";
+}
+
+function debugStateLabel(entity: EntityState): string {
+  if (entity.phase !== "alive") return entity.phase;
+  if (entity.activity && entity.activity !== "ready") return entity.activity;
+  return entity.lastDecision ?? "idle";
+}
+
 export class PixiGameRenderer {
   readonly app = new Application();
   readonly worldLayer = new Container();
@@ -67,6 +83,7 @@ export class PixiGameRenderer {
   private snapshot: WorldSnapshot | undefined;
   private pointerMode: PointerMode = "attack";
   private selectedMobility: MobilityKind = "dash";
+  private debugMode = false;
   private pointerCell: Cell | undefined;
   private lastAim: Cell = INITIAL_AIM;
   private attackPreview: AttackPreview | undefined;
@@ -124,6 +141,24 @@ export class PixiGameRenderer {
       this.smashPreview = undefined;
     }
     this.drawArena(snapshot);
+    this.projectSnapshot(snapshot);
+
+    this.refreshPointerPreview();
+  }
+
+  updateSnapshot(snapshot: WorldSnapshot): void {
+    this.snapshot = snapshot;
+    this.projectSnapshot(snapshot);
+    this.refreshPointerPreview();
+  }
+
+  setDebugMode(enabled: boolean): void {
+    this.debugMode = enabled;
+    this.app.canvas.dataset.debugMode = String(enabled);
+    if (this.snapshot) this.projectSnapshot(this.snapshot);
+  }
+
+  private projectSnapshot(snapshot: WorldSnapshot): void {
     this.drawReservations(snapshot);
     this.drawTelegraphs(snapshot);
 
@@ -143,20 +178,37 @@ export class PixiGameRenderer {
         this.actorLayer.addChild(view.root);
       }
 
-      const pixels = cellToPixels(entity.cell);
-      view.root.position.set(pixels.x, pixels.y);
+      if (!this.isAnimatedByLastEvents(snapshot, entity.id)) {
+        const pixels = cellToPixels(entity.cell);
+        view.root.position.set(pixels.x, pixels.y);
+      }
       view.body.tint = entityColor(entity);
       view.root.alpha = 1;
       view.root.scale.set(1);
       view.label.text = entity.kind === "player" ? "P" : "E";
+      view.facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
+      view.facingMarker.text = facingGlyph(entity.facing);
+      if (entity.facing) view.facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
+      view.debugLabel.visible = this.debugMode && entity.kind === "enemy";
+      view.debugLabel.text = debugStateLabel(entity);
     }
-
-    this.refreshPointerPreview();
   }
 
-  updateSnapshot(snapshot: WorldSnapshot): void {
-    this.snapshot = snapshot;
-    this.refreshPointerPreview();
+  private isAnimatedByLastEvents(snapshot: WorldSnapshot, entityId: EntityId): boolean {
+    return snapshot.lastEvents.some((event) => {
+      switch (event.type) {
+        case "actor_moved":
+          return event.entityId === entityId;
+        case "player_dashed":
+          return event.actorId === entityId;
+        case "enemy_moved":
+        case "enemy_knocked":
+        case "enemy_entered_water":
+          return event.enemyId === entityId;
+        default:
+          return false;
+      }
+    });
   }
 
   setPointerMode(mode: PointerMode): void {
@@ -524,7 +576,33 @@ export class PixiGameRenderer {
     });
     label.anchor.set(0.5);
 
-    root.addChild(body, label);
-    return { root, body, label };
+    const debugLabel = new Text({
+      text: debugStateLabel(entity),
+      style: {
+        fill: 0xf4fbff,
+        fontFamily: "monospace",
+        fontSize: 11,
+        fontWeight: "700",
+      },
+    });
+    debugLabel.anchor.set(0.5);
+    debugLabel.position.set(0, -32);
+    debugLabel.visible = this.debugMode && entity.kind === "enemy";
+
+    const facingMarker = new Text({
+      text: facingGlyph(entity.facing),
+      style: {
+        fill: 0x72d4ff,
+        fontFamily: "sans-serif",
+        fontSize: 24,
+        fontWeight: "700",
+      },
+    });
+    facingMarker.anchor.set(0.5);
+    facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
+    if (entity.facing) facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
+
+    root.addChild(body, label, facingMarker, debugLabel);
+    return { root, body, label, facingMarker, debugLabel };
   }
 }

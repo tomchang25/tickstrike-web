@@ -79,8 +79,15 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("entity-enemy-thrust")).toBeAttached();
   await expect(page.getByTestId("entity-enemy-slash")).toBeAttached();
   await expect(page.getByTestId("entity-enemy-ranged")).toBeAttached();
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "ready");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-width", "12");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-height", "12");
+  await expect(page.getByTestId("debug-mode")).not.toBeChecked();
+  await expect(page.getByTestId("enemies-state")).toHaveCount(0);
+  await page.getByTestId("debug-mode").check();
+  await expect(page.getByTestId("enemies-state")).toHaveCount(0);
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-debug-mode", "true");
 
   const initial = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   await page.keyboard.press("ArrowRight");
@@ -104,6 +111,10 @@ test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence"
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("tick-value")).toHaveText("1");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "2");
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "1");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-attack-warning-ticks", "2");
 
   await page.getByTestId("attack-right").click();
   await expect(page.getByTestId("tick-value")).toHaveText("2");
@@ -140,6 +151,10 @@ test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence"
     "command_resolved",
     "player_dashed",
     "enemy_damaged",
+    "enemy_recovered",
+    "enemy_recovered",
+    "enemy_moved",
+    "enemy_moved",
     "world_advanced",
   ]);
 });

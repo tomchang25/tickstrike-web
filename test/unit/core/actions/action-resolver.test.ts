@@ -77,7 +77,7 @@ describe("player verbs", () => {
     });
 
     expect(occupied.accepted).toBe(true);
-    expect(occupied.events).toEqual([
+    expect(occupied.events.slice(0, 2)).toEqual([
       {
         type: "player_attacked",
         actorId: "player",
@@ -106,10 +106,20 @@ describe("player verbs", () => {
         maxHp: 100,
       },
     ]);
+    expect(occupied.events.map((event) => event.type)).toEqual([
+      "player_attacked",
+      "enemy_damaged",
+      "enemy_attack_committed",
+      "telegraph_changed",
+      "enemy_moved",
+    ]);
     expect(occupied.semanticEvents?.map((event) => event.type)).toEqual([
       "command_resolved",
       "player_attacked",
       "enemy_damaged",
+      "enemy_attack_committed",
+      "telegraph_changed",
+      "enemy_moved",
       "world_advanced",
     ]);
     expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 80, phase: "alive" });
@@ -123,8 +133,14 @@ describe("player verbs", () => {
     });
 
     expect(whiff.accepted).toBe(true);
-    expect(whiff.events).toEqual([
-      { type: "player_attacked", actorId: "player", target: { x: 6, y: 5 } },
+    expect(whiff.events.map((event) => event.type)).toEqual([
+      "player_attacked",
+      "enemy_attack_detonated",
+      "player_damaged",
+      "telegraph_changed",
+      "enemy_recovering",
+      "enemy_attack_committed",
+      "telegraph_changed",
     ]);
     expect(world.snapshot().tick).toBe(2);
   });
@@ -144,6 +160,7 @@ describe("player verbs", () => {
       "player_attacked",
       "enemy_damaged",
       "enemy_died",
+      "enemy_moved",
     ]);
     expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 0, maxHp: 100, phase: "dead" });
     expect(world.getOccupantAt({ x: 5, y: 6 })).toBeUndefined();
@@ -160,7 +177,7 @@ describe("player verbs", () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.events).toEqual([
+    expect(result.events.slice(0, 2)).toEqual([
       {
         type: "player_dashed",
         actorId: "player",
@@ -182,6 +199,13 @@ describe("player verbs", () => {
         hp: 70,
         maxHp: 100,
       },
+    ]);
+    expect(result.events.map((event) => event.type)).toEqual([
+      "player_dashed",
+      "enemy_damaged",
+      "enemy_moved",
+      "enemy_attack_committed",
+      "telegraph_changed",
     ]);
     expect(world.playerCell).toEqual({ x: 9, y: 6 });
     expect(world.getOccupantAt({ x: 8, y: 6 })?.id).toBe("enemy-slash");

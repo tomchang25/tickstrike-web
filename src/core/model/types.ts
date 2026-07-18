@@ -11,8 +11,28 @@ export type TileKind = "floor" | "wall" | "water";
 export type EntityKind = "player" | "enemy";
 export type EntityPhase = "alive" | "drowning" | "dead";
 export type TerminalEntityPhase = Exclude<EntityPhase, "alive">;
+export type EnemyActivity = "ready" | "telegraphing" | "recovering";
+export type EnemyDecision = "move" | "attack" | "wait";
 export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
 export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | string;
+
+export interface BasicEnemyActionDefinition {
+  readonly role: "thrust" | "slash";
+  readonly attackId: string;
+  readonly damage: number;
+  readonly warningTicks: number;
+  readonly recoveryTicks: number;
+  /** Local attack coordinates where x is forward and y is lateral. */
+  readonly offsets: readonly Cell[];
+}
+
+export interface CommittedAttack {
+  readonly attackId: string;
+  readonly cells: readonly Cell[];
+  readonly damage: number;
+  readonly warningTicks: number;
+  readonly recoveryTicks: number;
+}
 
 export interface EntityState {
   readonly id: EntityId;
@@ -27,6 +47,13 @@ export interface EntityState {
   readonly normalAttackDamage?: number;
   /** Authored player Mobility damage, when this entity is the player. */
   readonly mobilityAttackDamage?: number;
+  /** Immutable authored runtime data for an enabled basic enemy. */
+  readonly enemyAction?: BasicEnemyActionDefinition;
+  readonly activity?: EnemyActivity;
+  readonly lastDecision?: EnemyDecision;
+  readonly facing?: Cell;
+  readonly recoveryTicks?: number;
+  readonly committedAttack?: CommittedAttack;
   readonly phase: EntityPhase;
 }
 
