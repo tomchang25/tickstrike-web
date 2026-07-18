@@ -18,6 +18,17 @@ export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
 export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | string;
 export type HitAngle = "front" | "side" | "back";
 export type HitFeedback = "guarded" | "guard_break" | "staggered" | "unblocked";
+export type MobilityKind = "dash" | "smash";
+
+export interface PlayerMobilityState {
+  readonly kind: MobilityKind;
+  readonly damage: number;
+  readonly range: number;
+  readonly cooldown: number;
+  readonly remainingCooldown: number;
+  readonly staggerMultiplier: number;
+  readonly invulnerable: boolean;
+}
 
 export interface BasicEnemyActionDefinition {
   readonly role: "thrust" | "slash";
@@ -63,6 +74,8 @@ export interface EntityState {
   readonly normalAttackDamage?: number;
   /** Authored player Mobility damage, when this entity is the player. */
   readonly mobilityAttackDamage?: number;
+  /** Authored and runtime Mobility state, when this entity is the player. */
+  readonly mobility?: PlayerMobilityState;
   /** Immutable authored runtime data for an enabled basic enemy. */
   readonly enemyAction?: BasicEnemyActionDefinition;
   readonly activity?: EnemyActivity;

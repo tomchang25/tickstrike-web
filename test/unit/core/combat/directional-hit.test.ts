@@ -90,6 +90,30 @@ describe("directional Guard hit resolution", () => {
     expect(hit).toMatchObject({ guardDamage: 16, guardAfter: 16, guardBroken: false, damage: 4 });
   });
 
+  it("applies the authored Mobility burst multiplier to an already staggered target", () => {
+    const target = {
+      ...targetAt({ x: 4, y: 4 }, { x: 1, y: 0 }),
+      guard: undefined,
+      activity: "staggered" as const,
+    };
+
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 4, y: 5 },
+      target,
+      damage: 30,
+      staggerMultiplier: 2,
+    });
+
+    expect(hit).toMatchObject({
+      angle: "side",
+      hpDamage: 60,
+      damage: 60,
+      staggerBurst: true,
+      feedback: "staggered",
+    });
+  });
+
   it("keeps preview and commit on the same directional result", () => {
     const world = createFoundationArena();
     const preview = previewAttack(world, "player", { x: -1, y: 0 });

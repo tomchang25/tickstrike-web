@@ -6,6 +6,7 @@ import {
   type DirectionalHitResult,
   type EntityId,
   type EntityState,
+  type MobilityKind,
   type WorldSnapshot,
 } from "../model/types";
 import { calculateDirectionalHit } from "../combat/directional-hit";
@@ -25,6 +26,7 @@ export interface DashPreview {
   readonly direction: Cell;
   readonly path: readonly Cell[];
   readonly landing?: Cell;
+  readonly victims: readonly MobilityHitPreview[];
   readonly reason?: string;
 }
 
@@ -32,7 +34,14 @@ export interface SmashPreview {
   readonly accepted: boolean;
   readonly target: Cell;
   readonly area: readonly Cell[];
+  readonly victims: readonly MobilityHitPreview[];
   readonly reason?: string;
+}
+
+export interface MobilityHitPreview {
+  readonly enemyId: EntityId;
+  readonly origin: Cell;
+  readonly hit: BasicHitResult | DirectionalHitResult;
 }
 
 type PreviewSource = World | WorldSnapshot;
@@ -63,6 +72,46 @@ function isWalkable(snapshot: WorldSnapshot, cell: Cell, allowEnemyTraversal = f
   if (snapshot.reservations.some((reservation) => reservation.cells.some((reserved) => sameCell(reserved, cell)))) return false;
   const occupant = entityAt(snapshot, cell);
   return !occupant || (allowEnemyTraversal && occupant.kind === "enemy");
+}
+
+function activeMobility(actor: EntityState): {
+  readonly kind: MobilityKind;
+  readonly damage: number;
+  readonly range: number;
+  readonly staggerMultiplier: number;
+  readonly remainingCooldown: number;
+} | undefined {
+  if (actor.mobility) return actor.mobility;
+  return {
+    kind: "dash",
+    damage: actor.mobilityAttackDamage ?? 0,
+    range: 3,
+    staggerMultiplier: 1,
+    remainingCooldown: 0,
+  };
+}
+
+function previewMobilityHit(
+  actor: EntityState,
+  target: EntityState,
+  origin: Cell,
+  damage: number,
+  staggerMultiplier: number,
+): MobilityHitPreview {
+  const directional = target.facing
+    ? calculateDirectionalHit({
+        attackerId: actor.id,
+        attackerCell: origin,
+        target,
+        damage,
+        staggerMultiplier,
+      })
+    : undefined;
+  return {
+    enemyId: target.id,
+    origin,
+    hit: directional ?? previewBasicHit(actor.id, target, damage),
+  };
 }
 
 export function attackTarget(origin: Cell, direction: Cell): Cell {
@@ -127,31 +176,53 @@ export function previewDash(
   source: PreviewSource,
   actorId: string,
   direction: Cell,
-  distance = 3,
+  distance?: number,
 ): DashPreview {
   const snapshot = snapshotOf(source);
   const actor = snapshot.entities.find((entity) => entity.id === actorId);
+  const mobility = actor ? activeMobility(actor) : undefined;
   if (!actor || actor.phase !== "alive") {
-    return { accepted: false, direction, path: [], reason: "Actor is not active." };
+    return { accepted: false, direction, path: [], victims: [], reason: "Actor is not active." };
   }
   if (!isCardinalDirection(direction)) {
-    return { accepted: false, direction, path: [], reason: "Direction must be cardinal." };
+    return { accepted: false, direction, path: [], victims: [], reason: "Direction must be cardinal." };
   }
-  if (!Number.isInteger(distance) || distance < 1 || distance > 3) {
-    return { accepted: false, direction, path: [], reason: "Dash distance must be between one and three cells." };
+  if (!mobility || mobility.kind !== "dash") {
+    return { accepted: false, direction, path: [], victims: [], reason: "Active Mobility is not Dash." };
+  }
+  if (mobility.remainingCooldown > 0) {
+    return { accepted: false, direction, path: [], victims: [], reason: "Mobility is on cooldown." };
+  }
+  const requestedDistance = distance ?? mobility.range;
+  if (!Number.isInteger(requestedDistance) || requestedDistance < 1 || requestedDistance > mobility.range) {
+    return {
+      accepted: false,
+      direction,
+      path: [],
+      victims: [],
+      reason: `Dash distance must be between one and ${mobility.range} cells.`,
+    };
   }
 
   const path: Cell[] = [];
+  const victims: MobilityHitPreview[] = [];
   let landing: Cell | undefined;
-  for (let step = 1; step <= distance; step += 1) {
+  for (let step = 1; step <= requestedDistance; step += 1) {
     const candidate = add(actor.cell, multiply(direction, step));
     if (!isWalkable(snapshot, candidate, true)) break;
     path.push(candidate);
-    if (!entityAt(snapshot, candidate, "enemy")) landing = candidate;
+    const enemy = entityAt(snapshot, candidate, "enemy");
+    if (enemy) {
+      if (mobility.damage > 0) {
+        victims.push(previewMobilityHit(actor, enemy, add(enemy.cell, multiply(direction, -1)), mobility.damage, mobility.staggerMultiplier));
+      }
+    } else {
+      landing = candidate;
+    }
   }
 
   if (!landing) {
-    return { accepted: false, direction, path, reason: "Dash has no legal landing cell." };
+    return { accepted: false, direction, path, victims, reason: "Dash has no legal landing cell." };
   }
 
   return {
@@ -159,6 +230,7 @@ export function previewDash(
     direction,
     path,
     landing,
+    victims,
   };
 }
 
@@ -183,11 +255,27 @@ export function previewSmash(source: PreviewSource, actorId: string, target: Cel
   const snapshot = snapshotOf(source);
   const actor = snapshot.entities.find((entity) => entity.id === actorId);
   const area = smashArea(target);
+  const mobility = actor ? activeMobility(actor) : undefined;
   if (!actor || actor.phase !== "alive") {
-    return { accepted: false, target, area, reason: "Actor is not active." };
+    return { accepted: false, target, area, victims: [], reason: "Actor is not active." };
+  }
+  if (!mobility || (actor.mobility && mobility.kind !== "smash")) {
+    return { accepted: false, target, area, victims: [], reason: "Active Mobility is not Smash." };
+  }
+  if (mobility.remainingCooldown > 0) {
+    return { accepted: false, target, area, victims: [], reason: "Mobility is on cooldown." };
+  }
+  if (Math.abs(target.x - actor.cell.x) > mobility.range || Math.abs(target.y - actor.cell.y) > mobility.range) {
+    return { accepted: false, target, area, victims: [], reason: "Smash target is out of range." };
   }
   if (!isWalkable(snapshot, target)) {
-    return { accepted: false, target, area, reason: "Smash landing is blocked." };
+    return { accepted: false, target, area, victims: [], reason: "Smash landing is blocked." };
   }
-  return { accepted: true, target, area };
+  const victims = area.flatMap((cell) => {
+    const enemy = entityAt(snapshot, cell, "enemy");
+    return enemy && mobility.damage > 0
+      ? [previewMobilityHit(actor, enemy, target, mobility.damage, mobility.staggerMultiplier)]
+      : [];
+  });
+  return { accepted: true, target, area, victims };
 }

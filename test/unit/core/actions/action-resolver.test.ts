@@ -13,7 +13,7 @@ describe("Smash action", () => {
       archetype: "training-player",
       cell: { x: 3, y: 3 },
       hp: 100,
-      mobilityAttackDamage: 30,
+      mobility: { kind: "smash", damage: 30, range: 3, cooldown: 6, staggerMultiplier: 2 },
     });
     world.spawn({ id: "enemy-center", kind: "enemy", archetype: "training-grunt", cell: { x: 3, y: 2 }, hp: 100 });
     world.spawn({ id: "enemy-right", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 3 }, hp: 100 });
@@ -44,24 +44,17 @@ describe("Smash action", () => {
       "command_resolved",
       "smash_impact",
       "enemy_damaged",
-      "enemy_knocked",
       "enemy_damaged",
-      "enemy_knocked",
       "enemy_damaged",
-      "enemy_entered_water",
       "actor_moved",
       "world_advanced",
     ]);
     expect(world.requireEntity("enemy-center").phase).toBe("alive");
     expect(world.requireEntity("enemy-center").hp).toBe(70);
-    expect(world.requireEntity("enemy-center").cell).toEqual({ x: 3, y: 1 });
+    expect(world.requireEntity("enemy-center").cell).toEqual({ x: 3, y: 2 });
     expect(world.requireEntity("enemy-right").hp).toBe(70);
-    expect(world.requireEntity("enemy-right").cell).toEqual({ x: 7, y: 3 });
-    expect(world.requireEntity("enemy-water")).toMatchObject({
-      cell: { x: 4, y: 6 },
-      hp: 70,
-      phase: "drowning",
-    });
+    expect(world.requireEntity("enemy-right").cell).toEqual({ x: 5, y: 3 });
+    expect(world.requireEntity("enemy-water")).toMatchObject({ cell: { x: 4, y: 4 }, hp: 70, phase: "alive" });
     expect(world.playerCell).toEqual({ x: 4, y: 3 });
     expect(world.getOccupantAt({ x: 4, y: 6 })).toBeUndefined();
     expect(world.listEntities()).toHaveLength(4);
@@ -220,35 +213,27 @@ describe("player verbs", () => {
       type: "dash",
       actorId: "player",
       direction: { x: 1, y: 0 },
+      distance: 3,
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.events.slice(1, 3)).toEqual([
-      {
-        type: "player_dashed",
-        actorId: "player",
-        from: { x: 6, y: 6 },
-        to: { x: 9, y: 6 },
-        path: [{ x: 7, y: 6 }, { x: 8, y: 6 }, { x: 9, y: 6 }],
-      },
-      {
-        type: "enemy_damaged",
-        enemyId: "enemy-slash",
-        hit: {
-          attackerId: "player",
-          targetId: "enemy-slash",
-          damage: 30,
-          hpBefore: 100,
-          hpAfter: 70,
-          killed: false,
-        },
-        hp: 70,
-        maxHp: 100,
-      },
-    ]);
+    expect(result.events[1]).toEqual({
+      type: "player_dashed",
+      actorId: "player",
+      from: { x: 6, y: 6 },
+      to: { x: 9, y: 6 },
+      path: [{ x: 7, y: 6 }, { x: 8, y: 6 }, { x: 9, y: 6 }],
+    });
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: "directional_hit",
+      targetId: "enemy-slash",
+      hit: expect.objectContaining({ angle: "front", guardDamage: 4, hpDamage: 6, hpAfter: 94 }),
+    }));
     expect(result.events.map((event) => event.type)).toEqual([
       "command_resolved",
       "player_dashed",
+      "directional_hit",
+      "enemy_guard_damaged",
       "enemy_damaged",
       "enemy_moved",
       "enemy_attack_committed",
@@ -257,7 +242,7 @@ describe("player verbs", () => {
     ]);
     expect(world.playerCell).toEqual({ x: 9, y: 6 });
     expect(world.getOccupantAt({ x: 8, y: 6 })?.id).toBe("enemy-slash");
-    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 70, phase: "alive" });
+    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 94, phase: "alive", guard: { current: 28 } });
     expect(world.snapshot().tick).toBe(1);
   });
 
@@ -283,15 +268,23 @@ describe("player verbs", () => {
   });
 
   it("keeps Smash armed when its locked landing becomes blocked", () => {
-    const world = createFoundationArena();
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "viking",
+      cell: { x: 3, y: 3 },
+      hp: 100,
+      mobility: { kind: "smash", damage: 30, range: 3, cooldown: 6, staggerMultiplier: 2 },
+    });
     const armed = resolveCommand(world, {
       type: "smash",
       actorId: "player",
-      target: { x: 7, y: 7 },
+      target: { x: 5, y: 5 },
     });
     expect(armed.accepted).toBe(true);
 
-    world.spawn({ id: "smash-blocker", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 7 }, hp: 10 });
+    world.spawn({ id: "smash-blocker", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 5 }, hp: 10 });
     const beforeRelease = world.snapshot();
     const release = resolveCommand(world, {
       type: "smash",
@@ -307,7 +300,7 @@ describe("player verbs", () => {
     });
     expect(world.snapshot()).toMatchObject({
       tick: beforeRelease.tick,
-      armedSmashTarget: { x: 7, y: 7 },
+      armedSmashTarget: { x: 5, y: 5 },
     });
   });
 
@@ -325,6 +318,7 @@ describe("player verbs", () => {
       type: "dash",
       actorId: "player",
       direction: { x: -1, y: 0 },
+      distance: 3,
     });
 
     expect(result).toMatchObject({
@@ -423,6 +417,87 @@ describe("player-clocked action boundary", () => {
       { type: "smash", actorId: "player", target: { x: 2, y: 2 } },
     ];
     expect(commands.every(commandConsumesTime)).toBe(true);
+  });
+
+  it("applies Mobility cooldown after release and clears invulnerability after the enemy phase", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "ninja",
+      cell: { x: 1, y: 1 },
+      hp: 100,
+      mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 2 },
+    });
+
+    const result = resolveCommand(world, {
+      type: "dash",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+      distance: 1,
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(world.requireEntity("player").mobility).toMatchObject({
+      remainingCooldown: 4,
+      invulnerable: false,
+    });
+
+    const rejected = resolveCommand(world, {
+      type: "dash",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+      distance: 1,
+    });
+    expect(rejected).toMatchObject({ accepted: false, consumedTime: false, reason: "Mobility is on cooldown." });
+    expect(world.snapshot().tick).toBe(1);
+  });
+
+  it("suppresses a committed enemy hit during the Mobility release phase", () => {
+    const world = createTrainingArena();
+    const enemy = {
+      role: "thrust" as const,
+      attackId: "thrust",
+      damage: 10,
+      warningTicks: 0,
+      recoveryTicks: 2,
+      offsets: [{ x: 1, y: 0 }],
+    };
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "ninja",
+      cell: { x: 1, y: 3 },
+      hp: 100,
+      mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 2 },
+    });
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "thrust",
+      cell: { x: 5, y: 3 },
+      hp: 100,
+      enemyAction: enemy,
+      facing: { x: -1, y: 0 },
+    });
+    world.commitEnemyAttack("enemy", {
+      attackId: "thrust",
+      cells: [{ x: 4, y: 3 }],
+      damage: 10,
+      warningTicks: 0,
+      recoveryTicks: 2,
+    });
+
+    const result = resolveCommand(world, {
+      type: "dash",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+      distance: 3,
+    });
+
+    expect(result.events.map((event) => event.type)).toContain("enemy_attack_detonated");
+    expect(result.events.map((event) => event.type)).not.toContain("player_damaged");
+    expect(world.requireEntity("player")).toMatchObject({ hp: 100, phase: "alive", cell: { x: 4, y: 3 } });
   });
 });
 

@@ -14,6 +14,7 @@ export interface DirectionalHitInput {
   readonly attackerCell: Cell;
   readonly target: EntityState;
   readonly damage: number;
+  readonly staggerMultiplier?: number;
 }
 
 export function classifyHitAngle(
@@ -60,10 +61,14 @@ export function calculateDirectionalHit(input: DirectionalHitInput): Directional
     : rawGuardDamage;
   const guardAfter = Math.max(0, guardBefore - guardDamage);
   const guardBroken = guardBefore > 0 && guardAfter === 0;
-  const staggerBurst = guardBroken && input.target.phase === "alive" && input.target.activity !== "staggered";
-  const hpDamage = guardBefore > 0 && !guardBroken && input.target.activity !== "staggered"
+  const staggerBurst = input.target.activity === "staggered"
+    || (guardBroken && input.target.phase === "alive");
+  const guardedHpDamage = guardBefore > 0 && !guardBroken && input.target.activity !== "staggered"
     ? input.damage * 0.2
     : input.damage;
+  const hpDamage = input.target.activity === "staggered"
+    ? guardedHpDamage * (input.staggerMultiplier ?? 1)
+    : guardedHpDamage;
   const defenseAdjustedDamage = applyDefense(hpDamage, input.target.defense ?? 0);
   const hpAfter = Math.max(0, input.target.hp - defenseAdjustedDamage);
 

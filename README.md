@@ -26,14 +26,14 @@ This is deliberately a small vertical slice rather than an empty architecture sk
     npm install
     npm run dev
 
-Open the displayed local URL. The default `smash-water` scenario is also available directly as:
+Open the displayed local URL. The default `tick-arena` scenario is also available directly as:
 
-    http://127.0.0.1:1420/?scenario=smash-water
+    http://127.0.0.1:1420/?scenario=tick-arena
 
 Controls:
 
 - WASD or arrow keys: move.
-- Space: Smash the cell immediately to the player's right.
+- Hold Alt and hover to preview the active authored Mobility, then click to commit it.
 - Testbed buttons provide the same commands for Playwright and manual use.
 
 ## Tests
@@ -100,17 +100,15 @@ Read `AGENTS.md` before allowing an implementation Agent to extend the project. 
 
 The default scenario starts with:
 
-- Player at `(3,3)`.
-- Center enemy at `(4,3)`.
-- Side enemy at `(5,3)`.
-- Water-bound enemy at `(4,4)`.
-- Water tile at `(4,6)`.
+- A fixed Ninja player at `(6,6)` with a five-cell Dash.
+- Thrust and Slash enemies with directional Guard at the center lane.
+- One passive Ranged fixture retained for three-entity coverage.
 
-Smash at `(4,3)` produces:
+The deterministic Smash scenario starts with a fixed Viking at `(3,3)` and a legal landing at `(4,3)`. Releasing Smash produces:
 
-- Center enemy crushed.
-- Side enemy knocked to `(7,3)`.
-- Lower enemy knocked into `(4,6)`, struggles, sinks, and is removed.
+- A shared directional hit on each enemy in the 3x3 area.
+- A back-angle Guard break on the right-side enemy.
+- A six-tick authored Mobility cooldown.
 - Logical tick advances exactly once.
 
 The unit and Playwright tests encode this as the first migration parity contract.

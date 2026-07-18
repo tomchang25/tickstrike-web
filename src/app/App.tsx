@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Cell, WorldSnapshot } from "../core/model/types";
+import type { Cell, MobilityKind, WorldSnapshot } from "../core/model/types";
 import { installDebugApi } from "../harness/debug-api";
 import { requireScenario, scenarios } from "../harness/scenario-registry";
 import { GameRuntime } from "../runtime/GameRuntime";
-import type { MobilityKind, PointerCommit, PointerMode } from "../presentation/pixi/PixiGameRenderer";
+import type { PointerCommit, PointerMode } from "../presentation/pixi/PixiGameRenderer";
 import { SemanticMirror } from "../ui/SemanticMirror";
 import { TestbedPanel } from "../ui/TestbedPanel";
 
@@ -22,7 +22,6 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [pointerMode, setPointerMode] = useState<PointerMode>("attack");
-  const [selectedMobility, setSelectedMobility] = useState<MobilityKind>("dash");
   const selectedScenario = useMemo(
     () => requireScenario(selectedScenarioId),
     [selectedScenarioId],
@@ -61,7 +60,6 @@ export function App() {
     if (!runtime) return;
     const scenario = requireScenario(id);
     setPointerMode("attack");
-    setSelectedMobility("dash");
     setSelectedScenarioId(id);
     runtime.loadScenario(scenario);
     const url = new URL(window.location.href);
@@ -71,7 +69,6 @@ export function App() {
 
   const reset = useCallback(() => {
     setPointerMode("attack");
-    setSelectedMobility("dash");
     runtimeRef.current?.reset();
   }, []);
 
@@ -129,11 +126,6 @@ export function App() {
     );
   }, [commandsEnabled, encounterRunning, execute]);
 
-  const toggleMobility = useCallback(() => {
-    if (!commandsEnabled || !encounterRunning || snapshot?.armedSmashTarget) return;
-    setSelectedMobility((current) => (current === "dash" ? "smash" : "dash"));
-  }, [commandsEnabled, encounterRunning, snapshot?.armedSmashTarget]);
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Alt") {
@@ -189,7 +181,6 @@ export function App() {
     if (!runtime || !snapshot) return;
     runtime.renderer.setDebugMode(debugMode);
     runtime.renderer.setPointerMode(pointerMode);
-    runtime.renderer.setSelectedMobility(selectedMobility);
     return runtime.renderer.bindPointerInput({
       canInteract: () => commandsEnabled && encounterRunning,
       onPrimaryClick: (commit: PointerCommit) => {
@@ -198,7 +189,9 @@ export function App() {
         return smash(commit.target);
       },
     });
-  }, [attack, commandsEnabled, dash, debugMode, encounterRunning, pointerMode, selectedMobility, smash, snapshot]);
+  }, [attack, commandsEnabled, dash, debugMode, encounterRunning, pointerMode, smash, snapshot]);
+
+  const activeMobility: MobilityKind = snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash";
 
   return (
     <main className="app-shell">
@@ -246,12 +239,11 @@ export function App() {
             snapshot={snapshot}
             busy={busy}
             commandsEnabled={commandsEnabled}
-            selectedMobility={selectedMobility}
+            selectedMobility={activeMobility}
             debugMode={debugMode}
             outcome={snapshot.outcome}
             inspection={selectedScenario.inspection}
             onScenarioChange={changeScenario}
-            onMobilityToggle={toggleMobility}
             onDebugModeChange={setDebugMode}
             onReset={reset}
           />

@@ -24,6 +24,7 @@ import {
   type TelegraphPhase,
   type TileKind,
   type WorldSnapshot,
+  type PlayerMobilityState,
 } from "../model/types";
 import { Arena } from "./arena";
 
@@ -38,6 +39,7 @@ export interface SpawnEntityInput {
   readonly guardDefinition?: import("../content/actor-schema").GuardDefinition;
   readonly normalAttackDamage?: number;
   readonly mobilityAttackDamage?: number;
+  readonly mobility?: Omit<PlayerMobilityState, "remainingCooldown" | "invulnerable">;
   readonly enemyAction?: BasicEnemyActionDefinition;
   readonly facing?: Cell;
 }
@@ -100,6 +102,7 @@ function cloneEntity(entity: EntityState): EntityState {
     footprint: entity.footprint.map(cloneCell),
     ...(entity.guard ? { guard: cloneGuard(entity.guard) } : {}),
     ...(entity.enemyAction ? { enemyAction: cloneEnemyAction(entity.enemyAction) } : {}),
+    ...(entity.mobility ? { mobility: { ...entity.mobility } } : {}),
     ...(entity.facing ? { facing: cloneCell(entity.facing) } : {}),
     ...(entity.committedAttack ? { committedAttack: cloneCommittedAttack(entity.committedAttack) } : {}),
   };
@@ -192,6 +195,15 @@ export class World {
         : {}),
       normalAttackDamage: input.normalAttackDamage,
       mobilityAttackDamage: input.mobilityAttackDamage,
+      ...(input.mobility
+        ? {
+            mobility: {
+              ...input.mobility,
+              remainingCooldown: 0,
+              invulnerable: false,
+            },
+          }
+        : {}),
       ...(input.enemyAction
         ? {
             enemyAction: cloneEnemyAction(input.enemyAction),
@@ -199,6 +211,7 @@ export class World {
             facing: cloneCell(input.facing ?? { x: 1, y: 0 }),
           }
         : {}),
+      ...(!input.enemyAction && input.facing ? { facing: cloneCell(input.facing) } : {}),
       phase: "alive",
     };
     this.entities.set(entity.id, entity);
@@ -331,6 +344,9 @@ export class World {
         guard: entity.guard ? { ...entity.guard, current: 0 } : undefined,
         staggerTicks: undefined,
         protectionTicks: undefined,
+        ...(entity.mobility
+          ? { mobility: { ...entity.mobility, remainingCooldown: 0, invulnerable: false } }
+          : {}),
       });
       return;
     }
@@ -345,6 +361,7 @@ export class World {
 
     const entity = this.entities.get(targetId);
     if (!entity || isTerminalPhase(entity.phase)) return undefined;
+    if (entity.kind === "player" && entity.mobility?.invulnerable) return undefined;
 
     const hpAfter = Math.max(0, entity.hp - damage);
     const killed = hpAfter === 0;
@@ -567,6 +584,9 @@ export class World {
       staggerTicks: undefined,
       protectionTicks: undefined,
       guard: entity.guard ? { ...entity.guard, current: 0 } : undefined,
+      ...(entity.mobility
+        ? { mobility: { ...entity.mobility, remainingCooldown: 0, invulnerable: false } }
+        : {}),
     });
   }
 
@@ -738,6 +758,48 @@ export class World {
       tick: this.currentTick,
       phases: ["foundation", "enemy"],
     };
+  }
+
+  preparePlayerAction(id: EntityId): void {
+    const entity = this.entities.get(id);
+    if (!entity || entity.phase !== "alive") return;
+    if (!entity.mobility) return;
+    this.entities.set(id, {
+      ...entity,
+      mobility: {
+        ...entity.mobility,
+        remainingCooldown: Math.max(0, entity.mobility.remainingCooldown - 1),
+        invulnerable: false,
+      },
+    });
+  }
+
+  beginMobilityInvulnerability(id: EntityId): void {
+    const entity = this.entities.get(id);
+    if (!entity?.mobility || entity.phase !== "alive") return;
+    this.entities.set(id, {
+      ...entity,
+      mobility: { ...entity.mobility, invulnerable: true },
+    });
+  }
+
+  clearMobilityInvulnerability(id: EntityId): void {
+    const entity = this.entities.get(id);
+    if (!entity?.mobility || entity.phase !== "alive" || !entity.mobility.invulnerable) return;
+    this.entities.set(id, {
+      ...entity,
+      mobility: { ...entity.mobility, invulnerable: false },
+    });
+  }
+
+  setMobilityCooldown(id: EntityId, cooldown: number): void {
+    if (!Number.isInteger(cooldown) || cooldown < 0) throw new Error("Mobility cooldown must be a non-negative integer.");
+    const entity = this.entities.get(id);
+    if (!entity?.mobility || entity.phase !== "alive") return;
+    this.entities.set(id, {
+      ...entity,
+      mobility: { ...entity.mobility, remainingCooldown: cooldown },
+    });
   }
 
   advanceTick(): void {

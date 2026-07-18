@@ -45,8 +45,11 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
           data-guard={entity.guard?.current}
           data-max-guard={entity.guard?.max}
           data-stagger-ticks={entity.staggerTicks}
-          data-protection-ticks={entity.protectionTicks}
-          data-cell-x={entity.cell.x}
+           data-protection-ticks={entity.protectionTicks}
+           data-mobility-kind={entity.mobility?.kind}
+           data-mobility-cooldown={entity.mobility?.remainingCooldown}
+           data-mobility-invulnerable={entity.mobility?.invulnerable}
+           data-cell-x={entity.cell.x}
           data-cell-y={entity.cell.y}
         />
       ))}

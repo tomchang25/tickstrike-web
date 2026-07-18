@@ -8,7 +8,7 @@ import {
   type DashPreview,
   type SmashPreview,
 } from "../../core/actions/action-preview";
-import type { Cell, EntityId, EntityState, WorldSnapshot } from "../../core/model/types";
+import type { Cell, EntityId, EntityState, MobilityKind, WorldSnapshot } from "../../core/model/types";
 import {
   CELL_SIZE,
   INITIAL_AIM,
@@ -23,8 +23,6 @@ import {
 } from "./telegraph-labels";
 
 export type PointerMode = "attack" | "mobility";
-export type MobilityKind = "dash" | "smash";
-
 export type PointerCommit =
   | { readonly kind: "attack"; readonly direction: Cell }
   | { readonly kind: "dash"; readonly direction: Cell; readonly distance: number }
@@ -126,7 +124,6 @@ export class PixiGameRenderer {
   private host: HTMLElement | undefined;
   private snapshot: WorldSnapshot | undefined;
   private pointerMode: PointerMode = "attack";
-  private selectedMobility: MobilityKind = "dash";
   private debugMode = false;
   private pointerCell: Cell | undefined;
   private lastAim: Cell = INITIAL_AIM;
@@ -271,15 +268,6 @@ export class PixiGameRenderer {
     this.refreshPointerPreview();
   }
 
-  setSelectedMobility(mobility: MobilityKind): void {
-    if (this.selectedMobility === mobility) return;
-    this.selectedMobility = mobility;
-    this.dashPreview = undefined;
-    this.retainedDashPreview = undefined;
-    this.smashPreview = undefined;
-    this.refreshPointerPreview();
-  }
-
   bindPointerInput(binding: PointerInputBinding): () => void {
     this.pointerCleanup?.();
 
@@ -313,7 +301,7 @@ export class PixiGameRenderer {
         void binding.onPrimaryClick({ kind: "attack", direction: this.attackPreview.direction });
         return;
       }
-      if (this.selectedMobility === "dash") {
+      if (this.activeMobility() === "dash") {
         if (!this.dashPreview?.accepted) return;
         event.preventDefault();
         this.lastAim = this.dashPreview.direction;
@@ -455,15 +443,17 @@ export class PixiGameRenderer {
       return;
     }
 
-    if (this.selectedMobility === "dash") {
-      this.dashDistance = resolveAimDistance(this.pointerCell, player.cell);
+    const mobility = this.activeMobility();
+    const range = player.mobility?.range ?? 3;
+    if (mobility === "dash") {
+      this.dashDistance = resolveAimDistance(this.pointerCell, player.cell, range);
       this.dashPreview = previewDash(this.snapshot, player.id, direction, this.dashDistance);
       if (this.dashPreview.accepted) this.retainedDashPreview = this.dashPreview;
     } else {
       this.smashPreview = previewSmash(
         this.snapshot,
         player.id,
-        clampSmashTarget(this.pointerCell, player.cell),
+        clampSmashTarget(this.pointerCell, player.cell, range),
       );
     }
     this.drawPointerPreview();
@@ -482,7 +472,7 @@ export class PixiGameRenderer {
     delete canvas.dataset.smashPreviewValid;
     delete canvas.dataset.smashArmed;
     canvas.dataset.pointerMode = this.pointerMode;
-    canvas.dataset.selectedMobility = this.selectedMobility;
+    canvas.dataset.selectedMobility = this.activeMobility();
 
     if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
       const preview = this.attackPreview;
@@ -499,7 +489,7 @@ export class PixiGameRenderer {
       return;
     }
 
-    if (this.selectedMobility === "smash" || this.snapshot?.armedSmashTarget) {
+    if (this.activeMobility() === "smash" || this.snapshot?.armedSmashTarget) {
       const preview = this.smashPreview;
       canvas.dataset.smashPreviewValid = String(Boolean(preview?.accepted));
       canvas.dataset.smashArmed = String(Boolean(this.snapshot?.armedSmashTarget));
@@ -566,6 +556,10 @@ export class PixiGameRenderer {
     delete canvas.dataset.smashPreviewCell;
     delete canvas.dataset.smashPreviewValid;
     delete canvas.dataset.smashArmed;
+  }
+
+  private activeMobility(): MobilityKind {
+    return this.snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash";
   }
 
   private drawArena(snapshot: WorldSnapshot): void {

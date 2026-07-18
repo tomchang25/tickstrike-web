@@ -27,8 +27,7 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
     };
   };
 
-  await page.getByTestId("mobility-toggle").click();
-  await expect(page.getByTestId("mobility-toggle")).toHaveText("Mobility: Smash");
+  await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Smash");
   await page.keyboard.down("Alt");
   const smashTarget = await pointForCell(4, 3);
   await page.mouse.move(smashTarget.x, smashTarget.y);
@@ -47,15 +46,16 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
 
   await page.mouse.click(smashTarget.x, smashTarget.y);
   await expect(page.getByTestId("tick-value")).toHaveText("2");
-  await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-cell-x", "7");
-  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-cell-x", "3");
-  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-cell-y", "1");
-  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
-  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "70");
+  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "94");
+  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-guard", "16");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-hp", "70");
-  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-hp", "70");
+  await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-guard", "0");
+  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-hp", "94");
+  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-guard", "16");
   await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
-  await expect(page.getByTestId("event-log")).toContainText("enemy_entered_water");
+  await expect(page.getByTestId("event-log")).toContainText("directional_hit");
+  await expect(page.getByTestId("event-log")).toContainText("enemy_guard_broken");
+  await expect(page.getByTestId("mobility-status")).toHaveText("Cooldown 6");
 });
 
 test("Empty arena presents the shipped board and deterministic start", async ({ page }) => {
@@ -112,6 +112,8 @@ test("Foundation arena resets its generation without stale presentation state", 
 test("Tick Arena presents mobility controls without a Normal Attack panel", async ({ page }) => {
   await page.goto("/?scenario=tick-arena");
 
+  await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Dash");
+
   await expect(page.getByRole("heading", { name: "Move" })).toHaveCount(0);
   await expect(page.getByTestId("move-right")).toHaveCount(0);
   await expect(page.getByTestId("dash-right")).toHaveCount(0);
@@ -158,7 +160,7 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("tick-value")).toHaveText("3");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "9");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
-  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "66");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "90");
   await expect(page.getByTestId("event-log")).toContainText("player_dashed");
   const dashEvent = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents[1]);
   expect(dashEvent).toMatchObject({
@@ -167,18 +169,8 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   });
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
-  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toEqual([
-    "command_resolved",
-    "player_dashed",
-    "enemy_damaged",
-    "enemy_attack_detonated",
-    "telegraph_changed",
-    "enemy_recovering",
-    "enemy_attack_detonated",
-    "telegraph_changed",
-    "enemy_recovering",
-    "world_advanced",
-  ]);
+  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain("directional_hit");
+  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain("enemy_attack_detonated");
   const observedEventTypes = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents.map((event) => event.type));
   expect(observedEventTypes).toEqual(await page.getByTestId("event-log").locator("li").allTextContents());
 });
@@ -288,7 +280,7 @@ test("Tick Arena reaches victory through one deterministic browser command loop"
       }
 
       const aligned = enabledEnemies.find((enemy) => enemy.cell.x === player.cell.x || enemy.cell.y === player.cell.y);
-      if (aligned) {
+      if (aligned && (!player.mobility || player.mobility.remainingCooldown === 0)) {
         const direction = aligned.cell.x === player.cell.x
           ? { x: 0, y: Math.sign(aligned.cell.y - player.cell.y) }
           : { x: Math.sign(aligned.cell.x - player.cell.x), y: 0 };

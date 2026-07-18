@@ -13,16 +13,17 @@ export interface ActionResolution {
 
 function finishAccepted(
   world: World,
-  commandType: GameCommand["type"],
+  command: GameCommand,
   events: readonly CombatEvent[],
 ): ActionResolution {
   const advanced = world.advancePlayerAction();
   const enemyEvents = resolveEnemyPhase(world);
+  world.clearMobilityInvulnerability(command.actorId);
   const outcome = world.updateEncounterOutcome();
   const completeEvents: CombatEvent[] = [
     {
       type: "command_resolved",
-      commandType,
+      commandType: command.type,
       accepted: true,
       consumedTime: true,
     },
@@ -54,5 +55,5 @@ export function resolveCommand(world: World, command: GameCommand): ActionResolu
     };
   }
 
-  return finishAccepted(world, command.type, playerResult.events);
+  return finishAccepted(world, command, playerResult.events);
 }

@@ -15,6 +15,19 @@ At release, the locked Smash target and 3x3 area are read from one plan. The imp
 
 The preview returns these post-hit results, including crush, landing destination, blocked displacement, and water terminalization. Commit applies that plan synchronously before the enemy phase. Pixi/GSAP presents the existing semantic crush, knockback, and water timelines; animation timing never determines logical placement or terminal state.
 
+## Recovered Prototype Reference
+
+The Port 06 diff intentionally removed the old Smash aftermath. The following behavior is retained here as migration reference for 06a, not as permission to restore the old second damage path:
+
+- The old release checked the armed impact cell for a center enemy and emitted `enemy_crushed` after immediately terminalizing that enemy. This happened before the surrounding-victim loop and did not produce a normal damage event for the crush.
+- Every other living enemy in the 3x3 area received the old Mobility damage helper, then attempted forced displacement only if it remained alive.
+- The old knockback direction used the enemy-cell minus impact-cell delta. It selected the dominant horizontal axis when `abs(delta.x) > abs(delta.y)`; otherwise it selected the vertical axis. A perfectly diagonal relationship therefore resolved vertically, and the impact cell itself produced no direction.
+- The old destination search tried two cells first, then one cell, along that direction. It rejected out-of-bounds cells, walls, and cells occupied by a living entity. It did not reject water; water was intentionally accepted as a terminal destination.
+- A water destination called the existing terminal placement path with `drowning` and emitted `enemy_entered_water` with the pre-water and water cells. A land destination emitted `enemy_knocked` with the pre/post cells.
+- The old event shape was `smash_impact`, optional center `enemy_crushed`, each victim's `enemy_damaged` followed by optional displacement event, then `actor_moved`, enemy phase, and `world_advanced`.
+
+The old `smash-water` fixture and its prose were not fully consistent: the fixture placed the nominal center enemy at `(3,2)` while the armed target was `(4,3)`, so the center-crush branch was not exercised. Its assertions observed that victim moving to `(3,1)`, the right victim moving to `(7,3)`, and the lower victim entering water at `(4,6)`. 06a should preserve these authored scenario intentions only after re-expressing them through the shared hit result, deterministic preview, occupancy contract, and typed terminal events defined below.
+
 ## Relational Context
 
 - This spec depends on Port 06's shared Mobility plan and directional hit result. It must not reintroduce the basic-damage helper or direct center-cell death as an alternative combat calculation.

@@ -1,6 +1,5 @@
-import type { EncounterOutcome, WorldSnapshot } from "../core/model/types";
+import type { EncounterOutcome, MobilityKind, WorldSnapshot } from "../core/model/types";
 import type { ContentInspection } from "../harness/content-inspection";
-import type { MobilityKind } from "../presentation/pixi/PixiGameRenderer";
 import type { TestScenario } from "../harness/types";
 
 export interface TestbedPanelProps {
@@ -14,7 +13,6 @@ export interface TestbedPanelProps {
   readonly outcome: EncounterOutcome;
   readonly inspection?: ContentInspection;
   onScenarioChange(id: string): void;
-  onMobilityToggle(): void;
   onDebugModeChange(enabled: boolean): void;
   onReset(): void;
 }
@@ -113,16 +111,18 @@ export function TestbedPanel(props: TestbedPanelProps) {
       <section>
         <h2>Commands</h2>
         {!props.commandsEnabled ? <p data-testid="commands-disabled">Commands disabled for static inspection.</p> : null}
-        <button
-          type="button"
-          className="primary-command"
-          data-testid="mobility-toggle"
-          aria-pressed={props.selectedMobility === "smash"}
-          disabled={props.outcome !== "running" || !props.commandsEnabled || !player || Boolean(props.snapshot.armedSmashTarget)}
-          onClick={props.onMobilityToggle}
-        >
+        <p className="primary-command" data-testid="active-mobility">
           Mobility: {props.selectedMobility === "dash" ? "Dash" : "Smash"}
-        </button>
+        </p>
+        {player?.mobility ? (
+          <small data-testid="mobility-status">
+            {player.mobility.remainingCooldown > 0
+              ? `Cooldown ${player.mobility.remainingCooldown}`
+              : player.mobility.invulnerable
+                ? "Invulnerable"
+                : "Ready"}
+          </small>
+        ) : null}
         <button type="button" data-testid="reset-scenario" disabled={props.busy} onClick={props.onReset}>
           {props.outcome === "running" ? "Reset scenario" : "Restart encounter"}
         </button>
