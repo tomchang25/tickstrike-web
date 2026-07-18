@@ -129,9 +129,9 @@ export function App() {
   }, [commandsEnabled, execute]);
 
   const toggleMobility = useCallback(() => {
-    if (busy || !commandsEnabled || snapshot?.armedSmashTarget) return;
+    if (!commandsEnabled || snapshot?.armedSmashTarget) return;
     setSelectedMobility((current) => (current === "dash" ? "smash" : "dash"));
-  }, [busy, commandsEnabled, snapshot?.armedSmashTarget]);
+  }, [commandsEnabled, snapshot?.armedSmashTarget]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -142,7 +142,7 @@ export function App() {
         }
         return;
       }
-      if (!commandsEnabled || busy || event.repeat) return;
+      if (!commandsEnabled || event.repeat) return;
       const directions: Record<string, Cell | undefined> = {
         ArrowUp: { x: 0, y: -1 },
         ArrowDown: { x: 0, y: 1 },
@@ -181,7 +181,7 @@ export function App() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [attack, busy, commandsEnabled, move]);
+  }, [attack, commandsEnabled, move]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -190,14 +190,14 @@ export function App() {
     runtime.renderer.setPointerMode(pointerMode);
     runtime.renderer.setSelectedMobility(selectedMobility);
     return runtime.renderer.bindPointerInput({
-      canInteract: () => commandsEnabled && !busy,
+      canInteract: () => commandsEnabled,
       onPrimaryClick: (commit: PointerCommit) => {
         if (commit.kind === "attack") return attack(commit.direction);
         if (commit.kind === "dash") return dash(commit.direction);
         return smash(commit.target);
       },
     });
-  }, [attack, busy, commandsEnabled, dash, debugMode, pointerMode, selectedMobility, smash, snapshot]);
+  }, [attack, commandsEnabled, dash, debugMode, pointerMode, selectedMobility, smash, snapshot]);
 
   return (
     <main className="app-shell">
@@ -217,7 +217,7 @@ export function App() {
               <SemanticMirror
                 snapshot={snapshot}
                 generation={runtimeRef.current?.generation}
-                isIdle={!busy && Boolean(runtimeRef.current?.isIdle)}
+    isIdle={Boolean(runtimeRef.current?.isIdle)}
               />
             ) : null}
           </div>

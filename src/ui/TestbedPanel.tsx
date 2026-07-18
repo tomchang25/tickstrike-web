@@ -112,7 +112,7 @@ export function TestbedPanel(props: TestbedPanelProps) {
           className="primary-command"
           data-testid="mobility-toggle"
           aria-pressed={props.selectedMobility === "smash"}
-          disabled={props.busy || !props.commandsEnabled || !player || Boolean(props.snapshot.armedSmashTarget)}
+          disabled={!props.commandsEnabled || !player || Boolean(props.snapshot.armedSmashTarget)}
           onClick={props.onMobilityToggle}
         >
           Mobility: {props.selectedMobility === "dash" ? "Dash" : "Smash"}

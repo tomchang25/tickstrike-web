@@ -25,7 +25,12 @@ export class PresentationDirector {
     this.generation = generation;
   }
 
-  async play(events: readonly CombatEvent[], generation = this.generation): Promise<void> {
+  play(events: readonly CombatEvent[], generation = this.generation): Promise<void> {
+    if (generation !== this.generation) return Promise.resolve();
+    return this.playNow(events, generation);
+  }
+
+  private async playNow(events: readonly CombatEvent[], generation: number): Promise<void> {
     const terminalIds = new Set<EntityId>();
     const animations: Promise<void>[] = [];
 
@@ -81,6 +86,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_attack_detonated": {
+          if (!event.hit) break;
           const effect = this.renderer.createImpact(event.target);
           animations.push(this.timelineDone(
             gsap

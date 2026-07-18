@@ -119,6 +119,7 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("attack-right")).toHaveCount(0);
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(false);
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "2");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
@@ -132,7 +133,6 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "2");
   await expect(page.getByTestId("enemy-telegraph-count")).toHaveText("2");
 
-  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
   await page.keyboard.press("l");
   await expect(page.getByTestId("tick-value")).toHaveText("2");
   await expect(page.getByTestId("event-log")).toContainText("player_attacked");

@@ -105,7 +105,12 @@ export class GameRuntime {
           const resolution = resolveCommand(this.requireWorld(), job.command);
           this.emit();
           if (resolution.accepted) {
-            await this.presentation.play(resolution.semanticEvents ?? resolution.events, job.generation);
+            void this.presentation
+              .play(resolution.semanticEvents ?? resolution.events, job.generation)
+              .then(
+                () => this.notifyPresentationSettled(job.generation),
+                () => this.notifyPresentationSettled(job.generation),
+              );
           }
           if (job.generation !== this.currentGeneration) {
             job.reject(new Error("Command cancelled by scenario replacement."));
@@ -144,6 +149,12 @@ export class GameRuntime {
     if (!this.world) return;
     const snapshot = this.world.snapshot();
     this.renderer.updateSnapshot(snapshot);
+    for (const listener of this.listeners) listener(snapshot);
+  }
+
+  private notifyPresentationSettled(generation: number): void {
+    if (generation !== this.currentGeneration || !this.world) return;
+    const snapshot = this.world.snapshot();
     for (const listener of this.listeners) listener(snapshot);
   }
 }

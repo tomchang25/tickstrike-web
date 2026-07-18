@@ -50,7 +50,13 @@ describe("PresentationDirector combat feedback", () => {
         damage: 10,
         warningTicks: 0,
         recoveryTicks: 1,
-      }, target: { x: 6, y: 6 } },
+      }, target: { x: 6, y: 6 }, hit: {
+        targetId: "player",
+        damage: 10,
+        hpBefore: 100,
+        hpAfter: 90,
+        killed: false,
+      } },
       { type: "enemy_guard_damaged", enemyId: "enemy", damage: 4, guard: 28, maxGuard: 32 },
       { type: "enemy_guard_broken", enemyId: "enemy", staggerTicks: 3 },
       { type: "enemy_staggered", enemyId: "enemy", ticks: 3 },
@@ -78,6 +84,55 @@ describe("PresentationDirector combat feedback", () => {
 
     expect(renderer.removeEntityView).not.toHaveBeenCalled();
     expect(renderer.clearTransient).toHaveBeenCalledOnce();
+    expect(director.isIdle).toBe(true);
+  });
+
+  it("starts presentation batches immediately without merging their cleanup", async () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+
+    const first = director.play([
+      { type: "player_attacked", actorId: "player", target: { x: 6, y: 6 } },
+    ]);
+    const second = director.play([
+      { type: "enemy_attack_detonated", enemyId: "enemy", attack: {
+        attackId: "thrust",
+        cells: [{ x: 6, y: 6 }],
+        damage: 10,
+        warningTicks: 0,
+        recoveryTicks: 1,
+      }, target: { x: 6, y: 6 }, hit: {
+        targetId: "player",
+        damage: 10,
+        hpBefore: 100,
+        hpAfter: 90,
+        killed: false,
+      } },
+    ]);
+
+    expect(director.isIdle).toBe(false);
+    await Promise.all([first, second]);
+
+    expect(renderer.createImpact).toHaveBeenCalledTimes(2);
+    expect(renderer.releaseTransient).toHaveBeenCalledTimes(2);
+    expect(director.isIdle).toBe(true);
+  });
+
+  it("does not show an impact when a committed attack misses", async () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+
+    await director.play([
+      { type: "enemy_attack_detonated", enemyId: "enemy", attack: {
+        attackId: "thrust",
+        cells: [{ x: 6, y: 6 }],
+        damage: 10,
+        warningTicks: 0,
+        recoveryTicks: 1,
+      }, target: { x: 6, y: 6 } },
+    ]);
+
+    expect(renderer.createImpact).not.toHaveBeenCalled();
     expect(director.isIdle).toBe(true);
   });
 });
