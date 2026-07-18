@@ -72,6 +72,8 @@ The starter sets `bundle.active` to `false`, so it focuses on producing and test
     build/             Generated Web export from npm run build; ignored by Git
     dev/               Project governance, formal docs, tools, and pinned game-devkit
     dev/docs/          Migration and scenario documentation
+    TODO.md            Forward work tracker
+    CHANGELOG.md       Append-only shipped outcome history
     src/content/       Feature content and feature-owned runtime assets
     src/shared/assets/ Proven cross-feature runtime assets
     src/core/          Deterministic rules and state; no browser/game-renderer imports
