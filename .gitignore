@@ -1,0 +1,9 @@
+node_modules/
+build/
+playwright-report/
+test-results/
+coverage/
+.vite/
+src-tauri/target/
+*.log
+.DS_Store

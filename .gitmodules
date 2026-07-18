@@ -1,0 +1,3 @@
+[submodule "dev/foundation"]
+	path = dev/foundation
+	url = https://github.com/tomchang25/game-devkit.git

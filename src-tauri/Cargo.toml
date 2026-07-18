@@ -1,0 +1,18 @@
+[package]
+name = "tickstrike-web-base"
+version = "0.1.0"
+description = "Agent-first Tickstrike Web runtime base"
+authors = ["Greysuki"]
+edition = "2021"
+
+[lib]
+name = "tickstrike_web_base_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
