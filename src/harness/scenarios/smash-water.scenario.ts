@@ -16,7 +16,7 @@ export const scenarios: readonly TestScenario[] = [
       world.spawn({
         id: "player",
         kind: "player",
-        archetype: "training-player",
+        archetype: "viking",
         cell: { x: 3, y: 3 },
         hp: player.hp,
         mobility: {

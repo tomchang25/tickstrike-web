@@ -24,6 +24,8 @@ function createRenderer() {
     releaseTransient: vi.fn((effect: object) => effects.delete(effect)),
     clearTransient: vi.fn(() => effects.clear()),
     removeEntityView: vi.fn(),
+    setPlayerAnimation: vi.fn(),
+    setPlayerFacing: vi.fn(),
     get transientCount() {
       return effects.size;
     },
@@ -92,7 +94,7 @@ describe("PresentationDirector combat feedback", () => {
     const director = new PresentationDirector(renderer);
 
     const first = director.play([
-      { type: "player_attacked", actorId: "player", target: { x: 6, y: 6 } },
+      { type: "player_attacked", actorId: "player", direction: { x: 1, y: 0 }, target: { x: 6, y: 6 } },
     ]);
     const second = director.play([
       { type: "enemy_attack_detonated", enemyId: "enemy", attack: {
@@ -145,5 +147,48 @@ describe("PresentationDirector combat feedback", () => {
     ]);
 
     expect(renderer.removeEntityView).toHaveBeenCalledWith("player");
+  });
+
+  it("presents a dash pose and restores idle when the dash settles", async () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+
+    await director.play([
+      {
+        type: "player_dashed",
+        actorId: "player",
+        from: { x: 1, y: 1 },
+        to: { x: 4, y: 1 },
+        path: [{ x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }],
+      },
+    ]);
+
+    expect(renderer.setPlayerAnimation).toHaveBeenNthCalledWith(1, "dash");
+    expect(renderer.setPlayerAnimation).toHaveBeenLastCalledWith("idle");
+    expect(director.isIdle).toBe(true);
+  });
+
+  it("presents a player move pose and restores idle when movement settles", async () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+
+    await director.play([
+      { type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
+    ]);
+
+    expect(renderer.setPlayerAnimation).toHaveBeenNthCalledWith(1, "move");
+    expect(renderer.setPlayerAnimation).toHaveBeenLastCalledWith("idle");
+    expect(director.isIdle).toBe(true);
+  });
+
+  it("forces attack facing even when movement presentation is locked", async () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+
+    await director.play([
+      { type: "player_attacked", actorId: "player", direction: { x: -1, y: 0 }, target: { x: 4, y: 3 } },
+    ]);
+
+    expect(renderer.setPlayerFacing).toHaveBeenCalledWith({ x: -1, y: 0 }, true);
   });
 });

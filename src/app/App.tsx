@@ -8,6 +8,7 @@ import { SemanticMirror } from "../ui/SemanticMirror";
 import { TestbedPanel } from "../ui/TestbedPanel";
 
 const DEFAULT_SCENARIO = "tick-arena";
+const MOVE_REPEAT_MS = 50;
 
 function scenarioFromUrl(): string {
   const id = new URLSearchParams(window.location.search).get("scenario");
@@ -127,6 +128,7 @@ export function App() {
   }, [commandsEnabled, encounterRunning, execute]);
 
   useEffect(() => {
+    const heldMovement = new Map<string, number>();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Alt") {
         if (commandsEnabled && encounterRunning) {
@@ -135,7 +137,7 @@ export function App() {
         }
         return;
       }
-      if (!commandsEnabled || !encounterRunning || event.repeat) return;
+      if (!commandsEnabled || !encounterRunning) return;
       const directions: Record<string, Cell | undefined> = {
         ArrowUp: { x: 0, y: -1 },
         ArrowDown: { x: 0, y: 1 },
@@ -156,23 +158,41 @@ export function App() {
       const direction = directions[key];
       if (direction) {
         event.preventDefault();
-        void move(direction);
+        if (heldMovement.has(key)) return;
+        const repeatMove = () => {
+          const runtime = runtimeRef.current;
+          if (!runtime || !runtime.isIdle) return;
+          void move(direction);
+        };
+        repeatMove();
+        heldMovement.set(key, window.setInterval(repeatMove, MOVE_REPEAT_MS));
         return;
       }
       const attackDirection = attackDirections[key];
       if (attackDirection) {
+        if (event.repeat) return;
         event.preventDefault();
         void attack(attackDirection);
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.key === "Alt") setPointerMode("attack");
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      const timer = heldMovement.get(key);
+      if (timer !== undefined) {
+        window.clearInterval(timer);
+        heldMovement.delete(key);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    document.documentElement.dataset.keyboardInputReady = "true";
     return () => {
+      for (const timer of heldMovement.values()) window.clearInterval(timer);
+      heldMovement.clear();
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      delete document.documentElement.dataset.keyboardInputReady;
     };
   }, [attack, commandsEnabled, encounterRunning, move]);
 

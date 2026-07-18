@@ -81,6 +81,7 @@ describe("player verbs", () => {
       {
         type: "player_attacked",
         actorId: "player",
+        direction: { x: -1, y: 0 },
         target: { x: 5, y: 6 },
         hit: {
           attackerId: "player",

@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Assets, Container, Graphics, Sprite, Text, type Texture } from "pixi.js";
 import {
   clampSmashTarget,
   previewAttack,
@@ -12,7 +12,15 @@ import {
   type PreviewVictimMarker,
   type SmashPreview,
 } from "../../core/actions/action-preview";
-import type { Cell, EntityId, EntityState, MobilityKind, WorldSnapshot } from "../../core/model/types";
+import {
+  cardinalDirection,
+  sameCell,
+  type Cell,
+  type EntityId,
+  type EntityState,
+  type MobilityKind,
+  type WorldSnapshot,
+} from "../../core/model/types";
 import {
   CELL_SIZE,
   INITIAL_AIM,
@@ -25,6 +33,13 @@ import {
   formatTelegraphMultiplier,
   placeTelegraphLabels,
 } from "./telegraph-labels";
+import {
+  createPlayerSprite,
+  setNinjaSpriteSheet,
+  type PlayerSprite,
+  type PlayerSpritePose,
+} from "./character-sprites";
+import ninjaSpriteSheetUrl from "../../content/characters/assets/ninja/body-sprite-sheet.png";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =
@@ -39,7 +54,8 @@ export interface PointerInputBinding {
 
 interface EntityView {
   readonly root: Container;
-  readonly body: Graphics;
+  readonly body: Graphics | Sprite;
+  readonly sprite?: PlayerSprite;
   readonly label: Text;
   readonly facingMarker: Text;
   readonly debugLabel: Text;
@@ -131,6 +147,9 @@ export class PixiGameRenderer {
   private debugMode = false;
   private pointerCell: Cell | undefined;
   private lastAim: Cell = INITIAL_AIM;
+  private playerFacing: Cell = INITIAL_AIM;
+  private playerFacingLocked = false;
+  private projectedPlayerMotionKey: string | undefined;
   private dashDistance = 3;
   private attackPreview: AttackPreview | undefined;
   private dashPreview: DashPreview | undefined;
@@ -153,6 +172,7 @@ export class PixiGameRenderer {
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
     });
+    setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
 
     this.app.canvas.dataset.testid = "game-canvas";
     this.app.canvas.setAttribute("aria-label", "Tickstrike arena");
@@ -180,10 +200,34 @@ export class PixiGameRenderer {
     this.host = undefined;
   }
 
+  setPlayerAnimation(pose: PlayerSpritePose): void {
+    const player = this.entityViews.get("player");
+    player?.sprite?.setPose(pose);
+    this.playerFacingLocked = pose !== "idle";
+    if (this.host) this.app.canvas.dataset.playerAnimation = pose;
+  }
+
+  setPlayerFacing(facing: Cell, force = false): void {
+    const direction = cardinalDirection(facing);
+    if (!direction) return;
+    if (this.playerFacingLocked && !force) return;
+    if (sameCell(this.playerFacing, direction)) return;
+    this.applyPlayerFacing(direction);
+  }
+
+  private applyPlayerFacing(direction: Cell): void {
+    this.playerFacing = direction;
+    this.entityViews.get("player")?.sprite?.setFacing(direction);
+    if (this.host) this.app.canvas.dataset.playerFacing = `${direction.x},${direction.y}`;
+  }
+
   sync(snapshot: WorldSnapshot): void {
     this.snapshot = snapshot;
     if (snapshot.tick === 0) {
       this.lastAim = INITIAL_AIM;
+      this.playerFacing = INITIAL_AIM;
+      this.playerFacingLocked = false;
+      this.projectedPlayerMotionKey = undefined;
       this.dashPreview = undefined;
       this.retainedDashPreview = undefined;
       this.smashPreview = undefined;
@@ -210,6 +254,7 @@ export class PixiGameRenderer {
   private projectSnapshot(snapshot: WorldSnapshot): void {
     this.drawReservations(snapshot);
     this.drawTelegraphs(snapshot);
+    this.projectPlayerFacing(snapshot);
 
     const liveIds = new Set(snapshot.entities.map((entity) => entity.id));
     for (const [id, view] of this.entityViews) {
@@ -232,12 +277,24 @@ export class PixiGameRenderer {
         view.root.position.set(pixels.x, pixels.y);
       }
       view.body.tint = entityColor(entity);
+      if (this.host && entity.kind === "player" && view.sprite) {
+        if (view.sprite.pose === "idle") view.sprite.setFacing(this.playerFacing);
+        view.body.tint = 0xffffff;
+        this.app.canvas.dataset.playerProfile = view.sprite.profileId;
+        this.app.canvas.dataset.playerFacing = `${this.playerFacing.x},${this.playerFacing.y}`;
+        this.app.canvas.dataset.playerAnimation ??= "idle";
+      } else if (this.host && entity.kind === "player") {
+        delete this.app.canvas.dataset.playerProfile;
+        delete this.app.canvas.dataset.playerFacing;
+        this.app.canvas.dataset.playerAnimation = "idle";
+      }
       view.root.alpha = 1;
       view.root.scale.set(1);
       drawStatusBar(view.hpBar, entity.hp, entity.maxHp, 0xff5c7a, entity.kind === "enemy" ? -42 : -34);
       view.guardBar.visible = Boolean(entity.guard);
       if (entity.guard) drawStatusBar(view.guardBar, entity.guard.current, entity.guard.max, 0x72d4ff, -36);
-      view.label.text = entity.kind === "player" ? "P" : "E";
+      view.label.text = entity.kind === "player" && view.sprite ? "" : entity.kind === "player" ? "P" : "E";
+      view.label.visible = entity.kind !== "player" || !view.sprite;
       view.facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
       view.facingMarker.text = facingGlyph(entity.facing);
       if (entity.facing) view.facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
@@ -245,6 +302,30 @@ export class PixiGameRenderer {
       view.debugLabel.text = debugStateLabel(entity);
       view.statusLabel.visible = entity.kind === "enemy" && Boolean(combatStatusLabel(entity));
       view.statusLabel.text = combatStatusLabel(entity);
+    }
+  }
+
+  private projectPlayerFacing(snapshot: WorldSnapshot): void {
+    let motionKey: string | undefined;
+    let motionFrom: Cell | undefined;
+    let motionTo: Cell | undefined;
+    for (const event of snapshot.lastEvents) {
+      if (event.type === "actor_moved" && event.entityId === "player") {
+        motionKey = `move:${event.from.x},${event.from.y}:${event.to.x},${event.to.y}`;
+        motionFrom = event.from;
+        motionTo = event.to;
+      } else if (event.type === "player_dashed" && event.actorId === "player") {
+        motionKey = `dash:${event.from.x},${event.from.y}:${event.to.x},${event.to.y}`;
+        motionFrom = event.from;
+        motionTo = event.to;
+      }
+    }
+    if (!motionKey || motionKey === this.projectedPlayerMotionKey || !motionFrom || !motionTo) return;
+    this.projectedPlayerMotionKey = motionKey;
+    this.playerFacingLocked = true;
+    const direction = { x: Math.sign(motionTo.x - motionFrom.x), y: Math.sign(motionTo.y - motionFrom.y) };
+    if (Math.abs(direction.x) + Math.abs(direction.y) === 1) {
+      this.playerFacing = direction;
     }
   }
 
@@ -279,8 +360,10 @@ export class PixiGameRenderer {
 
     const canvas = this.app.canvas;
     const onPointerMove = (event: PointerEvent) => {
-      this.pointerCell = this.pointerToCell(event);
-      this.refreshPointerPreview();
+      const nextPointerCell = this.pointerToCell(event);
+      if (nextPointerCell && this.pointerCell && sameCell(nextPointerCell, this.pointerCell)) return;
+      this.pointerCell = nextPointerCell;
+      this.refreshPointerPreview(true);
     };
     const onPointerLeave = () => {
       this.pointerCell = undefined;
@@ -350,6 +433,11 @@ export class PixiGameRenderer {
     if (!view) return;
     view.root.destroy({ children: true });
     this.entityViews.delete(id);
+    if (id === "player" && this.host) {
+      delete this.app.canvas.dataset.playerProfile;
+      delete this.app.canvas.dataset.playerFacing;
+      this.app.canvas.dataset.playerAnimation = "idle";
+    }
   }
 
   getEntityBounds(id: EntityId): ScreenBounds | undefined {
@@ -408,7 +496,7 @@ export class PixiGameRenderer {
     );
   }
 
-  private refreshPointerPreview(): void {
+  private refreshPointerPreview(allowFacingUpdate = false): void {
     if (!this.snapshot) {
       this.attackPreview = undefined;
       this.dashPreview = undefined;
@@ -435,6 +523,9 @@ export class PixiGameRenderer {
     this.victimPreviewMarkers = [];
 
     if (this.snapshot.armedSmashTarget) {
+      if (allowFacingUpdate) {
+        this.setPlayerFacing(resolveAimDirection(this.snapshot.armedSmashTarget, player.cell, this.lastAim));
+      }
       this.smashPreview = previewSmash(this.snapshot, player.id, this.snapshot.armedSmashTarget);
       this.victimPreviewMarkers = previewSmashVictimMarkers(this.smashPreview);
       this.drawPointerPreview();
@@ -447,6 +538,7 @@ export class PixiGameRenderer {
     }
 
     const direction = resolveAimDirection(this.pointerCell, player.cell, this.lastAim);
+    if (allowFacingUpdate) this.setPlayerFacing(direction);
 
     if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
       this.attackPreview = previewAttack(this.snapshot, player.id, direction);
@@ -787,14 +879,17 @@ export class PixiGameRenderer {
     const guardBar = new Graphics();
     guardBar.visible = Boolean(entity.guard);
 
-    const body = new Graphics()
+    const playerSprite = entity.kind === "player"
+      ? createPlayerSprite(`character.${entity.archetype}`)
+      : undefined;
+    const body = playerSprite?.body ?? new Graphics()
       .roundRect(-22, -22, 44, 44, 10)
       .fill(0xffffff)
       .stroke({ color: 0x0a0c10, width: 4 });
-    body.tint = entityColor(entity);
+    if (!playerSprite) body.tint = entityColor(entity);
 
     const label = new Text({
-      text: entity.kind === "player" ? "P" : "E",
+      text: entity.kind === "player" && playerSprite ? "" : entity.kind === "player" ? "P" : "E",
       style: {
         fill: 0x10131a,
         fontFamily: "monospace",
@@ -803,6 +898,7 @@ export class PixiGameRenderer {
       },
     });
     label.anchor.set(0.5);
+    label.visible = entity.kind !== "player" || !playerSprite;
 
     const debugLabel = new Text({
       text: debugStateLabel(entity),
@@ -843,7 +939,25 @@ export class PixiGameRenderer {
     facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
     if (entity.facing) facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
 
-    root.addChild(hpBar, guardBar, body, label, facingMarker, debugLabel, statusLabel);
-    return { root, body, label, facingMarker, debugLabel, statusLabel, hpBar, guardBar };
+    root.addChild(
+      hpBar,
+      guardBar,
+      ...(playerSprite ? [playerSprite.root] : [body]),
+      label,
+      facingMarker,
+      debugLabel,
+      statusLabel,
+    );
+    return {
+      root,
+      body,
+      ...(playerSprite ? { sprite: playerSprite } : {}),
+      label,
+      facingMarker,
+      debugLabel,
+      statusLabel,
+      hpBar,
+      guardBar,
+    };
   }
 }

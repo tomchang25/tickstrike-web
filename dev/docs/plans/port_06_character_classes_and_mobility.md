@@ -40,3 +40,4 @@ Dash remains a cardinal player command. Its path, victims, landing, cooldown, an
 
 1. [Implementation Spec](port_06_mobility_combat_refinement.implementation_spec.md): establish shared Mobility combat, cooldown, invulnerability, and preview/commit truth.
 2. [Draft Implementation Spec](port_06a_smash_displacement_and_terrain.implementation_spec.md): add Smash's post-hit crush, forced displacement, and water-fall outcomes without changing the shared Mobility hit path.
+3. [Implementation Spec](port_06c_ninja_visual_slice.implementation_spec.md): replace the fixed player's placeholder card with a presentation-owned Ninja sprite and minimal dash animation without adding class selection.

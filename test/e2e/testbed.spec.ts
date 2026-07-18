@@ -11,6 +11,7 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await page.goto("/?scenario=smash-water");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "alive");
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "100");
   await expect(page.getByTestId("entity-enemy-blocked")).toHaveAttribute("data-state", "alive");
@@ -85,11 +86,50 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
 
   const arena = await page.evaluate(() => window.__TICKSTRIKE__?.getState().arena);
   expect(arena).toMatchObject({ width: 12, height: 12 });
   expect(arena?.terrain.filter((terrain) => terrain === "land")).toHaveLength(100);
   expect(arena?.terrain.filter((terrain) => terrain === "sea")).toHaveLength(44);
+});
+
+test("Held movement queues steps and settles each player presentation in order", async ({ page }) => {
+  await page.goto("/?scenario=empty-arena");
+
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+  const canvas = page.getByTestId("game-canvas");
+  await expect(page.locator("html")).toHaveAttribute("data-keyboard-input-ready", "true");
+  await page.keyboard.down("ArrowRight");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.getState().tick ?? 0)).toBeGreaterThan(1);
+  await expect(canvas).toHaveAttribute("data-player-animation", "move");
+  const canvasBox = await canvas.boundingBox();
+  if (!canvasBox) throw new Error("Game canvas has no layout box.");
+  const playerCell = await page.evaluate(() => window.__TICKSTRIKE__?.getState().playerCell);
+  if (!playerCell) throw new Error("Player cell is unavailable.");
+  await page.mouse.move(
+    canvasBox.x + ((playerCell.x + 0.5) / 12) * canvasBox.width,
+    canvasBox.y + ((playerCell.y - 2 + 0.5) / 12) * canvasBox.height,
+  );
+  await expect(canvas).toHaveAttribute("data-player-facing", "1,0");
+  const tickBeforeRelease = await page.evaluate(() => window.__TICKSTRIKE__?.getState().tick ?? 0);
+  await page.keyboard.up("ArrowRight");
+
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  const state = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
+  expect(state?.tick).toBe(tickBeforeRelease);
+  expect(state?.playerCell?.x).toBeGreaterThan(6);
+  await expect(canvas).toHaveAttribute("data-player-animation", "idle");
+  await expect(canvas).toHaveAttribute("data-player-facing", "1,0");
+  if (!state?.playerCell) throw new Error("Player cell is unavailable after movement.");
+  await page.mouse.move(
+    canvasBox.x + ((state.playerCell.x + 0.5) / 12) * canvasBox.width,
+    canvasBox.y + ((state.playerCell.y - 3 + 0.5) / 12) * canvasBox.height,
+  );
+  await expect(canvas).toHaveAttribute("data-player-facing", "0,-1");
 });
 
 test("Foundation arena resets its generation without stale presentation state", async ({ page }) => {
@@ -182,6 +222,8 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "90");
   await expect(page.getByTestId("event-log")).toContainText("player_dashed");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
   const dashEvent = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents[1]);
   expect(dashEvent).toMatchObject({
     type: "player_dashed",
@@ -242,6 +284,7 @@ test("Tick Arena reaches victory through one deterministic browser command loop"
   test.setTimeout(30_000);
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -335,6 +378,7 @@ test("Tick Arena presents defeat and restarts cleanly after a committed hit", as
   test.setTimeout(30_000);
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -361,6 +405,7 @@ test("Terminal presentation is cancelled before reset and scenario replacement",
   test.setTimeout(30_000);
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
   const initialGeneration = await page.evaluate(() => window.__TICKSTRIKE__?.getGeneration());
 

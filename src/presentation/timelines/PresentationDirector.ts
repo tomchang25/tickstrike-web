@@ -41,12 +41,14 @@ export class PresentationDirector {
           const view = this.renderer.getEntityView(event.entityId);
           if (!view) break;
           const to = this.renderer.cellToPixels(event.to);
+          if (event.entityId === "player") this.renderer.setPlayerAnimation("move");
           animations.push(this.timelineDone(
             gsap.timeline().fromTo(
               view,
               { x: this.renderer.cellToPixels(event.from).x, y: this.renderer.cellToPixels(event.from).y },
               { x: to.x, y: to.y, duration: MOVE_DURATION, ease: "power2.out" },
             ),
+            event.entityId === "player" ? () => this.renderer.setPlayerAnimation("idle") : undefined,
           ));
           break;
         }
@@ -65,6 +67,7 @@ export class PresentationDirector {
           break;
         }
         case "player_attacked": {
+          this.renderer.setPlayerFacing(event.direction, true);
           const effect = this.renderer.createImpact(event.target);
           animations.push(this.timelineDone(
             gsap
@@ -190,8 +193,10 @@ export class PresentationDirector {
           const from = this.renderer.cellToPixels(event.from);
           const to = this.renderer.cellToPixels(event.to);
           view.position.set(from.x, from.y);
+          this.renderer.setPlayerAnimation("dash");
           animations.push(this.timelineDone(
             gsap.timeline().to(view, { x: to.x, y: to.y, duration: 0.12, ease: "power3.out" }),
+            () => this.renderer.setPlayerAnimation("idle"),
           ));
           break;
         }
@@ -284,6 +289,7 @@ export class PresentationDirector {
     }
     this.activeTimelines.clear();
     this.renderer.clearTransient();
+    this.renderer.setPlayerAnimation("idle");
   }
 
   finishImmediately(): void {

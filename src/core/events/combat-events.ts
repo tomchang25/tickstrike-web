@@ -30,6 +30,7 @@ export type CombatEvent =
   | {
       readonly type: "player_attacked";
       readonly actorId: EntityId;
+      readonly direction: Cell;
       readonly target: Cell;
       readonly hit?: BasicHitResult;
     }

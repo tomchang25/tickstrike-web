@@ -164,6 +164,7 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
   const attackEvent: CombatEvent = {
     type: "player_attacked",
     actorId: actor.id,
+    direction: command.direction,
     target: attackTarget(actor.cell, command.direction),
   };
   const events: CombatEvent[] = [attackEvent];

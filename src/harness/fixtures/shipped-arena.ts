@@ -38,7 +38,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
   world.spawn({
     id: "player",
     kind: "player",
-    archetype: "training-player",
+    archetype: "ninja",
     cell: { x: 6, y: 6 },
     hp: player.hp,
     normalAttackDamage: player.normalAttack.damage,

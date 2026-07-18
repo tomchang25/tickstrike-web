@@ -8,3 +8,5 @@ src-tauri/target/
 *.log
 .DS_Store
 port-ref/
+
+/assets
