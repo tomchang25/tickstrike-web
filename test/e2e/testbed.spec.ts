@@ -12,6 +12,9 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "alive");
+  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "100");
+  await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-hp", "100");
+  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-hp", "100");
   await expect(page.getByTestId("enemy-count")).toHaveText("3");
 
   const canvas = page.getByTestId("game-canvas");
@@ -48,6 +51,10 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-cell-x", "3");
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-cell-y", "1");
   await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
+  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "70");
+  await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-hp", "70");
+  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-hp", "70");
+  await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
   await expect(page.getByTestId("event-log")).toContainText("enemy_entered_water");
 });
 
@@ -120,6 +127,7 @@ test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence"
   await expect(page.getByTestId("tick-value")).toHaveText("3");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "10");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "50");
   await expect(page.getByTestId("event-log")).toContainText("player_dashed");
   const dashEvent = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents[1]);
   expect(dashEvent).toMatchObject({
@@ -131,6 +139,7 @@ test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence"
   expect(await page.getByTestId("event-log").locator("li").allTextContents()).toEqual([
     "command_resolved",
     "player_dashed",
+    "enemy_damaged",
     "world_advanced",
   ]);
 });

@@ -25,6 +25,8 @@ export interface EntityState {
   readonly maxHp: number;
   /** Authored player Normal Attack damage, when this entity is the player. */
   readonly normalAttackDamage?: number;
+  /** Authored player Mobility damage, when this entity is the player. */
+  readonly mobilityAttackDamage?: number;
   readonly phase: EntityPhase;
 }
 

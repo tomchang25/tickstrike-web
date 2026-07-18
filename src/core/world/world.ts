@@ -29,6 +29,7 @@ export interface SpawnEntityInput {
   readonly footprint?: readonly Cell[];
   readonly hp: number;
   readonly normalAttackDamage?: number;
+  readonly mobilityAttackDamage?: number;
 }
 
 export interface ReservationRequest {
@@ -144,6 +145,7 @@ export class World {
       hp: input.hp,
       maxHp: input.hp,
       normalAttackDamage: input.normalAttackDamage,
+      mobilityAttackDamage: input.mobilityAttackDamage,
       phase: "alive",
     };
     this.entities.set(entity.id, entity);

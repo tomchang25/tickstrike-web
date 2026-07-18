@@ -13,10 +13,11 @@ describe("Smash action", () => {
       archetype: "training-player",
       cell: { x: 3, y: 3 },
       hp: 100,
+      mobilityAttackDamage: 30,
     });
-    world.spawn({ id: "enemy-center", kind: "enemy", archetype: "training-grunt", cell: { x: 3, y: 2 }, hp: 10 });
-    world.spawn({ id: "enemy-right", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 3 }, hp: 10 });
-    world.spawn({ id: "enemy-water", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 4 }, hp: 10 });
+    world.spawn({ id: "enemy-center", kind: "enemy", archetype: "training-grunt", cell: { x: 3, y: 2 }, hp: 100 });
+    world.spawn({ id: "enemy-right", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 3 }, hp: 100 });
+    world.spawn({ id: "enemy-water", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 4 }, hp: 100 });
 
     const armed = resolveCommand(world, {
       type: "smash",
@@ -39,16 +40,22 @@ describe("Smash action", () => {
     expect(result.accepted).toBe(true);
     expect(result.events.map((event) => event.type)).toEqual([
       "smash_impact",
+      "enemy_damaged",
       "enemy_knocked",
+      "enemy_damaged",
       "enemy_knocked",
+      "enemy_damaged",
       "enemy_entered_water",
       "actor_moved",
     ]);
     expect(world.requireEntity("enemy-center").phase).toBe("alive");
+    expect(world.requireEntity("enemy-center").hp).toBe(70);
     expect(world.requireEntity("enemy-center").cell).toEqual({ x: 3, y: 1 });
+    expect(world.requireEntity("enemy-right").hp).toBe(70);
     expect(world.requireEntity("enemy-right").cell).toEqual({ x: 7, y: 3 });
     expect(world.requireEntity("enemy-water")).toMatchObject({
       cell: { x: 4, y: 6 },
+      hp: 70,
       phase: "drowning",
     });
     expect(world.playerCell).toEqual({ x: 4, y: 3 });
@@ -161,10 +168,24 @@ describe("player verbs", () => {
         to: { x: 9, y: 6 },
         path: [{ x: 7, y: 6 }, { x: 8, y: 6 }, { x: 9, y: 6 }],
       },
+      {
+        type: "enemy_damaged",
+        enemyId: "enemy-slash",
+        hit: {
+          attackerId: "player",
+          targetId: "enemy-slash",
+          damage: 30,
+          hpBefore: 100,
+          hpAfter: 70,
+          killed: false,
+        },
+        hp: 70,
+        maxHp: 100,
+      },
     ]);
     expect(world.playerCell).toEqual({ x: 9, y: 6 });
     expect(world.getOccupantAt({ x: 8, y: 6 })?.id).toBe("enemy-slash");
-    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 100, phase: "alive" });
+    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 70, phase: "alive" });
     expect(world.snapshot().tick).toBe(1);
   });
 

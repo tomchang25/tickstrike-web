@@ -2,7 +2,7 @@ import type { CombatEvent } from "../events/combat-events";
 import { isCardinalDirection, type Cell } from "../model/types";
 import type { World } from "../world/world";
 import type { GameCommand } from "./commands";
-import { attackTarget, previewAttack, previewDash, previewSmash } from "./action-preview";
+import { attackTarget, previewAttack, previewBasicHit, previewDash, previewSmash } from "./action-preview";
 
 export interface ActionResolution {
   readonly accepted: boolean;
@@ -40,6 +40,37 @@ function knockbackDestination(world: World, from: Cell, direction: Cell): Cell |
     return destination;
   }
   return undefined;
+}
+
+function appendEnemyDamageEvents(
+  world: World,
+  events: CombatEvent[],
+  attackerId: string,
+  enemyId: string,
+  damage: number,
+): boolean {
+  const enemy = world.requireEntity(enemyId);
+  const preview = previewBasicHit(attackerId, enemy, damage);
+  const hit = world.applyBasicHit(preview);
+  if (!hit) return false;
+
+  const target = world.requireEntity(hit.targetId);
+  events.push({
+    type: "enemy_damaged",
+    enemyId: target.id,
+    hit,
+    hp: target.hp,
+    maxHp: target.maxHp,
+  });
+  if (hit.killed) {
+    events.push({
+      type: "enemy_died",
+      enemyId: target.id,
+      attackerId: hit.attackerId,
+      cell: target.cell,
+    });
+  }
+  return true;
 }
 
 function resolveMove(world: World, command: Extract<GameCommand, { type: "move" }>): ActionResolution {
@@ -118,8 +149,7 @@ function resolveDash(world: World, command: Extract<GameCommand, { type: "dash" 
   }
 
   const landing = preview.landing;
-  world.moveEntity(actor.id, landing);
-  const events: readonly CombatEvent[] = [
+  const events: CombatEvent[] = [
     {
       type: "player_dashed",
       actorId: actor.id,
@@ -128,6 +158,16 @@ function resolveDash(world: World, command: Extract<GameCommand, { type: "dash" 
       path: preview.path,
     },
   ];
+  if (actor.mobilityAttackDamage && actor.mobilityAttackDamage > 0) {
+    const hitIds = new Set<string>();
+    for (const cell of preview.path) {
+      const enemy = world.findAliveAt(cell, "enemy");
+      if (!enemy || hitIds.has(enemy.id)) continue;
+      hitIds.add(enemy.id);
+      appendEnemyDamageEvents(world, events, actor.id, enemy.id, actor.mobilityAttackDamage);
+    }
+  }
+  world.moveEntity(actor.id, landing);
   return finishAccepted(world, command.type, events);
 }
 
@@ -172,6 +212,10 @@ function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash
     .filter((enemy) => enemy.id !== centerEnemy?.id);
 
   for (const enemy of nearbyEnemies) {
+    if (actor.mobilityAttackDamage && actor.mobilityAttackDamage > 0) {
+      appendEnemyDamageEvents(world, events, actor.id, enemy.id, actor.mobilityAttackDamage);
+      if (world.requireEntity(enemy.id).phase !== "alive") continue;
+    }
     const direction = knockDirection(enemy.cell, armedTarget);
     if (direction.x === 0 && direction.y === 0) continue;
 

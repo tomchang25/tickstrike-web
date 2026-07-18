@@ -23,6 +23,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     cell: { x: 6, y: 6 },
     hp: player.hp,
     normalAttackDamage: player.normalAttack.damage,
+    mobilityAttackDamage: player.mobility.damage,
   });
   world.spawn({
     id: "enemy-thrust",
