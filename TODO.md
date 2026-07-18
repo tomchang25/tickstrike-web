@@ -33,7 +33,6 @@ Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from 
 - [port_02_arena] Establish one deterministic Tick Arena with one player and three basic enemy fixtures - [ref plans/port_02_deterministic_grid_world_and_tick_foundation.md]
 - [port_03_player_verbs] Add Move, Normal Attack, Dash, command rejection, and one-tick player advancement to that arena - [ref plans/port_03_player_verbs_and_player_clock.md]
 - [port_04_enemy_tick] Add Thrust/Slash tick combat, locked Telegraph attacks, and directional Guard through one data-owned enemy activity model - [ref plans/port_04_basic_enemy_tick_combat_and_directional_guard.md]
-- [port_05_playable_arena] Add encounter win, defeat, restart, terminal presentation, and acceptance to the existing combat loop - [ref plans/port_05_first_playable_tick_arena.md]
 - [port_06_combat_expansion] Refine Dash and Smash through the existing directional Guard combat path - [ref plans/port_06_character_classes_and_mobility.md]
 - [port_07_enemy_roles] Add Ranged and remaining authored roles through the shared enemy activity model - [ref plans/port_07_complete_enemy_roster_and_navigation.md]
 - [port_08_waves] Feed authored waves and spawn warnings into the same world and Tick boundary - [ref plans/port_08_authored_waves_spawning_and_enemy_levels.md]
@@ -94,6 +93,10 @@ Add save-backed Coin, Ninja-clear Viking unlock, Main Menu character selection, 
 ### Runtime Structure Reorganization
 
 Reassess source ownership and consolidate arena-owned entities, grid, combat, and presentation while keeping only proven portable infrastructure shared. This is a future architecture evaluation, not a reason to reproduce the Godot folder or scene structure.
+
+### Data-Oriented Gameplay Model
+
+Keep the [deferred partial ECS gameplay-model plan](dev/docs/plans/future_partial_ecs_gameplay_model.md) dormant until approved content needs several shared-interaction entity categories such as specialized enemies, autonomous structures, projectiles, hazards, and grid triggers. Do not assign it to a Port or implement it merely to standardize architecture.
 
 ### Dormant Save And Runtime Scaffolds
 

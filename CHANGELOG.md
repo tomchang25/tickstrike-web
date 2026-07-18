@@ -23,3 +23,4 @@ Rules:
 ### Initial Web Vertical Slice
 
 - 2026-07-18 - [migration] A Web-native Smash scenario now resolves center crush, knockback, and water drowning through deterministic core events with completed Pixi/GSAP presentation and browser acceptance coverage
+- 2026-07-18 - [port_05] The deterministic Tick Arena now reaches victory or defeat, presents terminal feedback, and restarts without stale combat or presentation state

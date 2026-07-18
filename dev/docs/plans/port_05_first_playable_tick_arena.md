@@ -26,15 +26,15 @@ The player can win by clearing the enabled enemies and can lose by standing in a
 
 Logical death is immediate. Visual death is an event timeline that must finish before reset or scenario replacement is considered idle.
 
-### Child Sketches
+### Child Work
 
 | Child | Focus | Current document |
 | --- | --- | --- |
-| 05.z | Post-playable architecture-consolidation decision gate | [Sketch](port_05_z_architecture_consolidation_decision.sketch.md) |
+| 05.z | Post-playable architecture consolidation | [Implementation Spec](port_05_z_architecture_consolidation_decision.implementation_spec.md) |
 
-The parent plan is currently executed by [Implementation Spec](port_05_first_playable_tick_arena.implementation_spec.md). Do not execute the 05.z architecture decision until the acceptance criteria below pass.
+The parent plan is currently executed by [Implementation Spec](port_05_first_playable_tick_arena.implementation_spec.md). Do not execute the 05.z consolidation spec until the acceptance criteria below pass.
 
-Do not execute an architecture reorganization while Port 05 is incomplete. Revisit this sketch after the Port 05 acceptance criteria pass and before starting Port 06; a later implementation spec must select and verify any code change.
+Do not execute an architecture reorganization while Port 05 is incomplete. Execute the selected consolidation only after the Port 05 acceptance criteria pass and before starting Port 06.
 
 ## Non-Goals
 
