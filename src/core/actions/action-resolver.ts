@@ -2,6 +2,7 @@ import type { CombatEvent } from "../events/combat-events";
 import { isCardinalDirection, type Cell } from "../model/types";
 import type { World } from "../world/world";
 import type { GameCommand } from "./commands";
+import { attackTarget, previewDash } from "./action-preview";
 
 export interface ActionResolution {
   readonly accepted: boolean;
@@ -70,7 +71,7 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
     {
       type: "player_attacked",
       actorId: actor.id,
-      target: add(actor.cell, command.direction),
+      target: attackTarget(actor.cell, command.direction),
     },
   ];
   return finishAccepted(world, command.type, events);
@@ -78,25 +79,12 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
 
 function resolveDash(world: World, command: Extract<GameCommand, { type: "dash" }>): ActionResolution {
   const actor = world.requireEntity(command.actorId);
-  if (actor.phase !== "alive") {
-    return { accepted: false, consumedTime: false, reason: "Actor is not active.", events: [] };
-  }
-  if (!isCardinalDirection(command.direction)) {
-    return { accepted: false, consumedTime: false, reason: "Direction must be cardinal.", events: [] };
+  const preview = previewDash(world, command.actorId, command.direction);
+  if (!preview.accepted || !preview.landing) {
+    return { accepted: false, consumedTime: false, reason: preview.reason, events: [] };
   }
 
-  const path: Cell[] = [];
-  for (let step = 1; step <= 3; step += 1) {
-    const candidate = add(actor.cell, multiply(command.direction, step));
-    if (!world.isWalkable(candidate)) break;
-    path.push(candidate);
-  }
-
-  if (path.length === 0) {
-    return { accepted: false, consumedTime: false, reason: "Dash has no legal landing cell.", events: [] };
-  }
-
-  const landing = path[path.length - 1]!;
+  const landing = preview.landing;
   world.moveEntity(actor.id, landing);
   const events: readonly CombatEvent[] = [
     {
@@ -104,7 +92,7 @@ function resolveDash(world: World, command: Extract<GameCommand, { type: "dash" 
       actorId: actor.id,
       from: actor.cell,
       to: landing,
-      path,
+      path: preview.path,
     },
   ];
   return finishAccepted(world, command.type, events);

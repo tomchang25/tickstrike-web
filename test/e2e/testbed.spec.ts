@@ -86,3 +86,46 @@ test("Tick Arena presents Move, Normal Attack, and Dash in one command sequence"
     "world_advanced",
   ]);
 });
+
+test("Pointer aiming previews attack and Mobility without advancing until click", async ({ page }) => {
+  await page.goto("/?scenario=tick-arena");
+
+  const canvas = page.getByTestId("game-canvas");
+  const pointForCell = async (x: number, y: number) => {
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("Game canvas has no layout box.");
+    return {
+      x: box.x + ((x + 0.5) / 12) * box.width,
+      y: box.y + ((y + 0.5) / 12) * box.height,
+    };
+  };
+
+  const emptyAttackCell = await pointForCell(7, 6);
+  await page.mouse.move(emptyAttackCell.x, emptyAttackCell.y);
+  await expect(canvas).toHaveAttribute("data-pointer-mode", "attack");
+  await expect(canvas).toHaveAttribute("data-attack-preview-cell", "7,6");
+  await expect(canvas).toHaveAttribute("data-attack-target", "empty");
+  await expect(page.getByTestId("tick-value")).toHaveText("0");
+
+  await page.mouse.click(emptyAttackCell.x, emptyAttackCell.y);
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("event-log")).toContainText("player_attacked");
+
+  await page.getByRole("button", { name: "Reset scenario" }).click();
+  await expect(page.getByTestId("tick-value")).toHaveText("0");
+
+  await page.keyboard.down("Alt");
+  const validMobilityCell = await pointForCell(7, 6);
+  await page.mouse.move(validMobilityCell.x, validMobilityCell.y);
+  await expect(canvas).toHaveAttribute("data-pointer-mode", "mobility");
+  await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "7,6");
+  await expect(canvas).toHaveAttribute("data-mobility-preview-valid", "true");
+  await expect(page.getByTestId("tick-value")).toHaveText("0");
+
+  const invalidMobilityCell = await pointForCell(5, 6);
+  await page.mouse.move(invalidMobilityCell.x, invalidMobilityCell.y);
+  await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "7,6");
+  await expect(canvas).toHaveAttribute("data-mobility-preview-valid", "false");
+  await expect(canvas).toHaveAttribute("data-mobility-preview-retained", "true");
+  await page.keyboard.up("Alt");
+});

@@ -1,7 +1,14 @@
 import { Application, Container, Graphics, Text } from "pixi.js";
+import { previewAttack, previewDash, type AttackPreview, type DashPreview } from "../../core/actions/action-preview";
 import type { Cell, EntityId, EntityState, WorldSnapshot } from "../../core/model/types";
+import { CELL_SIZE, INITIAL_AIM, resolveAimDirection, screenPointToCell } from "./pointer-aim";
 
-const CELL_SIZE = 64;
+export type PointerMode = "attack" | "mobility";
+
+export interface PointerInputBinding {
+  canInteract(): boolean;
+  onPrimaryClick(mode: PointerMode, direction: Cell): void | Promise<void>;
+}
 
 interface EntityView {
   readonly root: Container;
@@ -35,6 +42,7 @@ export class PixiGameRenderer {
   readonly worldLayer = new Container();
   readonly gridLayer = new Container();
   readonly telegraphLayer = new Container();
+  readonly pointerPreviewLayer = new Container();
   readonly reservationLayer = new Container();
   readonly actorLayer = new Container();
   readonly effectsLayer = new Container();
@@ -43,6 +51,13 @@ export class PixiGameRenderer {
   private readonly transientEffects = new Set<Graphics>();
   private host: HTMLElement | undefined;
   private snapshot: WorldSnapshot | undefined;
+  private pointerMode: PointerMode = "attack";
+  private pointerCell: Cell | undefined;
+  private lastAim: Cell = INITIAL_AIM;
+  private attackPreview: AttackPreview | undefined;
+  private mobilityCandidate: DashPreview | undefined;
+  private retainedMobilityPreview: DashPreview | undefined;
+  private pointerCleanup: (() => void) | undefined;
 
   get transientCount(): number {
     return this.transientEffects.size;
@@ -67,6 +82,7 @@ export class PixiGameRenderer {
       this.gridLayer,
       this.reservationLayer,
       this.telegraphLayer,
+      this.pointerPreviewLayer,
       this.actorLayer,
       this.effectsLayer,
     );
@@ -74,6 +90,9 @@ export class PixiGameRenderer {
   }
 
   destroy(): void {
+    this.pointerCleanup?.();
+    this.pointerCleanup = undefined;
+    this.clearPointerPreview();
     this.entityViews.clear();
     this.clearTransient();
     this.app.destroy(true, { children: true });
@@ -82,6 +101,10 @@ export class PixiGameRenderer {
 
   sync(snapshot: WorldSnapshot): void {
     this.snapshot = snapshot;
+    if (snapshot.tick === 0) {
+      this.lastAim = INITIAL_AIM;
+      this.retainedMobilityPreview = undefined;
+    }
     this.drawArena(snapshot);
     this.drawReservations(snapshot);
     this.drawTelegraphs(snapshot);
@@ -109,6 +132,63 @@ export class PixiGameRenderer {
       view.root.scale.set(1);
       view.label.text = entity.kind === "player" ? "P" : "E";
     }
+
+    this.refreshPointerPreview();
+  }
+
+  updateSnapshot(snapshot: WorldSnapshot): void {
+    this.snapshot = snapshot;
+    this.refreshPointerPreview();
+  }
+
+  setPointerMode(mode: PointerMode): void {
+    if (this.pointerMode === mode) return;
+    this.pointerMode = mode;
+    this.mobilityCandidate = undefined;
+    this.retainedMobilityPreview = undefined;
+    this.refreshPointerPreview();
+  }
+
+  bindPointerInput(binding: PointerInputBinding): () => void {
+    this.pointerCleanup?.();
+
+    const canvas = this.app.canvas;
+    const onPointerMove = (event: PointerEvent) => {
+      this.pointerCell = this.pointerToCell(event);
+      this.refreshPointerPreview();
+    };
+    const onPointerLeave = () => {
+      this.pointerCell = undefined;
+      this.attackPreview = undefined;
+      this.mobilityCandidate = undefined;
+      this.retainedMobilityPreview = undefined;
+      this.clearPointerPreview();
+    };
+    const onClick = (event: MouseEvent) => {
+      if (event.button !== 0 || !binding.canInteract()) return;
+      this.refreshPointerPreview();
+      const preview = this.pointerMode === "attack" ? this.attackPreview : this.mobilityCandidate;
+      if (!preview?.accepted) return;
+      event.preventDefault();
+      this.lastAim = preview.direction;
+      void binding.onPrimaryClick(this.pointerMode, preview.direction);
+    };
+
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerleave", onPointerLeave);
+    canvas.addEventListener("click", onClick);
+
+    let active = true;
+    const cleanup = () => {
+      if (!active) return;
+      active = false;
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerleave", onPointerLeave);
+      canvas.removeEventListener("click", onClick);
+      if (this.pointerCleanup === cleanup) this.pointerCleanup = undefined;
+    };
+    this.pointerCleanup = cleanup;
+    return cleanup;
   }
 
   getEntityView(id: EntityId): Container | undefined {
@@ -166,6 +246,110 @@ export class PixiGameRenderer {
 
   cellToPixels(cell: Cell): { x: number; y: number } {
     return cellToPixels(cell);
+  }
+
+  private pointerToCell(event: PointerEvent): Cell | undefined {
+    const rect = this.app.canvas.getBoundingClientRect();
+    return screenPointToCell(
+      { x: event.clientX, y: event.clientY },
+      rect,
+      this.app.screen.width,
+      this.app.screen.height,
+    );
+  }
+
+  private refreshPointerPreview(): void {
+    if (!this.snapshot || !this.pointerCell) {
+      this.attackPreview = undefined;
+      this.mobilityCandidate = undefined;
+      this.clearPointerPreview();
+      return;
+    }
+
+    const player = this.snapshot.entities.find((entity) => entity.id === "player" && entity.phase === "alive");
+    if (!player) {
+      this.attackPreview = undefined;
+      this.mobilityCandidate = undefined;
+      this.clearPointerPreview();
+      return;
+    }
+
+    const direction = resolveAimDirection(this.pointerCell, player.cell, this.lastAim);
+    this.attackPreview = undefined;
+    this.mobilityCandidate = undefined;
+
+    if (this.pointerMode === "attack") {
+      this.attackPreview = previewAttack(this.snapshot, player.id, direction);
+      this.drawPointerPreview();
+      return;
+    }
+
+    const candidate = previewDash(this.snapshot, player.id, direction);
+    this.mobilityCandidate = candidate;
+    if (candidate.accepted) this.retainedMobilityPreview = candidate;
+    this.drawPointerPreview();
+  }
+
+  private drawPointerPreview(): void {
+    this.pointerPreviewLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    const canvas = this.app.canvas;
+    delete canvas.dataset.attackPreviewCell;
+    delete canvas.dataset.attackTarget;
+    delete canvas.dataset.mobilityPreviewCell;
+    delete canvas.dataset.mobilityPreviewValid;
+    delete canvas.dataset.mobilityPreviewRetained;
+    canvas.dataset.pointerMode = this.pointerMode;
+
+    if (this.pointerMode === "attack") {
+      const preview = this.attackPreview;
+      if (!preview?.accepted) return;
+      const color = preview.hasTarget ? 0x72d4ff : 0xff6b6b;
+      const target = preview.target;
+      const marker = new Graphics()
+        .rect(target.x * CELL_SIZE + 7, target.y * CELL_SIZE + 7, CELL_SIZE - 14, CELL_SIZE - 14)
+        .fill({ color, alpha: preview.hasTarget ? 0.16 : 0.08 })
+        .stroke({ color, width: 4, alpha: 0.95 });
+      this.pointerPreviewLayer.addChild(marker);
+      canvas.dataset.attackPreviewCell = `${target.x},${target.y}`;
+      canvas.dataset.attackTarget = preview.hasTarget ? "enemy" : "empty";
+      return;
+    }
+
+    const preview = this.retainedMobilityPreview;
+    const candidate = this.mobilityCandidate;
+    canvas.dataset.mobilityPreviewValid = String(Boolean(candidate?.accepted));
+    canvas.dataset.mobilityPreviewRetained = String(Boolean(!candidate?.accepted && preview));
+    if (!preview?.landing) return;
+
+    for (const cell of preview.path) {
+      const marker = new Graphics()
+        .rect(cell.x * CELL_SIZE + 10, cell.y * CELL_SIZE + 10, CELL_SIZE - 20, CELL_SIZE - 20)
+        .fill({ color: 0x72d4ff, alpha: 0.22 });
+      this.pointerPreviewLayer.addChild(marker);
+    }
+
+    const landing = preview.landing;
+    const landingMarker = new Graphics()
+      .rect(landing.x * CELL_SIZE + 6, landing.y * CELL_SIZE + 6, CELL_SIZE - 12, CELL_SIZE - 12)
+      .stroke({ color: 0x72d4ff, width: 5, alpha: 0.95 });
+    const virtualPlayer = new Graphics()
+      .circle(landing.x * CELL_SIZE + CELL_SIZE / 2, landing.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE * 0.28)
+      .fill({ color: 0xf4fbff, alpha: 0.38 })
+      .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
+    this.pointerPreviewLayer.addChild(landingMarker, virtualPlayer);
+    canvas.dataset.mobilityPreviewCell = `${landing.x},${landing.y}`;
+  }
+
+  private clearPointerPreview(): void {
+    this.pointerPreviewLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    if (!this.host) return;
+    const canvas = this.app.canvas;
+    delete canvas.dataset.pointerMode;
+    delete canvas.dataset.attackPreviewCell;
+    delete canvas.dataset.attackTarget;
+    delete canvas.dataset.mobilityPreviewCell;
+    delete canvas.dataset.mobilityPreviewValid;
+    delete canvas.dataset.mobilityPreviewRetained;
   }
 
   private drawArena(snapshot: WorldSnapshot): void {

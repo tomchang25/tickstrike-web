@@ -3,6 +3,7 @@ import type { Cell, WorldSnapshot } from "../core/model/types";
 import { installDebugApi } from "../harness/debug-api";
 import { requireScenario, scenarios } from "../harness/scenario-registry";
 import { GameRuntime } from "../runtime/GameRuntime";
+import type { PointerMode } from "../presentation/pixi/PixiGameRenderer";
 import { SemanticMirror } from "../ui/SemanticMirror";
 import { TestbedPanel } from "../ui/TestbedPanel";
 
@@ -19,6 +20,7 @@ export function App() {
   const [selectedScenarioId, setSelectedScenarioId] = useState(scenarioFromUrl);
   const [snapshot, setSnapshot] = useState<WorldSnapshot>();
   const [busy, setBusy] = useState(false);
+  const [pointerMode, setPointerMode] = useState<PointerMode>("attack");
   const selectedScenario = useMemo(
     () => requireScenario(selectedScenarioId),
     [selectedScenarioId],
@@ -55,11 +57,17 @@ export function App() {
     const runtime = runtimeRef.current;
     if (!runtime) return;
     const scenario = requireScenario(id);
+    setPointerMode("attack");
     setSelectedScenarioId(id);
     runtime.loadScenario(scenario);
     const url = new URL(window.location.href);
     url.searchParams.set("scenario", id);
     window.history.replaceState({}, "", url);
+  }, []);
+
+  const reset = useCallback(() => {
+    setPointerMode("attack");
+    runtimeRef.current?.reset();
   }, []);
 
   const execute = useCallback(async (operation: () => Promise<unknown>) => {
@@ -118,6 +126,13 @@ export function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Alt") {
+        if (commandsEnabled) {
+          event.preventDefault();
+          setPointerMode("mobility");
+        }
+        return;
+      }
       if (!commandsEnabled || busy || event.repeat) return;
       const directions: Record<string, Cell | undefined> = {
         ArrowUp: { x: 0, y: -1 },
@@ -157,9 +172,26 @@ export function App() {
         void smash();
       }
     };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Alt") setPointerMode("attack");
+    };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
   }, [attack, busy, commandsEnabled, dash, move, smash]);
+
+  useEffect(() => {
+    const runtime = runtimeRef.current;
+    if (!runtime || !snapshot) return;
+    runtime.renderer.setPointerMode(pointerMode);
+    return runtime.renderer.bindPointerInput({
+      canInteract: () => commandsEnabled && !busy,
+      onPrimaryClick: (mode, direction) => (mode === "attack" ? attack(direction) : dash(direction)),
+    });
+  }, [attack, busy, commandsEnabled, dash, pointerMode, snapshot]);
 
   return (
     <main className="app-shell">
@@ -184,7 +216,7 @@ export function App() {
             ) : null}
           </div>
           <p className="hint">
-            {commandsEnabled ? "WASD / arrows move · IJKL attack · Shift + WASD / arrows dash · Space Smash" : "Static inspection: gameplay commands disabled"}
+            {commandsEnabled ? "WASD / arrows move · IJKL attack · Hold Alt + hover for Mobility · Space Smash" : "Static inspection: gameplay commands disabled"}
           </p>
         </section>
 
@@ -201,7 +233,7 @@ export function App() {
             onAttack={attack}
             onDash={dash}
             onSmash={smash}
-            onReset={() => runtimeRef.current?.reset()}
+            onReset={reset}
           />
         ) : (
           <aside className="testbed-panel">Initializing renderer…</aside>

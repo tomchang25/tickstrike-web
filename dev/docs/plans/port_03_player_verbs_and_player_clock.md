@@ -25,9 +25,15 @@ receive command -> validate -> apply player result -> advance tick -> publish sn
 
 Move changes one cardinal cell. Normal Attack targets one adjacent cardinal cell and consumes its action even when the cell is empty. Dash moves the player through up to three legal cells in one cardinal direction, stops before an occupied or illegal cell, and consumes one action. Damage and enemy responses are added by the next plans, but the player result already contains the event seam they will use.
 
+### Child Implementation Specs
+
+| Child | Focus | Current document |
+| --- | --- | --- |
+| 03.1 | Pointer-driven Normal Attack aiming and Mobility preview without changing the command boundary | [Implementation Spec](port_03_1_pointer_input.implementation_spec.md) |
+
 ## Non-Goals
 
-1. Do not add Speed, Smash, class selection, artifacts, or advanced aiming.
+1. Do not add Speed, class selection, artifacts, or advanced aiming to the deterministic Port 03 command contract; pointer aiming is owned by the separately scoped Port 03.1 child.
 2. Do not add enemy decisions, telegraphs, or enemy damage in this plan.
 3. Do not add production key repeat, settings, or modal input ownership.
 4. Do not create separate Move, Attack, or Dash demo screens.

@@ -143,6 +143,7 @@ export class GameRuntime {
   private emit(): void {
     if (!this.world) return;
     const snapshot = this.world.snapshot();
+    this.renderer.updateSnapshot(snapshot);
     for (const listener of this.listeners) listener(snapshot);
   }
 }
