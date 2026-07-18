@@ -56,9 +56,7 @@ export class GameRuntime {
       this.emit();
 
       if (resolution.accepted) {
-        await this.presentation.play(resolution.events, world);
-        this.renderer.sync(world.snapshot());
-        this.emit();
+        await this.presentation.play(resolution.events);
       }
     });
 

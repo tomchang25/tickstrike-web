@@ -83,8 +83,7 @@ function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash
     if (!world.isInside(destination) || world.tileAt(destination) === "wall") continue;
 
     if (world.tileAt(destination) === "water") {
-      world.moveEntity(enemy.id, destination);
-      world.setPhase(enemy.id, "drowning");
+      world.moveEntityToPhase(enemy.id, destination, "drowning");
       events.push({
         type: "enemy_entered_water",
         enemyId: enemy.id,

@@ -9,12 +9,15 @@ export type TerrainKind = "land" | "sea";
 export type TileKind = "floor" | "wall" | "water";
 export type EntityKind = "player" | "enemy";
 export type EntityPhase = "alive" | "drowning" | "dead";
+export type TerminalEntityPhase = Exclude<EntityPhase, "alive">;
 
 export interface EntityState {
   readonly id: EntityId;
   readonly kind: EntityKind;
   readonly archetype: string;
   readonly cell: Cell;
+  /** Absolute logical cells claimed by the entity while it is active. */
+  readonly footprint: readonly Cell[];
   readonly hp: number;
   readonly maxHp: number;
   readonly phase: EntityPhase;
@@ -32,8 +35,13 @@ export interface ArenaState {
 export interface WorldSnapshot {
   readonly tick: number;
   readonly arena: ArenaState;
+  readonly playerCell: Cell | undefined;
   readonly entities: readonly EntityState[];
   readonly lastEvents: readonly import("../events/combat-events").CombatEvent[];
+}
+
+export function isTerminalPhase(phase: EntityPhase): phase is TerminalEntityPhase {
+  return phase !== "alive";
 }
 
 export function sameCell(a: Cell, b: Cell): boolean {

@@ -1,7 +1,6 @@
 import { gsap } from "gsap";
 import type { CombatEvent } from "../../core/events/combat-events";
 import type { EntityId } from "../../core/model/types";
-import type { World } from "../../core/world/world";
 import type { PixiGameRenderer } from "../pixi/PixiGameRenderer";
 
 function timelineDone(
@@ -19,7 +18,7 @@ function timelineDone(
 export class PresentationDirector {
   constructor(private readonly renderer: PixiGameRenderer) {}
 
-  async play(events: readonly CombatEvent[], world: World): Promise<void> {
+  async play(events: readonly CombatEvent[]): Promise<void> {
     const terminalIds = new Set<EntityId>();
     const animations: Promise<void>[] = [];
 
@@ -105,7 +104,6 @@ export class PresentationDirector {
 
     await Promise.all(animations);
     for (const id of terminalIds) {
-      world.removeEntity(id);
       this.renderer.removeEntityView(id);
     }
   }

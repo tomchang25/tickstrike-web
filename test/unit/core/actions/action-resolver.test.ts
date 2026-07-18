@@ -39,6 +39,18 @@ describe("Smash action", () => {
       cell: { x: 4, y: 6 },
       phase: "drowning",
     });
+    expect(world.getOccupantAt({ x: 4, y: 3 })).toBeUndefined();
+    expect(world.getOccupantAt({ x: 4, y: 6 })).toBeUndefined();
+    expect(world.listEntities()).toHaveLength(4);
+
+    world.spawn({
+      id: "replacement",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 3 },
+      hp: 10,
+    });
+    expect(world.getOccupantAt({ x: 4, y: 3 })?.id).toBe("replacement");
     expect(world.snapshot().tick).toBe(1);
   });
 });
