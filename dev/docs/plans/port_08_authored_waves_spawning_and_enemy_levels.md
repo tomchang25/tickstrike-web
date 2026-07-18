@@ -1,7 +1,7 @@
 # Authored Waves, Spawning, and Enemy Levels
 
 Roadmap: [Tickstrike Full Port Roadmap](tickstrike_full_port_roadmap.md)
-Reference baseline: [port-ref/tickstrike](../../port-ref/tickstrike)
+Reference baseline: [port-ref/tickstrike](../../../port-ref/tickstrike)
 
 ## Goal
 
