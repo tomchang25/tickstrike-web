@@ -2,6 +2,8 @@
 
 Roadmap: [Tickstrike Web Port Roadmap](tickstrike_full_port_roadmap.md)
 Reference baseline: [port-ref/tickstrike](../../../port-ref/tickstrike)
+Implementation Spec: [Mobility Combat Refinement](port_06_mobility_combat_refinement.implementation_spec.md)
+Follow-up Draft: [Smash Displacement and Terrain](port_06a_smash_displacement_and_terrain.implementation_spec.md)
 
 ## Goal
 
@@ -33,3 +35,8 @@ Dash remains a cardinal player command. Its path, victims, landing, cooldown, an
 2. Mobility pathing, victims, landing, cooldown, and invulnerability remain deterministic around occupied cells and committed enemy attacks.
 3. Previewed and committed Mobility outcomes agree on path, victims, damage, and resulting combat state.
 4. Reset and terminal outcomes clean every Mobility status and presentation effect.
+
+## Implementation Sequence
+
+1. [Implementation Spec](port_06_mobility_combat_refinement.implementation_spec.md): establish shared Mobility combat, cooldown, invulnerability, and preview/commit truth.
+2. [Draft Implementation Spec](port_06a_smash_displacement_and_terrain.implementation_spec.md): add Smash's post-hit crush, forced displacement, and water-fall outcomes without changing the shared Mobility hit path.

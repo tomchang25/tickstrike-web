@@ -22,7 +22,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > Ship a phase: remove it from that file and append its outcome to `CHANGELOG.md`, leaving this line until every phase ships.
 > When every phase ships: archive the plan file and delete this line.
 
-Nothing currently in progress.
+- [port_06_combat_expansion] Refine Dash and Smash through the existing directional Guard combat path - [ref plans/port_06_mobility_combat_refinement.implementation_spec.md]
 
 ---
 
@@ -30,7 +30,6 @@ Nothing currently in progress.
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_06_combat_expansion] Refine Dash and Smash through the existing directional Guard combat path - [ref plans/port_06_character_classes_and_mobility.md]
 - [port_07_enemy_roles] Add Ranged and remaining authored roles through the shared enemy activity model - [ref plans/port_07_complete_enemy_roster_and_navigation.md]
 - [port_08_waves] Feed authored waves and spawn warnings into the same world and Tick boundary - [ref plans/port_08_authored_waves_spawning_and_enemy_levels.md]
 - [port_09_rewards] Add deterministic reward selection and run-scoped build effects to the same arena - [ref plans/port_09_artifacts_rewards_and_run_build.md]

@@ -21,6 +21,20 @@ The data-owned enemy activity model is the boundary; roles supply decisions and 
 
 Navigation remains board-authoritative. If two enemies want one cell, the world resolves a deterministic winner and the loser stays in its current state for that Tick. Do not add a general pathfinding framework until a real role needs more than a one-step legal move.
 
+### Child Overview
+
+The children are prepared as draft implementation specs without an exploratory sketch because each boundary is already settled and independently testable. They are executable only in this order:
+
+| Child | Focus | Current document |
+| --- | --- | --- |
+| A | Shared enemy action snapshot, locked attack lifecycle, and deterministic navigation | [Draft Implementation Spec](port_07_a_shared_enemy_action_and_navigation.implementation_spec.md) |
+| B | Ranged distance-band movement and target-centered Cross pressure | [Draft Implementation Spec](port_07_b_ranged_enemy.implementation_spec.md) |
+| C | Charge line commitment, detonation, and landing movement | [Draft Implementation Spec](port_07_c_charge_enemy.implementation_spec.md) |
+| D | Bomb adjacent commitment, locked area detonation, and self-destruction | [Draft Implementation Spec](port_07_d_bomb_enemy.implementation_spec.md) |
+| E | Mode attack selection, retaliation, and the Boss policy seam | [Draft Implementation Spec](port_07_e_mode_enemy_and_boss_policy.implementation_spec.md) |
+
+Child A establishes the shared contract before any role-specific behavior lands. Children B through E extend the same `tick-arena` scenario and do not create another runtime, route, or presentation boundary.
+
 ## Non-Goals
 
 1. Do not create one scene, runtime, or vertical slice per enemy.
