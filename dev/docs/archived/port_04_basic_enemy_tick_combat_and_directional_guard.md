@@ -48,19 +48,19 @@ Directional Guard resolves from the attacker cell relative to the target's cardi
 
 | Child | Focus | Current document |
 | --- | --- | --- |
-| 04.1 | Base enemy HP, player damage, and shared hit result | [Draft Implementation Spec](port_04_01_base_enemy_hit_resolution.implementation_spec.md) |
+| 04.1 | Base enemy HP, player damage, and shared hit result | [Implemented Spec](port_04_01_base_enemy_hit_resolution.implementation_spec.md) |
 | 04.2 | Data-owned enemy activity, simple movement, and locked attacks | [Implemented Spec](port_04_02_basic_enemy_tick_actions.implementation_spec.md) |
-| 04.3 | Directional Guard, Stagger, and Protection | [Draft Implementation Spec](port_04_03_directional_guard_stagger.implementation_spec.md) |
-| 04.4 | Shared presentation and browser acceptance | [Draft Implementation Spec](port_04_04_enemy_combat_presentation_acceptance.implementation_spec.md) |
-| 04.5 | One ordered combat event stream across core, runtime, snapshots, and presentation | [Draft Implementation Spec](port_04_05_combat_event_stream_consolidation.implementation_spec.md) |
+| 04.3 | Directional Guard, Stagger, and Protection | [Implemented Spec](port_04_03_directional_guard_stagger.implementation_spec.md) |
+| 04.4 | Shared presentation and browser acceptance | [Implemented Spec](port_04_04_enemy_combat_presentation_acceptance.implementation_spec.md) |
+| 04.5 | One ordered combat event stream across core, runtime, snapshots, and presentation | [Implemented Spec](port_04_05_combat_event_stream_consolidation.implementation_spec.md) |
 
-Land the children in numeric order. Each becomes executable only when its implementation spec is written against the then-current codebase.
+All children have landed in numeric order. Their implementation specs are retained as verified implementation records; no child remains an executable handoff.
 
 ## Non-Goals
 
 1. Do not retain or port the reference Speed/Energy scheduler; every enabled basic enemy acts at most once per accepted Tick.
 2. Do not add Ranged behavior, Charge, Bomb, Mode, Boss, waves, spawn selection, or general pathfinding.
-3. Do not add Dash/Smash-specific damage, invulnerability, cooldowns, Artifact triggers, or class selection.
+3. Do not add new Dash/Smash-specific damage, invulnerability, cooldowns, Artifact triggers, or class selection; preserve the already-shipped Port 03 Mobility damage contract.
 4. Do not introduce a generic Node-style FSM, per-role FSMs, timers, or frame-driven combat ownership.
 5. Do not let React state, animation duration, or presentation callbacks resolve combat outcomes.
 6. Do not create a separate enemy showcase scene or combat runtime.

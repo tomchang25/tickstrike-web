@@ -32,9 +32,7 @@ Logical death is immediate. Visual death is an event timeline that must finish b
 | --- | --- | --- |
 | 05.z | Post-playable architecture consolidation | [Implementation Spec](port_05_z_architecture_consolidation_decision.implementation_spec.md) |
 
-The parent plan is currently executed by [Implementation Spec](port_05_first_playable_tick_arena.implementation_spec.md). Do not execute the 05.z consolidation spec until the acceptance criteria below pass.
-
-Do not execute an architecture reorganization while Port 05 is incomplete. Execute the selected consolidation only after the Port 05 acceptance criteria pass and before starting Port 06.
+Port 05 and the bounded 05.z consolidation passed their acceptance gates. Do not introduce another architecture layer before Port 06; retain the current simulation-core, runtime-boundary, and presentation-consumer ownership split.
 
 ## Non-Goals
 

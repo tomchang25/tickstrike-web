@@ -2,7 +2,7 @@
 
 Parent Plan: `port_04_basic_enemy_tick_combat_and_directional_guard.md`
 
-Status: Draft implementation spec
+Status: Implemented and verified
 
 ## Goal
 
@@ -10,7 +10,7 @@ Extend the shared hit result with directional Guard combat for Thrust and Slash.
 
 ## Summary
 
-The content catalog already contains Small Guard data with base 32, Stagger 3, Protection 5, and Protection multiplier 0.5, and Thrust/Slash already reference that profile. The runtime has no Guard state or directional resolver yet. This child adds both as deterministic core data and extends the 04.1 hit seam rather than introducing a second combat calculation.
+The content catalog contains Small Guard data with base 32, Stagger 3, Protection 5, and Protection multiplier 0.5, and Thrust/Slash reference that profile. The implementation adds deterministic Guard state and directional resolution through the existing 04.1 hit seam rather than introducing a second combat calculation.
 
 The selected reference behavior is explicit: Front, Side, and Back apply 4, 16, and 32 Guard damage; surviving Guard reduces HP damage to 20%; a Guard-breaking hit receives full HP damage after Defense. The reference source contains directional HP-bypass constants that are not used by its effective resolver path, so this spec follows the effective 0.2 guarded-damage behavior.
 

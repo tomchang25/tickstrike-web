@@ -20,7 +20,22 @@ Rules:
 
 - 2026-07-18 - [content] Shipped gameplay content is now validated through immutable actor, wave, Artifact, and browser inspection catalogs
 
-### Initial Web Vertical Slice
+### Deterministic Tick Arena Foundation
+
+- 2026-07-18 - [port_02] The Web port now has a deterministic twelve-by-twelve Tick Arena with reset-safe occupancy, reservations, Telegraph ownership, seeded streams, and runtime generation boundaries
+
+### Player Verbs and One-Action Tick
+
+- 2026-07-18 - [port_03] The shared Tick Arena now resolves Move, Normal Attack, Dash, pointer Mobility, accepted/rejected commands, and one-tick advancement through one command path
+
+### Basic Enemy Tick Combat and Directional Guard
+
+- 2026-07-18 - [port_04] Thrust and Slash now move, commit locked Telegraph attacks, resolve damage, directional Guard, Stagger, Protection, presentation feedback, and deterministic combat events
+
+### Smash Mobility Scenario
 
 - 2026-07-18 - [migration] A Web-native Smash scenario now resolves center crush, knockback, and water drowning through deterministic core events with completed Pixi/GSAP presentation and browser acceptance coverage
+
+### First Playable Tick Arena
+
 - 2026-07-18 - [port_05] The deterministic Tick Arena now reaches victory or defeat, presents terminal feedback, and restarts without stale combat or presentation state

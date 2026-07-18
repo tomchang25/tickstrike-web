@@ -23,7 +23,7 @@ The command boundary is deliberately narrow:
 receive command -> validate -> apply player result -> advance tick -> publish snapshot/events
 ```
 
-Move changes one cardinal cell. Normal Attack targets one adjacent cardinal cell and consumes its action even when the cell is empty. Dash moves the player through up to three legal cells in one cardinal direction, stops before an occupied or illegal cell, and consumes one action. Damage and enemy responses are added by the next plans, but the player result already contains the event seam they will use.
+Move changes one cardinal cell. Normal Attack targets one adjacent cardinal cell and consumes its action even when the cell is empty. Dash moves the player through up to three legal cells in one cardinal direction, may traverse living enemy cells, lands on the last legal non-enemy cell, and consumes one action. The current Mobility contract also applies authored damage to enemies crossed by Dash; committed enemy responses remain owned by the next plans.
 
 ### Child Implementation Specs
 
@@ -35,7 +35,7 @@ Move changes one cardinal cell. Normal Attack targets one adjacent cardinal cell
 ## Non-Goals
 
 1. Do not add Speed, class selection, artifacts, or advanced aiming to the deterministic Port 03 command contract; pointer aiming is owned by the separately scoped Port 03.1 child.
-2. Do not add enemy decisions, telegraphs, or enemy damage in this plan.
+2. Do not add enemy decisions, telegraphs, or committed enemy attacks in this plan; the shipped Mobility damage rule is retained by the 03.2 child.
 3. Do not add production key repeat, settings, or modal input ownership.
 4. Do not create separate Move, Attack, or Dash demo screens.
 

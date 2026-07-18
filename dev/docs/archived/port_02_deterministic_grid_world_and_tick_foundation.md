@@ -2,7 +2,7 @@
 
 Roadmap: [Tickstrike Web Port Roadmap](tickstrike_full_port_roadmap.md)
 Reference baseline: [port-ref/tickstrike](../../../port-ref/tickstrike)
-Draft Implementation Spec: [Merged deterministic Tick Arena foundation spec](port_02_deterministic_grid_world_and_tick_foundation.implementation_spec.md)
+Implementation Spec: [Merged deterministic Tick Arena foundation spec](port_02_deterministic_grid_world_and_tick_foundation.implementation_spec.md)
 
 ## Goal
 

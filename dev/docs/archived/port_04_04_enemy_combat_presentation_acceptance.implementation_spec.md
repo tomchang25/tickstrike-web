@@ -2,7 +2,7 @@
 
 Parent Plan: `port_04_basic_enemy_tick_combat_and_directional_guard.md`
 
-Status: Draft implementation spec
+Status: Implemented; browser coverage partial
 
 ## Goal
 
@@ -10,7 +10,9 @@ Make the completed Port 04 Thrust/Slash combat contract observable on the existi
 
 ## Summary
 
-The current presentation already owns board, entity, reservation, Telegraph, pointer-preview, transient-impact, and generation-scoped GSAP infrastructure. It does not yet render enemy HP/activity/facing/Guard or handle enemy combat events; the semantic mirror exposes only entity phase and coordinates. This child extends those seams and the existing `tick-arena` scenario rather than creating an enemy showcase.
+The presentation now owns board, entity, reservation, Telegraph, pointer-preview, transient-impact, and generation-scoped GSAP projection for enemy HP, activity, facing, Guard, status, and terminal feedback. The semantic mirror and testbed expose the same canonical snapshot data. This child extends those seams and the existing `tick-arena` scenario rather than creating an enemy showcase.
+
+Focused presentation tests and the shared browser flows verify projection, event playback, terminal cleanup, reset, and idle behavior. Direct browser assertions for every intermediate Stagger and Protection state remain a coverage follow-up rather than an implementation gap.
 
 The browser proof should use a deterministic command sequence against Thrust and Slash. It must observe a committed Telegraph, a player dodge or hit, one attack resolution, HP/Guard feedback, Guard break and Stagger, Protection, death, reset, and idle cleanup. Assertions must read semantic state or stable test attributes, not rely on arbitrary sleeps.
 

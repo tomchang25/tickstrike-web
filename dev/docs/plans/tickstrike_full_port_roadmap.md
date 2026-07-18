@@ -19,7 +19,7 @@ An accepted player action advances exactly one world tick. The enemy phase reads
 Use one fixed deterministic scenario:
 
 - One player with Move, Normal Attack, and cardinal Dash.
-- Two initial enemy roles: Thrust and Slash; Ranged joins with the additional enemy roles.
+- Two enabled enemy roles, Thrust and Slash, plus one passive Ranged fixture retained by the deterministic foundation scenario for three-entity coverage; Ranged behavior joins with the additional enemy roles.
 - One shared data-owned enemy activity model: Ready, Telegraphing, Recovering, and Staggered; movement, turn, attack commitment, attack resolution, and death are semantic actions or lifecycle transitions.
 - Enemy movement and attack choice happen once per accepted player action.
 - Windup locks the attack intent. Telegraph exposes the locked cells. Player movement changes the next enemy decision, not an already committed attack.
@@ -38,7 +38,7 @@ Use one fixed deterministic scenario:
 | Plan | Focus | Result in the same Tick Arena |
 | --- | --- | --- |
 | 02 | Deterministic arena and runtime seam | A resettable board with one player and three enemy fixtures. |
-| 03 | [Player verbs and Tick boundary](port_03_player_verbs_and_player_clock.md) -> [Implementation Spec](port_03_player_verbs_and_player_clock.implementation_spec.md) | Move, Normal Attack, Dash, accepted/rejected commands, and one-tick advancement. |
+| 03 | Player verbs and Tick boundary | Move, Normal Attack, Dash, accepted/rejected commands, and one-tick advancement. |
 | 04 | Basic enemy tick combat and Guard | Thrust/Slash HP, tick actions, locked attacks, directional Guard, presentation, and browser acceptance. |
 | 05 | First playable Tick Arena | Encounter win, defeat, restart, terminal presentation, and cleanup form one playable loop. |
 | 06 | Mobility combat refinement | Dash and Smash extend the existing combat rules without changing the entry point. |

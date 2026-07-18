@@ -2,6 +2,8 @@
 
 Parent Plan: `port_05_first_playable_tick_arena.md`
 
+Status: Implemented and verified
+
 ## Goal
 
 Consolidate the proven deterministic simulation boundary without changing combat behavior or adding speculative architecture. Make the command resolver easier to extend, remove redundant World API aliases, and prove that terminal presentation remains safe when a scenario is reset or replaced.

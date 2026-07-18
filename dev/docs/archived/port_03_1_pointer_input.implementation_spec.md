@@ -2,6 +2,8 @@
 
 Parent Plan: `port_03_player_verbs_and_player_clock.md`
 
+Status: Implemented and verified
+
 ## Goal
 
 Add cursor-driven aiming to the existing Tick Arena without changing the deterministic command boundary. Players should be able to preview and commit Normal Attack with the left mouse button, enter Mobility mode with Alt, and see a truthful Mobility landing preview while Smash/Dash selection remains panel-owned.
@@ -12,7 +14,7 @@ Port 03.1 adds a Pixi canvas pointer adapter and presentation-only aim overlays.
 
 In Attack mode, the left click dispatches the existing `attack` command. The adjacent target cell is highlighted; an empty target remains clickable but uses a red outline. Holding Alt enters Mobility mode without consuming a tick. Mobility hover shows the legal path and a translucent virtual player at the landing cell. If the current Mobility aim has no legal landing, the preview retains the last valid landing instead of moving to the illegal cell.
 
-The current Web Port 03 Mobility payload is Dash. This child does not add pointer-driven Smash or a cursor-based Smash/Dash selector; the existing panel remains the control surface for Smash and Dash selection/invocation. Core validation, tick advancement, runtime queuing, and accepted event order remain unchanged.
+The current Web Port 03 Mobility payload is Dash. This child does not add pointer-driven Smash or a cursor-based Smash/Dash selector; the existing panel toggle selects the Mobility payload while the canvas owns pointer invocation. Core validation, tick advancement, runtime queuing, and accepted event order remain unchanged.
 
 ## Relational Context
 
@@ -24,7 +26,7 @@ The current Web Port 03 Mobility payload is Dash. This child does not add pointe
 - Attack target presence is presentation information only. An empty adjacent target is shown as a red outline but remains a valid Normal Attack whiff when committed through the existing command.
 - Attack mode is the default and is restored on Alt release, scenario reset, and renderer teardown. Mobility mode is transient and never becomes persisted or canonical gameplay state.
 - A rejected Mobility preview does not replace the last valid preview state. Reset, scenario replacement, disabled-command scenarios, and teardown clear all pointer listeners, preview graphics, and virtual player visuals.
-- The existing panel remains responsible for Smash and Dash controls. Port 03.1 must not infer an ability switch from cursor buttons, right click, or an additional pointer gesture.
+- The existing panel remains responsible for selecting Smash or Dash. Port 03.1 must not infer an ability switch from cursor buttons, right click, or an additional pointer gesture.
 
 ## Scope
 

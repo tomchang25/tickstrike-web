@@ -2,13 +2,15 @@
 
 Parent Plan: `port_05_first_playable_tick_arena.md`
 
+Status: Implemented and verified
+
 ## Goal
 
 Complete the existing deterministic Tick Arena as one playable encounter with explicit victory, defeat, reset, and presentation-idle outcomes. The encounter must reuse the current command resolver, Thrust/Slash activity model, event stream, and generation-safe runtime rather than introducing a parallel combat path.
 
 ## Summary
 
-The current code resolves player verbs, basic enemy actions, locked Telegraphs, Guard, damage, enemy death, and reset, but it has no canonical encounter outcome and no player-death or terminal browser state. This spec adds a small `running`/`victory`/`defeat` state to the core snapshot, emits terminal semantic events from the existing ordered command stream, rejects commands after an outcome, and exposes the result through the existing React testbed and debug mirror.
+The completed implementation resolves player verbs, basic enemy actions, locked Telegraphs, Guard, damage, enemy death, reset, and canonical encounter outcomes through one command path. It emits terminal events from the existing ordered command stream, rejects commands after an outcome, and exposes the result through the existing React testbed and debug mirror.
 
 Victory occurs when every enabled basic enemy is terminal after an accepted command. Defeat occurs when the player becomes terminal from a committed enemy attack. The World resolves the logical outcome immediately; Pixi/GSAP only completes terminal feedback and removes visual views. Reset continues to replace the World through the existing runtime generation boundary and must leave the replacement idle with no stale presentation state.
 

@@ -2,7 +2,7 @@
 
 Parent Plan: `port_04_basic_enemy_tick_combat_and_directional_guard.md`
 
-Status: Draft implementation spec
+Status: Implemented and verified
 
 ## Goal
 
@@ -10,7 +10,7 @@ Add the first canonical enemy combat result to the existing Tick Arena. Normal A
 
 ## Summary
 
-The current entity model already stores `hp`, `maxHp`, and `phase`, but the current Normal Attack only emits `player_attacked` and advances the Tick. This child adds a shared basic hit result and world-owned damage mutation without adding enemy AI, facing, Telegraph commitment, or Guard yet.
+At the 04.1 starting boundary, the entity model already stored `hp`, `maxHp`, and `phase`, but Normal Attack only emitted `player_attacked` and advanced the Tick. This child added a shared basic hit result and world-owned damage mutation without adding enemy AI, facing, Telegraph commitment, or Guard at that boundary.
 
 The result is intentionally extensible: it starts with attacker, target, HP damage, and killed state so 04.2 can use the same mutation seam for enemy attacks and 04.3 can add direction, Guard, Defense, and Stagger fields. The existing empty adjacent attack remains an accepted whiff. The current Ranged entity remains a passive foundation fixture until P7; only Thrust and Slash receive combat behavior in P4.
 
@@ -20,9 +20,9 @@ The result is intentionally extensible: it starts with attacker, target, HP dama
 - `World` owns mutable HP, entity phase, occupancy, reservations, Telegraph cleanup, tick, and snapshots. Preview helpers remain read-only and must not mutate HP or phase.
 - `EntityState.hp` and `maxHp` remain canonical. Do not create a React-side health value, a renderer-side damage calculation, or a second enemy record that can disagree with the world snapshot.
 - An HP result reaching zero must use the existing terminal transition path so occupancy, the entity reservation, and its source-owned Telegraph are released immediately while the terminal entity record remains queryable.
-- `CombatEvent` is the semantic bridge to `PresentationDirector`; combat events are emitted after core mutation has completed. `ActionResolution.events` remains the gameplay-result view and `semanticEvents` remains the ordered stream recorded by `World.lastEvents`.
+- `CombatEvent` is the semantic bridge to `PresentationDirector`; combat events are emitted after core mutation has completed. `ActionResolution.events` is the one complete ordered stream and is also recorded by `World.lastEvents`.
 - `GameRuntime` publishes the post-resolution snapshot before awaiting GSAP presentation. Presentation may animate the result but cannot decide damage, death, or Tick advancement.
-- `shipped-arena.ts` currently creates three entities with 10 HP and keeps the Ranged fixture. The implementation must make Thrust and Slash use the authored basic-enemy HP contract without deleting the existing Ranged fixture or inventing a second scenario.
+- The shared fixture creates one player and three enemy entities with authored Thrust/Slash HP plus a passive Ranged fixture. The implementation retained that fixture and did not invent a second scenario.
 
 ## Scope
 
