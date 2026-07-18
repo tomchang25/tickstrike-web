@@ -39,3 +39,23 @@ Rules:
 ### First Playable Tick Arena
 
 - 2026-07-18 - [port_05] The deterministic Tick Arena now reaches victory or defeat, presents terminal feedback, and restarts without stale combat or presentation state
+
+### Mobility Combat Refinement in the Same Arena
+
+- 2026-07-19 - [port_06] The Tick Arena now resolves deterministic Dash and Smash mobility through shared directional Guard combat, cooldown, invulnerability, and terminal cleanup rules
+
+### Mobility Combat Refinement
+
+- 2026-07-19 - [port_06] Dash and Smash now share preview and committed directional hit results without a second mobility combat path
+
+### Smash Displacement and Terrain
+
+- 2026-07-19 - [port_06a] Smash now deterministically crushes, knocks back, or sends eligible victims into water while preserving synchronous occupancy cleanup
+
+### Preview Victim Indicators
+
+- 2026-07-19 - [port_06b] Action previews now expose lethal victims, Smash terminal outcomes, and predicted displacement destinations before commit
+
+### Ninja Visual Slice
+
+- 2026-07-19 - [port_06c] The fixed Ninja player now uses the authored spritesheet with readable facing, movement, Dash, attack-facing, input-repeat, and presentation cleanup behavior

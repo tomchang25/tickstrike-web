@@ -22,7 +22,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > Ship a phase: remove it from that file and append its outcome to `CHANGELOG.md`, leaving this line until every phase ships.
 > When every phase ships: archive the plan file and delete this line.
 
-- [port_06_combat_expansion] Refine Dash and Smash through the existing directional Guard combat path - [ref plans/port_06_mobility_combat_refinement.implementation_spec.md]
+Nothing currently in progress.
 
 ---
 
