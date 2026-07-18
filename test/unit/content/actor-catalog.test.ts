@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { actorContent } from "../../../src/content/actor-content";
+import { actorCatalog } from "../../../src/content/actor-catalog";
 
 describe("canonical actor content", () => {
   it("contains the complete shipped inventory", () => {
-    expect(actorContent.characters.map((entry) => entry.id)).toEqual(["ninja", "viking"]);
-    expect(actorContent.guards.map((entry) => entry.id)).toEqual(["small", "heavy", "elite", "boss"]);
-    expect(actorContent.attacks).toHaveLength(15);
-    expect(actorContent.enemies.map((entry) => entry.id)).toEqual([
+    expect(actorCatalog.characters.map((entry) => entry.id)).toEqual(["ninja", "viking"]);
+    expect(actorCatalog.guards.map((entry) => entry.id)).toEqual(["small", "heavy", "elite", "boss"]);
+    expect(actorCatalog.attacks).toHaveLength(15);
+    expect(actorCatalog.enemies.map((entry) => entry.id)).toEqual([
       "thrust_enemy",
       "slash_enemy",
       "ranged_enemy",
@@ -18,7 +18,7 @@ describe("canonical actor content", () => {
   });
 
   it("records the effective character values", () => {
-    expect(actorContent.characters).toMatchObject([
+    expect(actorCatalog.characters).toMatchObject([
       {
         id: "ninja",
         name: "Ninja",
@@ -43,14 +43,14 @@ describe("canonical actor content", () => {
   });
 
   it("records guard values, attack payloads, and every enemy assignment", () => {
-    expect(actorContent.guards.map(({ id, base, lethalTierGain }) => ({ id, base, lethalTierGain }))).toEqual([
+    expect(actorCatalog.guards.map(({ id, base, lethalTierGain }) => ({ id, base, lethalTierGain }))).toEqual([
       { id: "small", base: 32, lethalTierGain: 8 },
       { id: "heavy", base: 64, lethalTierGain: 16 },
       { id: "elite", base: 96, lethalTierGain: 24 },
       { id: "boss", base: 128, lethalTierGain: 32 },
     ]);
 
-    const rangedCross = actorContent.attacks.find((attack) => attack.id === "ranged_cross");
+    const rangedCross = actorCatalog.attacks.find((attack) => attack.id === "ranged_cross");
     expect(rangedCross?.shape).toEqual({
       shape: "custom-offsets",
       offsets: [
@@ -61,10 +61,10 @@ describe("canonical actor content", () => {
         { x: 0, y: -1 },
       ],
     });
-    expect(actorContent.attacks.find((attack) => attack.id === "mode_charge")?.damage).toBe(10);
-    expect(actorContent.attacks.find((attack) => attack.id === "mode_boss_charge")?.damage).toBe(10);
+    expect(actorCatalog.attacks.find((attack) => attack.id === "mode_charge")?.damage).toBe(10);
+    expect(actorCatalog.attacks.find((attack) => attack.id === "mode_boss_charge")?.damage).toBe(10);
 
-    expect(actorContent.enemies.map(({ id, guardId, attackIds }) => ({ id, guardId, attackIds }))).toEqual([
+    expect(actorCatalog.enemies.map(({ id, guardId, attackIds }) => ({ id, guardId, attackIds }))).toEqual([
       { id: "thrust_enemy", guardId: "small", attackIds: ["thrust"] },
       { id: "slash_enemy", guardId: "small", attackIds: ["slash"] },
       { id: "ranged_enemy", guardId: "small", attackIds: ["ranged_cross"] },
@@ -87,7 +87,7 @@ describe("canonical actor content", () => {
         ],
       },
     ]);
-    expect(actorContent.enemies.find((enemy) => enemy.id === "mode_boss")?.roleTuning).toEqual({
+    expect(actorCatalog.enemies.find((enemy) => enemy.id === "mode_boss")?.roleTuning).toEqual({
       type: "mode",
       retaliationTicks: 10,
       warningReduction: 1,

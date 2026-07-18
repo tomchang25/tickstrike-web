@@ -1,4 +1,4 @@
-import type { ArtifactDefinition } from "../../core/content/artifact-content";
+import type { ArtifactDefinition } from "../../core/content/artifact-schema";
 
 export const artifactDefinitions: readonly ArtifactDefinition[] = [
   {

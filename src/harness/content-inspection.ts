@@ -1,6 +1,6 @@
-import type { AttackDefinition, GuardDefinition } from "../core/content/actor-content";
-import type { ArtifactDefinition } from "../core/content/artifact-content";
-import type { WaveGroupSlot } from "../core/content/wave-content";
+import type { AttackDefinition, GuardDefinition } from "../core/content/actor-schema";
+import type { ArtifactDefinition } from "../core/content/artifact-schema";
+import type { WaveGroupSlot } from "../core/content/wave-schema";
 import { contentCatalog } from "../content/content-catalog";
 
 export interface ContentInspection {

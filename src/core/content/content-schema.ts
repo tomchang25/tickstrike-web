@@ -1,6 +1,6 @@
-import type { ActorContentCatalog } from "./actor-content";
-import type { ArtifactContentCatalog } from "./artifact-content";
-import type { WaveContentCatalog } from "./wave-content";
+import type { ActorContentCatalog } from "./actor-schema";
+import type { ArtifactContentCatalog } from "./artifact-schema";
+import type { WaveContentCatalog } from "./wave-schema";
 
 export interface ContentCatalogInput {
   readonly actor: ActorContentCatalog;

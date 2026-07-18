@@ -1,4 +1,4 @@
-import type { MobilityKind } from "./actor-content";
+import type { MobilityKind } from "./actor-schema";
 
 export type ArtifactCategory = "minor" | "major";
 export type ArtifactChannel =

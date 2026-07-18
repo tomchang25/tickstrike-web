@@ -5,7 +5,7 @@ import type {
   WaveDefinition,
   WaveGroupSlot,
   WaveProgressionProfile,
-} from "../../core/content/wave-content";
+} from "../../core/content/wave-schema";
 
 const immediateSlotDefaults = {
   startCondition: "immediate-overlap",

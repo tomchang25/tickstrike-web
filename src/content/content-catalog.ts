@@ -1,10 +1,10 @@
-import { createContentCatalog } from "../core/content/content-catalog";
-import { actorContent } from "./actor-content";
-import { artifactContent } from "./artifact-content";
-import { waveContent } from "./wave-content";
+import { createContentCatalog } from "../core/content/content-schema";
+import { actorCatalog } from "./actor-catalog";
+import { artifactCatalog } from "./artifact-catalog";
+import { waveCatalog } from "./wave-catalog";
 
 export const contentCatalog = createContentCatalog({
-  actor: actorContent,
-  wave: waveContent,
-  artifact: artifactContent,
+  actor: actorCatalog,
+  wave: waveCatalog,
+  artifact: artifactCatalog,
 });

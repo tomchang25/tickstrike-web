@@ -4,7 +4,7 @@ import {
   createArtifactContentCatalog,
   validateArtifactContent,
   type ArtifactContentInput,
-} from "../../../../src/core/content/artifact-content";
+} from "../../../../src/core/content/artifact-schema";
 
 const validContent: ArtifactContentInput = {
   artifacts: [

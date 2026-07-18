@@ -4,7 +4,7 @@ import {
   createActorContentCatalog,
   validateActorContent,
   type ActorContentInput,
-} from "../../../../src/core/content/actor-content";
+} from "../../../../src/core/content/actor-schema";
 
 const validContent: ActorContentInput = {
   characters: [

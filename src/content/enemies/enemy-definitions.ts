@@ -2,7 +2,7 @@ import type {
   AttackDefinition,
   EnemyDefinition,
   GuardDefinition,
-} from "../../core/content/actor-content";
+} from "../../core/content/actor-schema";
 
 export const guardDefinitions: readonly GuardDefinition[] = [
   {

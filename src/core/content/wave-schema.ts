@@ -1,4 +1,4 @@
-import type { ActorContentInput } from "./actor-content";
+import type { ActorContentInput } from "./actor-schema";
 
 export type WaveCompositionMode = "fixed" | "weighted";
 export type PlacementStrategy = "player-ring" | "anchor-cluster" | "scatter";
@@ -410,7 +410,7 @@ function validateProgression(
 
 export function validateWaveContent(
   input: unknown,
-  actorContent: ActorContentInput,
+  actorCatalog: ActorContentInput,
 ): readonly WaveContentDiagnostic[] {
   const diagnostics: WaveContentDiagnostic[] = [];
   if (!isRecord(input)) {
@@ -437,7 +437,7 @@ export function validateWaveContent(
     }
   }
 
-  const actorValues = isRecord(actorContent) && Array.isArray(actorContent.enemies) ? actorContent.enemies : [];
+  const actorValues = isRecord(actorCatalog) && Array.isArray(actorCatalog.enemies) ? actorCatalog.enemies : [];
   const enemyIds = new Set(
     actorValues.flatMap((enemy) => (isRecord(enemy) && typeof enemy.id === "string" ? [enemy.id] : [])),
   );
@@ -476,9 +476,9 @@ function cloneAndFreeze<T>(value: T): T {
 
 export function createWaveContentCatalog(
   input: WaveContentInput,
-  actorContent: ActorContentInput,
+  actorCatalog: ActorContentInput,
 ): WaveContentCatalog {
-  const diagnostics = validateWaveContent(input, actorContent);
+  const diagnostics = validateWaveContent(input, actorCatalog);
   if (diagnostics.length > 0) throw new WaveContentValidationError(diagnostics);
   return cloneAndFreeze(input);
 }

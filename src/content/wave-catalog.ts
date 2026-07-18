@@ -1,5 +1,5 @@
-import { actorContent } from "./actor-content";
-import { createWaveContentCatalog } from "../core/content/wave-content";
+import { actorCatalog } from "./actor-catalog";
+import { createWaveContentCatalog } from "../core/content/wave-schema";
 import {
   demoWaveDefinitions,
   endlessWaveDefinition,
@@ -7,14 +7,12 @@ import {
   spawnGroupDefinitions,
 } from "./waves/wave-definitions";
 
-export const waveContent = createWaveContentCatalog(
+export const waveCatalog = createWaveContentCatalog(
   {
     groups: spawnGroupDefinitions,
     demoWaves: demoWaveDefinitions,
     endlessTemplate: endlessWaveDefinition,
     progressionProfile,
   },
-  actorContent,
+  actorCatalog,
 );
-
-export const waveCatalog = waveContent;

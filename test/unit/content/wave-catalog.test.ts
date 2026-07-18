@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { waveContent } from "../../../src/content/wave-content";
+import { waveCatalog } from "../../../src/content/wave-catalog";
 
 describe("canonical wave content", () => {
   it("contains the complete shipped wave inventory", () => {
-    expect(waveContent.groups.map((group) => group.id)).toEqual([
+    expect(waveCatalog.groups.map((group) => group.id)).toEqual([
       "small",
       "small-ranged",
       "small-ranged-charge",
@@ -12,7 +12,7 @@ describe("canonical wave content", () => {
       "bomb",
       "boss",
     ]);
-    expect(waveContent.demoWaves.map((wave) => wave.id)).toEqual([
+    expect(waveCatalog.demoWaves.map((wave) => wave.id)).toEqual([
       "demo-01",
       "demo-02",
       "demo-03",
@@ -24,11 +24,11 @@ describe("canonical wave content", () => {
       "demo-09",
       "demo-10",
     ]);
-    expect(waveContent.endlessTemplate.id).toBe("endless");
+    expect(waveCatalog.endlessTemplate.id).toBe("endless");
   });
 
   it("records group composition, placement, and authored entry order", () => {
-    expect(waveContent.groups.map(({ id, compositionMode, placementStrategy }) => ({
+    expect(waveCatalog.groups.map(({ id, compositionMode, placementStrategy }) => ({
       id,
       compositionMode,
       placementStrategy,
@@ -41,11 +41,11 @@ describe("canonical wave content", () => {
       { id: "bomb", compositionMode: "fixed", placementStrategy: "scatter" },
       { id: "boss", compositionMode: "fixed", placementStrategy: "scatter" },
     ]);
-    expect(waveContent.groups[0]!.entries).toEqual([
+    expect(waveCatalog.groups[0]!.entries).toEqual([
       { enemyId: "thrust_enemy", weight: 1 },
       { enemyId: "slash_enemy", weight: 1 },
     ]);
-    expect(waveContent.groups[2]!.entries).toEqual([
+    expect(waveCatalog.groups[2]!.entries).toEqual([
       { enemyId: "thrust_enemy", count: 2 },
       { enemyId: "slash_enemy", count: 1 },
       { enemyId: "ranged_enemy", count: 1 },
@@ -54,7 +54,7 @@ describe("canonical wave content", () => {
   });
 
   it("preserves wave caps, slot order, and the boss slot override", () => {
-    expect(waveContent.demoWaves.map((wave) => ({
+    expect(waveCatalog.demoWaves.map((wave) => ({
       id: wave.id,
       cap: wave.populationCap,
       groups: wave.slots.map((slot) => slot.spawnGroupId),
@@ -70,7 +70,7 @@ describe("canonical wave content", () => {
       { id: "demo-09", cap: 9, groups: ["charge", "ranged", "small", "bomb"] },
       { id: "demo-10", cap: 1, groups: ["boss"] },
     ]);
-    expect(waveContent.demoWaves[9]!.slots[0]).toEqual({
+    expect(waveCatalog.demoWaves[9]!.slots[0]).toEqual({
       spawnGroupId: "boss",
       startCondition: "immediate-overlap",
       survivorThreshold: 0,
@@ -78,7 +78,7 @@ describe("canonical wave content", () => {
       levelOffset: 3,
       isBoss: true,
     });
-    expect(waveContent.endlessTemplate.slots.map((slot) => slot.spawnGroupId)).toEqual([
+    expect(waveCatalog.endlessTemplate.slots.map((slot) => slot.spawnGroupId)).toEqual([
       "charge",
       "ranged",
       "small",
@@ -87,7 +87,7 @@ describe("canonical wave content", () => {
   });
 
   it("records progression inputs without projecting runtime stats", () => {
-    expect(waveContent.progressionProfile).toEqual({
+    expect(waveCatalog.progressionProfile).toEqual({
       lethalLevelStart: 10,
       hpCurve: { standardCoefficient: 0.08, standardExponent: 1, lethalCoefficient: 0.15, lethalExponent: 1.2 },
       damageCurve: { standardCoefficient: 0.05, standardExponent: 1, lethalCoefficient: 0.1, lethalExponent: 1.1 },

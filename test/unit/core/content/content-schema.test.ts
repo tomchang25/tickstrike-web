@@ -3,12 +3,12 @@ import {
   ContentCatalogValidationError,
   createContentCatalog,
   validateContentCatalog,
-} from "../../../../src/core/content/content-catalog";
-import { actorContent } from "../../../../src/content/actor-content";
-import { artifactContent } from "../../../../src/content/artifact-content";
-import { waveContent } from "../../../../src/content/wave-content";
+} from "../../../../src/core/content/content-schema";
+import { actorCatalog } from "../../../../src/content/actor-catalog";
+import { artifactCatalog } from "../../../../src/content/artifact-catalog";
+import { waveCatalog } from "../../../../src/content/wave-catalog";
 
-const validInput = { actor: actorContent, wave: waveContent, artifact: artifactContent };
+const validInput = { actor: actorCatalog, wave: waveCatalog, artifact: artifactCatalog };
 
 describe("content catalog aggregation", () => {
   it("loads the complete Port 1 inventory in authored order", () => {
@@ -35,21 +35,21 @@ describe("content catalog aggregation", () => {
   it("rejects missing cross-catalog references and unavailable Mobility deterministically", () => {
     const malformed = {
       actor: {
-        ...actorContent,
-        characters: actorContent.characters.map((character) => ({
+        ...actorCatalog,
+        characters: actorCatalog.characters.map((character) => ({
           ...character,
           mobility: { ...character.mobility, kind: "smash" as const },
         })),
       },
       wave: {
-        ...waveContent,
-        groups: waveContent.groups.map((group, index) =>
+        ...waveCatalog,
+        groups: waveCatalog.groups.map((group, index) =>
           index === 0
             ? { ...group, entries: [{ ...group.entries[0]!, enemyId: "missing-enemy" }] }
             : group,
         ),
       },
-      artifact: artifactContent,
+      artifact: artifactCatalog,
     };
 
     expect(validateContentCatalog(malformed).map(({ code, path }) => `${code}:${path}`)).toContain(
@@ -78,9 +78,9 @@ describe("content catalog aggregation", () => {
   it("keeps accepted leaf catalogs and the aggregate immutable", () => {
     const catalog = createContentCatalog(validInput);
 
-    expect(catalog.actor).toBe(actorContent);
-    expect(catalog.wave).toBe(waveContent);
-    expect(catalog.artifact).toBe(artifactContent);
+    expect(catalog.actor).toBe(actorCatalog);
+    expect(catalog.wave).toBe(waveCatalog);
+    expect(catalog.artifact).toBe(artifactCatalog);
     expect(Object.isFrozen(catalog)).toBe(true);
     expect(Object.isFrozen(catalog.actor.characters[0])).toBe(true);
     expect(Object.isFrozen(catalog.wave.groups[0]?.entries)).toBe(true);

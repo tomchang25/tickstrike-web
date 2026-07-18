@@ -4,8 +4,8 @@ import {
   createWaveContentCatalog,
   validateWaveContent,
   type WaveContentInput,
-} from "../../../../src/core/content/wave-content";
-import { actorContent } from "../../../../src/content/actor-content";
+} from "../../../../src/core/content/wave-schema";
+import { actorCatalog } from "../../../../src/content/actor-catalog";
 
 const validContent: WaveContentInput = {
   groups: [
@@ -71,7 +71,7 @@ describe("wave content validation", () => {
     slots[0]!.spawnGroupId = "missing_group";
     slots[0]!.startCondition = "unknown";
 
-    const diagnostics = validateWaveContent(malformed, actorContent);
+    const diagnostics = validateWaveContent(malformed, actorCatalog);
 
     expect(diagnostics.map(({ code, path }) => `${code}:${path}`)).toEqual([
       "invalid-enum:groups[0].compositionMode",
@@ -98,10 +98,10 @@ describe("wave content validation", () => {
       lethalExponent: Number.NaN,
     };
 
-    expect(() => createWaveContentCatalog(malformed as unknown as WaveContentInput, actorContent)).toThrow(
+    expect(() => createWaveContentCatalog(malformed as unknown as WaveContentInput, actorCatalog)).toThrow(
       WaveContentValidationError,
     );
-    expect(validateWaveContent(malformed, actorContent).map(({ code }) => code)).toEqual([
+    expect(validateWaveContent(malformed, actorCatalog).map(({ code }) => code)).toEqual([
       "population-cap-exceeded",
       "population-cap-exceeded",
       "invalid-non-negative-number",
@@ -111,7 +111,7 @@ describe("wave content validation", () => {
   });
 
   it("preserves authored ordering and recursively freezes accepted content", () => {
-    const catalog = createWaveContentCatalog(validContent, actorContent);
+    const catalog = createWaveContentCatalog(validContent, actorCatalog);
 
     expect(catalog.demoWaves[0]!.slots[0]!.spawnGroupId).toBe("small");
     expect(Object.isFrozen(catalog)).toBe(true);

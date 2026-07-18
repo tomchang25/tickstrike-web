@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { artifactContent } from "../../../src/content/artifact-content";
+import { artifactCatalog } from "../../../src/content/artifact-catalog";
 
 describe("canonical artifact content", () => {
   it("contains the nine shipped artifacts in registry order", () => {
-    expect(artifactContent.artifacts.map((artifact) => artifact.id)).toEqual([
+    expect(artifactCatalog.artifacts.map((artifact) => artifact.id)).toEqual([
       "attack_up",
       "speed_up",
       "dash_attack_up",
@@ -14,13 +14,13 @@ describe("canonical artifact content", () => {
       "execution",
       "chain_dash",
     ]);
-    expect(artifactContent.artifacts.filter((artifact) => artifact.category === "minor")).toHaveLength(6);
-    expect(artifactContent.artifacts.filter((artifact) => artifact.category === "major")).toHaveLength(3);
-    expect(artifactContent.artifacts.filter((artifact) => artifact.isCurse)).toHaveLength(0);
+    expect(artifactCatalog.artifacts.filter((artifact) => artifact.category === "minor")).toHaveLength(6);
+    expect(artifactCatalog.artifacts.filter((artifact) => artifact.category === "major")).toHaveLength(3);
+    expect(artifactCatalog.artifacts.filter((artifact) => artifact.isCurse)).toHaveLength(0);
   });
 
   it("records every shipped display value and immutable metadata", () => {
-    expect(artifactContent.artifacts.map(({ id, name, descriptionTemplate, category, maxStacks, minWave, magnitude }) => ({
+    expect(artifactCatalog.artifacts.map(({ id, name, descriptionTemplate, category, maxStacks, minWave, magnitude }) => ({
       id,
       name,
       descriptionTemplate,
@@ -111,12 +111,12 @@ describe("canonical artifact content", () => {
         magnitude: 1,
       },
     ]);
-    expect(artifactContent.artifacts.every((artifact) => artifact.exclusivityGroup === "")).toBe(true);
-    expect(artifactContent.artifacts.every((artifact) => artifact.isCurse === false)).toBe(true);
+    expect(artifactCatalog.artifacts.every((artifact) => artifact.exclusivityGroup === "")).toBe(true);
+    expect(artifactCatalog.artifacts.every((artifact) => artifact.isCurse === false)).toBe(true);
   });
 
   it("records semantic effects and only the three shipped Dash restrictions", () => {
-    expect(artifactContent.artifacts.map(({ id, requiredMobility, presentation, effects }) => ({
+    expect(artifactCatalog.artifacts.map(({ id, requiredMobility, presentation, effects }) => ({
       id,
       requiredMobility,
       presentation,
@@ -177,6 +177,6 @@ describe("canonical artifact content", () => {
         effects: [{ kind: "trigger", trigger: "chain-dash" }],
       },
     ]);
-    expect(artifactContent.artifacts.find((artifact) => artifact.id === "dash_attack_up")?.requiredMobility).toBeNull();
+    expect(artifactCatalog.artifacts.find((artifact) => artifact.id === "dash_attack_up")?.requiredMobility).toBeNull();
   });
 });

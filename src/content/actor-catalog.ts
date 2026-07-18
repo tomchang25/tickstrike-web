@@ -1,4 +1,4 @@
-import { createActorContentCatalog } from "../core/content/actor-content";
+import { createActorContentCatalog } from "../core/content/actor-schema";
 import { characterDefinitions } from "./characters/character-definitions";
 import {
   attackDefinitions,
@@ -6,11 +6,9 @@ import {
   guardDefinitions,
 } from "./enemies/enemy-definitions";
 
-export const actorContent = createActorContentCatalog({
+export const actorCatalog = createActorContentCatalog({
   characters: characterDefinitions,
   guards: guardDefinitions,
   attacks: attackDefinitions,
   enemies: enemyDefinitions,
 });
-
-export const actorCatalog = actorContent;
