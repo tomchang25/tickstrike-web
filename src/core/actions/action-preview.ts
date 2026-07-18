@@ -123,7 +123,12 @@ export function previewAttack(source: PreviewSource, actorId: string, direction:
   };
 }
 
-export function previewDash(source: PreviewSource, actorId: string, direction: Cell): DashPreview {
+export function previewDash(
+  source: PreviewSource,
+  actorId: string,
+  direction: Cell,
+  distance = 3,
+): DashPreview {
   const snapshot = snapshotOf(source);
   const actor = snapshot.entities.find((entity) => entity.id === actorId);
   if (!actor || actor.phase !== "alive") {
@@ -132,10 +137,13 @@ export function previewDash(source: PreviewSource, actorId: string, direction: C
   if (!isCardinalDirection(direction)) {
     return { accepted: false, direction, path: [], reason: "Direction must be cardinal." };
   }
+  if (!Number.isInteger(distance) || distance < 1 || distance > 3) {
+    return { accepted: false, direction, path: [], reason: "Dash distance must be between one and three cells." };
+  }
 
   const path: Cell[] = [];
   let landing: Cell | undefined;
-  for (let step = 1; step <= 3; step += 1) {
+  for (let step = 1; step <= distance; step += 1) {
     const candidate = add(actor.cell, multiply(direction, step));
     if (!isWalkable(snapshot, candidate, true)) break;
     path.push(candidate);

@@ -135,7 +135,7 @@ describe("canonical world occupancy", () => {
       cell: { x: 2, y: 2 },
       hp: 10,
     });
-    world.reserve({ ownerId: "enemy", purpose: "attack", cells: [{ x: 2, y: 2 }] });
+    world.requestReservation({ ownerId: "enemy", purpose: "attack", cells: [{ x: 2, y: 2 }] });
     world.setTelegraph({ sourceId: "enemy", phase: "warning", cells: [{ x: 2, y: 2 }] });
 
     expect(world.applyDamage("enemy", 4)).toEqual({

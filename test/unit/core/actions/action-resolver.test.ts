@@ -261,6 +261,27 @@ describe("player verbs", () => {
     expect(world.snapshot().tick).toBe(1);
   });
 
+  it("lands a Dash on the selected earlier grid", () => {
+    const world = createFoundationArena();
+
+    const result = resolveCommand(world, {
+      type: "dash",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+      distance: 1,
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.events[1]).toMatchObject({
+      type: "player_dashed",
+      from: { x: 6, y: 6 },
+      to: { x: 7, y: 6 },
+      path: [{ x: 7, y: 6 }],
+    });
+    expect(world.playerCell).toEqual({ x: 7, y: 6 });
+    expect(world.snapshot().tick).toBe(1);
+  });
+
   it("keeps Smash armed when its locked landing becomes blocked", () => {
     const world = createFoundationArena();
     const armed = resolveCommand(world, {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { dominantDirection, resolveAimDirection, screenPointToCell } from "../../../../src/presentation/pixi/pointer-aim";
+import {
+  dominantDirection,
+  resolveAimDirection,
+  resolveAimDistance,
+  screenPointToCell,
+} from "../../../../src/presentation/pixi/pointer-aim";
 
 describe("pointer aim", () => {
   it("converts a CSS-scaled canvas point to a grid cell", () => {
@@ -17,6 +22,12 @@ describe("pointer aim", () => {
     expect(resolveAimDirection({ x: 9, y: 7 }, { x: 6, y: 6 })).toEqual({ x: 1, y: 0 });
     expect(dominantDirection({ x: 0, y: 0 }, { x: 0, y: -1 })).toEqual({ x: 0, y: -1 });
     expect(dominantDirection({ x: 2, y: 2 }, { x: -1, y: 0 })).toEqual({ x: -1, y: 0 });
+  });
+
+  it("uses the hovered grid distance up to the Dash range", () => {
+    expect(resolveAimDistance({ x: 7, y: 6 }, { x: 6, y: 6 })).toBe(1);
+    expect(resolveAimDistance({ x: 12, y: 6 }, { x: 6, y: 6 })).toBe(3);
+    expect(resolveAimDistance({ x: 6, y: 6 }, { x: 6, y: 6 })).toBe(1);
   });
 
   it("rejects points outside the canvas rectangle", () => {

@@ -105,11 +105,11 @@ export function App() {
   );
 
   const dash = useCallback(
-    async (direction: Cell) => {
+    async (direction: Cell, distance?: number) => {
       if (!commandsEnabled || !encounterRunning) return;
       const runtime = runtimeRef.current;
       if (!runtime) return;
-      await execute(() => runtime.execute({ type: "dash", actorId: "player", direction }));
+      await execute(() => runtime.execute({ type: "dash", actorId: "player", direction, distance }));
     },
     [commandsEnabled, encounterRunning, execute],
   );
@@ -194,7 +194,7 @@ export function App() {
       canInteract: () => commandsEnabled && encounterRunning,
       onPrimaryClick: (commit: PointerCommit) => {
         if (commit.kind === "attack") return attack(commit.direction);
-        if (commit.kind === "dash") return dash(commit.direction);
+        if (commit.kind === "dash") return dash(commit.direction, commit.distance);
         return smash(commit.target);
       },
     });

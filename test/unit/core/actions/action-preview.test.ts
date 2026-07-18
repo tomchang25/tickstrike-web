@@ -56,6 +56,16 @@ describe("action previews", () => {
     expect(world.snapshot().tick).toBe(0);
   });
 
+  it("allows a selected Dash to land before its maximum range", () => {
+    const world = createFoundationArena();
+
+    expect(previewDash(world, "player", { x: 1, y: 0 }, 1)).toMatchObject({
+      accepted: true,
+      path: [{ x: 7, y: 6 }],
+      landing: { x: 7, y: 6 },
+    });
+  });
+
   it("clamps Smash targets and previews a legal 3x3 landing area", () => {
     const world = createFoundationArena();
     const target = clampSmashTarget({ x: 20, y: -20 }, { x: 6, y: 6 });

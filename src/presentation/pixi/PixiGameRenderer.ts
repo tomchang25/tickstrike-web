@@ -9,7 +9,13 @@ import {
   type SmashPreview,
 } from "../../core/actions/action-preview";
 import type { Cell, EntityId, EntityState, WorldSnapshot } from "../../core/model/types";
-import { CELL_SIZE, INITIAL_AIM, resolveAimDirection, screenPointToCell } from "./pointer-aim";
+import {
+  CELL_SIZE,
+  INITIAL_AIM,
+  resolveAimDirection,
+  resolveAimDistance,
+  screenPointToCell,
+} from "./pointer-aim";
 import {
   aggregateTelegraphLabels,
   formatTelegraphMultiplier,
@@ -21,7 +27,7 @@ export type MobilityKind = "dash" | "smash";
 
 export type PointerCommit =
   | { readonly kind: "attack"; readonly direction: Cell }
-  | { readonly kind: "dash"; readonly direction: Cell }
+  | { readonly kind: "dash"; readonly direction: Cell; readonly distance: number }
   | { readonly kind: "smash"; readonly target: Cell };
 
 export interface PointerInputBinding {
@@ -124,6 +130,7 @@ export class PixiGameRenderer {
   private debugMode = false;
   private pointerCell: Cell | undefined;
   private lastAim: Cell = INITIAL_AIM;
+  private dashDistance = 3;
   private attackPreview: AttackPreview | undefined;
   private dashPreview: DashPreview | undefined;
   private retainedDashPreview: DashPreview | undefined;
@@ -310,7 +317,11 @@ export class PixiGameRenderer {
         if (!this.dashPreview?.accepted) return;
         event.preventDefault();
         this.lastAim = this.dashPreview.direction;
-        void binding.onPrimaryClick({ kind: "dash", direction: this.dashPreview.direction });
+        void binding.onPrimaryClick({
+          kind: "dash",
+          direction: this.dashPreview.direction,
+          distance: this.dashDistance,
+        });
         return;
       }
       if (!this.smashPreview?.accepted) return;
@@ -445,7 +456,8 @@ export class PixiGameRenderer {
     }
 
     if (this.selectedMobility === "dash") {
-      this.dashPreview = previewDash(this.snapshot, player.id, direction);
+      this.dashDistance = resolveAimDistance(this.pointerCell, player.cell);
+      this.dashPreview = previewDash(this.snapshot, player.id, direction, this.dashDistance);
       if (this.dashPreview.accepted) this.retainedDashPreview = this.dashPreview;
     } else {
       this.smashPreview = previewSmash(

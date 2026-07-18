@@ -51,3 +51,8 @@ export function resolveAimDirection(mouseCell: Cell, origin: Cell, lastAim: Cell
     lastAim,
   );
 }
+
+export function resolveAimDistance(mouseCell: Cell, origin: Cell, maxRange = 3): number {
+  const distance = Math.max(Math.abs(mouseCell.x - origin.x), Math.abs(mouseCell.y - origin.y));
+  return Math.max(1, Math.min(maxRange, distance));
+}

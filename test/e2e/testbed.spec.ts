@@ -152,18 +152,18 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   };
   await page.keyboard.down("Alt");
   await page.mouse.move(dashTarget.x, dashTarget.y);
-  await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "10,6");
+  await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "9,6");
   await page.mouse.click(dashTarget.x, dashTarget.y);
   await page.keyboard.up("Alt");
   await expect(page.getByTestId("tick-value")).toHaveText("3");
-  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "10");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "9");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "66");
   await expect(page.getByTestId("event-log")).toContainText("player_dashed");
   const dashEvent = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents[1]);
   expect(dashEvent).toMatchObject({
     type: "player_dashed",
-    path: [{ x: 8, y: 6 }, { x: 9, y: 6 }, { x: 10, y: 6 }],
+     path: [{ x: 8, y: 6 }, { x: 9, y: 6 }],
   });
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
@@ -211,13 +211,18 @@ test("Pointer aiming previews attack and Mobility without advancing until click"
   await expect(page.getByTestId("tick-value")).toHaveText("0");
 
   await page.keyboard.down("Alt");
-  const validMobilityCell = await pointForCell(9, 6);
+  const validMobilityCell = await pointForCell(7, 6);
   await page.mouse.move(validMobilityCell.x, validMobilityCell.y);
   await expect(canvas).toHaveAttribute("data-pointer-mode", "mobility");
   await expect(canvas).toHaveAttribute("data-selected-mobility", "dash");
-  await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "9,6");
+  await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "7,6");
   await expect(canvas).toHaveAttribute("data-mobility-preview-valid", "true");
   await expect(page.getByTestId("tick-value")).toHaveText("0");
+  await page.mouse.click(validMobilityCell.x, validMobilityCell.y);
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
+  await expect(page.getByTestId("event-log")).toContainText("player_dashed");
   await page.keyboard.up("Alt");
 });
 
@@ -336,6 +341,49 @@ test("Tick Arena presents defeat and restarts cleanly after a committed hit", as
   await page.getByRole("button", { name: "Restart encounter" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
   await expect(page.getByTestId("encounter-status")).toContainText("Running");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-outcome", "running");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+});
+
+test("Terminal presentation is cancelled before reset and scenario replacement", async ({ page }) => {
+  test.setTimeout(30_000);
+  await page.goto("/?scenario=tick-arena");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+
+  const initialGeneration = await page.evaluate(() => window.__TICKSTRIKE__?.getGeneration());
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    for (let step = 0; step < 30 && api.getState().outcome === "running"; step += 1) {
+      await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    }
+    if (api.getState().outcome !== "defeat") throw new Error("Expected the terminal defeat state before reset.");
+    api.reset();
+  });
+
+  await expect(page.getByTestId("tick-value")).toHaveText("0");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-outcome", "running");
+  await expect(page.getByTestId("entity-enemy-thrust")).toBeAttached();
+  const resetGeneration = await page.evaluate(() => window.__TICKSTRIKE__?.getGeneration());
+  expect(resetGeneration).toBeGreaterThan(initialGeneration ?? -1);
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    for (let step = 0; step < 30 && api.getState().outcome === "running"; step += 1) {
+      await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    }
+    if (api.getState().outcome !== "defeat") throw new Error("Expected the terminal defeat state before replacement.");
+    api.loadScenario("empty-arena");
+  });
+
+  await expect(page.getByTestId("tick-value")).toHaveText("0");
+  await expect(page.getByTestId("enemy-count")).toHaveText("0");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveCount(0);
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-outcome", "running");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });

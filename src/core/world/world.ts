@@ -440,10 +440,6 @@ export class World {
     });
   }
 
-  resetEnemyGuard(id: EntityId): void {
-    this.resetEnemyCombatState(id);
-  }
-
   advanceEnemyStatuses(): readonly CombatEvent[] {
     const events: CombatEvent[] = [];
     for (const entity of this.entities.values()) {
@@ -665,14 +661,6 @@ export class World {
     };
     this.reservations.set(request.ownerId, reservation);
     return { ...decision, reservation: cloneReservation(reservation) };
-  }
-
-  reserve(request: ReservationRequest): ReservationDecision {
-    return this.requestReservation(request);
-  }
-
-  claimReservation(request: ReservationRequest): ReservationDecision {
-    return this.requestReservation(request);
   }
 
   getReservation(ownerId: string): Reservation | undefined {

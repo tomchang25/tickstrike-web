@@ -152,7 +152,7 @@ describe("Guard break status lifecycle", () => {
       warningTicks: attack.warningTicks,
       recoveryTicks: attack.recoveryTicks,
     });
-    world.reserve({ ownerId: "enemy", purpose: "attack", cells: [{ x: 3, y: 3 }] });
+    world.requestReservation({ ownerId: "enemy", purpose: "attack", cells: [{ x: 3, y: 3 }] });
 
     const result = resolveCommand(world, {
       type: "attack",
