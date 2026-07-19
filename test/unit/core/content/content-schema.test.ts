@@ -15,21 +15,15 @@ describe("content catalog aggregation", () => {
     const catalog = createContentCatalog(validInput);
 
     expect(catalog.actor.characters.map((value) => value.id)).toEqual(["ninja", "viking"]);
-    expect(catalog.actor.guards).toHaveLength(4);
-    expect(catalog.actor.attacks).toHaveLength(15);
-    expect(catalog.actor.enemies).toHaveLength(7);
-    expect(catalog.wave.groups).toHaveLength(7);
-    expect(catalog.wave.demoWaves).toHaveLength(10);
+    expect(catalog.actor.guards).toHaveLength(2);
+    expect(catalog.actor.attacks).toHaveLength(5);
+    expect(catalog.actor.enemies).toHaveLength(5);
+    expect(catalog.wave.groups).toHaveLength(6);
+    expect(catalog.wave.demoWaves).toHaveLength(9);
     expect(catalog.wave.endlessTemplate.id).toBe("endless");
     expect(catalog.artifact.artifacts).toHaveLength(9);
-    expect(catalog.wave.demoWaves[9]?.id).toBe("demo-10");
-    expect(catalog.actor.enemies[6]?.attackIds).toEqual([
-      "mode_boss_tile_wide",
-      "mode_boss_tile_square",
-      "mode_boss_tile_line",
-      "mode_boss_charge",
-      "mode_boss_area",
-    ]);
+    expect(catalog.wave.demoWaves[8]?.id).toBe("demo-09");
+    expect(catalog.actor.enemies[4]?.attackIds).toEqual(["bomb_area"]);
   });
 
   it("rejects missing cross-catalog references and unavailable Mobility deterministically", () => {

@@ -4,21 +4,14 @@ import { actorCatalog } from "../../../src/content/actor-catalog";
 describe("canonical actor content", () => {
   it("contains the complete shipped inventory", () => {
     expect(actorCatalog.characters.map((entry) => entry.id)).toEqual(["ninja", "viking"]);
-    expect(actorCatalog.guards.map((entry) => entry.id)).toEqual([
-      "small",
-      "heavy",
-      "elite",
-      "boss",
-    ]);
-    expect(actorCatalog.attacks).toHaveLength(15);
+    expect(actorCatalog.guards.map((entry) => entry.id)).toEqual(["small", "heavy"]);
+    expect(actorCatalog.attacks).toHaveLength(5);
     expect(actorCatalog.enemies.map((entry) => entry.id)).toEqual([
       "thrust_enemy",
       "slash_enemy",
       "ranged_enemy",
       "charge_enemy",
       "bomb_enemy",
-      "mode_enemy",
-      "mode_boss",
     ]);
   });
 
@@ -53,8 +46,6 @@ describe("canonical actor content", () => {
     ).toEqual([
       { id: "small", base: 32, lethalTierGain: 8 },
       { id: "heavy", base: 64, lethalTierGain: 16 },
-      { id: "elite", base: 96, lethalTierGain: 24 },
-      { id: "boss", base: 128, lethalTierGain: 32 },
     ]);
 
     const rangedCross = actorCatalog.attacks.find((attack) => attack.id === "ranged_cross");
@@ -68,10 +59,6 @@ describe("canonical actor content", () => {
         { x: 0, y: -1 },
       ],
     });
-    expect(actorCatalog.attacks.find((attack) => attack.id === "mode_charge")?.damage).toBe(10);
-    expect(actorCatalog.attacks.find((attack) => attack.id === "mode_boss_charge")?.damage).toBe(
-      10,
-    );
     expect(
       actorCatalog.attacks.filter((attack) => attack.id === "thrust" || attack.id === "slash"),
     ).toMatchObject([
@@ -87,34 +74,9 @@ describe("canonical actor content", () => {
       { id: "ranged_enemy", guardId: "small", attackIds: ["ranged_cross"] },
       { id: "charge_enemy", guardId: "heavy", attackIds: ["charge"] },
       { id: "bomb_enemy", guardId: null, attackIds: ["bomb_area"] },
-      {
-        id: "mode_enemy",
-        guardId: "elite",
-        attackIds: [
-          "mode_tile_wide",
-          "mode_tile_square",
-          "mode_tile_line",
-          "mode_charge",
-          "mode_area",
-        ],
-      },
-      {
-        id: "mode_boss",
-        guardId: "boss",
-        attackIds: [
-          "mode_boss_tile_wide",
-          "mode_boss_tile_square",
-          "mode_boss_tile_line",
-          "mode_boss_charge",
-          "mode_boss_area",
-        ],
-      },
     ]);
-    expect(actorCatalog.enemies.find((enemy) => enemy.id === "mode_boss")?.roleTuning).toEqual({
-      type: "mode",
-      retaliationTicks: 10,
-      warningReduction: 1,
-      damageMultiplier: 1.25,
-    });
+    expect(
+      actorCatalog.enemies.find((enemy) => enemy.id === "charge_enemy")?.roleTuning,
+    ).toBeNull();
   });
 });

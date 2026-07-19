@@ -97,11 +97,11 @@ function validateInventory(
 ): void {
   const expected = [
     ["actor.characters", input.actor.characters.length, 2],
-    ["actor.guards", input.actor.guards.length, 4],
-    ["actor.attacks", input.actor.attacks.length, 15],
-    ["actor.enemies", input.actor.enemies.length, 7],
-    ["wave.groups", input.wave.groups.length, 7],
-    ["wave.demoWaves", input.wave.demoWaves.length, 10],
+    ["actor.guards", input.actor.guards.length, 2],
+    ["actor.attacks", input.actor.attacks.length, 5],
+    ["actor.enemies", input.actor.enemies.length, 5],
+    ["wave.groups", input.wave.groups.length, 6],
+    ["wave.demoWaves", input.wave.demoWaves.length, 9],
     ["artifact.artifacts", input.artifact.artifacts.length, 9],
   ] as const;
 
@@ -118,49 +118,21 @@ function validateInventory(
 
   const orderedIds = [
     ["actor.characters", input.actor.characters.map((value) => value.id), ["ninja", "viking"]],
-    [
-      "actor.guards",
-      input.actor.guards.map((value) => value.id),
-      ["small", "heavy", "elite", "boss"],
-    ],
+    ["actor.guards", input.actor.guards.map((value) => value.id), ["small", "heavy"]],
     [
       "actor.attacks",
       input.actor.attacks.map((value) => value.id),
-      [
-        "thrust",
-        "slash",
-        "ranged_cross",
-        "charge",
-        "bomb_area",
-        "mode_tile_wide",
-        "mode_tile_square",
-        "mode_tile_line",
-        "mode_charge",
-        "mode_area",
-        "mode_boss_tile_wide",
-        "mode_boss_tile_square",
-        "mode_boss_tile_line",
-        "mode_boss_charge",
-        "mode_boss_area",
-      ],
+      ["thrust", "slash", "ranged_cross", "charge", "bomb_area"],
     ],
     [
       "actor.enemies",
       input.actor.enemies.map((value) => value.id),
-      [
-        "thrust_enemy",
-        "slash_enemy",
-        "ranged_enemy",
-        "charge_enemy",
-        "bomb_enemy",
-        "mode_enemy",
-        "mode_boss",
-      ],
+      ["thrust_enemy", "slash_enemy", "ranged_enemy", "charge_enemy", "bomb_enemy"],
     ],
     [
       "wave.groups",
       input.wave.groups.map((value) => value.id),
-      ["small", "small-ranged", "small-ranged-charge", "ranged", "charge", "bomb", "boss"],
+      ["small", "small-ranged", "small-ranged-charge", "ranged", "charge", "bomb"],
     ],
     [
       "wave.demoWaves",
@@ -175,7 +147,6 @@ function validateInventory(
         "demo-07",
         "demo-08",
         "demo-09",
-        "demo-10",
       ],
     ],
     [

@@ -74,13 +74,6 @@ export const spawnGroupDefinitions: readonly SpawnGroupDefinition[] = [
     weightedTotalCount: 0,
     entries: [{ enemyId: "bomb_enemy", count: 2 }],
   },
-  {
-    id: "boss",
-    placementStrategy: "scatter",
-    compositionMode: "fixed",
-    weightedTotalCount: 0,
-    entries: [{ enemyId: "mode_boss", count: 1 }],
-  },
 ];
 
 export const demoWaveDefinitions: readonly WaveDefinition[] = [
@@ -108,17 +101,6 @@ export const demoWaveDefinitions: readonly WaveDefinition[] = [
     id: "demo-09",
     populationCap: 9,
     slots: [createSlot("charge"), createSlot("ranged"), createSlot("small"), createSlot("bomb")],
-  },
-  {
-    id: "demo-10",
-    populationCap: 1,
-    slots: [
-      createSlot("boss", {
-        warningTicks: 2,
-        levelOffset: 3,
-        isBoss: true,
-      }),
-    ],
   },
 ];
 

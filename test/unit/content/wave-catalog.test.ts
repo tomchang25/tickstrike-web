@@ -10,7 +10,6 @@ describe("canonical wave content", () => {
       "ranged",
       "charge",
       "bomb",
-      "boss",
     ]);
     expect(waveCatalog.demoWaves.map((wave) => wave.id)).toEqual([
       "demo-01",
@@ -22,7 +21,6 @@ describe("canonical wave content", () => {
       "demo-07",
       "demo-08",
       "demo-09",
-      "demo-10",
     ]);
     expect(waveCatalog.endlessTemplate.id).toBe("endless");
   });
@@ -41,7 +39,6 @@ describe("canonical wave content", () => {
       { id: "ranged", compositionMode: "fixed", placementStrategy: "anchor-cluster" },
       { id: "charge", compositionMode: "fixed", placementStrategy: "scatter" },
       { id: "bomb", compositionMode: "fixed", placementStrategy: "scatter" },
-      { id: "boss", compositionMode: "fixed", placementStrategy: "scatter" },
     ]);
     expect(waveCatalog.groups[0]!.entries).toEqual([
       { enemyId: "thrust_enemy", weight: 1 },
@@ -55,7 +52,7 @@ describe("canonical wave content", () => {
     ]);
   });
 
-  it("preserves wave caps, slot order, and the boss slot override", () => {
+  it("preserves wave caps and slot order", () => {
     expect(
       waveCatalog.demoWaves.map((wave) => ({
         id: wave.id,
@@ -72,15 +69,14 @@ describe("canonical wave content", () => {
       { id: "demo-07", cap: 7, groups: ["ranged", "small", "charge"] },
       { id: "demo-08", cap: 8, groups: ["small", "ranged", "charge", "bomb"] },
       { id: "demo-09", cap: 9, groups: ["charge", "ranged", "small", "bomb"] },
-      { id: "demo-10", cap: 1, groups: ["boss"] },
     ]);
-    expect(waveCatalog.demoWaves[9]!.slots[0]).toEqual({
-      spawnGroupId: "boss",
+    expect(waveCatalog.demoWaves[8]!.slots[0]).toEqual({
+      spawnGroupId: "charge",
       startCondition: "immediate-overlap",
       survivorThreshold: 0,
-      warningTicks: 2,
-      levelOffset: 3,
-      isBoss: true,
+      warningTicks: 1,
+      levelOffset: 0,
+      isBoss: false,
     });
     expect(waveCatalog.endlessTemplate.slots.map((slot) => slot.spawnGroupId)).toEqual([
       "charge",

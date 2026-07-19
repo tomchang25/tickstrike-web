@@ -284,43 +284,43 @@ function ContentInspectionSection({ inspection }: { readonly inspection: Content
       </div>
 
       <div className="inspection-block">
-        <h3>Mode Boss</h3>
+        <h3>Charge Enemy</h3>
         <dl>
           <dt>Guard</dt>
-          <dd data-testid="inspection-mode-boss-guard">{inspection.modeBoss.guard.name}</dd>
+          <dd data-testid="inspection-charge-enemy-guard">{inspection.chargeEnemy.guard.name}</dd>
           <dt>HP</dt>
-          <dd data-testid="inspection-mode-boss-hp">{inspection.modeBoss.hp}</dd>
+          <dd data-testid="inspection-charge-enemy-hp">{inspection.chargeEnemy.hp}</dd>
           <dt>Defense</dt>
-          <dd data-testid="inspection-mode-boss-defense">{inspection.modeBoss.defense}</dd>
+          <dd data-testid="inspection-charge-enemy-defense">{inspection.chargeEnemy.defense}</dd>
           <dt>Attacks</dt>
-          <dd data-testid="inspection-mode-boss-attacks">
-            {inspection.modeBoss.attacks.map((attack) => attack.name).join(", ")}
+          <dd data-testid="inspection-charge-enemy-attacks">
+            {inspection.chargeEnemy.attacks.map((attack) => attack.name).join(", ")}
           </dd>
         </dl>
       </div>
 
       <div className="inspection-block">
-        <h3>Demo Wave 10</h3>
+        <h3>Demo Wave 09</h3>
         <dl>
           <dt>Population cap</dt>
-          <dd data-testid="inspection-demo-10-cap">{inspection.demoWave10.populationCap}</dd>
-          <dt>Boss group</dt>
-          <dd data-testid="inspection-demo-10-group">{inspection.demoWave10.bossGroup.id}</dd>
+          <dd data-testid="inspection-demo-09-cap">{inspection.demoWave09.populationCap}</dd>
+          <dt>Group</dt>
+          <dd data-testid="inspection-demo-09-group">{inspection.demoWave09.group.id}</dd>
           <dt>Group enemy</dt>
-          <dd data-testid="inspection-demo-10-enemy">
-            {inspection.demoWave10.bossGroup.entries.map((entry) => entry.enemyId).join(", ")}
+          <dd data-testid="inspection-demo-09-enemy">
+            {inspection.demoWave09.group.entries.map((entry) => entry.enemyId).join(", ")}
           </dd>
           <dt>Warning ticks</dt>
-          <dd data-testid="inspection-demo-10-warning">
-            {inspection.demoWave10.slot.warningTicks}
+          <dd data-testid="inspection-demo-09-warning">
+            {inspection.demoWave09.slot.warningTicks}
           </dd>
           <dt>Level offset</dt>
-          <dd data-testid="inspection-demo-10-level-offset">
-            {inspection.demoWave10.slot.levelOffset}
+          <dd data-testid="inspection-demo-09-level-offset">
+            {inspection.demoWave09.slot.levelOffset}
           </dd>
           <dt>Boss slot</dt>
-          <dd data-testid="inspection-demo-10-is-boss">
-            {String(inspection.demoWave10.slot.isBoss)}
+          <dd data-testid="inspection-demo-09-is-boss">
+            {String(inspection.demoWave09.slot.isBoss)}
           </dd>
         </dl>
       </div>

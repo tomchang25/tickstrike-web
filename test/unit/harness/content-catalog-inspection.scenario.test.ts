@@ -12,19 +12,17 @@ describe("content catalog inspection scenario", () => {
       speedFill: 20,
       mobility: { kind: "dash", damage: 30, range: 5, cooldown: 4 },
     });
-    expect(contentInspection.modeBoss.guard).toMatchObject({ id: "boss", name: "Boss", base: 128 });
-    expect(contentInspection.modeBoss.attacks.map((attack) => attack.id)).toEqual([
-      "mode_boss_tile_wide",
-      "mode_boss_tile_square",
-      "mode_boss_tile_line",
-      "mode_boss_charge",
-      "mode_boss_area",
-    ]);
-    expect(contentInspection.demoWave10).toMatchObject({
-      id: "demo-10",
-      populationCap: 1,
-      bossGroup: { id: "boss", entries: [{ enemyId: "mode_boss", count: 1 }] },
-      slot: { warningTicks: 2, levelOffset: 3, isBoss: true },
+    expect(contentInspection.chargeEnemy.guard).toMatchObject({
+      id: "heavy",
+      name: "Heavy",
+      base: 64,
+    });
+    expect(contentInspection.chargeEnemy.attacks.map((attack) => attack.id)).toEqual(["charge"]);
+    expect(contentInspection.demoWave09).toMatchObject({
+      id: "demo-09",
+      populationCap: 9,
+      group: { id: "charge", entries: [{ enemyId: "charge_enemy", count: 2 }] },
+      slot: { warningTicks: 1, levelOffset: 0, isBoss: false },
     });
     expect(contentInspection.guardShredder).toMatchObject({
       category: "major",

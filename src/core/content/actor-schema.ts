@@ -1,5 +1,5 @@
 export type MobilityKind = "dash" | "smash";
-export type EnemyRole = "thrust" | "slash" | "ranged" | "charge" | "bomb" | "mode";
+export type EnemyRole = "thrust" | "slash" | "ranged" | "charge" | "bomb";
 export type AttackKind = "tile" | "charge" | "area";
 export type CellShape = "line" | "wide" | "square" | "full-line" | "custom-offsets" | "manhattan";
 
@@ -93,14 +93,7 @@ export interface BombRoleTuning {
   readonly commitment: "adjacent";
 }
 
-export interface ModeRoleTuning {
-  readonly type: "mode";
-  readonly retaliationTicks: number;
-  readonly warningReduction: number;
-  readonly damageMultiplier: number;
-}
-
-export type EnemyRoleTuning = RangedRoleTuning | BombRoleTuning | ModeRoleTuning | null;
+export type EnemyRoleTuning = RangedRoleTuning | BombRoleTuning | null;
 
 export interface EnemyDefinition {
   readonly id: string;
@@ -491,16 +484,6 @@ function validateRoleTuning(
     }
     return;
   }
-  if (role === "mode") {
-    if (!isRecord(value) || value.type !== "mode") {
-      addDiagnostic(diagnostics, "invalid-role-tuning", path, "mode enemies require mode tuning");
-      return;
-    }
-    requireNonNegative(value.retaliationTicks, `${path}.retaliationTicks`, diagnostics, true);
-    requireNonNegative(value.warningReduction, `${path}.warningReduction`, diagnostics, true);
-    requirePositive(value.damageMultiplier, `${path}.damageMultiplier`, diagnostics);
-    return;
-  }
   if (value !== null) {
     addDiagnostic(
       diagnostics,
@@ -521,7 +504,7 @@ function validateEnemy(value: unknown, index: number, diagnostics: ActorContentD
   requireName(value.name, `${path}.name`, diagnostics);
   const roleValid = requireEnum(
     value.role,
-    ["thrust", "slash", "ranged", "charge", "bomb", "mode"],
+    ["thrust", "slash", "ranged", "charge", "bomb"],
     `${path}.role`,
     diagnostics,
   );

@@ -8,13 +8,11 @@ test("content catalog inspection is visible and read-only", async ({ page }) => 
   await expect(page.getByTestId("inspection-ninja-name")).toHaveText("Ninja");
   await expect(page.getByTestId("inspection-ninja-mobility")).toHaveText("dash");
   await expect(page.getByTestId("inspection-ninja-mobility-range")).toHaveText("5");
-  await expect(page.getByTestId("inspection-mode-boss-guard")).toHaveText("Boss");
-  await expect(page.getByTestId("inspection-mode-boss-attacks")).toContainText(
-    "Mode Boss Wide Tile",
-  );
-  await expect(page.getByTestId("inspection-demo-10-group")).toHaveText("boss");
-  await expect(page.getByTestId("inspection-demo-10-warning")).toHaveText("2");
-  await expect(page.getByTestId("inspection-demo-10-level-offset")).toHaveText("3");
+  await expect(page.getByTestId("inspection-charge-enemy-guard")).toHaveText("Heavy");
+  await expect(page.getByTestId("inspection-charge-enemy-attacks")).toContainText("Charge");
+  await expect(page.getByTestId("inspection-demo-09-group")).toHaveText("charge");
+  await expect(page.getByTestId("inspection-demo-09-warning")).toHaveText("1");
+  await expect(page.getByTestId("inspection-demo-09-level-offset")).toHaveText("0");
   await expect(page.getByTestId("inspection-guard-shredder-category")).toHaveText("major");
   await expect(page.getByTestId("inspection-guard-shredder-mobility")).toHaveText("dash");
   await expect(page.getByTestId("inspection-guard-shredder-trigger")).toHaveText("guard-shredder");
@@ -28,8 +26,8 @@ test("content catalog inspection is visible and read-only", async ({ page }) => 
   const debugProjection = await page.evaluate(() => window.__TICKSTRIKE__?.getContentInspection());
   expect(debugProjection).toMatchObject({
     ninja: { name: "Ninja", mobility: { kind: "dash", range: 5 } },
-    modeBoss: { guard: { name: "Boss" } },
-    demoWave10: { slot: { levelOffset: 3, isBoss: true } },
+    chargeEnemy: { guard: { name: "Heavy" } },
+    demoWave09: { slot: { levelOffset: 0, isBoss: false } },
     guardShredder: { category: "major", requiredMobility: "dash", trigger: "guard-shredder" },
   });
 
