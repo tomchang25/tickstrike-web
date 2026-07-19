@@ -63,3 +63,9 @@ Rules:
 ### Terminal Animation Lifecycle And Profile Reconciliation
 
 - 2026-07-20 - [sprite_animation] Terminal water animations now hold their final authored frame and remove their Pixi view exactly once instead of respawning an idle sprite, and reused entity IDs reconcile to a changed `presentationId` instead of retaining a stale profile
+
+### Additional Enemy Roles on the Shared Activity Model
+
+- 2026-07-20 - [port_07] Ranged, Charge, and Bomb enemies now join Thrust and Slash in the same Tick Arena through one shared deterministic navigation, reservation, and locked-attack contract, with distance-band pressure, live-target impact displacement, and locked-area self-destruction respectively
+- 2026-07-20 - [port_07] Small enemies now use authored Kappa sprite presentation with palette parity and state-driven animation feedback
+- 2026-07-20 - [port_07] Deprecated Mode and Mode Boss enemy content is removed from the catalog

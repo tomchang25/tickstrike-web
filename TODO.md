@@ -30,7 +30,6 @@ Nothing currently in progress.
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_07_enemy_roles] Add Ranged and remaining authored roles through the shared enemy activity model - [ref plans/port_07_complete_enemy_roster_and_navigation.md]
 - [port_08_waves] Feed authored waves and spawn warnings into the same world and Tick boundary - [ref plans/port_08_authored_waves_spawning_and_enemy_levels.md]
 - [port_09_rewards] Add deterministic reward selection and run-scoped build effects to the same arena - [ref plans/port_09_artifacts_rewards_and_run_build.md]
 - [port_10_run] Connect wave completion, rewards, death, restart, and the milestone branch through the same runtime - [ref plans/port_10_complete_run_lifecycle.md]
