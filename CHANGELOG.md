@@ -59,3 +59,7 @@ Rules:
 ### Ninja Visual Slice
 
 - 2026-07-19 - [port_06c] The fixed Ninja player now uses the authored spritesheet with readable facing, movement, Dash, attack-facing, input-repeat, and presentation cleanup behavior
+
+### Terminal Animation Lifecycle And Profile Reconciliation
+
+- 2026-07-20 - [sprite_animation] Terminal water animations now hold their final authored frame and remove their Pixi view exactly once instead of respawning an idle sprite, and reused entity IDs reconcile to a changed `presentationId` instead of retaining a stale profile

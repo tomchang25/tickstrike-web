@@ -70,6 +70,7 @@ interface EntityView {
   readonly body: Graphics | Sprite;
   readonly sprite?: PlayerSprite;
   readonly enemyPresentation?: EnemyPresentation;
+  readonly presentationId: string | undefined;
   readonly label: Text;
   readonly facingMarker: Text;
   readonly debugLabel: Text;
@@ -192,6 +193,7 @@ export class PixiGameRenderer {
   readonly effectsLayer = new Container();
 
   private readonly entityViews = new Map<EntityId, EntityView>();
+  private readonly despawnedPresentationIds = new Map<EntityId, string | undefined>();
   private readonly transientEffects = new Set<Graphics>();
   private readonly positionOwners = new Set<EntityId>();
   private host: HTMLElement | undefined;
@@ -290,6 +292,7 @@ export class PixiGameRenderer {
     this.pointerCleanup = undefined;
     this.clearPointerPreview();
     this.entityViews.clear();
+    this.despawnedPresentationIds.clear();
     this.clearPositionReservations();
     this.clearTransient();
     this.enemySpriteSheets = {};
@@ -378,10 +381,29 @@ export class PixiGameRenderer {
         this.positionOwners.delete(id);
       }
     }
+    for (const id of this.despawnedPresentationIds.keys()) {
+      if (!liveIds.has(id)) {
+        this.despawnedPresentationIds.delete(id);
+      }
+    }
 
     for (const entity of snapshot.entities) {
       let view = this.entityViews.get(entity.id);
+      if (view && view.presentationId !== entity.presentationId) {
+        view.root.destroy({ children: true });
+        this.entityViews.delete(entity.id);
+        this.positionOwners.delete(entity.id);
+        this.despawnedPresentationIds.delete(entity.id);
+        view = undefined;
+      }
       if (!view) {
+        if (
+          this.despawnedPresentationIds.has(entity.id) &&
+          this.despawnedPresentationIds.get(entity.id) === entity.presentationId
+        ) {
+          continue;
+        }
+        this.despawnedPresentationIds.delete(entity.id);
         view = this.createEntityView(entity);
         this.entityViews.set(entity.id, view);
         this.actorLayer.addChild(view.root);
@@ -613,6 +635,7 @@ export class PixiGameRenderer {
     if (!view) {
       return;
     }
+    this.despawnedPresentationIds.set(id, view.presentationId);
     view.root.destroy({ children: true });
     this.entityViews.delete(id);
     if (view.enemyPresentation) {
@@ -1314,6 +1337,7 @@ export class PixiGameRenderer {
       body,
       ...(playerSprite ? { sprite: playerSprite } : {}),
       ...(enemyPresentation ? { enemyPresentation } : {}),
+      presentationId: entity.presentationId,
       label,
       facingMarker,
       debugLabel,

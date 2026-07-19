@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { WorldSnapshot } from "../../../../src/core/model/types";
+import type { EntityState, WorldSnapshot } from "../../../../src/core/model/types";
 import { PixiGameRenderer } from "../../../../src/presentation/pixi/PixiGameRenderer";
 
-function snapshot(cell: { x: number; y: number }): WorldSnapshot {
+function snapshot(cell: { x: number; y: number }, entities?: readonly EntityState[]): WorldSnapshot {
   return {
     tick: 1,
     outcome: "running",
@@ -14,7 +14,7 @@ function snapshot(cell: { x: number; y: number }): WorldSnapshot {
     },
     playerCell: cell,
     armedSmashTarget: undefined,
-    entities: [
+    entities: entities ?? [
       {
         id: "player",
         kind: "player",
@@ -30,6 +30,20 @@ function snapshot(cell: { x: number; y: number }): WorldSnapshot {
     telegraphs: [],
     seed: 1,
     lastEvents: [],
+  };
+}
+
+function drowningEnemy(presentationId: string): EntityState {
+  return {
+    id: "enemy-water",
+    kind: "enemy",
+    archetype: "training-grunt",
+    presentationId,
+    cell: { x: 1, y: 1 },
+    footprint: [{ x: 1, y: 1 }],
+    hp: 100,
+    maxHp: 100,
+    phase: "drowning",
   };
 }
 
@@ -55,5 +69,48 @@ describe("PixiGameRenderer position ownership", () => {
     renderer.releasePosition("player");
     expect(view.position).toMatchObject(destinationPixels);
     expect(renderer.positionOwnerCount).toBe(0);
+  });
+});
+
+describe("PixiGameRenderer terminal view lifecycle", () => {
+  it("does not recreate a despawned view on later projections of the same presentation", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    expect(renderer.getEntityView("enemy-water")).toBeDefined();
+
+    renderer.removeEntityView("enemy-water");
+    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
+
+    renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
+
+    renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
+  });
+
+  it("recreates the view when the same entity id reports a new presentationId", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    const originalView = renderer.getEntityView("enemy-water");
+    expect(originalView).toBeDefined();
+
+    renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.bomb")]));
+    const recreatedView = renderer.getEntityView("enemy-water");
+    expect(recreatedView).toBeDefined();
+    expect(recreatedView).not.toBe(originalView);
+    expect(originalView?.destroyed).toBe(true);
+  });
+
+  it("recreates a despawned view once its id reappears with a different presentationId", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    renderer.removeEntityView("enemy-water");
+    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
+
+    renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.bomb")]));
+    expect(renderer.getEntityView("enemy-water")).toBeDefined();
   });
 });

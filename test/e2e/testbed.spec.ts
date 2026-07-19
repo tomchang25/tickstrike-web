@@ -119,10 +119,28 @@ for (const [scenario, profile] of [
       "data-enemy-presentations",
       new RegExp(`enemy-water:${profile.replace(".", "\\.")}:[^:]+:idle:water:[0-7]`),
     );
+    await expect
+      .poll(async () => canvas.getAttribute("data-enemy-presentations"))
+      .toContain(":water:7");
     await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
     await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
+    await expect
+      .poll(async () => canvas.getAttribute("data-enemy-presentations"))
+      .not.toContain("enemy-water:");
   });
 }
+
+test("switching between water scenarios reconciles the reused entity's presentation", async ({
+  page,
+}) => {
+  await page.goto("/?scenario=water-ranged");
+  const canvas = page.getByTestId("game-canvas");
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-water:enemy\.ranged:/);
+
+  await page.getByTestId("scenario-select").selectOption("water-bomb");
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-water:enemy\.bomb:/);
+  await expect(canvas).not.toHaveAttribute("data-enemy-presentations", /enemy\.ranged/);
+});
 
 test("Charge owns sequential Player motion before reconciling the final cell", async ({ page }) => {
   await page.goto("/?scenario=charge-enemy");
