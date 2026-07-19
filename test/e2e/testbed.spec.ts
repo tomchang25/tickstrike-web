@@ -93,10 +93,10 @@ test("Enemy navigation testbed exposes blocked and reserved grid cells", async (
   const canvas = page.getByTestId("game-canvas");
   await page.getByTestId("debug-mode").check();
   await expect(page.getByTestId("grid-debug-legend")).toBeVisible();
-  await expect(page.getByTestId("grid-debug-reservations")).toHaveText("Reservations: 7");
-  await expect(canvas).toHaveAttribute("data-debug-reservation-count", "7");
+  await expect(page.getByTestId("grid-debug-reservations")).toHaveText("Navigation blockers: 7");
+  await expect(canvas).toHaveAttribute("data-debug-navigation-blocker-count", "7");
   await expect(canvas).toHaveAttribute("data-debug-blocked-count", /[1-9]/);
-  await expect(canvas).toHaveAttribute("data-debug-reservation-cells", /2,4/);
+  await expect(canvas).toHaveAttribute("data-debug-navigation-blocker-cells", /2,4/);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;

@@ -91,7 +91,7 @@ export function createEnemyNavigationArena(seed?: Seed): World {
   DEBUG_RESERVATION_CELLS.forEach((cell, index) => {
     world.requestReservation({
       ownerId: `debug-reservation-${String(index + 1).padStart(2, "0")}`,
-      purpose: "debug-block",
+      purpose: "navigation-blocker",
       cells: [cell],
     });
   });

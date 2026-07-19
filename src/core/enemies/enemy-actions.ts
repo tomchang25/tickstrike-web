@@ -94,18 +94,18 @@ function movementCandidates(
   context: EnemyDecisionContext,
 ): readonly EnemyMovementCandidate[] {
   const origins = attackOriginCellsFromShape(playerCell, action).filter(context.canEndAt);
-  const goals = origins.length > 0
-    ? origins
-    : CARDINAL_DIRECTIONS
-      .map((direction) => ({ x: playerCell.x + direction.x, y: playerCell.y + direction.y }))
-      .filter(context.canEndAt);
-  const paths = findEnemyPaths({
+  const approachGoals = CARDINAL_DIRECTIONS
+    .map((direction) => ({ x: playerCell.x + direction.x, y: playerCell.y + direction.y }))
+    .filter(context.canEndAt);
+  const findPaths = (goals: readonly Cell[]) => findEnemyPaths({
     start: enemy.cell,
     goals,
     canPathThrough: (cell) => context.isInside(cell) && context.canPathThrough(cell),
     canEndAt: context.canEndAt,
   });
-  return paths.map((path) => {
+  const paths = origins.length > 0 ? findPaths(origins) : [];
+  const fallbackPaths = paths.length > 0 ? paths : findPaths(approachGoals);
+  return fallbackPaths.map((path) => {
     const destination = path[0]!;
     const goal = path[path.length - 1]!;
     return {

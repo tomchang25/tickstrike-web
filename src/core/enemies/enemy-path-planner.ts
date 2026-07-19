@@ -36,6 +36,7 @@ export function findEnemyPaths(query: EnemyPathQuery): readonly (readonly Cell[]
       const next = { x: current.x + direction.x, y: current.y + direction.y };
       const nextKey = cellKey(next);
       if (cameFrom.has(nextKey) || !query.canPathThrough(next)) continue;
+      if (sameCell(current, query.start) && !query.canEndAt(next)) continue;
       cameFrom.set(nextKey, current);
       distances.set(nextKey, (distances.get(currentKey) ?? 0) + 1);
       queue.push(next);

@@ -790,8 +790,8 @@ export class PixiGameRenderer {
     } else if (this.host) {
       delete this.app.canvas.dataset.debugBlockedCount;
       delete this.app.canvas.dataset.debugBlockedCells;
-      delete this.app.canvas.dataset.debugReservationCount;
-      delete this.app.canvas.dataset.debugReservationCells;
+      delete this.app.canvas.dataset.debugNavigationBlockerCount;
+      delete this.app.canvas.dataset.debugNavigationBlockerCells;
     }
   }
 
@@ -844,8 +844,8 @@ export class PixiGameRenderer {
     if (!this.host) return;
     this.app.canvas.dataset.debugBlockedCount = String(blockedCells.size);
     this.app.canvas.dataset.debugBlockedCells = [...blockedCells].sort().join(";");
-    this.app.canvas.dataset.debugReservationCount = String(reservedCells.size);
-    this.app.canvas.dataset.debugReservationCells = [...reservedCells].sort().join(";");
+    this.app.canvas.dataset.debugNavigationBlockerCount = String(reservedCells.size);
+    this.app.canvas.dataset.debugNavigationBlockerCells = [...reservedCells].sort().join(";");
   }
 
   private drawReservations(snapshot: WorldSnapshot): void {
