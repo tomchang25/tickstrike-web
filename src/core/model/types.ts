@@ -28,13 +28,16 @@ export type HitFeedback = "guarded" | "guard_break" | "staggered" | "unblocked";
 export type MobilityKind = "dash" | "smash";
 export type SmashDisplacementKind = "crush" | "knockback" | "water" | "blocked" | "none";
 
-export interface PlayerMobilityState {
+export interface PlayerMobilityDefinition {
   readonly kind: MobilityKind;
   readonly damage: number;
   readonly range: number;
   readonly cooldown: number;
-  readonly remainingCooldown: number;
   readonly staggerMultiplier: number;
+}
+
+export interface PlayerMobilityState extends PlayerMobilityDefinition {
+  readonly remainingCooldown: number;
   readonly invulnerable: boolean;
 }
 
@@ -85,34 +88,39 @@ export interface GuardRuntime {
   readonly protectionMultiplier: number;
 }
 
-export interface EntityState {
+/** Data shared by entity creation inputs and normalized world state. */
+export interface EntitySpawnData {
   readonly id: EntityId;
   readonly kind: EntityKind;
   readonly archetype: string;
   /** Authored semantic presentation profile resolved by the presentation layer. */
   readonly presentationId?: string;
   readonly cell: Cell;
-  /** Absolute logical cells claimed by the entity while it is active. */
-  readonly footprint: readonly Cell[];
   readonly hp: number;
-  readonly maxHp: number;
   /** Harness-only damage immunity for deterministic presentation scenarios. */
   readonly damageImmune?: boolean;
   readonly defense?: number;
-  readonly guard?: GuardRuntime;
-  readonly staggerTicks?: number;
-  readonly protectionTicks?: number;
   /** Authored player Normal Attack damage, when this entity is the player. */
   readonly normalAttackDamage?: number;
   /** Authored player Mobility damage, when this entity is the player. */
   readonly mobilityAttackDamage?: number;
-  /** Authored and runtime Mobility state, when this entity is the player. */
-  readonly mobility?: PlayerMobilityState;
+  readonly mobility?: PlayerMobilityDefinition;
   /** Immutable authored runtime data for an enabled enemy action. */
   readonly enemyAction?: EnemyActionDefinition;
+  readonly facing?: Cell;
+}
+
+export interface EntityState extends EntitySpawnData {
+  /** Absolute logical cells claimed by the entity while it is active. */
+  readonly footprint: readonly Cell[];
+  readonly maxHp: number;
+  readonly guard?: GuardRuntime;
+  readonly staggerTicks?: number;
+  readonly protectionTicks?: number;
+  /** Authored and runtime Mobility state, when this entity is the player. */
+  readonly mobility?: PlayerMobilityState;
   readonly activity?: EnemyActivity;
   readonly lastDecision?: EnemyDecisionKind;
-  readonly facing?: Cell;
   readonly recoveryTicks?: number;
   readonly committedAttack?: CommittedAttack;
   readonly phase: EntityPhase;

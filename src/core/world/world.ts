@@ -1,3 +1,4 @@
+import type { GuardDefinition } from "../content/actor-schema";
 import type { CombatEvent } from "../events/combat-events";
 import { RandomStreams } from "../random/random-streams";
 import {
@@ -13,6 +14,7 @@ import {
   type DirectionalHitResult,
   type EnemyDecisionKind,
   type EntityId,
+  type EntitySpawnData,
   type EntityState,
   type EncounterOutcome,
   type GuardRuntime,
@@ -24,26 +26,12 @@ import {
   type TelegraphPhase,
   type TileKind,
   type WorldSnapshot,
-  type PlayerMobilityState,
 } from "../model/types";
 import { Arena } from "./arena";
 
-export interface SpawnEntityInput {
-  readonly id: EntityId;
-  readonly kind: EntityState["kind"];
-  readonly archetype: string;
-  readonly presentationId?: string;
-  readonly cell: Cell;
+export interface SpawnEntityInput extends EntitySpawnData {
   readonly footprint?: readonly Cell[];
-  readonly hp: number;
-  readonly damageImmune?: boolean;
-  readonly defense?: number;
-  readonly guardDefinition?: import("../content/actor-schema").GuardDefinition;
-  readonly normalAttackDamage?: number;
-  readonly mobilityAttackDamage?: number;
-  readonly mobility?: Omit<PlayerMobilityState, "remainingCooldown" | "invulnerable">;
-  readonly enemyAction?: EnemyActionDefinition;
-  readonly facing?: Cell;
+  readonly guardDefinition?: GuardDefinition;
 }
 
 export interface ReservationRequest {
