@@ -9,7 +9,7 @@ Use this workflow when a request asks to create, change, regenerate, or batch-ge
 3. Resolve the target effect to a recipe. Do not infer an unrelated recipe when the catalog has no mapping.
 4. Read the sprite animation asset standard and skill before changing a recipe, config, or compiler.
 
-For example, `thrust enemy` resolves to `thrust_enemy`, and `fall into water` resolves to `entered_water`. The catalog may resolve this to `kappa_drown`; `bomb_enemy` intentionally fails until a Lantern-specific recipe exists.
+For example, `thrust enemy` resolves to `thrust_enemy`, and `fall into water` resolves to `entered_water`. The catalog resolves compatible targets to a family-specific recipe; an unknown effect must fail rather than select an unrelated recipe.
 
 ## Drafting
 

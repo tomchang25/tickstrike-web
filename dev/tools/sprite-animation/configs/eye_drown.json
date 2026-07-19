@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "eye_drown",
+  "frames_per_direction": 8,
+  "source_pose_sequence": [0, 1, 2, 3, 2, 1, 0, 0],
+  "frame_durations_ms": [90, 80, 90, 110, 130, 160, 200, 280],
+  "anchor": { "type": "center", "x": 8, "y": 8 },
+  "overflow_policy": "clip",
+  "effect_coordinate_space": "actor",
+  "end_state": "despawn",
+  "recipe_status": "approved"
+}

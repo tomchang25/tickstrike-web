@@ -20,12 +20,12 @@
     "bomb_enemy": {
       "family": "lantern",
       "source": "src/content/enemies/assets/lantern-red-sprite-sheet.png",
-      "effects": { "entered_water": null }
+      "effects": { "entered_water": "lantern_douse" }
     },
-    "eye": {
+    "ranged_enemy": {
       "family": "eye",
       "source": "src/content/enemies/assets/eye-sprite-sheet.png",
-      "effects": { "split": "eye_split" }
+      "effects": { "entered_water": "eye_drown", "split": "eye_split" }
     }
   }
 }

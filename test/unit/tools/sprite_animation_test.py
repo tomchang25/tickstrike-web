@@ -79,9 +79,9 @@ class SpriteAnimationToolTest(unittest.TestCase):
             generated = self.run_cli(
                 "generate",
                 "--target",
-                "eye",
+                "ranged_enemy",
                 "--effect",
-                "split",
+                "entered_water",
                 "--output",
                 str(output),
                 "--preview",
@@ -89,23 +89,25 @@ class SpriteAnimationToolTest(unittest.TestCase):
             self.assertEqual(generated.returncode, 0, generated.stderr)
 
             preview = output / "preview"
-            self.assertTrue((preview / "eye-split-4dir-x8-preview-1x.gif").is_file())
-            self.assertTrue((preview / "eye-split-4dir-x8-preview-8x.gif").is_file())
-            self.assertTrue((preview / "eye-split-4dir-x8-contact-sheet-x8.png").is_file())
+            self.assertTrue((preview / "ranged_enemy-entered_water-4dir-x8-preview-1x.gif").is_file())
+            self.assertTrue((preview / "ranged_enemy-entered_water-4dir-x8-preview-8x.gif").is_file())
+            self.assertTrue(
+                (preview / "ranged_enemy-entered_water-4dir-x8-contact-sheet-x8.png").is_file()
+            )
 
-    def test_missing_lantern_recipe_does_not_substitute_another_family(self) -> None:
+    def test_missing_effect_does_not_substitute_another_recipe(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             generated = self.run_cli(
                 "generate",
                 "--target",
                 "bomb_enemy",
                 "--effect",
-                "entered_water",
+                "split",
                 "--output",
                 temporary_directory,
             )
             self.assertNotEqual(generated.returncode, 0)
-            self.assertIn("no approved entered_water recipe", generated.stderr)
+            self.assertIn("no approved split recipe", generated.stderr)
 
     def test_batch_resolves_all_targets_before_writing_output(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -117,12 +119,35 @@ class SpriteAnimationToolTest(unittest.TestCase):
                 "--target",
                 "bomb_enemy",
                 "--effect",
-                "entered_water",
+                "split",
                 "--output",
                 str(output),
             )
             self.assertNotEqual(generated.returncode, 0)
             self.assertEqual(list(output.iterdir()), [])
+
+    def test_generates_all_runtime_water_targets_in_one_batch(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory)
+            generated = self.run_cli(
+                "generate",
+                "--target",
+                "slash_enemy",
+                "--target",
+                "thrust_enemy",
+                "--target",
+                "charge_enemy",
+                "--target",
+                "ranged_enemy",
+                "--target",
+                "bomb_enemy",
+                "--effect",
+                "entered_water",
+                "--output",
+                str(output),
+            )
+            self.assertEqual(generated.returncode, 0, generated.stderr)
+            self.assertEqual(len(list(output.glob("*-entered_water-4dir-x8.png"))), 5)
 
 
 if __name__ == "__main__":
