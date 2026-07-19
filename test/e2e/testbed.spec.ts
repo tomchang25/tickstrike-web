@@ -146,6 +146,36 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   await expect(canvas).toHaveAttribute("data-player-animation", "idle");
 });
 
+test("Charge retains its facing-direction telegraph when the Player moves aside", async ({ page }) => {
+  await page.goto("/?scenario=charge-enemy");
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "move", actorId: "player", direction: { x: -1, y: 0 } });
+  });
+  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
+    "data-telegraph-labels",
+    /8,3:2.*7,3:2.*6,3:2/,
+  );
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "move", actorId: "player", direction: { x: 0, y: -1 } });
+  });
+
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "2");
+  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute("data-attack-warning-ticks", "1");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
+    "data-telegraph-labels",
+    /8,3:1.*7,3:1.*6,3:1/,
+  );
+});
+
 test("Enemy navigation testbed exposes blocked and reserved grid cells", async ({ page }) => {
   await page.goto("/?scenario=enemy-navigation");
 

@@ -145,15 +145,17 @@ describe("Charge movement planning", () => {
 });
 
 describe("Charge live warning-time retarget", () => {
-  it("recomputes the path and facing while the Player stays on a legal range path", () => {
-    const retarget = chargeLiveRetarget(enemy(), { x: 5, y: 3 }, () => true);
+  it("recomputes the path while the Player stays ahead on a legal range path", () => {
+    const retarget = chargeLiveRetarget(enemy(), { x: 8, y: 5 }, () => true);
     expect(retarget).toEqual({
-      path: [{ x: 5, y: 4 }, { x: 5, y: 3 }],
-      facing: { x: 0, y: -1 },
+      path: [{ x: 6, y: 5 }, { x: 7, y: 5 }, { x: 8, y: 5 }],
+      facing: { x: 1, y: 0 },
     });
   });
 
-  it("reports no retarget once the Player leaves the range rule", () => {
+  it("reports no retarget when the Player leaves Charge's facing direction or range rule", () => {
+    expect(chargeLiveRetarget(enemy(), { x: 5, y: 3 }, () => true)).toBeUndefined();
+    expect(chargeLiveRetarget(enemy(), { x: 2, y: 5 }, () => true)).toBeUndefined();
     expect(chargeLiveRetarget(enemy(), { x: 11, y: 5 }, () => true)).toBeUndefined();
     expect(chargeLiveRetarget(enemy(), { x: 7, y: 3 }, () => true)).toBeUndefined();
   });

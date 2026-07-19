@@ -213,7 +213,7 @@ export function chargeRangePath(
   return { path, facing: direction };
 }
 
-/** Live warning-time retarget: recomputes Charge's range path against the current Player cell. */
+/** Live warning-time retarget: only refreshes the range path when the Player remains ahead of Charge. */
 export function chargeLiveRetarget(
   enemy: EntityState,
   playerCell: Cell | undefined,
@@ -221,7 +221,9 @@ export function chargeLiveRetarget(
 ): ChargeRangePath | undefined {
   const tuning = enemy.enemyAction?.chargeTuning;
   if (!tuning || !playerCell) return undefined;
-  return chargeRangePath(enemy.cell, playerCell, tuning.maxRange, isLegalTerrain);
+  const path = chargeRangePath(enemy.cell, playerCell, tuning.maxRange, isLegalTerrain);
+  const facing = enemy.facing && cardinalDirection(enemy.facing);
+  return path && facing && sameCell(path.facing, facing) ? path : undefined;
 }
 
 function chargeOriginCells(playerCell: Cell, maxRange: number): { primary: Cell[]; fallback: Cell[] } {
