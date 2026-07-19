@@ -17,10 +17,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
   const ranged = actorCatalog.enemies.find((enemy) => enemy.id === "ranged_enemy");
   const smallGuard = actorCatalog.guards.find((guard) => guard.id === "small");
   if (!player || !thrust || !slash || !ranged || !smallGuard) throw new Error("Shipped combat content is incomplete.");
-  const actionFor = (enemy: typeof thrust | typeof slash): EnemyActionDefinition => {
-    if (enemy.role !== "thrust" && enemy.role !== "slash") {
-      throw new Error(`Unsupported enemy action role: ${enemy.role}`);
-    }
+  const actionFor = (enemy: typeof thrust | typeof slash | typeof ranged): EnemyActionDefinition => {
     const attackId = enemy.attackIds[0];
     const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
     if (!attack || attack.shape.shape !== "custom-offsets") {
@@ -34,6 +31,9 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
       warningTicks: attack.warningTicks,
       recoveryTicks: attack.recoveryTicks,
       offsets: attack.shape.offsets,
+      ...(enemy.roleTuning?.type === "ranged"
+        ? { rangedTuning: { minDistance: enemy.roleTuning.minDistance, maxDistance: enemy.roleTuning.maxDistance } }
+        : {}),
     };
   };
   world.spawn({
@@ -55,6 +55,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     id: "enemy-thrust",
     kind: "enemy",
     archetype: "thrust",
+    presentationId: thrust.presentation.id,
     cell: { x: 5, y: 6 },
     hp: thrust.hp,
     defense: thrust.defense,
@@ -66,6 +67,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     id: "enemy-slash",
     kind: "enemy",
     archetype: "slash",
+    presentationId: slash.presentation.id,
     cell: { x: 8, y: 6 },
     hp: slash.hp,
     defense: slash.defense,
@@ -77,8 +79,13 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     id: "enemy-ranged",
     kind: "enemy",
     archetype: "ranged",
+    presentationId: ranged.presentation.id,
     cell: { x: 6, y: 4 },
     hp: ranged.hp,
+    defense: ranged.defense,
+    guardDefinition: smallGuard,
+    enemyAction: actionFor(ranged),
+    facing: { x: 0, y: 1 },
   });
   return world;
 }

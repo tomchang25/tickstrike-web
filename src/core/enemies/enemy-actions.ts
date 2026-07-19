@@ -2,6 +2,7 @@ import {
   addCells,
   cardinalDirection,
   directionBetween,
+  manhattanDistance,
   sameCell,
   type EnemyActionDefinition,
   type Cell,
@@ -17,6 +18,7 @@ export type EnemyDecision =
       readonly attack: EnemyActionDefinition;
       readonly cells: readonly Cell[];
       readonly facing: Cell;
+      readonly metadata?: Readonly<Record<string, unknown>>;
     }
   | { readonly type: "wait" };
 
@@ -61,6 +63,66 @@ const CARDINAL_DIRECTIONS: readonly Cell[] = [
   { x: -1, y: 0 },
   { x: 0, y: -1 },
 ];
+
+function rangedFacing(enemy: EntityState): Cell {
+  return cardinalDirection(enemy.facing ?? CARDINAL_DIRECTIONS[0]!) ?? CARDINAL_DIRECTIONS[0]!;
+}
+
+export function rangedAttackCells(
+  targetCenter: Cell,
+  facing: Cell,
+  action: EnemyActionDefinition,
+  isInside: (cell: Cell) => boolean,
+): readonly Cell[] {
+  return rotatedAttackCells(targetCenter, facing, action.offsets).filter(isInside);
+}
+
+function rangedMovementCandidates(
+  enemy: EntityState,
+  playerCell: Cell,
+  action: EnemyActionDefinition,
+  context: EnemyDecisionContext,
+): readonly EnemyMovementCandidate[] {
+  const tuning = action.rangedTuning;
+  if (!tuning || tuning.minDistance > tuning.maxDistance) return [];
+
+  const distance = manhattanDistance(enemy.cell, playerCell);
+  if (distance >= tuning.minDistance && distance <= tuning.maxDistance) return [];
+  const movesTowardBand = distance > tuning.maxDistance;
+  const improves = (nextDistance: number) => movesTowardBand
+    ? nextDistance < distance
+    : nextDistance > distance;
+  const boundaryDistance = (nextDistance: number) => Math.min(
+    Math.abs(nextDistance - tuning.minDistance),
+    Math.abs(nextDistance - tuning.maxDistance),
+  );
+
+  return CARDINAL_DIRECTIONS
+    .map((direction) => ({
+      destination: { x: enemy.cell.x + direction.x, y: enemy.cell.y + direction.y },
+      facing: direction,
+    }))
+    .filter(({ destination }) => context.isInside(destination))
+    .filter(({ destination }) => !sameCell(destination, playerCell))
+    .map(({ destination, facing }) => ({
+      destination,
+      facing,
+      distance: manhattanDistance(destination, playerCell),
+    }))
+    .filter(({ destination, distance: nextDistance }) => context.canEndAt(destination) && context.canMove(destination) && improves(nextDistance))
+    .sort((a, b) => {
+      const boundaryResult = boundaryDistance(a.distance) - boundaryDistance(b.distance);
+      if (boundaryResult !== 0) return boundaryResult;
+      if (a.destination.y !== b.destination.y) return a.destination.y - b.destination.y;
+      return a.destination.x - b.destination.x;
+    })
+    .map(({ destination, facing }) => ({
+      destination,
+      path: [destination],
+      goal: destination,
+      facing,
+    }));
+}
 
 function attackFacing(
   enemy: EntityState,
@@ -124,6 +186,27 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyDecision 
     return { type: "wait" };
   }
 
+  if (action.role === "ranged") {
+    const distance = manhattanDistance(enemy.cell, playerCell);
+    const tuning = action.rangedTuning;
+    if (!tuning || tuning.minDistance > tuning.maxDistance) return { type: "wait" };
+    if (distance >= tuning.minDistance && distance <= tuning.maxDistance) {
+      return {
+        type: "attack",
+        attack: action,
+        cells: rangedAttackCells(playerCell, rangedFacing(enemy), action, context.isInside),
+        facing: rangedFacing(enemy),
+        metadata: {
+          ...(action.metadata ?? {}),
+          targetCenter: { x: playerCell.x, y: playerCell.y },
+        },
+      };
+    }
+
+    const candidates = rangedMovementCandidates(enemy, playerCell, action, context);
+    return candidates.length > 0 ? { type: "move", candidates } : { type: "wait" };
+  }
+
   const attackDirection = attackFacing(enemy, playerCell, action, enemy.facing ?? CARDINAL_DIRECTIONS[0]!);
   if (attackDirection) {
     return {
@@ -159,7 +242,9 @@ export function committedAttackFromDecision(
     damage: decision.attack.damage,
     warningTicks: decision.attack.warningTicks,
     recoveryTicks: decision.attack.recoveryTicks,
-    ...(decision.attack.metadata ? { metadata: decision.attack.metadata } : {}),
+    ...(decision.metadata || decision.attack.metadata
+      ? { metadata: decision.metadata ?? decision.attack.metadata }
+      : {}),
   };
 }
 

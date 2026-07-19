@@ -149,6 +149,7 @@ describe("player verbs", () => {
       "enemy_attack_committed",
       "telegraph_changed",
       "enemy_moved",
+      "enemy_moved",
       "world_advanced",
     ]);
     expect(occupied.events.map((event) => event.type)).toEqual([
@@ -159,6 +160,7 @@ describe("player verbs", () => {
       "enemy_damaged",
       "enemy_attack_committed",
       "telegraph_changed",
+      "enemy_moved",
       "enemy_moved",
       "world_advanced",
     ]);
@@ -176,6 +178,8 @@ describe("player verbs", () => {
     expect(whiff.events.map((event) => event.type)).toEqual([
       "command_resolved",
       "player_attacked",
+      "enemy_attack_committed",
+      "telegraph_changed",
       "enemy_attack_committed",
       "telegraph_changed",
       "world_advanced",
@@ -202,6 +206,7 @@ describe("player verbs", () => {
       "enemy_damaged",
       "enemy_attack_committed",
       "telegraph_changed",
+      "enemy_moved",
       "enemy_moved",
       "world_advanced",
     ]);
@@ -240,6 +245,8 @@ describe("player verbs", () => {
       "enemy_guard_damaged",
       "enemy_damaged",
       "enemy_moved",
+      "enemy_attack_committed",
+      "telegraph_changed",
       "enemy_attack_committed",
       "telegraph_changed",
       "world_advanced",
@@ -505,6 +512,7 @@ describe("playable encounter outcomes", () => {
     const world = createFoundationArena();
     world.applyDamage("enemy-thrust", 100);
     world.applyDamage("enemy-slash", 100);
+    world.applyDamage("enemy-ranged", 100);
 
     const result = resolveCommand(world, {
       type: "move",

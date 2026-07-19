@@ -3,7 +3,15 @@ import { gsap } from "gsap";
 import type { Cell, EntityState } from "../../core/model/types";
 
 export type EnemySpritePose = "idle" | "move" | "prepareAttack" | "commitCue";
-export type EnemySpritePalette = "green" | "purple";
+export type EnemySpritePalette = "green" | "purple" | "eye";
+export type EnemySpriteSheetKey = "green" | "purple" | "eye";
+
+export interface EnemyPresentationProfile {
+  readonly id: string;
+  readonly sheet: EnemySpriteSheetKey;
+  readonly palette: EnemySpritePalette;
+  readonly scale: number;
+}
 
 export interface EnemyPresentation {
   readonly profileId: string;
@@ -32,6 +40,16 @@ const DAMAGE_TINT = 0xcc3333;
 const STAGGER_TINT = 0x4d80ff;
 const PREPARE_SCALE = { x: 1.12, y: 0.84 };
 const COMMIT_SCALE = { x: 1.2, y: 0.78 };
+
+const ENEMY_PRESENTATION_PROFILES: Readonly<Record<string, EnemyPresentationProfile>> = {
+  "enemy.thrust": { id: "enemy.thrust", sheet: "green", palette: "green", scale: SPRITE_SCALE },
+  "enemy.slash": { id: "enemy.slash", sheet: "purple", palette: "purple", scale: SPRITE_SCALE },
+  "enemy.ranged": { id: "enemy.ranged", sheet: "eye", palette: "eye", scale: 5 },
+};
+
+export function getEnemyPresentationProfile(profileId: string): EnemyPresentationProfile | undefined {
+  return ENEMY_PRESENTATION_PROFILES[profileId];
+}
 
 const DIRECTION_COLUMNS = {
   down: 0,
@@ -89,6 +107,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
     readonly palette: EnemySpritePalette,
     sheet: Texture,
     private readonly onChange?: () => void,
+    private readonly spriteScale = SPRITE_SCALE,
   ) {
     sheet.source.scaleMode = "nearest";
     const frames = new Map<string, Texture>();
@@ -103,7 +122,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
 
     this.body = new Sprite(frameAt(directionColumn(DEFAULT_FACING), POSE_ROWS.idle));
     this.body.anchor.set(0.5);
-    this.body.scale.set(SPRITE_SCALE);
+    this.body.scale.set(this.spriteScale);
     this.body.tint = BASE_TINT;
     this.root.label = profileId;
     this.root.addChild(this.body);
@@ -287,11 +306,12 @@ class SmallEnemyPresentation implements EnemyPresentation {
 }
 
 export function createEnemyPresentation(
-  archetype: string,
+  profileId: string,
   sheet: Texture,
   onChange?: () => void,
 ): EnemyPresentation | undefined {
-  if (archetype === "thrust") return new SmallEnemyPresentation("enemy.thrust", "green", sheet, onChange);
-  if (archetype === "slash") return new SmallEnemyPresentation("enemy.slash", "purple", sheet, onChange);
-  return undefined;
+  const profile = getEnemyPresentationProfile(profileId);
+  return profile
+    ? new SmallEnemyPresentation(profile.id, profile.palette, sheet, onChange, profile.scale)
+    : undefined;
 }

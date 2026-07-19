@@ -42,11 +42,13 @@ import {
 } from "./character-sprites";
 import {
   createEnemyPresentation,
+  getEnemyPresentationProfile,
   type EnemyPresentation,
 } from "./enemy-sprites";
 import ninjaSpriteSheetUrl from "../../content/characters/assets/ninja/body-sprite-sheet.png";
 import greenEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-green-sprite-sheet.png";
 import purpleEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-purple-sprite-sheet.png";
+import rangedEnemySpriteSheetUrl from "../../content/enemies/assets/eye-sprite-sheet.png";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =
@@ -168,6 +170,7 @@ export class PixiGameRenderer {
   private enemySpriteSheets: {
     green?: Texture;
     purple?: Texture;
+    eye?: Texture;
   } = {};
 
   get transientCount(): number {
@@ -185,13 +188,15 @@ export class PixiGameRenderer {
       autoDensity: true,
     });
     setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
-    const [greenEnemySpriteSheet, purpleEnemySpriteSheet] = await Promise.all([
+    const [greenEnemySpriteSheet, purpleEnemySpriteSheet, rangedEnemySpriteSheet] = await Promise.all([
       Assets.load<Texture>(greenEnemySpriteSheetUrl),
       Assets.load<Texture>(purpleEnemySpriteSheetUrl),
+      Assets.load<Texture>(rangedEnemySpriteSheetUrl),
     ]);
     this.enemySpriteSheets = {
       green: greenEnemySpriteSheet,
       purple: purpleEnemySpriteSheet,
+      eye: rangedEnemySpriteSheet,
     };
 
     this.app.canvas.dataset.testid = "game-canvas";
@@ -1008,15 +1013,12 @@ export class PixiGameRenderer {
     const playerSprite = entity.kind === "player"
       ? createPlayerSprite(`character.${entity.archetype}`)
       : undefined;
-    const enemySpriteSheet = entity.kind === "enemy"
-      ? entity.archetype === "slash"
-        ? this.enemySpriteSheets.purple
-        : entity.archetype === "thrust"
-          ? this.enemySpriteSheets.green
-          : undefined
+    const enemyProfile = entity.kind === "enemy" && entity.presentationId
+      ? getEnemyPresentationProfile(entity.presentationId)
       : undefined;
-    const enemyPresentation = enemySpriteSheet
-      ? createEnemyPresentation(entity.archetype, enemySpriteSheet, () => this.refreshEnemyPresentationDataset())
+    const enemySpriteSheet = enemyProfile ? this.enemySpriteSheets[enemyProfile.sheet] : undefined;
+    const enemyPresentation = enemySpriteSheet && enemyProfile
+      ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, () => this.refreshEnemyPresentationDataset())
       : undefined;
     const body = playerSprite?.body ?? enemyPresentation?.body ?? new Graphics()
       .roundRect(-22, -22, 44, 44, 10)

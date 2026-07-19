@@ -16,6 +16,11 @@ export type EnemyActivity = "ready" | "telegraphing" | "recovering" | "staggered
 export type EnemyDecision = "move" | "attack" | "wait";
 export type EnemyActionRole = string;
 export type EnemyAttackKind = string;
+
+export interface RangedEnemyTuning {
+  readonly minDistance: number;
+  readonly maxDistance: number;
+}
 export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
 export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | string;
 export type HitAngle = "front" | "side" | "back";
@@ -42,6 +47,8 @@ export interface EnemyActionDefinition {
   readonly recoveryTicks: number;
   /** Local attack coordinates where x is forward and y is lateral. */
   readonly offsets: readonly Cell[];
+  /** Normalized tuning for the Ranged distance-band policy. */
+  readonly rangedTuning?: RangedEnemyTuning;
   /** Locked role data, such as an attack center or a landing direction. */
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
@@ -82,6 +89,8 @@ export interface EntityState {
   readonly id: EntityId;
   readonly kind: EntityKind;
   readonly archetype: string;
+  /** Authored semantic presentation profile resolved by the presentation layer. */
+  readonly presentationId?: string;
   readonly cell: Cell;
   /** Absolute logical cells claimed by the entity while it is active. */
   readonly footprint: readonly Cell[];

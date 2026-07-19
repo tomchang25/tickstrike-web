@@ -222,21 +222,23 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("tick-value")).toHaveText("1");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(false);
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
-  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "2");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "3");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
     "data-telegraph-labels",
-    /7,6:2x2@head.*8,6:2@head/,
+    /7,6:.*@head.*8,6:.*@head/,
   );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "telegraphing");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "2");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-attack-warning-ticks", "2");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
     "data-enemy-presentations",
-    /enemy-thrust:enemy\.thrust:green:prepareAttack.*enemy-slash:enemy\.slash:purple:prepareAttack/,
+    /enemy-thrust:enemy\.thrust:green:prepareAttack.*enemy-slash:enemy\.slash:purple:prepareAttack.*enemy-ranged:enemy\.ranged:eye:prepareAttack/,
   );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-telegraph", "true");
-  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "2");
-  await expect(page.getByTestId("enemy-telegraph-count")).toHaveText("2");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "3");
+  await expect(page.getByTestId("enemy-telegraph-count")).toHaveText("3");
 
   await page.keyboard.press("l");
   await expect(page.getByTestId("tick-value")).toHaveText("2");
@@ -278,6 +280,68 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain("enemy_attack_detonated");
   const observedEventTypes = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents.map((event) => event.type));
   expect(observedEventTypes).toEqual(await page.getByTestId("event-log").locator("li").allTextContents());
+});
+
+test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets cleanly", async ({ page }) => {
+  await page.goto("/?scenario=tick-arena");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+
+  const canvas = page.getByTestId("game-canvas");
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
+  });
+
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-cell-x", "6");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-cell-y", "3");
+  const movementState = await page.evaluate(() => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged"));
+  expect(movementState).toMatchObject({ cell: { x: 6, y: 3 }, lastDecision: "move" });
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:idle/);
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
+  });
+
+  await expect(page.getByTestId("tick-value")).toHaveText("2");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");
+  const committed = await page.evaluate(() => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack);
+  expect(committed).toMatchObject({
+    metadata: { targetCenter: { x: 6, y: 6 } },
+    cells: [{ x: 6, y: 6 }, { x: 6, y: 5 }, { x: 6, y: 7 }, { x: 7, y: 6 }, { x: 5, y: 6 }],
+  });
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:prepareAttack/);
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
+  });
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "1");
+  const lockedDuringWarning = await page.evaluate(() => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack?.cells);
+  expect(lockedDuringWarning).toEqual(committed?.cells);
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
+  });
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "recovering");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-telegraph", "false");
+  await expect(page.getByTestId("event-log")).toContainText("enemy_attack_detonated");
+
+  await page.getByRole("button", { name: "Reset scenario" }).click();
+  await expect(page.getByTestId("tick-value")).toHaveText("0");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "ready");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "0");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:idle/);
 });
 
 test("Pointer aiming previews attack and Mobility without advancing until click", async ({ page }) => {

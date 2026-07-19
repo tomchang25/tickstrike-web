@@ -32,6 +32,7 @@ export interface SpawnEntityInput {
   readonly id: EntityId;
   readonly kind: EntityState["kind"];
   readonly archetype: string;
+  readonly presentationId?: string;
   readonly cell: Cell;
   readonly footprint?: readonly Cell[];
   readonly hp: number;
@@ -93,6 +94,7 @@ function cloneEnemyAction(action: EnemyActionDefinition): EnemyActionDefinition 
   return {
     ...action,
     offsets: action.offsets.map(cloneCell),
+    ...(action.rangedTuning ? { rangedTuning: { ...action.rangedTuning } } : {}),
     ...(action.metadata ? { metadata: structuredClone(action.metadata) } : {}),
   };
 }
@@ -190,6 +192,7 @@ export class World {
       id: input.id,
       kind: input.kind,
       archetype: input.archetype,
+      ...(input.presentationId ? { presentationId: input.presentationId } : {}),
       cell: cloneCell(input.cell),
       footprint,
       hp: input.hp,
