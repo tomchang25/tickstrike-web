@@ -1,9 +1,11 @@
 import {
   addCells,
   cardinalDirection,
+  cardinalLineDirection,
   directionBetween,
   manhattanDistance,
   sameCell,
+  type ChargeEnemyTuning,
   type EnemyActionDefinition,
   type Cell,
   type EntityState,
@@ -29,6 +31,8 @@ export interface EnemyDecisionContext {
   canMove(destination: Cell): boolean;
   canPathThrough(cell: Cell): boolean;
   canEndAt(cell: Cell): boolean;
+  /** Terrain-only legality, ignoring occupancy and the live Player position. Used by Charge range/path checks. */
+  isLegalTerrain(cell: Cell): boolean;
 }
 
 /** Rotates a local offset where x is forward and y is lateral into world space. */
@@ -179,6 +183,86 @@ function movementCandidates(
   });
 }
 
+const CHARGE_MIN_RANGE = 1;
+const CHARGE_PREFERRED_MIN_RANGE = 2;
+
+export interface ChargeRangePath {
+  /** Cells from the cell immediately in front of the origin through the target cell, inclusive. */
+  readonly path: readonly Cell[];
+  readonly facing: Cell;
+}
+
+/** A legal Charge range path is cardinal, one to `maxRange` cells away, and entirely legal terrain. */
+export function chargeRangePath(
+  origin: Cell,
+  playerCell: Cell,
+  maxRange: number,
+  isLegalTerrain: (cell: Cell) => boolean,
+): ChargeRangePath | undefined {
+  const direction = cardinalLineDirection(origin, playerCell);
+  if (!direction) return undefined;
+  const distance = manhattanDistance(origin, playerCell);
+  if (distance < CHARGE_MIN_RANGE || distance > maxRange) return undefined;
+
+  const path: Cell[] = [];
+  for (let step = 1; step <= distance; step += 1) {
+    const cell = { x: origin.x + direction.x * step, y: origin.y + direction.y * step };
+    if (!isLegalTerrain(cell)) return undefined;
+    path.push(cell);
+  }
+  return { path, facing: direction };
+}
+
+/** Live warning-time retarget: recomputes Charge's range path against the current Player cell. */
+export function chargeLiveRetarget(
+  enemy: EntityState,
+  playerCell: Cell | undefined,
+  isLegalTerrain: (cell: Cell) => boolean,
+): ChargeRangePath | undefined {
+  const tuning = enemy.enemyAction?.chargeTuning;
+  if (!tuning || !playerCell) return undefined;
+  return chargeRangePath(enemy.cell, playerCell, tuning.maxRange, isLegalTerrain);
+}
+
+function chargeOriginCells(playerCell: Cell, maxRange: number): { primary: Cell[]; fallback: Cell[] } {
+  const primary: Cell[] = [];
+  const fallback: Cell[] = [];
+  for (const direction of CARDINAL_DIRECTIONS) {
+    for (let distance = CHARGE_MIN_RANGE; distance <= maxRange; distance += 1) {
+      const cell = { x: playerCell.x + direction.x * distance, y: playerCell.y + direction.y * distance };
+      (distance >= CHARGE_PREFERRED_MIN_RANGE ? primary : fallback).push(cell);
+    }
+  }
+  return { primary, fallback };
+}
+
+function chargeMovementCandidates(
+  enemy: EntityState,
+  playerCell: Cell,
+  tuning: ChargeEnemyTuning,
+  context: EnemyDecisionContext,
+): readonly EnemyMovementCandidate[] {
+  const { primary, fallback } = chargeOriginCells(playerCell, tuning.maxRange);
+  const findPaths = (goals: readonly Cell[]) => findEnemyPaths({
+    start: enemy.cell,
+    goals: goals.filter(context.canEndAt),
+    canPathThrough: (cell) => context.isInside(cell) && context.canPathThrough(cell),
+    canEndAt: context.canEndAt,
+  });
+  const primaryPaths = findPaths(primary);
+  const paths = primaryPaths.length > 0 ? primaryPaths : findPaths(fallback);
+  return paths.map((path) => {
+    const destination = path[0]!;
+    const goal = path[path.length - 1]!;
+    return {
+      destination,
+      path,
+      goal,
+      facing: { x: destination.x - enemy.cell.x, y: destination.y - enemy.cell.y },
+    };
+  });
+}
+
 export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDecision {
   const { enemy, playerCell } = context;
   const action = enemy.enemyAction;
@@ -204,6 +288,24 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDec
     }
 
     const candidates = rangedMovementCandidates(enemy, playerCell, action, context);
+    return candidates.length > 0 ? { type: "move", candidates } : { type: "wait" };
+  }
+
+  if (action.role === "charge") {
+    const tuning = action.chargeTuning;
+    if (!tuning) return { type: "wait" };
+    const rangePath = chargeRangePath(enemy.cell, playerCell, tuning.maxRange, context.isLegalTerrain);
+    if (rangePath) {
+      return {
+        type: "attack",
+        attack: action,
+        cells: rangePath.path,
+        facing: rangePath.facing,
+      };
+    }
+
+    const candidates = chargeMovementCandidates(enemy, playerCell, tuning, context)
+      .filter((candidate) => context.canMove(candidate.destination));
     return candidates.length > 0 ? { type: "move", candidates } : { type: "wait" };
   }
 

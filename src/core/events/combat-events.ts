@@ -171,6 +171,27 @@ export type CombatEvent =
       readonly waterCell: Cell;
     }
   | {
+      readonly type: "entity_displaced";
+      readonly entityId: EntityId;
+      readonly from: Cell;
+      readonly to: Cell;
+      readonly cause: "charge_side_push" | "charge_target_knockback";
+    }
+  | {
+      readonly type: "charge_impact";
+      readonly enemyId: EntityId;
+      readonly targetId?: EntityId;
+      readonly cell: Cell;
+      readonly outcome: "empty" | "normal" | "blocked";
+      readonly hit?: DamageEvent;
+    }
+  | {
+      readonly type: "charge_landed";
+      readonly enemyId: EntityId;
+      readonly from: Cell;
+      readonly to: Cell;
+    }
+  | {
       readonly type: "reservation_changed";
       readonly reservation?: Reservation;
       readonly ownerId: string;

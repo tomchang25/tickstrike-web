@@ -9,14 +9,20 @@ export function createShippedArena(seed: Seed = SHIPPED_SCENARIO_SEED): World {
   return new World(createShippedArenaGeometry(), seed);
 }
 
+const CHARGE_PREFERRED_MIN_RANGE = 2;
+
 export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World {
   const world = createShippedArena(seed);
   const player = actorCatalog.characters.find((character) => character.id === "ninja");
   const thrust = actorCatalog.enemies.find((enemy) => enemy.id === "thrust_enemy");
   const slash = actorCatalog.enemies.find((enemy) => enemy.id === "slash_enemy");
   const ranged = actorCatalog.enemies.find((enemy) => enemy.id === "ranged_enemy");
+  const charge = actorCatalog.enemies.find((enemy) => enemy.id === "charge_enemy");
   const smallGuard = actorCatalog.guards.find((guard) => guard.id === "small");
-  if (!player || !thrust || !slash || !ranged || !smallGuard) throw new Error("Shipped combat content is incomplete.");
+  const heavyGuard = actorCatalog.guards.find((guard) => guard.id === "heavy");
+  if (!player || !thrust || !slash || !ranged || !charge || !smallGuard || !heavyGuard) {
+    throw new Error("Shipped combat content is incomplete.");
+  }
   const actionFor = (enemy: typeof thrust | typeof slash | typeof ranged): EnemyActionDefinition => {
     const attackId = enemy.attackIds[0];
     const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
@@ -36,6 +42,23 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
         : {}),
     };
   };
+  const chargeAction = ((): EnemyActionDefinition => {
+    const attackId = charge.attackIds[0];
+    const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
+    if (!attack || attack.shape.shape !== "line") {
+      throw new Error(`Charge enemy attack content is incomplete: ${charge.id}`);
+    }
+    return {
+      role: charge.role,
+      attackId: attack.id,
+      kind: attack.kind,
+      damage: attack.damage,
+      warningTicks: attack.warningTicks,
+      recoveryTicks: attack.recoveryTicks,
+      offsets: [],
+      chargeTuning: { minRange: 1, maxRange: attack.shape.length, preferredMinRange: CHARGE_PREFERRED_MIN_RANGE },
+    };
+  })();
   world.spawn({
     id: "player",
     kind: "player",
@@ -86,6 +109,18 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     guardDefinition: smallGuard,
     enemyAction: actionFor(ranged),
     facing: { x: 0, y: 1 },
+  });
+  world.spawn({
+    id: "enemy-charge",
+    kind: "enemy",
+    archetype: "charge",
+    presentationId: charge.presentation.id,
+    cell: { x: 6, y: 9 },
+    hp: charge.hp,
+    defense: charge.defense,
+    guardDefinition: heavyGuard,
+    enemyAction: chargeAction,
+    facing: { x: 0, y: -1 },
   });
   return world;
 }

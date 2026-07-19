@@ -21,6 +21,12 @@ export interface RangedEnemyTuning {
   readonly minDistance: number;
   readonly maxDistance: number;
 }
+
+export interface ChargeEnemyTuning {
+  readonly minRange: number;
+  readonly maxRange: number;
+  readonly preferredMinRange: number;
+}
 export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
 export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | string;
 export type HitAngle = "front" | "side" | "back";
@@ -52,6 +58,8 @@ export interface EnemyActionDefinition {
   readonly offsets: readonly Cell[];
   /** Normalized tuning for the Ranged distance-band policy. */
   readonly rangedTuning?: RangedEnemyTuning;
+  /** Normalized tuning for the Charge live cardinal range policy. */
+  readonly chargeTuning?: ChargeEnemyTuning;
   /** Locked role data, such as an attack center or a landing direction. */
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
@@ -224,6 +232,15 @@ export function cardinalDirection(direction: Cell): Cell | undefined {
 
 export function directionBetween(from: Cell, to: Cell): Cell | undefined {
   return cardinalDirection({ x: to.x - from.x, y: to.y - from.y });
+}
+
+/** The unit cardinal direction from `from` to `to` when they share a row or column, at any distance. */
+export function cardinalLineDirection(from: Cell, to: Cell): Cell | undefined {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (dx === 0 && dy === 0) return undefined;
+  if (dx !== 0 && dy !== 0) return undefined;
+  return dx !== 0 ? { x: Math.sign(dx), y: 0 } : { x: 0, y: Math.sign(dy) };
 }
 
 export function cellKey(cell: Cell): string {

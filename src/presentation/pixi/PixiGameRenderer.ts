@@ -49,6 +49,7 @@ import ninjaSpriteSheetUrl from "../../content/characters/assets/ninja/body-spri
 import greenEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-green-sprite-sheet.png";
 import purpleEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-purple-sprite-sheet.png";
 import rangedEnemySpriteSheetUrl from "../../content/enemies/assets/eye-sprite-sheet.png";
+import skullEnemySpriteSheetUrl from "../../content/enemies/assets/skull-sprite-sheet.png";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =
@@ -172,6 +173,7 @@ export class PixiGameRenderer {
     green?: Texture;
     purple?: Texture;
     eye?: Texture;
+    skull?: Texture;
   } = {};
 
   get transientCount(): number {
@@ -189,15 +191,17 @@ export class PixiGameRenderer {
       autoDensity: true,
     });
     setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
-    const [greenEnemySpriteSheet, purpleEnemySpriteSheet, rangedEnemySpriteSheet] = await Promise.all([
+    const [greenEnemySpriteSheet, purpleEnemySpriteSheet, rangedEnemySpriteSheet, skullEnemySpriteSheet] = await Promise.all([
       Assets.load<Texture>(greenEnemySpriteSheetUrl),
       Assets.load<Texture>(purpleEnemySpriteSheetUrl),
       Assets.load<Texture>(rangedEnemySpriteSheetUrl),
+      Assets.load<Texture>(skullEnemySpriteSheetUrl),
     ]);
     this.enemySpriteSheets = {
       green: greenEnemySpriteSheet,
       purple: purpleEnemySpriteSheet,
       eye: rangedEnemySpriteSheet,
+      skull: skullEnemySpriteSheet,
     };
 
     this.app.canvas.dataset.testid = "game-canvas";
@@ -529,11 +533,11 @@ export class PixiGameRenderer {
     };
   }
 
-  createImpact(cell: Cell): Graphics {
+  createImpact(cell: Cell, color = 0xffffff): Graphics {
     const pixels = cellToPixels(cell);
     const effect = new Graphics()
       .circle(0, 0, CELL_SIZE * 0.22)
-      .stroke({ color: 0xffffff, width: 5, alpha: 0.9 });
+      .stroke({ color, width: 5, alpha: 0.9 });
     effect.position.set(pixels.x, pixels.y);
     this.effectsLayer.addChild(effect);
     this.transientEffects.add(effect);

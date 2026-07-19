@@ -3,8 +3,8 @@ import { gsap } from "gsap";
 import type { Cell, EntityState } from "../../core/model/types";
 
 export type EnemySpritePose = "idle" | "move" | "prepareAttack" | "commitCue";
-export type EnemySpritePalette = "green" | "purple" | "eye";
-export type EnemySpriteSheetKey = "green" | "purple" | "eye";
+export type EnemySpritePalette = "green" | "purple" | "eye" | "skull";
+export type EnemySpriteSheetKey = "green" | "purple" | "eye" | "skull";
 
 export interface EnemyPresentationProfile {
   readonly id: string;
@@ -45,6 +45,7 @@ const ENEMY_PRESENTATION_PROFILES: Readonly<Record<string, EnemyPresentationProf
   "enemy.thrust": { id: "enemy.thrust", sheet: "green", palette: "green", scale: SPRITE_SCALE },
   "enemy.slash": { id: "enemy.slash", sheet: "purple", palette: "purple", scale: SPRITE_SCALE },
   "enemy.ranged": { id: "enemy.ranged", sheet: "eye", palette: "eye", scale: 5 },
+  "enemy.charge": { id: "enemy.charge", sheet: "skull", palette: "skull", scale: SPRITE_SCALE },
 };
 
 export function getEnemyPresentationProfile(profileId: string): EnemyPresentationProfile | undefined {

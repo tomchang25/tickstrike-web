@@ -150,6 +150,8 @@ describe("player verbs", () => {
       "telegraph_changed",
       "enemy_moved",
       "enemy_moved",
+      "enemy_attack_committed",
+      "telegraph_changed",
       "world_advanced",
     ]);
     expect(occupied.events.map((event) => event.type)).toEqual([
@@ -162,6 +164,8 @@ describe("player verbs", () => {
       "telegraph_changed",
       "enemy_moved",
       "enemy_moved",
+      "enemy_attack_committed",
+      "telegraph_changed",
       "world_advanced",
     ]);
     expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 96, phase: "alive", guard: { current: 28 } });
@@ -206,6 +210,8 @@ describe("player verbs", () => {
       "telegraph_changed",
       "enemy_moved",
       "enemy_moved",
+      "enemy_attack_committed",
+      "telegraph_changed",
       "world_advanced",
     ]);
     expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 1, maxHp: 100, phase: "alive", guard: { current: 28 } });
@@ -247,6 +253,7 @@ describe("player verbs", () => {
       "telegraph_changed",
       "enemy_attack_committed",
       "telegraph_changed",
+      "enemy_moved",
       "world_advanced",
     ]);
     expect(world.playerCell).toEqual({ x: 9, y: 6 });
@@ -511,6 +518,7 @@ describe("playable encounter outcomes", () => {
     world.applyDamage("enemy-thrust", 100);
     world.applyDamage("enemy-slash", 100);
     world.applyDamage("enemy-ranged", 100);
+    world.applyDamage("enemy-charge", 150);
 
     const result = resolveCommand(world, {
       type: "move",

@@ -55,6 +55,7 @@ function context(
     canMove: (cell) => !blockedCells.has(key(cell)),
     canPathThrough: () => true,
     canEndAt: (cell) => !blockedCells.has(key(cell)),
+    isLegalTerrain: () => true,
   };
 }
 

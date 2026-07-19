@@ -1,7 +1,8 @@
 import type { CombatEvent } from "../events/combat-events";
-import { sameCell, type EntityState } from "../model/types";
-import type { World } from "../world/world";
+import { sameCell, type DamageResult, type EntityId, type EntityState } from "../model/types";
+import type { ChargeAttackResolution, World } from "../world/world";
 import {
+  chargeLiveRetarget,
   committedAttackFromDecision,
   decideEnemyAction,
   type EnemyActionDecision,
@@ -28,6 +29,90 @@ interface PendingMovement {
   nextCandidate: number;
 }
 
+function damageEventsFor(
+  world: World,
+  attackerId: EntityId,
+  targetId: EntityId,
+  damage: DamageResult,
+): CombatEvent[] {
+  const target = world.requireEntity(targetId);
+  if (target.kind === "player") {
+    const events: CombatEvent[] = [
+      { type: "player_damaged", playerId: targetId, damage, hp: target.hp, maxHp: target.maxHp },
+    ];
+    if (damage.killed) events.push({ type: "player_died", playerId: targetId, cell: target.cell });
+    return events;
+  }
+  const events: CombatEvent[] = [
+    {
+      type: "enemy_damaged",
+      enemyId: targetId,
+      hit: { ...damage, attackerId },
+      hp: target.hp,
+      maxHp: target.maxHp,
+    },
+  ];
+  if (damage.killed) events.push({ type: "enemy_died", enemyId: targetId, attackerId, cell: target.cell });
+  return events;
+}
+
+function chargeResolutionEvents(
+  world: World,
+  enemyId: EntityId,
+  resolution: ChargeAttackResolution,
+): CombatEvent[] {
+  const events: CombatEvent[] = [
+    { type: "enemy_attack_detonated", enemyId, attack: resolution.attack, target: resolution.impact.cell },
+  ];
+
+  for (const displacement of resolution.displacements) {
+    if (displacement.blocked && displacement.damage) {
+      events.push(...damageEventsFor(world, enemyId, displacement.entityId, displacement.damage));
+    }
+  }
+
+  if (resolution.impact.targetId) {
+    events.push({
+      type: "charge_impact",
+      enemyId,
+      targetId: resolution.impact.targetId,
+      cell: resolution.impact.cell,
+      outcome: resolution.impact.outcome,
+    });
+    if (resolution.impact.damage) {
+      events.push(...damageEventsFor(world, enemyId, resolution.impact.targetId, resolution.impact.damage));
+    }
+  } else {
+    events.push({ type: "charge_impact", enemyId, cell: resolution.impact.cell, outcome: "empty" });
+  }
+
+  for (const displacement of resolution.displacements) {
+    if (!displacement.blocked && displacement.to) {
+      events.push({
+        type: "entity_displaced",
+        entityId: displacement.entityId,
+        from: displacement.from,
+        to: displacement.to,
+        cause: "charge_side_push",
+      });
+    }
+  }
+  if (resolution.impact.outcome === "normal" && resolution.impact.targetId && resolution.impact.to) {
+    events.push({
+      type: "entity_displaced",
+      entityId: resolution.impact.targetId,
+      from: resolution.impact.from!,
+      to: resolution.impact.to,
+      cause: "charge_target_knockback",
+    });
+  }
+
+  events.push({ type: "charge_landed", enemyId, from: resolution.landing.from, to: resolution.landing.to });
+  events.push({ type: "telegraph_changed", sourceId: enemyId, cleared: true });
+  events.push({ type: "enemy_recovering", enemyId, recoveryTicks: resolution.attack.recoveryTicks });
+  return events;
+}
+
 export function resolveEnemyPhase(world: World): CombatEvent[] {
   const enemies = enabledEnemies(world);
   const readyAtStart = new Set(
@@ -47,9 +132,27 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
   for (const enemy of enemies) {
     const current = world.getEntity(enemy.id);
     if (!current || current.phase !== "alive" || current.activity !== "telegraphing") continue;
+
+    if (current.enemyAction?.role === "charge") {
+      const retarget = chargeLiveRetarget(current, world.playerCell, (cell) => world.isLegalCell(cell));
+      if (retarget) {
+        const result = world.retargetChargeAttack(current.id, retarget.path, retarget.facing);
+        if (result.changed && result.telegraph) {
+          events.push({ type: "telegraph_changed", sourceId: current.id, telegraph: result.telegraph, cleared: false });
+        }
+      }
+    }
+
     const telegraph = world.getTelegraph(enemy.id);
     const attack = world.decrementEnemyAttackWarning(enemy.id);
     if (!attack || attack.warningTicks > 0) continue;
+
+    if (current.enemyAction?.role === "charge") {
+      const chargeResolution = world.resolveChargeAttack(enemy.id);
+      if (!chargeResolution) continue;
+      events.push(...chargeResolutionEvents(world, enemy.id, chargeResolution));
+      continue;
+    }
 
     const resolution = world.resolveCommittedEnemyAttack(enemy.id);
     if (!resolution) continue;
@@ -106,6 +209,7 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
       canPathThrough: (cell) => world.isLegalCell(cell)
         && (world.playerCell === undefined || !sameCell(cell, world.playerCell)),
       canEndAt: (cell) => world.isWalkable(cell),
+      isLegalTerrain: (cell) => world.isLegalCell(cell),
     });
     decisions.push({ enemy: current, decision });
   }

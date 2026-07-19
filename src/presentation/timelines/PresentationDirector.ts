@@ -289,6 +289,52 @@ export class PresentationDirector {
           ));
           break;
         }
+        case "entity_displaced": {
+          const view = this.renderer.getEntityView(event.entityId);
+          if (!view) break;
+          const from = this.renderer.cellToPixels(event.from);
+          const to = this.renderer.cellToPixels(event.to);
+          animations.push(this.timelineDone(
+            gsap.timeline().fromTo(
+              view,
+              { x: from.x, y: from.y },
+              { x: to.x, y: to.y, duration: 0.18, ease: "power2.out" },
+            ),
+          ));
+          break;
+        }
+        case "charge_impact": {
+          const isBlocked = event.outcome === "blocked";
+          if (event.outcome === "empty") break;
+          const effect = this.renderer.createImpact(event.cell, isBlocked ? 0xff4444 : 0xffffff);
+          animations.push(this.timelineDone(
+            gsap
+              .timeline()
+              .fromTo(effect.scale, { x: 0.3, y: 0.3 }, {
+                x: isBlocked ? 2.4 : 2,
+                y: isBlocked ? 2.4 : 2,
+                duration: isBlocked ? 0.2 : 0.16,
+                ease: "power2.out",
+              })
+              .to(effect, { alpha: 0, duration: 0.12 }, "<0.06"),
+            () => this.renderer.releaseTransient(effect),
+          ));
+          break;
+        }
+        case "charge_landed": {
+          const view = this.renderer.getEntityView(event.enemyId);
+          if (!view) break;
+          const from = this.renderer.cellToPixels(event.from);
+          const to = this.renderer.cellToPixels(event.to);
+          animations.push(this.timelineDone(
+            gsap.timeline().fromTo(
+              view,
+              { x: from.x, y: from.y },
+              { x: to.x, y: to.y, duration: 0.22, ease: "power3.out" },
+            ),
+          ));
+          break;
+        }
         case "enemy_attack_interrupted": {
           this.renderer.getEnemyPresentation?.(event.enemyId)?.clearAction();
           break;

@@ -69,27 +69,27 @@ describe("role-neutral enemy action decisions", () => {
   });
 
   it("uses exactly one move, attack, or wait decision", () => {
-    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 3, y: 1 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 3, y: 1 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true })).toEqual({
       type: "attack",
       attack: thrust,
       cells: [{ x: 3, y: 2 }, { x: 3, y: 1 }, { x: 3, y: 0 }],
       facing: { x: 0, y: -1 },
     });
-    const firstMove = decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true });
+    const firstMove = decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true });
     expect(firstMove).toMatchObject({ type: "move" });
     expect(firstMove.type === "move" ? firstMove.candidates[0] : undefined).toMatchObject({ destination: { x: 3, y: 2 }, facing: { x: 0, y: -1 } });
 
-    const secondMove = decideEnemyAction({ enemy: enemy(), playerCell: { x: 6, y: 4 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true });
+    const secondMove = decideEnemyAction({ enemy: enemy(), playerCell: { x: 6, y: 4 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true });
     expect(secondMove).toMatchObject({ type: "move" });
     if (secondMove.type === "move") {
       expect(secondMove.candidates.length).toBeGreaterThan(0);
       expect(secondMove.candidates[0]!.path.length).toBeGreaterThan(0);
     }
-    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 4, y: 3 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true })).toMatchObject({
+    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 4, y: 3 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true })).toMatchObject({
       type: "attack",
       cells: [{ x: 4, y: 3 }, { x: 5, y: 3 }, { x: 6, y: 3 }],
     });
-    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, isInside: testBounds, canMove: () => false, canPathThrough: () => true, canEndAt: () => true })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, isInside: testBounds, canMove: () => false, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true })).toEqual({
       type: "wait",
     });
   });
@@ -108,6 +108,7 @@ describe("role-neutral enemy action decisions", () => {
       canMove: () => true,
       canPathThrough: () => true,
       canEndAt: () => true,
+      isLegalTerrain: () => true,
     });
 
     expect(decision).toMatchObject({
