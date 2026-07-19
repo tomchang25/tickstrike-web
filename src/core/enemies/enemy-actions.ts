@@ -11,7 +11,7 @@ import {
 } from "../model/types";
 import { findEnemyPaths } from "./enemy-path-planner";
 
-export type EnemyDecision =
+export type EnemyActionDecision =
   | { readonly type: "move"; readonly candidates: readonly EnemyMovementCandidate[] }
   | {
       readonly type: "attack";
@@ -179,7 +179,7 @@ function movementCandidates(
   });
 }
 
-export function decideEnemyAction(context: EnemyDecisionContext): EnemyDecision {
+export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDecision {
   const { enemy, playerCell } = context;
   const action = enemy.enemyAction;
   if (!action || enemy.phase !== "alive" || enemy.activity !== "ready" || !playerCell) {
@@ -223,7 +223,7 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyDecision 
 }
 
 export function committedAttackFromDecision(
-  decision: Extract<EnemyDecision, { type: "attack" }>,
+  decision: Extract<EnemyActionDecision, { type: "attack" }>,
 ): {
   readonly attackId: string;
   readonly role: string;

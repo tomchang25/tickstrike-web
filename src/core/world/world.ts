@@ -11,7 +11,7 @@ import {
   type CommittedAttack,
   type DamageResult,
   type DirectionalHitResult,
-  type EnemyDecision,
+  type EnemyDecisionKind,
   type EntityId,
   type EntityState,
   type EncounterOutcome,
@@ -441,7 +441,7 @@ export class World {
     this.entities.set(id, { ...entity, facing: cloneCell(facing) });
   }
 
-  setEnemyDecision(id: EntityId, decision: EnemyDecision): void {
+  setEnemyDecision(id: EntityId, decision: EnemyDecisionKind): void {
     const entity = this.entities.get(id);
     if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
     this.entities.set(id, { ...entity, lastDecision: decision });

@@ -4,7 +4,7 @@ import type { World } from "../world/world";
 import {
   committedAttackFromDecision,
   decideEnemyAction,
-  type EnemyDecision,
+  type EnemyActionDecision,
 } from "../enemies/enemy-actions";
 
 function enabledEnemies(world: World): readonly EntityState[] {
@@ -15,16 +15,16 @@ function enabledEnemies(world: World): readonly EntityState[] {
 
 interface EnemyDecisionRecord {
   readonly enemy: EntityState;
-  readonly decision: EnemyDecision;
+  readonly decision: EnemyActionDecision;
 }
 
 type MovementDecision = EnemyDecisionRecord & {
-  readonly decision: Extract<EnemyDecision, { type: "move" }>;
+  readonly decision: Extract<EnemyActionDecision, { type: "move" }>;
 };
 
 interface PendingMovement {
   readonly enemy: EntityState;
-  readonly decision: Extract<EnemyDecision, { type: "move" }>;
+  readonly decision: Extract<EnemyActionDecision, { type: "move" }>;
   nextCandidate: number;
 }
 

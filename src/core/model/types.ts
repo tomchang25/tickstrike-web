@@ -13,7 +13,7 @@ export type EntityPhase = "alive" | "drowning" | "dead";
 export type TerminalEntityPhase = Exclude<EntityPhase, "alive">;
 export type EncounterOutcome = "running" | "victory" | "defeat";
 export type EnemyActivity = "ready" | "telegraphing" | "recovering" | "staggered";
-export type EnemyDecision = "move" | "attack" | "wait";
+export type EnemyDecisionKind = "move" | "attack" | "wait";
 export type EnemyActionRole = string;
 export type EnemyAttackKind = string;
 
@@ -111,7 +111,7 @@ export interface EntityState {
   /** Immutable authored runtime data for an enabled enemy action. */
   readonly enemyAction?: EnemyActionDefinition;
   readonly activity?: EnemyActivity;
-  readonly lastDecision?: EnemyDecision;
+  readonly lastDecision?: EnemyDecisionKind;
   readonly facing?: Cell;
   readonly recoveryTicks?: number;
   readonly committedAttack?: CommittedAttack;
