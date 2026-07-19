@@ -1,11 +1,11 @@
 import type { CombatEvent } from "../events/combat-events";
-import type { EntityState } from "../model/types";
+import { sameCell, type EntityState } from "../model/types";
 import type { World } from "../world/world";
 import {
   committedAttackFromDecision,
   decideEnemyAction,
   type EnemyDecision,
-} from "../enemies/basic-enemy-actions";
+} from "../enemies/enemy-actions";
 
 function enabledEnemies(world: World): readonly EntityState[] {
   return world.listEntities().filter(
@@ -21,6 +21,12 @@ interface EnemyDecisionRecord {
 type MovementDecision = EnemyDecisionRecord & {
   readonly decision: Extract<EnemyDecision, { type: "move" }>;
 };
+
+interface PendingMovement {
+  readonly enemy: EntityState;
+  readonly decision: Extract<EnemyDecision, { type: "move" }>;
+  nextCandidate: number;
+}
 
 export function resolveEnemyPhase(world: World): CombatEvent[] {
   const enemies = enabledEnemies(world);
@@ -85,9 +91,13 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
     const decision = decideEnemyAction({
       enemy: current,
       playerCell: world.playerCell,
+      isInside: (cell) => world.isInside(cell),
       canMove: (destination) => destination.x !== world.playerCell?.x || destination.y !== world.playerCell?.y
         ? world.isWalkable(destination)
         : false,
+      canPathThrough: (cell) => world.isLegalCell(cell)
+        && (world.playerCell === undefined || !sameCell(cell, world.playerCell)),
+      canEndAt: (cell) => world.isWalkable(cell),
     });
     decisions.push({ enemy: current, decision });
   }
@@ -95,40 +105,77 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
   const movementDecisions = decisions.filter(
     (candidate): candidate is MovementDecision => candidate.decision.type === "move",
   );
-  const movementReservations = world.requestMovementReservations(
-    movementDecisions.map(({ enemy, decision }) => ({
-      ownerId: enemy.id,
-      purpose: "movement" as const,
-      activeStep: true as const,
-      cells: [decision.destination],
-    })),
+  const pendingMovements = new Map<string, PendingMovement>(
+    movementDecisions.map(({ enemy, decision }) => [enemy.id, { enemy, decision, nextCandidate: 0 }]),
   );
 
-  try {
-    for (const [index, candidate] of movementDecisions.entries()) {
-      const reservation = movementReservations[index];
-      if (!reservation?.granted) {
-        movementEvents.set(candidate.enemy.id, { type: "enemy_waited", enemyId: candidate.enemy.id });
-        continue;
+  while (pendingMovements.size > 0) {
+    const claims: PendingMovement[] = [];
+    for (const pending of pendingMovements.values()) {
+      while (
+        pending.nextCandidate < pending.decision.candidates.length
+        && !world.isWalkable(pending.decision.candidates[pending.nextCandidate]!.destination)
+      ) {
+        pending.nextCandidate += 1;
       }
-      const current = world.getEntity(candidate.enemy.id);
-      if (!current || current.phase !== "alive") {
-        movementEvents.set(candidate.enemy.id, { type: "enemy_waited", enemyId: candidate.enemy.id });
-        continue;
-      }
-      const from = current.cell;
-      world.setEnemyFacing(current.id, candidate.decision.facing);
-      world.setEnemyDecision(current.id, "move");
-      world.moveEntity(current.id, candidate.decision.destination);
-      movementEvents.set(current.id, {
-        type: "enemy_moved",
-        enemyId: current.id,
-        from,
-        to: candidate.decision.destination,
-      });
+      if (pending.nextCandidate < pending.decision.candidates.length) claims.push(pending);
     }
-  } finally {
-    for (const candidate of movementDecisions) world.releaseReservation(candidate.enemy.id);
+
+    if (claims.length === 0) {
+      for (const pending of pendingMovements.values()) {
+        movementEvents.set(pending.enemy.id, { type: "enemy_waited", enemyId: pending.enemy.id });
+      }
+      pendingMovements.clear();
+      break;
+    }
+
+    const reservations = world.requestMovementReservations(
+      claims.map((pending) => ({
+        ownerId: pending.enemy.id,
+        purpose: "movement" as const,
+        activeStep: true as const,
+        cells: [pending.decision.candidates[pending.nextCandidate]!.destination],
+      })),
+    );
+    const winners: PendingMovement[] = [];
+    for (const [index, pending] of claims.entries()) {
+      if (reservations[index]?.granted) {
+        winners.push(pending);
+      } else {
+        pending.nextCandidate += 1;
+      }
+    }
+
+    try {
+      for (const pending of winners) {
+        const current = world.getEntity(pending.enemy.id);
+        if (!current || current.phase !== "alive") {
+          movementEvents.set(pending.enemy.id, { type: "enemy_waited", enemyId: pending.enemy.id });
+          continue;
+        }
+        const candidate = pending.decision.candidates[pending.nextCandidate]!;
+        const from = current.cell;
+        world.setEnemyFacing(current.id, candidate.facing);
+        world.setEnemyDecision(current.id, "move");
+        world.moveEntity(current.id, candidate.destination);
+        movementEvents.set(current.id, {
+          type: "enemy_moved",
+          enemyId: current.id,
+          from,
+          to: candidate.destination,
+        });
+      }
+    } finally {
+      for (const claim of claims) world.releaseReservation(claim.enemy.id);
+    }
+
+    for (const winner of winners) pendingMovements.delete(winner.enemy.id);
+    for (const pending of [...pendingMovements.values()]) {
+      if (pending.nextCandidate >= pending.decision.candidates.length) {
+        movementEvents.set(pending.enemy.id, { type: "enemy_waited", enemyId: pending.enemy.id });
+        pendingMovements.delete(pending.enemy.id);
+      }
+    }
   }
 
   for (const { enemy, decision } of decisions) {

@@ -84,4 +84,29 @@ describe("world reservations and telegraphs", () => {
     expect(decisions.every((decision) => !decision.accepted)).toBe(true);
     expect(world.listReservations()).toEqual([]);
   });
+
+  it("allows a losing movement intent to retry a different candidate", () => {
+    const world = createShippedArena();
+    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 6, y: 6 }, hp: 10 });
+    world.spawn({ id: "enemy-a", kind: "enemy", archetype: "enemy", cell: { x: 2, y: 2 }, hp: 10 });
+    world.spawn({ id: "enemy-b", kind: "enemy", archetype: "enemy", cell: { x: 4, y: 2 }, hp: 10 });
+
+    const firstRound = world.requestMovementReservations([
+      { ownerId: "enemy-a", purpose: "movement", activeStep: true, cells: [{ x: 3, y: 2 }] },
+      { ownerId: "enemy-b", purpose: "movement", activeStep: true, cells: [{ x: 3, y: 2 }] },
+    ]);
+    expect(firstRound.map((decision) => decision.granted)).toEqual([false, true]);
+
+    world.moveEntity("enemy-b", { x: 3, y: 2 });
+    world.releaseReservation("enemy-b");
+    const retry = world.requestMovementReservations([
+      { ownerId: "enemy-a", purpose: "movement", activeStep: true, cells: [{ x: 2, y: 3 }] },
+    ]);
+
+    expect(retry[0]).toMatchObject({ accepted: true, granted: true });
+    world.moveEntity("enemy-a", { x: 2, y: 3 });
+    world.releaseReservation("enemy-a");
+    expect(world.requireEntity("enemy-a").cell).toEqual({ x: 2, y: 3 });
+    expect(world.listReservations()).toEqual([]);
+  });
 });

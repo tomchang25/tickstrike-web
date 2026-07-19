@@ -46,8 +46,16 @@ export interface EnemyActionDefinition {
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
-/** @deprecated Use EnemyActionDefinition for all authored enemy roles. */
-export type BasicEnemyActionDefinition = EnemyActionDefinition;
+export interface EnemyMovementCandidate {
+  /** The one cell that may be applied during the current enemy action. */
+  readonly destination: Cell;
+  /** The complete planned route, including destination and its final goal. */
+  readonly path: readonly Cell[];
+  /** The attack-origin or approach cell reached by the planned route. */
+  readonly goal: Cell;
+  /** Facing used when the first movement step is applied. */
+  readonly facing: Cell;
+}
 
 export interface CommittedAttack {
   readonly attackId: string;

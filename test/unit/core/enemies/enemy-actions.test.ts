@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  attackOriginCellsFromShape,
   decideEnemyAction,
   rotatedAttackCells,
   rotateLocalOffset,
-} from "../../../../src/core/enemies/basic-enemy-actions";
+} from "../../../../src/core/enemies/enemy-actions";
 import type { EnemyActionDefinition, EntityState } from "../../../../src/core/model/types";
 import { resolveCommand } from "../../../../src/core/actions/action-resolver";
 import { createShippedArena } from "../../../../src/harness/fixtures/shipped-arena";
@@ -35,7 +36,11 @@ function enemy(overrides: Partial<EntityState> = {}): EntityState {
   };
 }
 
-describe("basic enemy action decisions", () => {
+function testBounds(cell: { x: number; y: number }): boolean {
+  return cell.x >= 0 && cell.x < 9 && cell.y >= 0 && cell.y < 9;
+}
+
+describe("role-neutral enemy action decisions", () => {
   it("rotates local offsets for every cardinal facing", () => {
     expect(rotateLocalOffset({ x: 2, y: 1 }, { x: 1, y: 0 })).toEqual({ x: 2, y: 1 });
     expect(rotateLocalOffset({ x: 2, y: 1 }, { x: 0, y: 1 })).toEqual({ x: -1, y: 2 });
@@ -48,33 +53,43 @@ describe("basic enemy action decisions", () => {
     ]);
   });
 
+  it("derives attack origins by reversing the authored shape", () => {
+    const origins = attackOriginCellsFromShape({ x: 3, y: 2 }, thrust);
+    expect(origins).toHaveLength(12);
+    expect(origins).toEqual(expect.arrayContaining([
+      { x: 2, y: 2 },
+      { x: 1, y: 2 },
+      { x: 3, y: 1 },
+      { x: 3, y: 0 },
+      { x: 4, y: 2 },
+      { x: 5, y: 2 },
+      { x: 3, y: 3 },
+      { x: 3, y: 4 },
+    ]));
+  });
+
   it("uses exactly one move, attack, or wait decision", () => {
-    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 3, y: 1 }, canMove: () => true })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 3, y: 1 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true })).toEqual({
       type: "attack",
       attack: thrust,
       cells: [{ x: 3, y: 2 }, { x: 3, y: 1 }, { x: 3, y: 0 }],
       facing: { x: 0, y: -1 },
     });
-    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, canMove: () => true })).toEqual({
-      type: "move",
-      destination: { x: 3, y: 2 },
-      facing: { x: 0, y: -1 },
-    });
-    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 6, y: 4 }, canMove: (destination) => destination.y === 2 })).toEqual({
-      type: "move",
-      destination: { x: 3, y: 2 },
-      facing: { x: 0, y: -1 },
-    });
-    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 6, y: 4 }, canMove: (destination) => destination.y === 2 })).toEqual({
-      type: "move",
-      destination: { x: 3, y: 2 },
-      facing: { x: 0, y: -1 },
-    });
-    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 4, y: 3 }, canMove: () => true })).toMatchObject({
+    const firstMove = decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true });
+    expect(firstMove).toMatchObject({ type: "move" });
+    expect(firstMove.type === "move" ? firstMove.candidates[0] : undefined).toMatchObject({ destination: { x: 3, y: 2 }, facing: { x: 0, y: -1 } });
+
+    const secondMove = decideEnemyAction({ enemy: enemy(), playerCell: { x: 6, y: 4 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true });
+    expect(secondMove).toMatchObject({ type: "move" });
+    if (secondMove.type === "move") {
+      expect(secondMove.candidates.length).toBeGreaterThan(0);
+      expect(secondMove.candidates[0]!.path.length).toBeGreaterThan(0);
+    }
+    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 4, y: 3 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true })).toMatchObject({
       type: "attack",
       cells: [{ x: 4, y: 3 }, { x: 5, y: 3 }, { x: 6, y: 3 }],
     });
-    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, canMove: () => false })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, isInside: testBounds, canMove: () => false, canPathThrough: () => true, canEndAt: () => true })).toEqual({
       type: "wait",
     });
   });
@@ -89,7 +104,10 @@ describe("basic enemy action decisions", () => {
     const decision = decideEnemyAction({
       enemy: enemy({ enemyAction: action }),
       playerCell: { x: 3, y: 1 },
+      isInside: testBounds,
       canMove: () => true,
+      canPathThrough: () => true,
+      canEndAt: () => true,
     });
 
     expect(decision).toMatchObject({
@@ -99,7 +117,7 @@ describe("basic enemy action decisions", () => {
   });
 });
 
-describe("basic enemy tick lifecycle", () => {
+describe("shared enemy tick lifecycle", () => {
   function createWorld() {
     const world = createShippedArena();
     world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 6, y: 6 }, hp: 100 });
