@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "kappa_drown",
+  "frames_per_direction": 8,
+  "source_pose_sequence": [0, 1, 3, 2, 1, 0, 0, 0],
+  "frame_durations_ms": [100, 90, 90, 110, 130, 160, 220, 320],
+  "anchor": { "type": "bottom_center", "x": 8, "y": 15 },
+  "overflow_policy": "clip",
+  "effect_coordinate_space": "actor",
+  "end_state": "despawn",
+  "recipe_status": "draft"
+}

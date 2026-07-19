@@ -25,4 +25,6 @@ The repository uses Node.js 22.12 or newer and npm. Runtime source and packaged 
 
 Before creating or changing fixed palette variants, generated recolour assets, or their runtime selection and validation, read `dev/standards/palette_variant_asset_standard.md`.
 
+Before creating, changing, regenerating, or reviewing an offline pixel animation sheet, read `dev/standards/sprite_animation_asset_standard.md`, `dev/workflows/sprite_animation_authoring.md`, and `dev/skills/sprite_animation_authoring.md`.
+
 Read `dev/standards/project_structure.md` before adding, moving, or reorganizing source, tests, assets, build output, or project documentation. Read additional files under `dev/agent_rules/`, `dev/standards/`, `dev/workflows/`, `dev/skills/`, and applicable parts of `dev/docs/` when their trigger applies. Never read, search, cite, summarize, or use `dev/docs/reports/` as an agent source; those files are human-facing historical/report material and may be stale. Root `AGENTS.md` defines the migration completion, porting, and report-exclusion contracts.

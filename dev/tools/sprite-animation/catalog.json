@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "directions": ["down", "up", "left", "right"],
+  "targets": {
+    "thrust_enemy": {
+      "family": "kappa",
+      "source": "src/content/enemies/assets/kappa-green-sprite-sheet.png",
+      "effects": { "entered_water": "kappa_drown" }
+    },
+    "slash_enemy": {
+      "family": "kappa",
+      "source": "src/content/enemies/assets/kappa-purple-sprite-sheet.png",
+      "effects": { "entered_water": "kappa_drown" }
+    },
+    "charge_enemy": {
+      "family": "skull",
+      "source": "src/content/enemies/assets/skull-sprite-sheet.png",
+      "effects": { "entered_water": "skull_extinguish" }
+    },
+    "bomb_enemy": {
+      "family": "lantern",
+      "source": "src/content/enemies/assets/lantern-red-sprite-sheet.png",
+      "effects": { "entered_water": null }
+    },
+    "eye": {
+      "family": "eye",
+      "source": "src/content/enemies/assets/eye-sprite-sheet.png",
+      "effects": { "split": "eye_split" }
+    }
+  }
+}

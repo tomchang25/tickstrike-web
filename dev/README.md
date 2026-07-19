@@ -7,6 +7,7 @@ This directory is the entry point for Tickstrike Web development governance, doc
 - `standards/` contains durable project-specific output contracts.
 - `docs/` contains product, migration, system, and tracking documents.
 - `workflows/` contains project-owned workflow addenda, including the draft implementation-spec lifecycle.
-- `skills/` and `tools/` are reserved for project-owned additions of those artifact types.
+- `skills/` contains focused project recipes and hazard cards.
+- `tools/` contains project-owned executable development tooling and its resources.
 
 Use `foundation/core/standards/governance_structure_standard.md` to classify additions. The canonical repository layout is `standards/project_structure.md`.

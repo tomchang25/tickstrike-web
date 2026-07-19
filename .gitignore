@@ -6,7 +6,10 @@ coverage/
 .vite/
 src-tauri/target/
 *.log
+*.pyc
 .DS_Store
 port-ref/
 
 /assets
+/tmp
+
