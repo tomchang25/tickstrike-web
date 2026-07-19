@@ -365,8 +365,9 @@ export function previewDash(
   }
 
   const path: Cell[] = [];
-  const victims: MobilityHitPreview[] = [];
+  const victims: Array<{ readonly step: number; readonly preview: MobilityHitPreview }> = [];
   let landing: Cell | undefined;
+  let landingStep = -1;
   for (let step = 1; step <= requestedDistance; step += 1) {
     const candidate = add(actor.cell, multiply(direction, step));
     if (!isWalkable(snapshot, candidate, true)) break;
@@ -374,23 +375,43 @@ export function previewDash(
     const enemy = entityAt(snapshot, candidate, "enemy");
     if (enemy) {
       if (mobility.damage > 0) {
-        victims.push(previewMobilityHit(actor, enemy, add(enemy.cell, multiply(direction, -1)), mobility.damage, mobility.staggerMultiplier));
+        victims.push({
+          step,
+          preview: previewMobilityHit(
+            actor,
+            enemy,
+            add(enemy.cell, multiply(direction, -1)),
+            mobility.damage,
+            mobility.staggerMultiplier,
+          ),
+        });
       }
     } else {
       landing = candidate;
+      landingStep = step;
     }
   }
 
   if (!landing) {
-    return { accepted: false, direction, path, victims, reason: "Dash has no legal landing cell." };
+    return {
+      accepted: false,
+      direction,
+      path,
+      victims: victims.map(({ preview }) => preview),
+      reason: "Dash has no legal landing cell.",
+    };
   }
+
+  const travelPath = path.slice(0, landingStep);
 
   return {
     accepted: true,
     direction,
-    path,
+    path: travelPath,
     landing,
-    victims,
+    victims: victims
+      .filter(({ step }) => step <= landingStep)
+      .map(({ preview }) => preview),
   };
 }
 

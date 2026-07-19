@@ -77,6 +77,33 @@ describe("action previews", () => {
     });
   });
 
+  it("does not hit an enemy on the selected blocked grid after the landing cell", () => {
+    const world = createFoundationArena();
+
+    const preview = previewDash(world, "player", { x: 1, y: 0 }, 2);
+
+    expect(preview).toMatchObject({
+      accepted: true,
+      path: [{ x: 7, y: 6 }],
+      landing: { x: 7, y: 6 },
+      victims: [],
+    });
+
+    const result = resolveCommand(world, {
+      type: "dash",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+      distance: 2,
+    });
+
+    expect(result.events).not.toContainEqual(expect.objectContaining({
+      type: "enemy_damaged",
+      enemyId: "enemy-slash",
+    }));
+    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 100, phase: "alive" });
+    expect(world.playerCell).toEqual({ x: 7, y: 6 });
+  });
+
   it("shares the predicted Dash hit with the committed directional result", () => {
     const world = createFoundationArena();
     const preview = previewDash(world, "player", { x: 1, y: 0 }, 3);

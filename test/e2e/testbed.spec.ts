@@ -282,6 +282,37 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   expect(observedEventTypes).toEqual(await page.getByTestId("event-log").locator("li").allTextContents());
 });
 
+test("Dash aimed at an enemy lands before it without dealing damage", async ({ page }) => {
+  await page.goto("/?scenario=tick-arena");
+
+  const canvas = page.getByTestId("game-canvas");
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("Game canvas has no layout box.");
+
+  const enemyTarget = {
+    x: box.x + ((8 + 0.5) / 12) * box.width,
+    y: box.y + ((6 + 0.5) / 12) * box.height,
+  };
+  await page.keyboard.down("Alt");
+  await page.mouse.move(enemyTarget.x, enemyTarget.y);
+  await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "7,6");
+  await page.mouse.click(enemyTarget.x, enemyTarget.y);
+  await page.keyboard.up("Alt");
+
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "100");
+
+  const lastEvents = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents);
+  expect(lastEvents).not.toContainEqual(expect.objectContaining({
+    type: "enemy_damaged",
+    enemyId: "enemy-slash",
+  }));
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+});
+
 test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets cleanly", async ({ page }) => {
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
