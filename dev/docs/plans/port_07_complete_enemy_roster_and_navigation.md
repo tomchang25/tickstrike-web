@@ -23,17 +23,17 @@ Navigation remains board-authoritative. If two enemies want one cell, the world 
 
 ### Child Overview
 
-The children are prepared as draft implementation specs without an exploratory sketch because each boundary is already settled and independently testable. They are executable only in this order:
+The ordered children use implementation specs without exploratory sketches because each boundary is settled and independently testable. They are executable only in this order:
 
 | Child | Focus | Current document |
 | --- | --- | --- |
 | A | Shared enemy action snapshot, locked attack lifecycle, and deterministic navigation | [Draft Implementation Spec](port_07_a_shared_enemy_action_and_navigation.implementation_spec.md) |
 | A1 | Reference-aligned shape-driven navigation, movement retry, and enemy API cleanup | [Implementation Spec](port_07_a1_shape_driven_navigation_and_api_cleanup.implementation_spec.md) |
 | A2 | Shared Thrust/Slash Kappa sprites, palette parity, and state-driven presentation feedback | [Implementation Spec](port_07_a2_small_enemy_sprite_and_state_animation.implementation_spec.md) |
-| B | Ranged distance-band movement and target-centered Cross pressure | [Draft Implementation Spec](port_07_b_ranged_enemy.implementation_spec.md) |
-| C | Charge line commitment, detonation, and landing movement | [Draft Implementation Spec](port_07_c_charge_enemy.implementation_spec.md) |
-| D | Bomb adjacent commitment, locked area detonation, and self-destruction | [Draft Implementation Spec](port_07_d_bomb_enemy.implementation_spec.md) |
-| E | Mode attack selection, retaliation, and the Boss policy seam | [Draft Implementation Spec](port_07_e_mode_enemy_and_boss_policy.implementation_spec.md) |
+| B | Ranged distance-band movement and target-centered Cross pressure | [Implementation Spec](port_07_b_ranged_enemy.implementation_spec.md) |
+| C | Charge line commitment, detonation, and landing movement | [Implementation Spec](port_07_c_charge_enemy.implementation_spec.md) |
+| D | Bomb adjacent commitment, locked area detonation, and self-destruction | [Implementation Spec](port_07_d_bomb_enemy.implementation_spec.md) |
+| E | Mode attack selection, retaliation, and the Boss policy seam | [Implementation Spec](port_07_e_mode_enemy_and_boss_policy.implementation_spec.md) |
 
 Child A establishes the shared contract before any role-specific behavior lands. Child A2 establishes the shared Thrust/Slash presentation seam after the action and navigation children; later role children extend that same `tick-arena` scenario and do not create another runtime, route, or presentation boundary.
 

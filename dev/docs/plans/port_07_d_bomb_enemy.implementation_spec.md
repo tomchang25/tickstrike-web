@@ -2,68 +2,91 @@
 
 Parent Plan: `port_07_complete_enemy_roster_and_navigation.md`
 
-Status: Draft implementation spec
-
 ## Goal
 
-Activate Bomb as a guardless Special enemy that approaches the player's adjacent ring, locks a Manhattan-area explosion, and self-destructs after the fuse. Killing Bomb before detonation must disarm it completely.
+Activate Bomb on the existing enemy activity model as a guardless Special enemy. Bomb must commit only from the player's adjacent ring, lock a radius-four Manhattan explosion around its own cell, and self-destruct exactly once when the fuse resolves.
 
 ## Summary
 
-Bomb uses the authored adjacent commitment tuning, radius-four Manhattan attack, 50 damage, and three-tick warning. The commitment center is Bomb's own cell at the moment of commitment and remains fixed through the fuse. Detonation checks the player's post-action cell, emits the explosion result, then transitions Bomb to terminal state without entering recovery or Guard/Stagger.
+The A/A1 shared action lifecycle already owns accepted-Tick gating, commitment, telegraph countdown, reservations, event ordering, and terminal cleanup. This child adds Bomb's adjacent-ring decision, self-centered area geometry, guardless countdown handling, and terminal detonation follow-up.
+
+`bomb_enemy` uses `bomb_area`, 50 HP, no Guard, 3 warning ticks, 1 authored recovery tick, and a Manhattan radius-four area. The adjacent commitment ring includes all eight neighboring cells and excludes Bomb's own cell. On commitment, Bomb snapshots its own cell as the explosion center and keeps that center fixed through the fuse. At resolution, the post-action player cell is checked against the locked area, the result is emitted, and Bomb transitions directly to terminal state. Bomb never enters Guard, Stagger, or recovery.
+
+Killing Bomb before warning reaches zero disarms it. World clears its pending attack and telegraph through the existing terminal path, so no later phase can detonate or display a stale logical effect.
 
 ## Relational Context
 
-- Child A owns generic attack commitment, terminal cleanup, and event ordering; Bomb supplies adjacent-ring eligibility and self-destruct resolution.
-- Bomb has no Guard runtime. Shared status advancement must still handle its attack countdown and terminal transition without assuming every enabled enemy has Guard.
-- World remains the sole owner of HP, terminal phase, occupancy, reservations, telegraph cleanup, and encounter outcome.
-- A player hit during the fuse uses the normal damage path. If Bomb becomes terminal, its pending attack and telegraph are cleared before any later enemy phase.
-- Presentation consumes Bomb commit, detonation, damage, and terminal events; the fuse visual is not a gameplay timer.
+- A and A1 own the role-neutral committed snapshot, one-action Tick, reservation arbitration, telegraph ownership, event ordering, and terminal cleanup. Bomb must not add a second runtime or bypass those operations.
+- The content/harness boundary resolves `bomb_enemy` with `role: "bomb"`, `{ type: "bomb", commitment: "adjacent" }` metadata, `bomb_area` timing/damage, and normalized Manhattan offsets.
+- `EntityState.guard` remains optional. `advanceEnemyStatuses()` and all generic attack countdown paths must not require Guard for an enabled Bomb; the absence of Guard must not disable countdown processing for other enemies.
+- World remains authoritative for HP, phase, occupancy, reservations, telegraphs, and encounter outcome. The self-destruct transition must be atomic with pending-attack cleanup.
+- Bomb detonation must use the same `enemy_attack_detonated` and player damage events as other enemies, plus a semantic self-destruct result so browser assertions can distinguish a miss from an enemy that simply recovered.
+- A2's presentation director owns timeline lifetime. Bomb uses a standalone profile and fuse-blink visual, but the fuse visual is never a gameplay timer and must be killed on disarm, reset, terminal removal, or generation replacement.
 
 ## Scope
 
 ### Included
 
 - Guardless Bomb activation in the shared arena.
-- Adjacent-ring commitment and radius-four Manhattan footprint.
-- Three-tick locked fuse and self-destruction on resolution.
-- Disarm, reset, terminal cleanup, unit, and browser coverage.
+- Eight-cell adjacent-ring eligibility.
+- Radius-four Manhattan footprint centered on Bomb's commit cell.
+- Three accepted-Tick warning countdown and locked hit/miss resolution.
+- Atomic self-destruction, kill-before-fuse disarm, reset cleanup, unit, and browser coverage.
+- Standalone Bomb sprite profile and independent fuse-blink presentation.
 
 ### Excluded
 
 - Guard, Stagger, Protection, or Bomb recovery behavior.
-- New explosion damage falloff, physics, or terrain destruction.
-- Waves, spawn warnings, rewards, and additional Special roles.
+- Damage falloff, physics, terrain destruction, waves, spawn warnings, rewards, and additional Special roles.
 
 ## Files to Change
 
 | File | Change Size | Purpose |
 | --- | --- | --- |
-| `src/core/model/types.ts` | Medium | Represent guardless self-destruct and terminal attack metadata in the runtime snapshot. |
-| `src/core/world/world.ts` | Medium | Resolve Bomb's locked damage, terminal transition, and no-recovery cleanup. |
-| `src/core/enemies/basic-enemy-actions.ts` | Medium | Add adjacent-ring eligibility and Manhattan geometry to the shared action boundary. |
-| `src/core/actions/enemy-phase.ts` | Medium | Resolve Bomb detonation without requiring Guard status advancement. |
-| `src/core/events/combat-events.ts` | Medium | Add an observable self-destruct result while preserving standard terminal events. |
-| `src/harness/fixtures/shipped-arena.ts` | Medium | Add deterministic Bomb placement to the existing scenario. |
-| `src/presentation/timelines/PresentationDirector.ts` | Small | Present Bomb explosion and terminal cleanup without orphan effects. |
-| `test/unit/core/enemies/bomb-enemy-actions.test.ts` | Large | Assert commitment, footprint lock, fuse, disarm, self-death, and reset. |
-| `test/unit/core/world/world.test.ts` | Medium | Assert guardless terminal cleanup and no later detonation. |
-| `test/e2e/testbed.spec.ts` | Medium | Observe Bomb fuse, hit/miss detonation, self-destruction, and idle cleanup. |
+| `src/core/model/types.ts` | Medium | Add the narrow guardless/self-destruct and terminal follow-up snapshot data required by World and events. |
+| `src/core/enemies/enemy-actions.ts` | Medium | Add adjacent-ring eligibility and self-centered Manhattan geometry. |
+| `src/core/actions/enemy-phase.ts` | Medium | Resolve Bomb detonation without requiring Guard or entering recovery. |
+| `src/core/world/world.ts` | Medium | Apply locked Bomb damage, clear telegraph, and atomically transition Bomb to terminal state. |
+| `src/core/events/combat-events.ts` | Medium | Add an observable Bomb self-destruct result while retaining standard terminal events. |
+| `src/harness/fixtures/shipped-arena.ts` | Medium | Add deterministic Bomb placement and a kill-before-fuse scenario setup. |
+| `src/content/enemies/assets/lantern_red_sprite_sheet.png` | Small | Package the authored Bomb runtime sprite. |
+| `src/presentation/pixi/enemy-sprites.ts` | Medium | Add Bomb profile and fuse-blink controls. |
+| `src/presentation/timelines/PresentationDirector.ts` | Medium | Present fuse blink, explosion, self-destruct, cancellation, and terminal cleanup without orphan effects. |
+| `test/unit/core/enemies/bomb-enemy-actions.test.ts` | Large | Assert commitment, footprint lock, fuse, disarm, hit/miss self-death, and reset. |
+| `test/unit/core/world/world.test.ts` | Medium | Assert guardless countdown, atomic terminal cleanup, occupancy release, and no later detonation. |
+| `test/e2e/testbed.spec.ts` | Medium | Observe Bomb fuse, hit/miss detonation, self-destruction, kill-before-fuse, reset, and idle cleanup. |
 
 ## Execution Outline
 
-1. Add adjacent-ring and Manhattan footprint tests using authored Bomb data.
-2. Implement guardless Bomb commitment and locked fuse through the shared lifecycle without adding a separate runtime.
-3. Resolve the explosion and terminal transition atomically, including the self-destruct event and presentation cleanup.
-4. Add kill-before-fuse, miss, reset, and browser scenarios in the same deterministic arena.
+1. Add pure adjacent-ring and Manhattan footprint tests using the authored Bomb data.
+2. Normalize Bomb role metadata in the fixture/action boundary and implement the guardless decision branch without changing generic countdown behavior.
+3. Resolve the locked explosion and terminal transition atomically, emitting the self-destruct event exactly once and never starting recovery.
+4. Add Bomb to the same deterministic arena and presentation registry, then cover hit, miss, kill-before-fuse, reset, and browser cleanup.
 
 ## Implementation Notes
 
-- The adjacent ring includes all eight neighboring cells and excludes Bomb's own cell.
-- The Manhattan footprint is centered on Bomb's commit cell, not the player cell, and includes only in-bounds legal cells.
-- Bomb self-destructs on both hit and miss. It never starts recovery after detonation.
-- A terminal Bomb must release occupancy and clear the telegraph immediately; the visual explosion may finish asynchronously.
-- Do not make Bomb's absence of Guard disable generic attack countdown processing for other roles.
+- Adjacent eligibility is `max(abs(dx), abs(dy)) === 1`; it includes diagonal neighbors and excludes zero distance.
+- Generate the explosion from Bomb's commit cell, not the player cell. Include all in-bounds cells whose Manhattan distance from the center is at most 4; remove duplicates.
+- The committed snapshot must include the center and a terminal/self-destruct marker, for example `{ center, selfDestruct: true }`. Warning, damage, recovery, and attack ID remain copied from authored data.
+- The fuse decrements only during accepted world advancement. Rejected commands do not decrement it. With warning 3 at commitment, three subsequent accepted enemy phases reach detonation.
+- At detonation, clear the telegraph, evaluate the post-action player cell against the locked cells, apply player damage if present, emit `enemy_attack_detonated`, emit the player result events, emit `enemy_self_destructed`, and transition Bomb to terminal state.
+- The terminal operation must release occupancy, reservations, telegraph, committed attack, and activity in one World-owned mutation. Presentation may retain an explosion/death visual after the logical transition.
+- Bomb self-destructs on both hit and miss and does so exactly once. It must not call the generic recovery path.
+- If Bomb becomes terminal before fuse completion, existing terminal cleanup clears the committed attack and telegraph; the countdown loop must skip it.
+- Do not use a missing Guard as a signal to skip generic processing for other enabled enemies.
+
+## Sprite Requirements
+
+Bomb uses a standalone profile and adds a fuse blink independent from the damage-flash tint channel.
+
+| Asset | Source | Sheet Layout | Scale | Palette | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `lantern_red_sprite_sheet.png` | `bomb_enemy/assets/lantern_red_sprite_sheet.png` | 4×4: columns down, up, left, right; rows idle, move, prepare, commit | 5× | Dark red/black tones | Standalone sheet |
+
+- Use nearest-neighbour filtering, the shared directional frame selector, and the A2 cell-relative scale convention.
+- Use standard move/prepare/commit/damage/death feedback plus a profile-local alpha blink: 0.22s interval during fuse start and 0.09s interval after commitment, with a minimum alpha of 0.35.
+- Keep blink on the sprite alpha/self-modulate channel separate from damage tint/modulate. Kill it on disarm, detonation, death, reset, and presentation generation cancellation.
+- Do not add a presentation-owned gameplay timer or a Godot `force_death()` equivalent. The director reacts to semantic events and the World owns terminal state.
 
 ## Edge Cases
 
@@ -71,13 +94,15 @@ Bomb uses the authored adjacent commitment tuning, radius-four Manhattan attack,
 | --- | --- |
 | Player is diagonally adjacent | Bomb may commit because the full eight-cell ring is valid. |
 | Player shares Bomb's cell | Bomb does not commit from zero distance. |
-| Player leaves the footprint before detonation | The explosion resolves with no player damage but Bomb still self-destructs. |
-| Bomb dies before the fuse ends | The pending attack, telegraph, and later explosion are cancelled. |
-| Reset occurs during the fuse | The replacement world has no pending Bomb attack, telegraph, or transient effect. |
+| Player leaves the footprint before detonation | Resolve with no player damage, then self-destruct. |
+| Bomb dies before the fuse ends | Clear attack, telegraph, reservations, fuse visual, and later explosion. |
+| Reset occurs during the fuse | Replacement World has no Bomb attack, telegraph, reservation, or transient fuse effect. |
+| Bomb has no Guard | It still decrements warning and resolves normally; no Guard/Stagger access is attempted. |
+| Bomb reaches an arena edge | Commit only in-bounds cells; do not create duplicate footprint cells. |
 
 ## Acceptance Criteria
 
-1. Bomb commits only from the authored adjacent ring and locks a radius-four Manhattan footprint.
-2. The footprint and damage remain fixed for three accepted world advances and resolve against the post-action player cell.
-3. Bomb self-destructs exactly once on hit or miss, never enters Guard/Stagger/recovery, and is disarmed by earlier death.
-4. Unit and browser assertions prove terminal occupancy, telegraph, event, and presentation cleanup.
+1. Bomb commits only from the authored eight-cell adjacent ring and locks a radius-four Manhattan footprint centered on Bomb.
+2. The footprint and 50 damage remain fixed through three accepted world advances and resolve against the post-action player cell.
+3. Bomb self-destructs exactly once on hit or miss, never enters Guard/Stagger/recovery, and is fully disarmed by earlier death.
+4. Unit and browser assertions prove terminal occupancy release, telegraph/event cleanup, fuse cancellation, and an idle presentation.
