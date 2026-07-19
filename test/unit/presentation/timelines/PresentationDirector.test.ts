@@ -34,6 +34,7 @@ function createRenderer() {
     removeEntityView: vi.fn(),
     setPlayerAnimation: vi.fn(),
     setPlayerFacing: vi.fn(),
+    getEnemyPresentation: vi.fn(() => undefined),
     get transientCount() {
       return effects.size;
     },
@@ -157,6 +158,30 @@ describe("PresentationDirector combat feedback", () => {
     expect(renderer.releaseTransient).toHaveBeenCalledOnce();
     expect(renderer.removeEntityView).toHaveBeenCalledWith("enemy");
     expect(director.isIdle).toBe(true);
+  });
+
+  it("plays an authored water sheet in the motion direction before removing the terminal view", async () => {
+    const { renderer } = createRenderer();
+    const presentation = {
+      beginEnteredWater: vi.fn(),
+      setEnteredWaterFrame: vi.fn(),
+      waterFrameDurationsMs: [10, 10, 10, 10, 10, 10, 10, 10],
+    };
+    vi.mocked(renderer.getEnemyPresentation).mockReturnValue(presentation as never);
+    const director = new PresentationDirector(renderer);
+
+    await director.play([
+      {
+        type: "enemy_entered_water",
+        enemyId: "enemy",
+        from: { x: 4, y: 4 },
+        waterCell: { x: 4, y: 6 },
+      },
+    ]);
+
+    expect(presentation.beginEnteredWater).toHaveBeenCalledWith({ x: 0, y: 1 });
+    expect(presentation.setEnteredWaterFrame).toHaveBeenLastCalledWith(7);
+    expect(renderer.removeEntityView).toHaveBeenCalledWith("enemy");
   });
 
   it("cancels stale terminal presentation when the generation changes", async () => {

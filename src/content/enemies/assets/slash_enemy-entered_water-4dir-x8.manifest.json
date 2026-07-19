@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "tool": "tickstrike-sprite-animation",
+  "python_version": "3.14.6",
+  "pillow_version": "12.3.0",
+  "imagemagick_available": true,
+  "source": "src\\content\\enemies\\assets\\kappa-purple-sprite-sheet.png",
+  "config": "dev\\tools\\sprite-animation\\configs\\kappa_drown.json",
+  "recipe": "dev\\tools\\sprite-animation\\recipes\\kappa_drown.py",
+  "source_sha256": "ce83ca6ba442cfcf29257dd9e87537b7e7994d09831f40d002c4c48f8f98de70",
+  "config_sha256": "90d15d87a1be16da72248fa10e3fb93fee1ddf9f896231547d9d282d145703e1",
+  "recipe_sha256": "d909c301deded07bb7aab572ebf6652f8fbf548b73256ddab04d40bc1d5cb824",
+  "output_rgba_sha256": "96b9bea017a8e75674224493fa1587d2d2921c731ee3a5a215d1379e76755e8b",
+  "validation": [
+    "size=(64, 128)",
+    "alpha=[0, 255]"
+  ]
+}

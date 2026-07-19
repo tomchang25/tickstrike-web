@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "tool": "tickstrike-sprite-animation",
+  "python_version": "3.14.6",
+  "pillow_version": "12.3.0",
+  "imagemagick_available": true,
+  "source": "src\\content\\enemies\\assets\\eye-sprite-sheet.png",
+  "config": "dev\\tools\\sprite-animation\\configs\\eye_drown.json",
+  "recipe": "dev\\tools\\sprite-animation\\recipes\\eye_drown.py",
+  "source_sha256": "21c7de8b33acd7817f2994530baed80e5ef7db632f2bfb7790295a4c3ef1b603",
+  "config_sha256": "20f9a637a181b07f9581c1d3561e4f09f6039a60341e673bf92e9fd8eaa0a446",
+  "recipe_sha256": "3aaffdf06ed3f40835cade61b6bcdeab55daf9ba73b214665bc8cb56f993f63e",
+  "output_rgba_sha256": "a30ab6321be19288900a5a0213148f4753ff5fb12c9b6d5efefd127c53f2b6fa",
+  "validation": [
+    "size=(64, 128)",
+    "alpha=[0, 255]"
+  ]
+}

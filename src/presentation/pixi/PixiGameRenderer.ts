@@ -43,8 +43,10 @@ import {
 import {
   createEnemyPresentation,
   getEnemyPresentationProfile,
+  type EnemyWaterAnimation,
   type EnemyPresentation,
 } from "./enemy-sprites";
+import { enemyWaterAnimationAssets } from "../../content/enemies/enemy-water-animation-assets";
 import ninjaSpriteSheetUrl from "../../content/characters/assets/ninja/body-sprite-sheet.png";
 import greenEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-green-sprite-sheet.png";
 import purpleEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-purple-sprite-sheet.png";
@@ -215,6 +217,7 @@ export class PixiGameRenderer {
     skull?: Texture;
     lantern?: Texture;
   } = {};
+  private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
 
   get transientCount(): number {
     return this.transientEffects.size;
@@ -255,6 +258,16 @@ export class PixiGameRenderer {
       skull: skullEnemySpriteSheet,
       lantern: lanternEnemySpriteSheet,
     };
+    const loadedWaterAnimations = await Promise.all(
+      Object.entries(enemyWaterAnimationAssets).map(async ([profileId, asset]) => [
+        profileId,
+        {
+          sheet: await Assets.load<Texture>(asset.sheetUrl),
+          frameDurationsMs: asset.frameDurationsMs,
+        },
+      ]),
+    );
+    this.enemyWaterAnimations = Object.fromEntries(loadedWaterAnimations);
 
     this.app.canvas.dataset.testid = "game-canvas";
     this.app.canvas.setAttribute("aria-label", "Tickstrike arena");
@@ -280,6 +293,7 @@ export class PixiGameRenderer {
     this.clearPositionReservations();
     this.clearTransient();
     this.enemySpriteSheets = {};
+    this.enemyWaterAnimations = {};
     this.app.destroy(true, { children: true });
     this.host = undefined;
   }
@@ -433,7 +447,7 @@ export class PixiGameRenderer {
           if (entity.kind !== "enemy" || !presentation) {
             return undefined;
           }
-          return `${entity.id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}`;
+          return this.enemyPresentationLabel(entity.id, presentation);
         })
         .filter((value): value is string => value !== undefined)
         .join("|");
@@ -601,6 +615,9 @@ export class PixiGameRenderer {
     }
     view.root.destroy({ children: true });
     this.entityViews.delete(id);
+    if (view.enemyPresentation) {
+      this.refreshEnemyPresentationDataset();
+    }
     if (id === "player" && this.host) {
       delete this.app.canvas.dataset.playerProfile;
       delete this.app.canvas.dataset.playerFacing;
@@ -629,7 +646,7 @@ export class PixiGameRenderer {
         if (!presentation) {
           return undefined;
         }
-        return `${id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}`;
+        return this.enemyPresentationLabel(id, presentation);
       })
       .filter((value): value is string => value !== undefined)
       .join("|");
@@ -1203,9 +1220,10 @@ export class PixiGameRenderer {
         ? getEnemyPresentationProfile(entity.presentationId)
         : undefined;
     const enemySpriteSheet = enemyProfile ? this.enemySpriteSheets[enemyProfile.sheet] : undefined;
+    const waterAnimation = enemyProfile ? this.enemyWaterAnimations[enemyProfile.id] : undefined;
     const enemyPresentation =
-      enemySpriteSheet && enemyProfile
-        ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, () =>
+      enemySpriteSheet && enemyProfile && waterAnimation
+        ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, waterAnimation, () =>
             this.refreshEnemyPresentationDataset(),
           )
         : undefined;
@@ -1303,5 +1321,10 @@ export class PixiGameRenderer {
       hpBar,
       guardBar,
     };
+  }
+
+  private enemyPresentationLabel(id: EntityId, presentation: EnemyPresentation): string {
+    const water = presentation.waterFrame === undefined ? "" : `:water:${presentation.waterFrame}`;
+    return `${id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}${water}`;
   }
 }

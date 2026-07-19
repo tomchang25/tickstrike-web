@@ -2,10 +2,15 @@ import { Texture } from "pixi.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createEnemyPresentation,
+  type EnemyWaterAnimation,
   type EnemyPresentation,
 } from "../../../../src/presentation/pixi/enemy-sprites";
 
 let presentation: EnemyPresentation | undefined;
+const WATER_ANIMATION: EnemyWaterAnimation = {
+  sheet: Texture.WHITE,
+  frameDurationsMs: [10, 10, 10, 10, 10, 10, 10, 10],
+};
 
 beforeEach(() => {
   presentation = undefined;
@@ -17,7 +22,7 @@ afterEach(() => {
 
 describe("small enemy sprite profiles", () => {
   it("uses the reference four-direction, four-pose frame layout", () => {
-    presentation = createEnemyPresentation("enemy.thrust", Texture.WHITE);
+    presentation = createEnemyPresentation("enemy.thrust", Texture.WHITE, WATER_ANIMATION);
     if (!presentation) {
       throw new Error("Thrust presentation is missing.");
     }
@@ -40,8 +45,8 @@ describe("small enemy sprite profiles", () => {
   });
 
   it("uses a fixed Slash palette sheet without a runtime filter", () => {
-    const thrust = createEnemyPresentation("enemy.thrust", Texture.WHITE);
-    presentation = createEnemyPresentation("enemy.slash", Texture.WHITE);
+    const thrust = createEnemyPresentation("enemy.thrust", Texture.WHITE, WATER_ANIMATION);
+    presentation = createEnemyPresentation("enemy.slash", Texture.WHITE, WATER_ANIMATION);
     if (!thrust || !presentation) {
       throw new Error("Small enemy presentations are missing.");
     }
@@ -55,7 +60,7 @@ describe("small enemy sprite profiles", () => {
   });
 
   it("uses the authored Eye profile through the small-enemy renderer path", () => {
-    presentation = createEnemyPresentation("enemy.ranged", Texture.WHITE);
+    presentation = createEnemyPresentation("enemy.ranged", Texture.WHITE, WATER_ANIMATION);
     if (!presentation) {
       throw new Error("Ranged presentation is missing.");
     }
@@ -68,11 +73,13 @@ describe("small enemy sprite profiles", () => {
   });
 
   it("keeps unknown enemy archetypes on the generic renderer path", () => {
-    expect(createEnemyPresentation("enemy.unknown", Texture.WHITE)).toBeUndefined();
+    expect(
+      createEnemyPresentation("enemy.unknown", Texture.WHITE, WATER_ANIMATION),
+    ).toBeUndefined();
   });
 
   it("settles action and tint feedback back to idle base visuals", () => {
-    presentation = createEnemyPresentation("enemy.slash", Texture.WHITE);
+    presentation = createEnemyPresentation("enemy.slash", Texture.WHITE, WATER_ANIMATION);
     if (!presentation) {
       throw new Error("Slash presentation is missing.");
     }
@@ -88,5 +95,19 @@ describe("small enemy sprite profiles", () => {
     expect(presentation.body.tint).toBe(0xffffff);
     presentation.playDamage().progress(1);
     expect(presentation.body.tint).toBe(0xffffff);
+  });
+
+  it("plays entered-water frames from the motion direction column through the final row", () => {
+    presentation = createEnemyPresentation("enemy.charge", Texture.WHITE, WATER_ANIMATION);
+    if (!presentation) {
+      throw new Error("Charge presentation is missing.");
+    }
+
+    presentation.beginEnteredWater({ x: -1, y: 0 });
+    presentation.setEnteredWaterFrame(7);
+
+    expect(presentation.facing).toEqual({ x: -1, y: 0 });
+    expect(presentation.waterFrame).toBe(7);
+    expect(presentation.body.texture.frame).toMatchObject({ x: 32, y: 112, width: 16, height: 16 });
   });
 });

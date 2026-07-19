@@ -13,6 +13,11 @@ export interface EnemyPresentationProfile {
   readonly scale: number;
 }
 
+export interface EnemyWaterAnimation {
+  readonly sheet: Texture;
+  readonly frameDurationsMs: readonly number[];
+}
+
 export interface EnemyPresentation {
   readonly profileId: string;
   readonly palette: EnemySpritePalette;
@@ -20,6 +25,8 @@ export interface EnemyPresentation {
   readonly body: Sprite;
   readonly pose: EnemySpritePose;
   readonly facing: Cell;
+  readonly waterFrame: number | undefined;
+  readonly waterFrameDurationsMs: readonly number[];
   setFacing(facing: Cell): void;
   sync(entity: Pick<EntityState, "activity" | "facing" | "phase">): void;
   playMove(): gsap.core.Timeline;
@@ -28,6 +35,8 @@ export interface EnemyPresentation {
   playDamage(): gsap.core.Timeline;
   playStaggered(): gsap.core.Timeline | undefined;
   playStaggerEnded(): gsap.core.Timeline | undefined;
+  beginEnteredWater(entryDirection: Cell): void;
+  setEnteredWaterFrame(frame: number): void;
   /** Starts (or replaces) an independent alpha blink loop, separate from the damage tint channel. */
   playFuseBlink(intervalSeconds: number, minAlpha: number): gsap.core.Timeline;
   stopBlink(): void;
@@ -119,6 +128,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
   readonly body: Sprite;
   private currentFacing = { ...DEFAULT_FACING };
   private currentPose: EnemySpritePose = "idle";
+  private currentWaterFrame: number | undefined;
   private isStaggered = false;
   private actionTimeline: gsap.core.Timeline | undefined;
   private tintTimeline: gsap.core.Timeline | undefined;
@@ -128,21 +138,14 @@ class SmallEnemyPresentation implements EnemyPresentation {
     readonly profileId: string,
     readonly palette: EnemySpritePalette,
     sheet: Texture,
+    private readonly waterAnimation: EnemyWaterAnimation,
     private readonly onChange?: () => void,
     private readonly spriteScale = SPRITE_SCALE,
   ) {
     sheet.source.scaleMode = "nearest";
-    const frames = new Map<string, Texture>();
-    const frameAt = (column: number, row: number): Texture => {
-      const key = `${column},${row}`;
-      const existing = frames.get(key);
-      if (existing) {
-        return existing;
-      }
-      const frame = frameTexture(sheet, column, row);
-      frames.set(key, frame);
-      return frame;
-    };
+    waterAnimation.sheet.source.scaleMode = "nearest";
+    const frameAt = this.createFrameSelector(sheet);
+    const waterFrameAt = this.createFrameSelector(waterAnimation.sheet);
 
     this.body = new Sprite(frameAt(directionColumn(DEFAULT_FACING), POSE_ROWS.idle));
     this.body.anchor.set(0.5);
@@ -152,9 +155,11 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.root.addChild(this.body);
 
     this.frameAt = frameAt;
+    this.waterFrameAt = waterFrameAt;
   }
 
   private readonly frameAt: (column: number, row: number) => Texture;
+  private readonly waterFrameAt: (column: number, row: number) => Texture;
 
   get pose(): EnemySpritePose {
     return this.currentPose;
@@ -162,6 +167,14 @@ class SmallEnemyPresentation implements EnemyPresentation {
 
   get facing(): Cell {
     return { ...this.currentFacing };
+  }
+
+  get waterFrame(): number | undefined {
+    return this.currentWaterFrame;
+  }
+
+  get waterFrameDurationsMs(): readonly number[] {
+    return this.waterAnimation.frameDurationsMs;
   }
 
   setFacing(facing: Cell): void {
@@ -316,6 +329,12 @@ class SmallEnemyPresentation implements EnemyPresentation {
     return timeline;
   }
 
+  beginEnteredWater(entryDirection: Cell): void {
+    this.clearAction();
+    this.currentFacing = forwardFor(entryDirection);
+    this.setEnteredWaterFrame(0);
+  }
+
   playFuseBlink(intervalSeconds: number, minAlpha: number): gsap.core.Timeline {
     this.blinkTimeline?.kill();
     const timeline = gsap.timeline({ repeat: -1, yoyo: true });
@@ -346,6 +365,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.tintTimeline = undefined;
     this.isStaggered = false;
     this.body.tint = BASE_TINT;
+    this.currentWaterFrame = undefined;
     this.setFacing(DEFAULT_FACING);
   }
 
@@ -364,20 +384,52 @@ class SmallEnemyPresentation implements EnemyPresentation {
   }
 
   private applyFrame(): void {
-    this.body.texture = this.frameAt(
-      directionColumn(this.currentFacing),
-      POSE_ROWS[this.currentPose],
-    );
+    const column = directionColumn(this.currentFacing);
+    this.body.texture =
+      this.currentWaterFrame === undefined
+        ? this.frameAt(column, POSE_ROWS[this.currentPose])
+        : this.waterFrameAt(column, this.currentWaterFrame);
+  }
+
+  setEnteredWaterFrame(frame: number): void {
+    if (frame < 0 || frame >= this.waterAnimation.frameDurationsMs.length) {
+      throw new Error(`Water animation frame ${frame} is outside the authored sheet.`);
+    }
+    this.currentWaterFrame = frame;
+    this.applyFrame();
+    this.onChange?.();
+  }
+
+  private createFrameSelector(sheet: Texture): (column: number, row: number) => Texture {
+    const frames = new Map<string, Texture>();
+    return (column: number, row: number): Texture => {
+      const key = `${column},${row}`;
+      const existing = frames.get(key);
+      if (existing) {
+        return existing;
+      }
+      const frame = frameTexture(sheet, column, row);
+      frames.set(key, frame);
+      return frame;
+    };
   }
 }
 
 export function createEnemyPresentation(
   profileId: string,
   sheet: Texture,
+  waterAnimation: EnemyWaterAnimation,
   onChange?: () => void,
 ): EnemyPresentation | undefined {
   const profile = getEnemyPresentationProfile(profileId);
   return profile
-    ? new SmallEnemyPresentation(profile.id, profile.palette, sheet, onChange, profile.scale)
+    ? new SmallEnemyPresentation(
+        profile.id,
+        profile.palette,
+        sheet,
+        waterAnimation,
+        onChange,
+        profile.scale,
+      )
     : undefined;
 }

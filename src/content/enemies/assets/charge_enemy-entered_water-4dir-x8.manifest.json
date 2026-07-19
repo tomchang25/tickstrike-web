@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "tool": "tickstrike-sprite-animation",
+  "python_version": "3.14.6",
+  "pillow_version": "12.3.0",
+  "imagemagick_available": true,
+  "source": "src\\content\\enemies\\assets\\skull-sprite-sheet.png",
+  "config": "dev\\tools\\sprite-animation\\configs\\skull_extinguish.json",
+  "recipe": "dev\\tools\\sprite-animation\\recipes\\skull_extinguish.py",
+  "source_sha256": "6d2e9470a95303610de245e172c39d039aca53c74dbea56f4075fe8d8e92857f",
+  "config_sha256": "a303a838a9770c12df77545bf805addb1c52d101833562ba0a7212e4f5e7fb67",
+  "recipe_sha256": "906c6b55924173d45d320e699d482bae1163dd6ccc2ddfe15d6e1b1b7156961f",
+  "output_rgba_sha256": "0123104015980700b9d2f9342e15d998ce1be5b4844b8fa329768da77499f479",
+  "validation": [
+    "size=(64, 128)",
+    "alpha=[0, 255]"
+  ]
+}

@@ -87,6 +87,43 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
+for (const [scenario, profile] of [
+  ["water-thrust", "enemy.thrust"],
+  ["water-slash", "enemy.slash"],
+  ["water-charge", "enemy.charge"],
+  ["water-ranged", "enemy.ranged"],
+  ["water-bomb", "enemy.bomb"],
+] as const) {
+  test(`${profile} plays its four-direction water sheet while drowning`, async ({ page }) => {
+    await page.goto(`/?scenario=${scenario}`);
+    const canvas = page.getByTestId("game-canvas");
+    const box = await canvas.boundingBox();
+    if (!box) {
+      throw new Error("Game canvas has no layout box.");
+    }
+    const target = {
+      x: box.x + (4.5 / 12) * box.width,
+      y: box.y + (3.5 / 12) * box.height,
+    };
+
+    await page.keyboard.down("Alt");
+    await page.mouse.move(target.x, target.y);
+    await expect(canvas).toHaveAttribute("data-smash-preview-cell", "4,3");
+    await page.mouse.click(target.x, target.y);
+    await page.keyboard.up("Alt");
+    await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+
+    await page.mouse.click(target.x, target.y);
+    await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
+    await expect(canvas).toHaveAttribute(
+      "data-enemy-presentations",
+      new RegExp(`enemy-water:${profile.replace(".", "\\.")}:[^:]+:idle:water:[0-7]`),
+    );
+    await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+    await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
+  });
+}
+
 test("Charge owns sequential Player motion before reconciling the final cell", async ({ page }) => {
   await page.goto("/?scenario=charge-enemy");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();

@@ -2,6 +2,8 @@ build/
 .opencode/
 dev/docs/reports/
 dev/foundation/
+src/content/enemies/assets/*-4dir-x8.animation.json
+src/content/enemies/assets/*-4dir-x8.manifest.json
 node_modules/
 playwright-report/
 port-ref/

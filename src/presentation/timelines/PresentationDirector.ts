@@ -135,18 +135,6 @@ export class PresentationDirector {
       stepsByEntity.set(step.entityId, steps);
     }
 
-    for (const [entityId, steps] of stepsByEntity) {
-      if (generation !== this.generation) {
-        return;
-      }
-      const track = this.createMotionTrack(entityId, steps);
-      if (track) {
-        animations.push(this.timelineDone(track, () => this.renderer.releasePosition(entityId)));
-      } else {
-        this.renderer.releasePosition(entityId);
-      }
-    }
-
     for (const event of events) {
       if (generation !== this.generation) {
         return;
@@ -497,6 +485,18 @@ export class PresentationDirector {
       }
     }
 
+    for (const [entityId, steps] of stepsByEntity) {
+      if (generation !== this.generation) {
+        return;
+      }
+      const track = this.createMotionTrack(entityId, steps);
+      if (track) {
+        animations.push(this.timelineDone(track, () => this.renderer.releasePosition(entityId)));
+      } else {
+        this.renderer.releasePosition(entityId);
+      }
+    }
+
     await Promise.all(animations);
     if (generation !== this.generation) {
       return;
@@ -536,14 +536,50 @@ export class PresentationDirector {
         track.to(view, { rotation: 0.18, duration: 0.06 }, cursor);
         track.to(view, { rotation: 0, duration: 0.08 }, cursor + step.duration - 0.08);
       } else if (step.kind === "water") {
-        track.to(view, { rotation: -0.18, duration: 0.08 }, cursor + step.duration);
-        track.to(
-          view,
-          { rotation: 0.18, duration: 0.08, repeat: 3, yoyo: true },
-          cursor + step.duration + 0.08,
-        );
-        track.to(view.scale, { x: 0.75, y: 0.3, duration: 0.18 }, cursor + step.duration + 0.4);
-        track.to(view, { alpha: 0, duration: 0.2 }, cursor + step.duration + 0.58);
+        const presentation = this.renderer.getEnemyPresentation?.(entityId);
+        if (presentation) {
+          const direction = {
+            x: Math.sign(step.to.x - step.from.x),
+            y: Math.sign(step.to.y - step.from.y),
+          };
+          const waterClock = { progress: 0 };
+          let waterCursor = cursor + step.duration;
+          track.call(() => presentation.beginEnteredWater(direction), [], waterCursor);
+          for (let frame = 1; frame < presentation.waterFrameDurationsMs.length; frame += 1) {
+            track.to(
+              waterClock,
+              {
+                progress: frame,
+                duration: (presentation.waterFrameDurationsMs[frame - 1] ?? 0) / 1000,
+                ease: "none",
+              },
+              waterCursor,
+            );
+            waterCursor += (presentation.waterFrameDurationsMs[frame - 1] ?? 0) / 1000;
+            track.call(() => presentation.setEnteredWaterFrame(frame), [], waterCursor);
+          }
+          track.to(
+            waterClock,
+            {
+              progress: presentation.waterFrameDurationsMs.length,
+              duration:
+                (presentation.waterFrameDurationsMs[
+                  presentation.waterFrameDurationsMs.length - 1
+                ] ?? 0) / 1000,
+              ease: "none",
+            },
+            waterCursor,
+          );
+        } else {
+          track.to(view, { rotation: -0.18, duration: 0.08 }, cursor + step.duration);
+          track.to(
+            view,
+            { rotation: 0.18, duration: 0.08, repeat: 3, yoyo: true },
+            cursor + step.duration + 0.08,
+          );
+          track.to(view.scale, { x: 0.75, y: 0.3, duration: 0.18 }, cursor + step.duration + 0.4);
+          track.to(view, { alpha: 0, duration: 0.2 }, cursor + step.duration + 0.58);
+        }
       }
 
       if (step.kind === "move" && entityId !== "player") {

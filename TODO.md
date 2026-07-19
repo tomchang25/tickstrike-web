@@ -51,6 +51,7 @@ One line, no rationale, no backing document.
 One line, no rationale, no backing document.
 
 - [dash] Dash can't choose the grid before final destination
+- [sprite_animation] Reconcile terminal animation end state and reused entity presentation profiles - [ref plans/sprite_animation_terminal_lifecycle_and_profile_reconciliation.implementation_spec.md]
 
 ---
 
