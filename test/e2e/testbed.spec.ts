@@ -326,6 +326,7 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   });
 
   await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "resting");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-cell-y", "3");
   const movementState = await page.evaluate(() => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged"));
@@ -340,6 +341,15 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   });
 
   await expect(page.getByTestId("tick-value")).toHaveText("2");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "ready");
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
+  });
+
+  await expect(page.getByTestId("tick-value")).toHaveText("3");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");
   const committed = await page.evaluate(() => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack);

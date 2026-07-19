@@ -36,6 +36,9 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
   const recoveringAtStart = new Set(
     enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "recovering").map((enemy) => enemy.id),
   );
+  const restingAtStart = new Set(
+    enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "resting").map((enemy) => enemy.id),
+  );
   const recoveredThisPhase = new Set<string>();
   const events: CombatEvent[] = [];
   const decisions: EnemyDecisionRecord[] = [];
@@ -82,6 +85,11 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
       recoveredThisPhase.add(enemy.id);
       events.push({ type: "enemy_recovered", enemyId: enemy.id });
     }
+  }
+
+  for (const enemy of enemies) {
+    if (!restingAtStart.has(enemy.id)) continue;
+    world.advanceEnemyRest(enemy.id);
   }
 
   for (const enemy of enemies) {
@@ -158,6 +166,7 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
         world.setEnemyFacing(current.id, candidate.facing);
         world.setEnemyDecision(current.id, "move");
         world.moveEntity(current.id, candidate.destination);
+        if (current.enemyAction?.role === "ranged") world.setEnemyResting(current.id);
         movementEvents.set(current.id, {
           type: "enemy_moved",
           enemyId: current.id,

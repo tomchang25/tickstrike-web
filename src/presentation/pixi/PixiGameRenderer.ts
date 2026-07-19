@@ -118,6 +118,7 @@ function combatStatusLabel(entity: EntityState): string {
   if (entity.protectionTicks !== undefined) return `PROTECT ${entity.protectionTicks}`;
   if (entity.activity === "telegraphing") return `TELEGRAPH ${entity.committedAttack?.warningTicks ?? 0}`;
   if (entity.activity === "recovering") return `RECOVER ${entity.recoveryTicks ?? 0}`;
+  if (entity.activity === "resting") return `REST ${entity.restTicks ?? 0}`;
   return "";
 }
 

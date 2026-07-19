@@ -180,8 +180,6 @@ describe("player verbs", () => {
       "player_attacked",
       "enemy_attack_committed",
       "telegraph_changed",
-      "enemy_attack_committed",
-      "telegraph_changed",
       "world_advanced",
     ]);
     expect(world.snapshot().tick).toBe(2);

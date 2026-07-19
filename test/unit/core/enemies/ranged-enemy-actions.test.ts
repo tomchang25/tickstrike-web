@@ -133,6 +133,38 @@ function createRangedWorld(): World {
 }
 
 describe("Ranged committed Cross lifecycle", () => {
+  it("rests for one tick after moving before choosing another action", () => {
+    const world = new World(7, 5, Array.from({ length: 35 }, () => "floor" as const), "ranged-rest-test");
+    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 6, y: 2 }, hp: 100 });
+    world.spawn({
+      id: "enemy-ranged",
+      kind: "enemy",
+      archetype: "ranged",
+      cell: { x: 0, y: 2 },
+      hp: 100,
+      enemyAction: ranged,
+      facing: { x: 1, y: 0 },
+    });
+
+    const moved = resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
+    expect(moved.events.map((event) => event.type)).toContain("enemy_moved");
+    expect(world.requireEntity("enemy-ranged")).toMatchObject({
+      activity: "resting",
+      restTicks: 1,
+      lastDecision: "move",
+      cell: { x: 1, y: 2 },
+    });
+
+    const rested = resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
+    expect(rested.events.map((event) => event.type)).not.toContain("enemy_moved");
+    expect(rested.events.map((event) => event.type)).not.toContain("enemy_attack_committed");
+    expect(world.requireEntity("enemy-ranged")).toMatchObject({ activity: "ready", cell: { x: 1, y: 2 } });
+
+    const ready = resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
+    expect(ready.events.map((event) => event.type)).toContain("enemy_attack_committed");
+    expect(world.requireEntity("enemy-ranged")).toMatchObject({ activity: "telegraphing", lastDecision: "attack" });
+  });
+
   it("locks the center and cells through warning, then resolves against the locked cells", () => {
     const world = createRangedWorld();
 

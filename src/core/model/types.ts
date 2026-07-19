@@ -12,7 +12,7 @@ export type EntityKind = "player" | "enemy";
 export type EntityPhase = "alive" | "drowning" | "dead";
 export type TerminalEntityPhase = Exclude<EntityPhase, "alive">;
 export type EncounterOutcome = "running" | "victory" | "defeat";
-export type EnemyActivity = "ready" | "telegraphing" | "recovering" | "staggered";
+export type EnemyActivity = "ready" | "telegraphing" | "recovering" | "resting" | "staggered";
 export type EnemyDecisionKind = "move" | "attack" | "wait";
 export type EnemyActionRole = string;
 export type EnemyAttackKind = string;
@@ -122,6 +122,7 @@ export interface EntityState extends EntitySpawnData {
   readonly activity?: EnemyActivity;
   readonly lastDecision?: EnemyDecisionKind;
   readonly recoveryTicks?: number;
+  readonly restTicks?: number;
   readonly committedAttack?: CommittedAttack;
   readonly phase: EntityPhase;
 }

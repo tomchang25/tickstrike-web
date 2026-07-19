@@ -345,6 +345,7 @@ export class World {
         phase,
         activity: undefined,
         recoveryTicks: undefined,
+        restTicks: undefined,
         committedAttack: undefined,
         lastDecision: undefined,
         guard: entity.guard ? { ...entity.guard, current: 0 } : undefined,
@@ -409,6 +410,7 @@ export class World {
         ...current,
         activity: "staggered",
         recoveryTicks: undefined,
+        restTicks: undefined,
         committedAttack: undefined,
         staggerTicks,
         protectionTicks: undefined,
@@ -443,7 +445,24 @@ export class World {
       ...entity,
       activity,
       recoveryTicks: recoveryTicks === undefined ? undefined : recoveryTicks,
+      restTicks: undefined,
       ...(activity !== "staggered" ? { staggerTicks: undefined } : {}),
+    });
+  }
+
+  setEnemyResting(id: EntityId, restTicks = 1): void {
+    if (!Number.isInteger(restTicks) || restTicks <= 0) {
+      throw new Error("Enemy rest must be a positive integer.");
+    }
+    const entity = this.entities.get(id);
+    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
+    if (entity.phase !== "alive") return;
+    this.entities.set(id, {
+      ...entity,
+      activity: "resting",
+      recoveryTicks: undefined,
+      restTicks,
+      committedAttack: undefined,
     });
   }
 
@@ -457,6 +476,7 @@ export class World {
       activity: "ready",
       lastDecision: undefined,
       recoveryTicks: undefined,
+      restTicks: undefined,
       committedAttack: undefined,
       staggerTicks: undefined,
       protectionTicks: undefined,
@@ -525,6 +545,7 @@ export class World {
       ...entity,
       activity: "telegraphing",
       recoveryTicks: undefined,
+      restTicks: undefined,
       committedAttack: committed,
     });
     return cloneCommittedAttack(committed);
@@ -550,6 +571,7 @@ export class World {
       ...entity,
       activity: "recovering",
       recoveryTicks: attack.recoveryTicks,
+      restTicks: undefined,
       committedAttack: undefined,
     });
     const damage = playerCell && attack.cells.some((cell) => sameCell(cell, playerCell))
@@ -567,6 +589,18 @@ export class World {
       return false;
     }
     this.entities.set(id, { ...entity, activity: "ready", recoveryTicks: undefined });
+    return true;
+  }
+
+  advanceEnemyRest(id: EntityId): boolean {
+    const entity = this.entities.get(id);
+    if (!entity || entity.activity !== "resting") return false;
+    const ticks = entity.restTicks ?? 0;
+    if (ticks > 1) {
+      this.entities.set(id, { ...entity, restTicks: ticks - 1 });
+      return false;
+    }
+    this.entities.set(id, { ...entity, activity: "ready", restTicks: undefined });
     return true;
   }
 
@@ -591,6 +625,7 @@ export class World {
       phase,
       activity: undefined,
       recoveryTicks: undefined,
+      restTicks: undefined,
       committedAttack: undefined,
       lastDecision: undefined,
       staggerTicks: undefined,
