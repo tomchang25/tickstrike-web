@@ -8,6 +8,10 @@ Read `dev/foundation/core/agent_rules/foundation_startup.md`, the `web-react` pl
 
 Tickstrike Web ports Tickstrike from Godot to a Web-native React, PixiJS, and GSAP application. It is a `web-react` consumer using no foundation architecture profile. Gameplay rules live in framework-independent `src/core/`; React owns application UI, PixiJS owns game rendering, and the runtime coordinates semantic events between them.
 
+## Reference Source
+
+The original/reference Tickstrike implementation is available at `port-ref/tickstrike/` (`E:\IndieProjects\tickstrike-web\port-ref\tickstrike`). Read it when verifying ported behavior, content, navigation, or lifecycle semantics. It is reference material only: do not import it into the Web runtime or preserve Godot lifecycle patterns without an independently justified Web-native equivalent.
+
 The repository uses Node.js 22.12 or newer and npm. Runtime source and packaged assets live in `src/`, tests live in `test/`, project governance and tools live in `dev/`, general non-runtime source material lives in `assets/`, and Vite writes generated exports to ignored `build/`.
 
 ## Required Operation Contracts
