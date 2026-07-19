@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { gsap } from "gsap";
 import type { CombatEvent } from "../../../../src/core/events/combat-events";
 import type { PixiGameRenderer } from "../../../../src/presentation/pixi/PixiGameRenderer";
 import { PresentationDirector } from "../../../../src/presentation/timelines/PresentationDirector";
@@ -190,5 +191,56 @@ describe("PresentationDirector combat feedback", () => {
     ]);
 
     expect(renderer.setPlayerFacing).toHaveBeenCalledWith({ x: -1, y: 0 }, true);
+  });
+
+  it("routes small enemy events to the sprite presentation seam", async () => {
+    const { renderer } = createRenderer();
+    const presentation = {
+      playMove: vi.fn(() => gsap.timeline()),
+      playPrepareAttack: vi.fn(() => gsap.timeline()),
+      playAttackCommit: vi.fn(() => gsap.timeline()),
+      playDamage: vi.fn(() => gsap.timeline()),
+      playStaggered: vi.fn(() => gsap.timeline()),
+      playStaggerEnded: vi.fn(() => gsap.timeline()),
+      clearAction: vi.fn(),
+    };
+    (renderer as unknown as { getEnemyPresentation: () => typeof presentation }).getEnemyPresentation = vi.fn(() => presentation);
+
+    await new PresentationDirector(renderer).play([
+      { type: "enemy_moved", enemyId: "enemy", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
+      { type: "enemy_attack_committed", enemyId: "enemy", attack: {
+        attackId: "thrust",
+        cells: [{ x: 3, y: 1 }],
+        damage: 10,
+        warningTicks: 1,
+        recoveryTicks: 1,
+      } },
+      { type: "enemy_attack_detonated", enemyId: "enemy", attack: {
+        attackId: "thrust",
+        cells: [{ x: 3, y: 1 }],
+        damage: 10,
+        warningTicks: 0,
+        recoveryTicks: 1,
+      }, target: { x: 3, y: 1 } },
+      { type: "enemy_damaged", enemyId: "enemy", hit: {
+        targetId: "enemy",
+        attackerId: "player",
+        damage: 10,
+        hpBefore: 100,
+        hpAfter: 90,
+        killed: false,
+      }, hp: 90, maxHp: 100 },
+      { type: "enemy_staggered", enemyId: "enemy", ticks: 3 },
+      { type: "enemy_stagger_ended", enemyId: "enemy", guard: 32, maxGuard: 32 },
+      { type: "enemy_attack_interrupted", enemyId: "enemy" },
+    ]);
+
+    expect(presentation.playMove).toHaveBeenCalledOnce();
+    expect(presentation.playPrepareAttack).toHaveBeenCalledOnce();
+    expect(presentation.playAttackCommit).toHaveBeenCalledOnce();
+    expect(presentation.playDamage).toHaveBeenCalledOnce();
+    expect(presentation.playStaggered).toHaveBeenCalledOnce();
+    expect(presentation.playStaggerEnded).toHaveBeenCalledOnce();
+    expect(presentation.clearAction).toHaveBeenCalledOnce();
   });
 });

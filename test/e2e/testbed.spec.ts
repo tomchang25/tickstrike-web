@@ -173,6 +173,10 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("enemy-hp-enemy-thrust")).toContainText("100/100");
   await expect(page.getByTestId("enemy-guard-enemy-thrust")).toContainText("32/32");
   await expect(page.getByTestId("entity-enemy-ranged")).toBeAttached();
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
+    "data-enemy-presentations",
+    /enemy-thrust:enemy\.thrust:green:idle.*enemy-slash:enemy\.slash:purple:idle/,
+  );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-facing-x", "1");
@@ -186,6 +190,10 @@ test("Foundation arena resets its generation without stale presentation state", 
   await page.getByTestId("debug-mode").check();
   await expect(page.getByTestId("enemies-state")).toHaveCount(0);
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-debug-mode", "true");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
+    "data-enemy-presentations",
+    /enemy-thrust:enemy\.thrust:green:idle.*enemy-slash:enemy\.slash:purple:idle/,
+  );
 
   const initial = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   await page.keyboard.press("ArrowRight");
@@ -222,6 +230,10 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "telegraphing");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "2");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-attack-warning-ticks", "2");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
+    "data-enemy-presentations",
+    /enemy-thrust:enemy\.thrust:green:prepareAttack.*enemy-slash:enemy\.slash:purple:prepareAttack/,
+  );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-telegraph", "true");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "2");
   await expect(page.getByTestId("enemy-telegraph-count")).toHaveText("2");

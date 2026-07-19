@@ -64,6 +64,8 @@ export class PresentationDirector {
               { x: to.x, y: to.y, duration: MOVE_DURATION, ease: "power2.out" },
             ),
           ));
+          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          if (presentation) animations.push(this.timelineDone(presentation.playMove()));
           break;
         }
         case "player_attacked": {
@@ -79,6 +81,11 @@ export class PresentationDirector {
           break;
         }
         case "enemy_attack_committed": {
+          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          if (presentation) {
+            animations.push(this.timelineDone(presentation.playPrepareAttack()));
+            break;
+          }
           const view = this.renderer.getEntityView(event.enemyId);
           if (!view) break;
           animations.push(this.timelineDone(
@@ -89,6 +96,8 @@ export class PresentationDirector {
           break;
         }
         case "enemy_attack_detonated": {
+          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          if (presentation) animations.push(this.timelineDone(presentation.playAttackCommit()));
           if (!event.hit) break;
           const effect = this.renderer.createImpact(event.target);
           animations.push(this.timelineDone(
@@ -102,6 +111,11 @@ export class PresentationDirector {
         }
         case "enemy_damaged": {
           if (event.hit.killed) break;
+          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          if (presentation) {
+            animations.push(this.timelineDone(presentation.playDamage()));
+            break;
+          }
           const view = this.renderer.getEntityView(event.enemyId);
           if (!view) break;
           animations.push(this.timelineDone(
@@ -136,6 +150,12 @@ export class PresentationDirector {
           break;
         }
         case "enemy_staggered": {
+          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          if (presentation) {
+            const timeline = presentation.playStaggered();
+            if (timeline) animations.push(this.timelineDone(timeline));
+            break;
+          }
           const view = this.renderer.getEntityView(event.enemyId);
           if (!view) break;
           animations.push(this.timelineDone(
@@ -169,11 +189,19 @@ export class PresentationDirector {
           const view = this.renderer.getEntityView(event.enemyId);
           terminalIds.add(event.enemyId);
           if (!view) break;
-          animations.push(this.timelineDone(
-            gsap.timeline()
-              .to(view.scale, { x: 1.3, y: 0.25, duration: 0.09, ease: "power3.in" })
-              .to(view, { alpha: 0, duration: 0.16, delay: 0.06 }),
-          ));
+          if (this.renderer.getEnemyPresentation?.(event.enemyId)) {
+            animations.push(this.timelineDone(
+              gsap.timeline()
+                .to(view.scale, { x: 0, y: 0, duration: 0.5, ease: "power2.in" })
+                .to(view, { rotation: `+=${Math.PI * 2}`, alpha: 0, duration: 0.5 }, "<"),
+            ));
+          } else {
+            animations.push(this.timelineDone(
+              gsap.timeline()
+                .to(view.scale, { x: 1.3, y: 0.25, duration: 0.09, ease: "power3.in" })
+                .to(view, { alpha: 0, duration: 0.16, delay: 0.06 }),
+            ));
+          }
           break;
         }
         case "player_died": {
@@ -261,11 +289,20 @@ export class PresentationDirector {
           ));
           break;
         }
+        case "enemy_attack_interrupted": {
+          this.renderer.getEnemyPresentation?.(event.enemyId)?.clearAction();
+          break;
+        }
+        case "enemy_stagger_ended": {
+          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          if (!presentation) break;
+          const timeline = presentation.playStaggerEnded();
+          if (timeline) animations.push(this.timelineDone(timeline));
+          break;
+        }
         case "command_resolved":
         case "world_advanced":
         case "directional_hit":
-        case "enemy_attack_interrupted":
-        case "enemy_stagger_ended":
         case "enemy_protection_ended":
         case "enemy_recovering":
         case "enemy_recovered":
@@ -289,6 +326,7 @@ export class PresentationDirector {
     }
     this.activeTimelines.clear();
     this.renderer.clearTransient();
+    this.renderer.resetEnemyPresentations?.();
     this.renderer.setPlayerAnimation("idle");
   }
 

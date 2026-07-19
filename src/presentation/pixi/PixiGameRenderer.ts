@@ -40,7 +40,13 @@ import {
   type PlayerSprite,
   type PlayerSpritePose,
 } from "./character-sprites";
+import {
+  createEnemyPresentation,
+  type EnemyPresentation,
+} from "./enemy-sprites";
 import ninjaSpriteSheetUrl from "../../content/characters/assets/ninja/body-sprite-sheet.png";
+import greenEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-green-sprite-sheet.png";
+import purpleEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-purple-sprite-sheet.png";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =
@@ -57,6 +63,7 @@ interface EntityView {
   readonly root: Container;
   readonly body: Graphics | Sprite;
   readonly sprite?: PlayerSprite;
+  readonly enemyPresentation?: EnemyPresentation;
   readonly label: Text;
   readonly facingMarker: Text;
   readonly debugLabel: Text;
@@ -158,6 +165,10 @@ export class PixiGameRenderer {
   private smashPreview: SmashPreview | undefined;
   private victimPreviewMarkers: readonly PreviewVictimMarker[] = [];
   private pointerCleanup: (() => void) | undefined;
+  private enemySpriteSheets: {
+    green?: Texture;
+    purple?: Texture;
+  } = {};
 
   get transientCount(): number {
     return this.transientEffects.size;
@@ -174,6 +185,14 @@ export class PixiGameRenderer {
       autoDensity: true,
     });
     setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
+    const [greenEnemySpriteSheet, purpleEnemySpriteSheet] = await Promise.all([
+      Assets.load<Texture>(greenEnemySpriteSheetUrl),
+      Assets.load<Texture>(purpleEnemySpriteSheetUrl),
+    ]);
+    this.enemySpriteSheets = {
+      green: greenEnemySpriteSheet,
+      purple: purpleEnemySpriteSheet,
+    };
 
     this.app.canvas.dataset.testid = "game-canvas";
     this.app.canvas.setAttribute("aria-label", "Tickstrike arena");
@@ -197,6 +216,7 @@ export class PixiGameRenderer {
     this.clearPointerPreview();
     this.entityViews.clear();
     this.clearTransient();
+    this.enemySpriteSheets = {};
     this.app.destroy(true, { children: true });
     this.host = undefined;
   }
@@ -281,7 +301,12 @@ export class PixiGameRenderer {
         const pixels = cellToPixels(entity.cell);
         view.root.position.set(pixels.x, pixels.y);
       }
-      view.body.tint = entityColor(entity);
+      if (view.enemyPresentation) {
+        view.enemyPresentation.sync(entity);
+        view.body.tint = 0xffffff;
+      } else {
+        view.body.tint = entityColor(entity);
+      }
       if (this.host && entity.kind === "player" && view.sprite) {
         if (view.sprite.pose === "idle") view.sprite.setFacing(this.playerFacing);
         view.body.tint = 0xffffff;
@@ -298,7 +323,11 @@ export class PixiGameRenderer {
       drawStatusBar(view.hpBar, entity.hp, entity.maxHp, 0xff5c7a, entity.kind === "enemy" ? -42 : -34);
       view.guardBar.visible = Boolean(entity.guard);
       if (entity.guard) drawStatusBar(view.guardBar, entity.guard.current, entity.guard.max, 0x72d4ff, -36);
-      view.label.text = entity.kind === "player" && view.sprite ? "" : entity.kind === "player" ? "P" : "E";
+      view.label.text = entity.kind === "player" && view.sprite || view.enemyPresentation
+        ? ""
+        : entity.kind === "player"
+          ? "P"
+          : "E";
       view.label.visible = entity.kind !== "player" || !view.sprite;
       view.facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
       view.facingMarker.text = facingGlyph(entity.facing);
@@ -307,6 +336,16 @@ export class PixiGameRenderer {
       view.debugLabel.text = debugStateLabel(entity);
       view.statusLabel.visible = entity.kind === "enemy" && Boolean(combatStatusLabel(entity));
       view.statusLabel.text = combatStatusLabel(entity);
+    }
+    if (this.host) {
+      this.app.canvas.dataset.enemyPresentations = snapshot.entities
+        .map((entity) => {
+          const presentation = this.entityViews.get(entity.id)?.enemyPresentation;
+          if (entity.kind !== "enemy" || !presentation) return undefined;
+          return `${entity.id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}`;
+        })
+        .filter((value): value is string => value !== undefined)
+        .join("|");
     }
   }
 
@@ -443,6 +482,27 @@ export class PixiGameRenderer {
       delete this.app.canvas.dataset.playerFacing;
       this.app.canvas.dataset.playerAnimation = "idle";
     }
+  }
+
+  getEnemyPresentation(id: EntityId): EnemyPresentation | undefined {
+    return this.entityViews.get(id)?.enemyPresentation;
+  }
+
+  resetEnemyPresentations(): void {
+    for (const view of this.entityViews.values()) view.enemyPresentation?.reset();
+    this.refreshEnemyPresentationDataset();
+  }
+
+  refreshEnemyPresentationDataset(): void {
+    if (!this.host) return;
+    this.app.canvas.dataset.enemyPresentations = [...this.entityViews.entries()]
+      .map(([id, view]) => {
+        const presentation = view.enemyPresentation;
+        if (!presentation) return undefined;
+        return `${id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}`;
+      })
+      .filter((value): value is string => value !== undefined)
+      .join("|");
   }
 
   getEntityBounds(id: EntityId): ScreenBounds | undefined {
@@ -948,14 +1008,24 @@ export class PixiGameRenderer {
     const playerSprite = entity.kind === "player"
       ? createPlayerSprite(`character.${entity.archetype}`)
       : undefined;
-    const body = playerSprite?.body ?? new Graphics()
+    const enemySpriteSheet = entity.kind === "enemy"
+      ? entity.archetype === "slash"
+        ? this.enemySpriteSheets.purple
+        : entity.archetype === "thrust"
+          ? this.enemySpriteSheets.green
+          : undefined
+      : undefined;
+    const enemyPresentation = enemySpriteSheet
+      ? createEnemyPresentation(entity.archetype, enemySpriteSheet, () => this.refreshEnemyPresentationDataset())
+      : undefined;
+    const body = playerSprite?.body ?? enemyPresentation?.body ?? new Graphics()
       .roundRect(-22, -22, 44, 44, 10)
       .fill(0xffffff)
       .stroke({ color: 0x0a0c10, width: 4 });
-    if (!playerSprite) body.tint = entityColor(entity);
+    if (!playerSprite && !enemyPresentation) body.tint = entityColor(entity);
 
     const label = new Text({
-      text: entity.kind === "player" && playerSprite ? "" : entity.kind === "player" ? "P" : "E",
+      text: entity.kind === "player" && playerSprite || enemyPresentation ? "" : entity.kind === "player" ? "P" : "E",
       style: {
         fill: 0x10131a,
         fontFamily: "monospace",
@@ -964,7 +1034,7 @@ export class PixiGameRenderer {
       },
     });
     label.anchor.set(0.5);
-    label.visible = entity.kind !== "player" || !playerSprite;
+    label.visible = entity.kind !== "player" ? !enemyPresentation : !playerSprite;
 
     const debugLabel = new Text({
       text: debugStateLabel(entity),
@@ -1008,7 +1078,7 @@ export class PixiGameRenderer {
     root.addChild(
       hpBar,
       guardBar,
-      ...(playerSprite ? [playerSprite.root] : [body]),
+      ...(playerSprite ? [playerSprite.root] : enemyPresentation ? [enemyPresentation.root] : [body]),
       label,
       facingMarker,
       debugLabel,
@@ -1018,6 +1088,7 @@ export class PixiGameRenderer {
       root,
       body,
       ...(playerSprite ? { sprite: playerSprite } : {}),
+      ...(enemyPresentation ? { enemyPresentation } : {}),
       label,
       facingMarker,
       debugLabel,
