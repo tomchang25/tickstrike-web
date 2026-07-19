@@ -12,7 +12,7 @@ Tickstrike's turn resolver is deterministic and shared across enemies. The curre
 
 - **Standard enemy policy** — Existing enemies retain data-owned `activity` lifecycle state and a pure decision that returns `move`, `attack`, or `wait`. Small, typed conditional logic is preferable to a general Decision Tree while behavior remains shallow and fixed.
 
-- **Charge boundary** — Charge is an attack kind on the shared locked-attack lifecycle. Its line eligibility is decided before commitment; its locked landing is resolved after detonation and before recovery. It is not a persistent `charging` state or an independent runtime.
+- **Charge boundary** — Charge is an attack kind on the shared lifecycle. Its attack identity and maximum range are committed, while its legal live target/path may refresh during warning; detonation then resolves its displacement and landing before recovery. It is not a persistent `charging` state or an independent runtime.
 
 - **Future Boss state** — A Boss with combos, phase transitions, interrupts, or persistent tactical memory should use a Boss-specific discriminated mode with only the payload required by that mode, such as combo ID and step, warning/recovery ticks, phase target, or last-known player cell. A mode handler determines its next transition or tactical intent.
 

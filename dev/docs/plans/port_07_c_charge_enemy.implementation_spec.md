@@ -1,110 +1,103 @@
-# Charge Enemy Line Threat and Landing
+# Charge Enemy Live Target Impact and Displacement
 
 Parent Plan: `port_07_complete_enemy_roster_and_navigation.md`
 
 ## Goal
 
-Activate Charge on the existing A/A1 locked-attack lifecycle as a Heavy enemy. Charge is an attack kind within that shared lifecycle, not a separate enemy runtime or state machine. It must commit a legal five-cell forward line, detonate only that locked line, and perform an authoritative one-resolution landing before recovery.
+Activate Charge as a Heavy enemy that telegraphs a live cardinal charge target, displaces entities along the charge path, and resolves a deterministic impact and landing. Charge keeps the shared enemy lifecycle and phase authority; it does not introduce a separate runtime or Godot-style state Node.
 
 ## Summary
 
-The shared `enemy-actions.ts`, movement planner, reservation rounds, `World.commitEnemyAttack()`, telegraph countdown, and semantic event path are already implemented for Thrust and Slash. This child adds Charge line geometry and a post-detonation landing follow-up; it does not create a Charge runtime or bypass World placement validation.
+Charge uses the authored `charge` attack, Heavy Guard, 150 HP, 8 damage, two warning ticks, and two recovery ticks. It attacks a Player on a legal cardinal path one to five cells away, while movement planning prefers origins two to five cells from the Player. During warning, Charge tracks the live Player position whenever it remains on a legal range path; otherwise it retains the most recently valid target.
 
-`charge_enemy` uses the authored `charge` attack, Heavy Guard, 150 HP, 8 damage, 2 warning ticks, and 2 recovery ticks. A line starts one cell forward from Charge and contains five cells. Charge commits when its current position and a deterministic cardinal facing produce a legal line containing the player. If its current position cannot produce such a line, it uses the existing one-cell movement candidate contract toward a valid line origin or waits. Facing is selected as part of a move or commitment; no separate second action is introduced.
-
-At detonation, damage is evaluated against the post-action player cell using the locked line. Damage resolves first. Charge then attempts to move to the farthest legal cell on that locked forward line, stopping before the first blocker and remaining in place if no legal landing exists. Only after the damage and landing follow-up are complete does Charge enter recovery.
+At detonation, every non-target entity on the target path attempts to move one cell sideways in an alternating Charge-relative direction. A blocked primary side retries the other side; an entity blocked on both sides remains in place and takes Charge damage. The current occupant of the target cell is the impact target. When its forward knockback destination is free, it is knocked one cell forward, damaged normally, and Charge occupies the target cell. When that destination is blocked by terrain, water, arena bounds, or another entity, the target remains in place, takes exactly double damage, and Charge lands at the nearest free path cell before the target or remains at its origin. The blocked impact exposes a semantic outcome for a distinct hurt VFX.
 
 ## Relational Context
 
-- A and A1 own the one-action Tick, shape-derived candidate planning, reservation arbitration, committed snapshots, telegraph cleanup, event ordering, and terminal invariants. Charge only supplies line eligibility and a deterministic resolution follow-up.
-- Charge decision code declares an ordinary move, attack, or wait decision; it does not mutate World or own an independent `charging` activity. The shared phase resolves and commits the decision alongside every other enemy.
-- The content/harness boundary expands the authored `line` shape into local forward offsets `{ x: 1..5, y: 0 }` and passes the Heavy Guard definition into `World.spawn()`.
-- `enemy-actions.ts` must reject a line with an illegal, out-of-bounds, occupied, or blocking cell when selecting a commit or valid origin. It must not use generic shape-origin behavior that allows Charge to attack through blockers.
-- `World` remains the sole owner of occupancy and landing validation. Landing must use the same atomic placement validation as `moveEntity()` and must not partially update the entity or occupancy map.
-- `resolveEnemyPhase()` keeps the shared order: detonation, player damage/death events, cleared-telegraph projection, Charge landing, then recovery. A committed line is never rebuilt from the live player cell.
-- Presentation consumes the existing movement, commit, detonation, landing, recovery, death, and reset events. The Charge visual presenter cannot apply the landing or damage itself.
+- Charge uses the shared `ready -> telegraphing -> recovering -> ready` lifecycle. Its decision code declares an ordinary move, attack, or wait decision and never mutates World directly.
+- Normal enemy committed cells remain locked. Charge is the explicit exception: commitment locks its attack identity, origin, maximum range, and warning/recovery values, while its target cell, facing, path, and telegraph cells are refreshed during warning only when the live Player is on a legal cardinal range path.
+- `World` owns the three ordered state operations: detonation and damage evaluation, atomic Charge impact/landing resolution, and recovery entry. `enemy-phase.ts` calls those operations in order and emits their semantic results; it must not validate or apply placement itself.
+- Charge path cells run from the cell immediately in front of Charge through the current target cell. The target cell receives impact handling, not the alternating side-displacement rule.
+- World evaluates all path occupants, alternate-side displacement attempts, target knockback, blocked impact, and Charge landing from one detonation-start snapshot. It commits the accepted final placements atomically so entity iteration order cannot affect occupancy or damage.
+- A side-blocked entity remains in place and takes normal Charge damage. Charge may traverse that intermediate cell as a transient impact path but never shares a final footprint with it.
+- The current target-cell occupant receives the target impact even if the Player moved away during warning. If the Player is not on a legal range path, Charge retains its latest target rather than rebuilding an arbitrary attack from live state.
+- Water is an invalid displacement and landing destination. Charge displacement does not create drowning, collision damage, chain pushes, or multi-cell movement budgets.
+- `CombatEvent` carries generic displacement, Charge impact outcome, normal/double damage, target death, and landing information. Presentation consumes those events and cannot decide damage, target selection, displacement, or landing.
+- The foundation arena gains one deterministic Charge fixture without changing existing fixture identities or positions. A dedicated Charge scenario supplies blockers and controlled Player movement for browser-visible Charge assertions.
 
 ## Scope
 
 ### Included
 
 - Charge role activation and Heavy Guard integration.
-- Five-cell cardinal line construction and legal-line validation.
-- Deterministic movement toward a valid line origin.
-- Locked detonation and farthest-legal landing.
-- Ordered landing event, terminal cleanup, recovery, unit, and browser coverage.
-- Standalone Charge sprite profile and feedback through the existing presentation path.
+- Live warning-time target, facing, path, and telegraph updates for a Player on a legal one-to-five-cell cardinal range path.
+- Alternating side displacement, opposite-side retry, blocked-side damage, target forward knockback, blocked double impact, and atomic landing.
+- Ordered detonation/damage, Charge impact/landing, then recovery APIs and semantic events.
+- A Charge fixture in the foundation arena plus a dedicated deterministic Charge scenario.
+- Charge Skull sprite packaging, renderer loading, presentation profile, normal impact feedback, blocked-impact hurt VFX, unit coverage, and browser coverage.
 
 ### Excluded
 
-- Collision damage to enemies, forced displacement, multi-cell movement budgets, or Charge physics.
-- General pathfinding beyond A1's existing bounded planner.
-- Waves, spawn placement, enemy levels, or changes to player Mobility.
+- Collision damage beyond the defined normal or blocked Charge impact damage.
+- Chain pushes, water displacement, drowning from Charge displacement, forced displacement outside Charge, or persistent multi-cell movement.
+- Boss behavior, general behavior trees, wave scheduling, enemy levels, or player Mobility changes.
 
 ## Files to Change
 
 | File | Change Size | Purpose |
 | --- | --- | --- |
-| `src/core/enemies/enemy-actions.ts` | Medium | Add Charge line construction, blocker-aware eligibility, and landing metadata. |
-| `src/core/actions/enemy-phase.ts` | Medium | Resolve Charge detonation, apply the locked landing follow-up, and preserve shared phase ordering. |
-| `src/core/world/world.ts` | Medium | Add atomic Charge landing validation/application and keep terminal/occupancy invariants. |
-| `src/core/events/combat-events.ts` | Small | Add the semantic Charge landing result while retaining generic attack events. |
-| `src/harness/fixtures/shipped-arena.ts` | Medium | Spawn Charge at a deterministic line-origin setup with authored Heavy Guard data. |
-| `src/content/enemies/assets/skull-sprite-sheet.png` | Small | Package the authored Charge runtime sprite. |
-| `src/presentation/pixi/enemy-sprites.ts` | Medium | Add the standalone Charge profile and local feedback surface. |
-| `src/presentation/timelines/PresentationDirector.ts` | Small | Present Charge-specific commit/detonation/landing feedback and track cleanup. |
-| `test/unit/core/enemies/charge-enemy-actions.test.ts` | Large | Assert line geometry, blocker rules, lock, landing, miss, and recovery. |
-| `test/unit/core/world/world.test.ts` | Medium | Assert atomic landing, occupancy preservation, and terminal cancellation. |
-| `test/e2e/testbed.spec.ts` | Medium | Observe Charge telegraph, detonation, landing, death/reset cleanup, and idle presentation. |
+| `src/core/enemies/enemy-actions.ts` | Large | Add Charge range-path selection, preferred planning origins, and warning-time target refresh data. |
+| `src/core/actions/enemy-phase.ts` | Large | Order Charge detonation/damage, impact/landing, telegraph changes, and recovery without owning placement rules. |
+| `src/core/world/world.ts` | Large | Split detonation, atomic Charge impact/landing, and recovery entry; preserve placement and terminal invariants. |
+| `src/core/events/combat-events.ts` | Medium | Add generic displacement and Charge impact/landing outcome events. |
+| `src/harness/fixtures/shipped-arena.ts` | Medium | Add the authored Charge fixture while preserving existing foundation fixtures. |
+| `src/harness/scenarios/charge-enemy.scenario.ts` | Medium | Define deterministic normal, blocked, and retargetable Charge browser setups. |
+| `src/content/enemies/assets/skull-sprite-sheet.png` | Small | Package the authored Charge runtime sprite from the Skull SpriteSheet source. |
+| `src/presentation/pixi/PixiGameRenderer.ts` | Small | Import and load the Charge Skull texture. |
+| `src/presentation/pixi/enemy-sprites.ts` | Medium | Add the standalone Charge profile and normal/blocked impact feedback surfaces. |
+| `src/presentation/timelines/PresentationDirector.ts` | Medium | Present displacement, landing, and blocked-impact feedback with cleanup. |
+| `test/unit/core/enemies/charge-enemy-actions.test.ts` | Large | Assert range, preferred planning, retargeting, and path construction. |
+| `test/unit/core/world/world.test.ts` | Large | Assert atomic displacement, normal and blocked impact, fallback landing, damage, occupancy, and terminal cleanup. |
+| `test/e2e/testbed.spec.ts` | Large | Observe Charge telegraph retargeting, displacement, normal/blocked impact, reset cleanup, and idle presentation. |
 
 ## Execution Outline
 
-1. Add pure line tests for all four facings, edge clipping, blocker rejection, and valid origins using the authored Charge attack.
-2. Implement Charge decision and commitment through the existing `EnemyDecision` and `CommittedAttack` boundaries. Keep facing changes inside the same action.
-3. Add a locked landing descriptor to the committed snapshot and implement atomic farthest-legal landing after damage resolution and before recovery.
-4. Add Charge to the deterministic arena and standalone sprite registry, then verify event and presentation cleanup after landing, death, and reset.
+1. Add focused Charge decision tests for one-to-five-cell cardinal range, two-cell planning preference, warning retargeting, out-of-range target retention, and deterministic path order.
+2. Split World attack resolution into detonation/damage, Charge impact/landing, and recovery entry. Add atomic world tests before routing Charge through the enemy phase.
+3. Emit the ordered displacement, impact, damage, landing, telegraph, and recovery events; connect the live-target Charge branch without changing ordinary locked attacks.
+4. Add the Charge fixture and dedicated scenario, package and load the Skull sheet, then verify normal and blocked impact presentation reaches idle after reset.
 
 ## Implementation Notes
 
-- A line never includes the Charge origin. For facing `f`, its cells are `origin + f * 1` through `origin + f * 5`.
-- A commit requires every line cell to be in bounds, legal terrain, and free of blocking occupancy except the player target where the existing attack contract permits target occupancy.
-- Candidate facings use a fixed deduplicated order: current facing, cardinal direction toward the player when available, then the existing cardinal order. Choose the first valid line deterministically.
-- If no facing at the current origin contains the player, derive valid origins from the line shape and let A1's one-cell candidate planner rank them. A failed candidate remains a movement failure, not an automatic attack or a second action.
-- Store the committed line direction and origin in `CommittedAttack.metadata`, for example `{ landingOrigin, landingDirection, landingLength: 5 }`. The resolver must use this locked data and must not inspect the player's live cell to redirect landing.
-- `enemy-phase.ts` may recognize the committed Charge kind only to order its landing follow-up after shared detonation and before shared recovery. It must not become a Charge-specific phase loop or direct destination authority.
-- After damage is applied, test landing cells from farthest to nearest. Stop at the first illegal or occupied blocker; select the farthest legal cell before it. If no cell is legal, leave Charge at its origin.
-- Emit `enemy_landed` only when Charge changes cell; preserve the shared `enemy_attack_detonated`, player damage/death, cleared-telegraph, and `enemy_recovering` order when no landing occurs.
-- Landing must call an atomic World operation. A rejected landing leaves the original cell, footprint, occupancy, reservations, and phase unchanged.
-- A Charge death during warning clears the pending line, telegraph, reservation, and landing metadata. No landing occurs later.
-
-## Sprite Requirements
-
-Charge uses a standalone profile rather than the A2 Kappa profile.
-
-| Asset | Source | Sheet Layout | Scale | Palette | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `skull_sprite_sheet.png` | `charge_enemy/assets/skull_sprite_sheet.png` | 4×4: columns down, up, left, right; rows idle, move, prepare, commit | 5× | Source orange/red tones | Standalone sheet |
-
-- Use nearest-neighbour filtering, the shared directional frame selector, and the same cell-relative scale convention used by A2.
-- Charge feedback is distinct but presentation-only: move lean/lunge, prepare pull-back/squash, commit forward lunge/stretch, damage flash, stagger tint, and terminal cleanup.
-- Use the existing Charge windup/detonation visual hooks if present in the presentation layer; do not reproduce Godot scene or signal ownership. No presentation code may mutate landing or damage.
+- A legal Charge range path is cardinal, has distance one through five from the Charge origin to the Player, and contains only legal terrain. The target cell is included; no cells beyond it are needed for path validation.
+- During warning, refresh Charge target/facing/path and telegraph only when the live Player satisfies that range rule. If not, preserve the last valid target and path. Emit a non-clearing telegraph change only when the projected cells change.
+- Movement planning ranks legal Charge origins at target distance two through five before other candidates. An already adjacent Player remains an immediate valid attack target.
+- At detonation, enumerate non-target path occupants in origin-to-target order. For path index one, try Charge-relative right first; for index two, left first; alternate thereafter. If the primary destination is illegal, occupied, reserved, or water, try the other side. If both fail, retain the entity and apply normal Charge damage without a chain push.
+- Treat the final target-cell occupant as the impact target regardless of kind. Its forward destination is one cell beyond target in Charge-facing direction. If that destination is legal, unoccupied, unreserved, and not water, move the target there and apply normal Charge damage. Otherwise retain it, apply exactly `2 * committedAttack.damage`, and mark the impact blocked.
+- For a blocked target impact, select Charge's landing by scanning target-adjacent path cells back toward the origin and choose the first legal, unoccupied, unreserved cell after accepted displacement results. If none exists, Charge remains at its origin. Charge never shares a final footprint with an entity.
+- Apply all accepted placements and damage as one World transaction. A rejected placement must leave occupancy, reservations, footprints, and unrelated entities unchanged.
+- Preserve semantic ordering: detonation and impact damage results, accepted displacement events, Charge landing, cleared telegraph, then recovery. A blocked impact emits a Charge-specific outcome before presentation consumes the generic damage event.
+- A Charge death, Guard break, or terminal transition during warning clears the telegraph and pending live-target data. No retarget, impact, landing, or recovery event occurs afterwards.
+- Package `assets/Ninja Adventure - Asset Pack/Actor/Monster/Skull/SpriteSheet` as `src/content/enemies/assets/skull-sprite-sheet.png`. Use nearest-neighbour filtering, a standalone profile, and the existing directional pose convention.
 
 ## Edge Cases
 
 | Case | Expected Handling |
 | --- | --- |
-| Player is not on a valid line | Charge moves toward a valid origin or waits; it does not commit an invalid line. |
-| Player moves out of the locked line | Detonation misses damage but still resolves the line and landing lifecycle. |
-| A line cell is blocked before commitment | That facing is invalid; try the next deterministic facing or movement candidate. |
-| Landing cells are blocked | Land at the farthest legal cell before the blocker, or remain in place. |
-| Landing overlaps another entity | World rejects the landing atomically; no partial movement occurs. |
-| Charge dies while telegraphing | Clear line, telegraph, reservation, and pending landing immediately. |
-| Charge reaches an arena edge | Out-of-bounds line cells are invalid; no clipped Charge attack is committed. |
+| Player moves to another legal range path during warning | Refresh target, facing, path, and telegraph to the Player's new cell. |
+| Player leaves Charge range during warning | Preserve the latest valid target; its current occupant receives detonation effects. |
+| Target cell is empty at detonation | Charge lands on the target cell when legal and applies no target damage. |
+| A non-target path entity has one free side | Move it to that side without damage. |
+| A non-target path entity has no free side | Keep it in place and apply normal Charge damage; Charge may traverse it transiently. |
+| Target forward cell is wall, water, outside the arena, reserved, or occupied | Keep target in place, apply double damage, emit blocked impact, and land Charge before target when possible. |
+| Target-adjacent fallback landing cell is occupied | Scan backward toward the Charge origin; remain at origin when no legal path cell exists. |
+| Player is adjacent to Charge | Charge may attack. A blocked forward target leaves Charge at origin and deals double damage. |
+| Charge dies or is Guard-broken while telegraphing | Clear telegraph and pending live-target data without detonation, landing, or recovery. |
 
 ## Acceptance Criteria
 
-1. Charge commits only when an authored five-cell line containing the player is legal and the committed line remains stable through warning.
-2. Detonation damages only the post-action player cell if it is contained in the locked line and never retargets from live state.
-3. Charge lands atomically at the farthest legal cell on its committed line, or safely remains in place when blocked.
-4. Damage precedes landing, landing precedes recovery, and the ordered semantic events and presentation reach idle after reset.
-5. Charge uses Heavy Guard and the shared terminal cleanup, reservation, recovery, and browser contracts.
+1. Charge attacks a Player on a legal cardinal path one through five cells away, while movement planning prefers a two-through-five-cell origin and still attacks an adjacent Player.
+2. During warning, Charge updates only to a live legal Player target; when the Player leaves range, it deterministically resolves against the last valid target cell and its current occupant.
+3. Path entities alternate side displacement, retry the opposite side, and take normal Charge damage only when neither side is legal.
+4. A target with a legal forward destination is knocked forward, takes normal damage, and yields its cell to Charge; a blocked target takes exactly double damage, remains in place, and triggers the blocked-impact semantic result and VFX.
+5. All displacement, damage, and landing outcomes preserve atomic World occupancy and leave no reservations, telegraphs, or presentation timelines after death or reset.

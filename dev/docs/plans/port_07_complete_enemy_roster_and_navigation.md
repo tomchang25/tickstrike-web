@@ -11,7 +11,7 @@ Expand the Thrust/Slash foundation into Ranged and the remaining authored roles 
 
 1. Add Ranged, Charge, and Bomb data one role at a time to the shared enemy decision contract.
 2. Add deterministic navigation and reservations only where multiple enemies can actually compete for a cell.
-3. Preserve each role's target lock, attack shape, warning, movement, recovery, and terminal behavior as content data plus small explicit rules.
+3. Preserve each role's documented targeting, attack shape, warning, movement, recovery, and terminal behavior as content data plus small explicit rules.
 4. Keep all enemies in the same arena scenario and process them in stable order.
 5. Make role identity visible through the same snapshot and event projection already used by the basic three.
 
@@ -31,7 +31,7 @@ The ordered children use implementation specs without exploratory sketches becau
 | A1 | Reference-aligned shape-driven navigation, movement retry, and enemy API cleanup | [Implementation Spec](port_07_a1_shape_driven_navigation_and_api_cleanup.implementation_spec.md) |
 | A2 | Shared Thrust/Slash Kappa sprites, palette parity, and state-driven presentation feedback | [Implementation Spec](port_07_a2_small_enemy_sprite_and_state_animation.implementation_spec.md) |
 | B | Ranged distance-band movement and target-centered Cross pressure | [Implementation Spec](port_07_b_ranged_enemy.implementation_spec.md) |
-| C | Charge line commitment, detonation, and landing movement | [Implementation Spec](port_07_c_charge_enemy.implementation_spec.md) |
+| C | Charge live targeting, impact displacement, and landing | [Implementation Spec](port_07_c_charge_enemy.implementation_spec.md) |
 | D | Bomb adjacent commitment, locked area detonation, and self-destruction | [Implementation Spec](port_07_d_bomb_enemy.implementation_spec.md) |
 | E | Remove deprecated Mode and Mode Boss catalog content | [Implementation Spec](port_07_e_remove_deprecated_mode_enemies.implementation_spec.md) |
 
@@ -48,5 +48,5 @@ Child A establishes the shared contract before any role-specific behavior lands.
 
 1. Every added role runs through the same Tick order and leaves Thrust and Slash unchanged.
 2. Contested movement is deterministic and produces no duplicate occupancy or stale Telegraph.
-3. Role-specific attack cells remain locked from attack commitment through resolution.
+3. Role-specific attack geometry follows its documented commitment contract: ordinary attacks remain locked, while Charge refreshes its live target only under its explicit warning-time range rule.
 4. The same browser scenario can spawn and exercise all currently enabled roles without another entry point.
