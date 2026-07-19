@@ -8,8 +8,20 @@ import {
 describe("telegraph labels", () => {
   it("aggregates repeated values and keeps distinct values in ascending order", () => {
     const summaries = aggregateTelegraphLabels([
-      { cells: [{ x: 2, y: 2 }, { x: 3, y: 2 }], ticks: 3 },
-      { cells: [{ x: 2, y: 2 }, { x: 2, y: 2 }], ticks: 1 },
+      {
+        cells: [
+          { x: 2, y: 2 },
+          { x: 3, y: 2 },
+        ],
+        ticks: 3,
+      },
+      {
+        cells: [
+          { x: 2, y: 2 },
+          { x: 2, y: 2 },
+        ],
+        ticks: 1,
+      },
       { cells: [{ x: 2, y: 2 }], ticks: 3 },
       { cells: [{ x: 3, y: 2 }], ticks: 0 },
     ]);
@@ -33,7 +45,9 @@ describe("telegraph labels", () => {
     ]);
     const summary = summaries[0];
     expect(summary).toBeDefined();
-    if (!summary) throw new Error("Expected one telegraph summary.");
+    if (!summary) {
+      throw new Error("Expected one telegraph summary.");
+    }
 
     const placements = placeTelegraphLabels([summary], [{ x: 2, y: 2 }]);
 

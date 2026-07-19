@@ -1,13 +1,7 @@
 export type MobilityKind = "dash" | "smash";
 export type EnemyRole = "thrust" | "slash" | "ranged" | "charge" | "bomb" | "mode";
 export type AttackKind = "tile" | "charge" | "area";
-export type CellShape =
-  | "line"
-  | "wide"
-  | "square"
-  | "full-line"
-  | "custom-offsets"
-  | "manhattan";
+export type CellShape = "line" | "wide" | "square" | "full-line" | "custom-offsets" | "manhattan";
 
 export interface SemanticProfile {
   readonly id: string;
@@ -76,12 +70,7 @@ export interface ManhattanShape {
 }
 
 export type AttackShape =
-  | LineShape
-  | WideShape
-  | SquareShape
-  | FullLineShape
-  | CustomOffsetsShape
-  | ManhattanShape;
+  LineShape | WideShape | SquareShape | FullLineShape | CustomOffsetsShape | ManhattanShape;
 
 export interface AttackDefinition {
   readonly id: string;
@@ -151,9 +140,7 @@ export class ActorContentValidationError extends Error {
   readonly diagnostics: readonly ActorContentDiagnostic[];
 
   constructor(diagnostics: readonly ActorContentDiagnostic[]) {
-    super(
-      ["Actor content validation failed:", ...diagnostics.map(formatDiagnostic)].join("\n"),
-    );
+    super(["Actor content validation failed:", ...diagnostics.map(formatDiagnostic)].join("\n"));
     this.name = "ActorContentValidationError";
     this.diagnostics = diagnostics;
   }
@@ -227,7 +214,12 @@ function requireProfile(
   diagnostics: ActorContentDiagnostic[],
 ): value is SemanticProfile {
   if (!isRecord(value) || !isProfileId(value.id)) {
-    addDiagnostic(diagnostics, "invalid-profile-id", `${path}.id`, "must be a semantic profile identifier");
+    addDiagnostic(
+      diagnostics,
+      "invalid-profile-id",
+      `${path}.id`,
+      "must be a semantic profile identifier",
+    );
     return false;
   }
   return true;
@@ -319,7 +311,9 @@ function validateCharacterAttack(
   requirePositive(value.damage, `${path}.damage`, diagnostics);
   requirePositive(value.range, `${path}.range`, diagnostics, true);
   requirePositive(value.staggerMultiplier, `${path}.staggerMultiplier`, diagnostics);
-  if (mobility) requireNonNegative(value.cooldown, `${path}.cooldown`, diagnostics, true);
+  if (mobility) {
+    requireNonNegative(value.cooldown, `${path}.cooldown`, diagnostics, true);
+  }
 }
 
 function validateGuard(value: unknown, index: number, diagnostics: ActorContentDiagnostic[]): void {
@@ -334,7 +328,11 @@ function validateGuard(value: unknown, index: number, diagnostics: ActorContentD
   requireNonNegative(value.lethalTierGain, `${path}.lethalTierGain`, diagnostics, true);
   requireNonNegative(value.stagger, `${path}.stagger`, diagnostics, true);
   requireNonNegative(value.protection, `${path}.protection`, diagnostics, true);
-  if (!isFiniteNumber(value.protectionMultiplier) || value.protectionMultiplier < 0 || value.protectionMultiplier > 1) {
+  if (
+    !isFiniteNumber(value.protectionMultiplier) ||
+    value.protectionMultiplier < 0 ||
+    value.protectionMultiplier > 1
+  ) {
     addDiagnostic(
       diagnostics,
       "invalid-protection-multiplier",
@@ -344,7 +342,11 @@ function validateGuard(value: unknown, index: number, diagnostics: ActorContentD
   }
 }
 
-function validateAttack(value: unknown, index: number, diagnostics: ActorContentDiagnostic[]): void {
+function validateAttack(
+  value: unknown,
+  index: number,
+  diagnostics: ActorContentDiagnostic[],
+): void {
   const path = `attacks[${index}]`;
   if (!isRecord(value)) {
     addDiagnostic(diagnostics, "invalid-definition", path, "must be an object");
@@ -352,7 +354,12 @@ function validateAttack(value: unknown, index: number, diagnostics: ActorContent
   }
   requireId(value.id, `${path}.id`, diagnostics);
   requireName(value.name, `${path}.name`, diagnostics);
-  const kindValid = requireEnum(value.kind, ["tile", "charge", "area"], `${path}.kind`, diagnostics);
+  const kindValid = requireEnum(
+    value.kind,
+    ["tile", "charge", "area"],
+    `${path}.kind`,
+    diagnostics,
+  );
   requirePositive(value.damage, `${path}.damage`, diagnostics);
   requireNonNegative(value.warningTicks, `${path}.warningTicks`, diagnostics, true);
   requireNonNegative(value.recoveryTicks, `${path}.recoveryTicks`, diagnostics, true);
@@ -407,7 +414,12 @@ function validateShape(
       break;
     case "custom-offsets":
       if (!Array.isArray(value.offsets) || value.offsets.length === 0) {
-        addDiagnostic(diagnostics, "invalid-offsets", `${path}.offsets`, "must contain at least one cell");
+        addDiagnostic(
+          diagnostics,
+          "invalid-offsets",
+          `${path}.offsets`,
+          "must contain at least one cell",
+        );
         break;
       }
       {
@@ -415,7 +427,12 @@ function validateShape(
         value.offsets.forEach((offset, index) => {
           const offsetPath = `${path}.offsets[${index}]`;
           if (!isRecord(offset) || !isInteger(offset.x) || !isInteger(offset.y)) {
-            addDiagnostic(diagnostics, "invalid-coordinate", offsetPath, "must contain integer x and y coordinates");
+            addDiagnostic(
+              diagnostics,
+              "invalid-coordinate",
+              offsetPath,
+              "must contain integer x and y coordinates",
+            );
             return;
           }
           const key = `${offset.x},${offset.y}`;
@@ -439,19 +456,38 @@ function validateRoleTuning(
 ): void {
   if (role === "ranged") {
     if (!isRecord(value) || value.type !== "ranged") {
-      addDiagnostic(diagnostics, "invalid-role-tuning", path, "ranged enemies require ranged tuning");
+      addDiagnostic(
+        diagnostics,
+        "invalid-role-tuning",
+        path,
+        "ranged enemies require ranged tuning",
+      );
       return;
     }
     requirePositive(value.minDistance, `${path}.minDistance`, diagnostics, true);
     requirePositive(value.maxDistance, `${path}.maxDistance`, diagnostics, true);
-    if (isInteger(value.minDistance) && isInteger(value.maxDistance) && value.minDistance > value.maxDistance) {
-      addDiagnostic(diagnostics, "invalid-role-tuning", path, "minimum distance cannot exceed maximum distance");
+    if (
+      isInteger(value.minDistance) &&
+      isInteger(value.maxDistance) &&
+      value.minDistance > value.maxDistance
+    ) {
+      addDiagnostic(
+        diagnostics,
+        "invalid-role-tuning",
+        path,
+        "minimum distance cannot exceed maximum distance",
+      );
     }
     return;
   }
   if (role === "bomb") {
     if (!isRecord(value) || value.type !== "bomb" || value.commitment !== "adjacent") {
-      addDiagnostic(diagnostics, "invalid-role-tuning", path, "bomb enemies require adjacent commitment tuning");
+      addDiagnostic(
+        diagnostics,
+        "invalid-role-tuning",
+        path,
+        "bomb enemies require adjacent commitment tuning",
+      );
     }
     return;
   }
@@ -466,7 +502,12 @@ function validateRoleTuning(
     return;
   }
   if (value !== null) {
-    addDiagnostic(diagnostics, "invalid-role-tuning", path, `${String(role)} enemies must not have role tuning`);
+    addDiagnostic(
+      diagnostics,
+      "invalid-role-tuning",
+      path,
+      `${String(role)} enemies must not have role tuning`,
+    );
   }
 }
 
@@ -489,25 +530,44 @@ function validateEnemy(value: unknown, index: number, diagnostics: ActorContentD
   requireNonNegative(value.defense, `${path}.defense`, diagnostics, true);
   if (value.guardId !== null) {
     if (typeof value.guardId !== "string") {
-      addDiagnostic(diagnostics, "invalid-reference", `${path}.guardId`, "must be a guard ID or null");
+      addDiagnostic(
+        diagnostics,
+        "invalid-reference",
+        `${path}.guardId`,
+        "must be a guard ID or null",
+      );
     } else {
       requireId(value.guardId, `${path}.guardId`, diagnostics);
     }
   }
   if (!Array.isArray(value.attackIds) || value.attackIds.length === 0) {
-    addDiagnostic(diagnostics, "invalid-attack-list", `${path}.attackIds`, "must contain at least one attack ID");
+    addDiagnostic(
+      diagnostics,
+      "invalid-attack-list",
+      `${path}.attackIds`,
+      "must contain at least one attack ID",
+    );
   } else {
     const seen = new Set<string>();
     value.attackIds.forEach((attackId, attackIndex) => {
       const attackPath = `${path}.attackIds[${attackIndex}]`;
-      if (!requireId(attackId, attackPath, diagnostics)) return;
+      if (!requireId(attackId, attackPath, diagnostics)) {
+        return;
+      }
       if (seen.has(attackId)) {
-        addDiagnostic(diagnostics, "duplicate-attack-reference", attackPath, `duplicates attack ${attackId}`);
+        addDiagnostic(
+          diagnostics,
+          "duplicate-attack-reference",
+          attackPath,
+          `duplicates attack ${attackId}`,
+        );
       }
       seen.add(attackId);
     });
   }
-  if (roleValid) validateRoleTuning(value.roleTuning, value.role, `${path}.roleTuning`, diagnostics);
+  if (roleValid) {
+    validateRoleTuning(value.roleTuning, value.role, `${path}.roleTuning`, diagnostics);
+  }
   requireProfile(value.presentation, `${path}.presentation`, diagnostics);
   requireProfile(value.audio, `${path}.audio`, diagnostics);
 }
@@ -519,9 +579,16 @@ function validateUniqueIds(
 ): void {
   const seen = new Set<string>();
   values.forEach((value, index) => {
-    if (!isRecord(value) || typeof value.id !== "string") return;
+    if (!isRecord(value) || typeof value.id !== "string") {
+      return;
+    }
     if (seen.has(value.id)) {
-      addDiagnostic(diagnostics, "duplicate-id", `${domain}[${index}].id`, `duplicates ${domain} ID ${value.id}`);
+      addDiagnostic(
+        diagnostics,
+        "duplicate-id",
+        `${domain}[${index}].id`,
+        `duplicates ${domain} ID ${value.id}`,
+      );
     }
     seen.add(value.id);
   });
@@ -531,7 +598,9 @@ function validateReferences(input: ActorContentInput, diagnostics: ActorContentD
   const guardIds = new Set(input.guards.map((guard) => guard.id));
   const attackIds = new Set(input.attacks.map((attack) => attack.id));
   input.enemies.forEach((enemyValue, index) => {
-    if (!isRecord(enemyValue)) return;
+    if (!isRecord(enemyValue)) {
+      return;
+    }
     if (typeof enemyValue.guardId === "string" && !guardIds.has(enemyValue.guardId)) {
       addDiagnostic(
         diagnostics,
@@ -540,7 +609,9 @@ function validateReferences(input: ActorContentInput, diagnostics: ActorContentD
         `unknown guard ID ${enemyValue.guardId}`,
       );
     }
-    if (!Array.isArray(enemyValue.attackIds)) return;
+    if (!Array.isArray(enemyValue.attackIds)) {
+      return;
+    }
     enemyValue.attackIds.forEach((attackId, attackIndex) => {
       if (typeof attackId === "string" && !attackIds.has(attackId)) {
         addDiagnostic(
@@ -576,7 +647,11 @@ export function validateActorContent(input: unknown): readonly ActorContentDiagn
   lists.guards.forEach((value, index) => validateGuard(value, index, diagnostics));
   lists.attacks.forEach((value, index) => validateAttack(value, index, diagnostics));
   lists.enemies.forEach((value, index) => validateEnemy(value, index, diagnostics));
-  if (lists.enemies.every(isRecord) && lists.guards.every(isRecord) && lists.attacks.every(isRecord)) {
+  if (
+    lists.enemies.every(isRecord) &&
+    lists.guards.every(isRecord) &&
+    lists.attacks.every(isRecord)
+  ) {
     validateReferences(
       {
         characters: lists.characters as readonly CharacterDefinition[],
@@ -607,6 +682,8 @@ function cloneAndFreeze<T>(value: T): T {
 
 export function createActorContentCatalog(input: ActorContentInput): ActorContentCatalog {
   const diagnostics = validateActorContent(input);
-  if (diagnostics.length > 0) throw new ActorContentValidationError(diagnostics);
+  if (diagnostics.length > 0) {
+    throw new ActorContentValidationError(diagnostics);
+  }
   return cloneAndFreeze(input);
 }

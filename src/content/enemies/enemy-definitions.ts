@@ -282,13 +282,7 @@ export const enemyDefinitions: readonly EnemyDefinition[] = [
     hp: 180,
     defense: 0,
     guardId: "elite",
-    attackIds: [
-      "mode_tile_wide",
-      "mode_tile_square",
-      "mode_tile_line",
-      "mode_charge",
-      "mode_area",
-    ],
+    attackIds: ["mode_tile_wide", "mode_tile_square", "mode_tile_line", "mode_charge", "mode_area"],
     roleTuning: {
       type: "mode",
       retaliationTicks: 10,

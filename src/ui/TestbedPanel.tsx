@@ -40,31 +40,58 @@ export function TestbedPanel(props: TestbedPanelProps) {
       </label>
 
       <div className="metrics">
-        <div><span>Tick</span><strong data-testid="tick-value">{props.snapshot.tick}</strong></div>
-        <div><span>Enemies</span><strong data-testid="enemy-count">{enemies.length}</strong></div>
-        <div><span>Telegraphs</span><strong data-testid="enemy-telegraph-count">{props.snapshot.telegraphs.length}</strong></div>
-        <div><span>Player</span><strong>{player ? `${player.cell.x},${player.cell.y}` : "—"}</strong></div>
+        <div>
+          <span>Tick</span>
+          <strong data-testid="tick-value">{props.snapshot.tick}</strong>
+        </div>
+        <div>
+          <span>Enemies</span>
+          <strong data-testid="enemy-count">{enemies.length}</strong>
+        </div>
+        <div>
+          <span>Telegraphs</span>
+          <strong data-testid="enemy-telegraph-count">{props.snapshot.telegraphs.length}</strong>
+        </div>
+        <div>
+          <span>Player</span>
+          <strong>{player ? `${player.cell.x},${player.cell.y}` : "—"}</strong>
+        </div>
       </div>
 
-      <div className={`encounter-status encounter-status-${props.outcome}`} data-testid="encounter-status">
+      <div
+        className={`encounter-status encounter-status-${props.outcome}`}
+        data-testid="encounter-status"
+      >
         <span>Encounter</span>
         <strong>{outcomeLabel(props.outcome)}</strong>
       </div>
 
-      <section className="combat-status" data-testid="enemy-statuses" aria-labelledby="enemy-status-title">
+      <section
+        className="combat-status"
+        data-testid="enemy-statuses"
+        aria-labelledby="enemy-status-title"
+      >
         <h2 id="enemy-status-title">Enemy Status</h2>
         <div className="enemy-status-list">
           {enemies.map((enemy) => (
-            <article className="enemy-status-card" key={enemy.id} data-testid={`enemy-status-${enemy.id}`}>
+            <article
+              className="enemy-status-card"
+              key={enemy.id}
+              data-testid={`enemy-status-${enemy.id}`}
+            >
               <div className="enemy-status-heading">
                 <strong>{enemy.archetype}</strong>
-                <span data-testid={`enemy-activity-${enemy.id}`}>{enemy.activity ?? enemy.phase}</span>
+                <span data-testid={`enemy-activity-${enemy.id}`}>
+                  {enemy.activity ?? enemy.phase}
+                </span>
               </div>
               <div className="enemy-status-meta">
                 <span data-testid={`enemy-facing-${enemy.id}`}>
                   Facing {enemy.facing ? `${enemy.facing.x},${enemy.facing.y}` : "-"}
                 </span>
-                <span data-testid={`enemy-cell-${enemy.id}`}>Cell {enemy.cell.x},{enemy.cell.y}</span>
+                <span data-testid={`enemy-cell-${enemy.id}`}>
+                  Cell {enemy.cell.x},{enemy.cell.y}
+                </span>
               </div>
               <StatusBar
                 testId={`enemy-hp-${enemy.id}`}
@@ -88,10 +115,14 @@ export function TestbedPanel(props: TestbedPanelProps) {
                 </small>
               ) : null}
               {enemy.staggerTicks !== undefined ? (
-                <small data-testid={`enemy-stagger-${enemy.id}`}>Stagger {enemy.staggerTicks}</small>
+                <small data-testid={`enemy-stagger-${enemy.id}`}>
+                  Stagger {enemy.staggerTicks}
+                </small>
               ) : null}
               {enemy.protectionTicks !== undefined ? (
-                <small data-testid={`enemy-protection-${enemy.id}`}>Protection {enemy.protectionTicks}</small>
+                <small data-testid={`enemy-protection-${enemy.id}`}>
+                  Protection {enemy.protectionTicks}
+                </small>
               ) : null}
             </article>
           ))}
@@ -109,17 +140,31 @@ export function TestbedPanel(props: TestbedPanelProps) {
       </label>
 
       {props.debugMode ? (
-        <section className="grid-debug" data-testid="grid-debug-legend" aria-labelledby="grid-debug-title">
+        <section
+          className="grid-debug"
+          data-testid="grid-debug-legend"
+          aria-labelledby="grid-debug-title"
+        >
           <h2 id="grid-debug-title">Grid Debug</h2>
-          <p data-testid="grid-debug-reservations">Navigation blockers: {props.snapshot.reservations.length}</p>
-          <div className="grid-debug-key"><span className="grid-debug-swatch grid-debug-blocked" />Blocked / occupied</div>
-          <div className="grid-debug-key"><span className="grid-debug-swatch grid-debug-navigation-blocker" />Navigation blocker</div>
+          <p data-testid="grid-debug-reservations">
+            Navigation blockers: {props.snapshot.reservations.length}
+          </p>
+          <div className="grid-debug-key">
+            <span className="grid-debug-swatch grid-debug-blocked" />
+            Blocked / occupied
+          </div>
+          <div className="grid-debug-key">
+            <span className="grid-debug-swatch grid-debug-navigation-blocker" />
+            Navigation blocker
+          </div>
         </section>
       ) : null}
 
       <section>
         <h2>Commands</h2>
-        {!props.commandsEnabled ? <p data-testid="commands-disabled">Commands disabled for static inspection.</p> : null}
+        {!props.commandsEnabled ? (
+          <p data-testid="commands-disabled">Commands disabled for static inspection.</p>
+        ) : null}
         <p className="primary-command" data-testid="active-mobility">
           Mobility: {props.selectedMobility === "dash" ? "Dash" : "Smash"}
         </p>
@@ -132,7 +177,12 @@ export function TestbedPanel(props: TestbedPanelProps) {
                 : "Ready"}
           </small>
         ) : null}
-        <button type="button" data-testid="reset-scenario" disabled={props.busy} onClick={props.onReset}>
+        <button
+          type="button"
+          data-testid="reset-scenario"
+          disabled={props.busy}
+          onClick={props.onReset}
+        >
           {props.outcome === "running" ? "Reset scenario" : "Restart encounter"}
         </button>
       </section>
@@ -156,8 +206,12 @@ export function TestbedPanel(props: TestbedPanelProps) {
 }
 
 function outcomeLabel(outcome: EncounterOutcome): string {
-  if (outcome === "victory") return "Victory";
-  if (outcome === "defeat") return "Defeat";
+  if (outcome === "victory") {
+    return "Victory";
+  }
+  if (outcome === "defeat") {
+    return "Defeat";
+  }
   return "Running";
 }
 
@@ -186,37 +240,58 @@ function StatusBar({
         aria-valuemax={maximum}
         aria-valuenow={current}
       >
-        <span className="status-bar-fill" style={{ width: `${ratio * 100}%`, backgroundColor: color }} />
+        <span
+          className="status-bar-fill"
+          style={{ width: `${ratio * 100}%`, backgroundColor: color }}
+        />
       </div>
-      <strong>{current}/{maximum}</strong>
+      <strong>
+        {current}/{maximum}
+      </strong>
     </div>
   );
 }
 
 function ContentInspectionSection({ inspection }: { readonly inspection: ContentInspection }) {
   return (
-    <section className="content-inspection" data-testid="content-inspection" aria-labelledby="content-inspection-title">
+    <section
+      className="content-inspection"
+      data-testid="content-inspection"
+      aria-labelledby="content-inspection-title"
+    >
       <h2 id="content-inspection-title">Resolved parity content</h2>
 
       <div className="inspection-block">
         <h3>Ninja</h3>
         <dl>
-          <dt>Name</dt><dd data-testid="inspection-ninja-name">{inspection.ninja.name}</dd>
-          <dt>HP</dt><dd data-testid="inspection-ninja-hp">{inspection.ninja.hp}</dd>
-          <dt>Speed fill</dt><dd data-testid="inspection-ninja-speed-fill">{inspection.ninja.speedFill}</dd>
-          <dt>Mobility</dt><dd data-testid="inspection-ninja-mobility">{inspection.ninja.mobility.kind}</dd>
-          <dt>Mobility damage</dt><dd data-testid="inspection-ninja-mobility-damage">{inspection.ninja.mobility.damage}</dd>
-          <dt>Mobility range</dt><dd data-testid="inspection-ninja-mobility-range">{inspection.ninja.mobility.range}</dd>
-          <dt>Mobility cooldown</dt><dd data-testid="inspection-ninja-mobility-cooldown">{inspection.ninja.mobility.cooldown}</dd>
+          <dt>Name</dt>
+          <dd data-testid="inspection-ninja-name">{inspection.ninja.name}</dd>
+          <dt>HP</dt>
+          <dd data-testid="inspection-ninja-hp">{inspection.ninja.hp}</dd>
+          <dt>Speed fill</dt>
+          <dd data-testid="inspection-ninja-speed-fill">{inspection.ninja.speedFill}</dd>
+          <dt>Mobility</dt>
+          <dd data-testid="inspection-ninja-mobility">{inspection.ninja.mobility.kind}</dd>
+          <dt>Mobility damage</dt>
+          <dd data-testid="inspection-ninja-mobility-damage">{inspection.ninja.mobility.damage}</dd>
+          <dt>Mobility range</dt>
+          <dd data-testid="inspection-ninja-mobility-range">{inspection.ninja.mobility.range}</dd>
+          <dt>Mobility cooldown</dt>
+          <dd data-testid="inspection-ninja-mobility-cooldown">
+            {inspection.ninja.mobility.cooldown}
+          </dd>
         </dl>
       </div>
 
       <div className="inspection-block">
         <h3>Mode Boss</h3>
         <dl>
-          <dt>Guard</dt><dd data-testid="inspection-mode-boss-guard">{inspection.modeBoss.guard.name}</dd>
-          <dt>HP</dt><dd data-testid="inspection-mode-boss-hp">{inspection.modeBoss.hp}</dd>
-          <dt>Defense</dt><dd data-testid="inspection-mode-boss-defense">{inspection.modeBoss.defense}</dd>
+          <dt>Guard</dt>
+          <dd data-testid="inspection-mode-boss-guard">{inspection.modeBoss.guard.name}</dd>
+          <dt>HP</dt>
+          <dd data-testid="inspection-mode-boss-hp">{inspection.modeBoss.hp}</dd>
+          <dt>Defense</dt>
+          <dd data-testid="inspection-mode-boss-defense">{inspection.modeBoss.defense}</dd>
           <dt>Attacks</dt>
           <dd data-testid="inspection-mode-boss-attacks">
             {inspection.modeBoss.attacks.map((attack) => attack.name).join(", ")}
@@ -227,22 +302,48 @@ function ContentInspectionSection({ inspection }: { readonly inspection: Content
       <div className="inspection-block">
         <h3>Demo Wave 10</h3>
         <dl>
-          <dt>Population cap</dt><dd data-testid="inspection-demo-10-cap">{inspection.demoWave10.populationCap}</dd>
-          <dt>Boss group</dt><dd data-testid="inspection-demo-10-group">{inspection.demoWave10.bossGroup.id}</dd>
-          <dt>Group enemy</dt><dd data-testid="inspection-demo-10-enemy">{inspection.demoWave10.bossGroup.entries.map((entry) => entry.enemyId).join(", ")}</dd>
-          <dt>Warning ticks</dt><dd data-testid="inspection-demo-10-warning">{inspection.demoWave10.slot.warningTicks}</dd>
-          <dt>Level offset</dt><dd data-testid="inspection-demo-10-level-offset">{inspection.demoWave10.slot.levelOffset}</dd>
-          <dt>Boss slot</dt><dd data-testid="inspection-demo-10-is-boss">{String(inspection.demoWave10.slot.isBoss)}</dd>
+          <dt>Population cap</dt>
+          <dd data-testid="inspection-demo-10-cap">{inspection.demoWave10.populationCap}</dd>
+          <dt>Boss group</dt>
+          <dd data-testid="inspection-demo-10-group">{inspection.demoWave10.bossGroup.id}</dd>
+          <dt>Group enemy</dt>
+          <dd data-testid="inspection-demo-10-enemy">
+            {inspection.demoWave10.bossGroup.entries.map((entry) => entry.enemyId).join(", ")}
+          </dd>
+          <dt>Warning ticks</dt>
+          <dd data-testid="inspection-demo-10-warning">
+            {inspection.demoWave10.slot.warningTicks}
+          </dd>
+          <dt>Level offset</dt>
+          <dd data-testid="inspection-demo-10-level-offset">
+            {inspection.demoWave10.slot.levelOffset}
+          </dd>
+          <dt>Boss slot</dt>
+          <dd data-testid="inspection-demo-10-is-boss">
+            {String(inspection.demoWave10.slot.isBoss)}
+          </dd>
         </dl>
       </div>
 
       <div className="inspection-block">
         <h3>Guard Shredder</h3>
         <dl>
-          <dt>Category</dt><dd data-testid="inspection-guard-shredder-category">{inspection.guardShredder.category}</dd>
-          <dt>Required Mobility</dt><dd data-testid="inspection-guard-shredder-mobility">{inspection.guardShredder.requiredMobility}</dd>
-          <dt>Trigger</dt><dd data-testid="inspection-guard-shredder-trigger">{inspection.guardShredder.trigger}</dd>
-          <dt>Magnitude</dt><dd data-testid="inspection-guard-shredder-magnitude">{inspection.guardShredder.magnitude}</dd>
+          <dt>Category</dt>
+          <dd data-testid="inspection-guard-shredder-category">
+            {inspection.guardShredder.category}
+          </dd>
+          <dt>Required Mobility</dt>
+          <dd data-testid="inspection-guard-shredder-mobility">
+            {inspection.guardShredder.requiredMobility}
+          </dd>
+          <dt>Trigger</dt>
+          <dd data-testid="inspection-guard-shredder-trigger">
+            {inspection.guardShredder.trigger}
+          </dd>
+          <dt>Magnitude</dt>
+          <dd data-testid="inspection-guard-shredder-magnitude">
+            {inspection.guardShredder.magnitude}
+          </dd>
         </dl>
       </div>
     </section>

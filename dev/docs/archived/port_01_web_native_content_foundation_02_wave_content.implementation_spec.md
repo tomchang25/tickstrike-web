@@ -47,13 +47,13 @@ The result is a frozen wave-content catalog that rejects malformed composition, 
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/content/wave-content.ts` | Large | Own readonly wave contracts, validation diagnostics, reference checks, capacity checks, and recursive freezing. |
-| `src/content/waves/wave-definitions.ts` | Large | Author seven groups, ten demo waves, Endless template, and complete progression curves. |
-| `src/content/wave-content.ts` | Medium | Assemble the canonical validated wave catalog against Child 01 actor content. |
-| `test/unit/core/content/wave-content.test.ts` | Large | Prove malformed group/wave/progression diagnostics, reference resolution, capacity checks, ordering, and immutability. |
-| `test/unit/content/wave-content.test.ts` | Large | Prove exact shipped groups, wave slots, Endless grammar, and curve inputs. |
+| File                                          | Change Size | Purpose                                                                                                                |
+| --------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/core/content/wave-content.ts`            | Large       | Own readonly wave contracts, validation diagnostics, reference checks, capacity checks, and recursive freezing.        |
+| `src/content/waves/wave-definitions.ts`       | Large       | Author seven groups, ten demo waves, Endless template, and complete progression curves.                                |
+| `src/content/wave-content.ts`                 | Medium      | Assemble the canonical validated wave catalog against Child 01 actor content.                                          |
+| `test/unit/core/content/wave-content.test.ts` | Large       | Prove malformed group/wave/progression diagnostics, reference resolution, capacity checks, ordering, and immutability. |
+| `test/unit/content/wave-content.test.ts`      | Large       | Prove exact shipped groups, wave slots, Endless grammar, and curve inputs.                                             |
 
 ## Execution Outline
 
@@ -74,31 +74,31 @@ The result is a frozen wave-content catalog that rejects malformed composition, 
 
 ### Spawn Groups
 
-| Group | Composition | Placement | Entries |
-| --- | --- | --- | --- |
-| `small` | Weighted total 3 | player-ring | thrust weight 1; slash weight 1 |
-| `small-ranged` | Fixed | anchor-cluster | 2 thrust; 1 slash; 2 ranged |
-| `small-ranged-charge` | Fixed | anchor-cluster | 2 thrust; 1 slash; 1 ranged; 1 charge |
-| `ranged` | Fixed | anchor-cluster | 2 ranged |
-| `charge` | Fixed | scatter | 2 charge |
-| `bomb` | Fixed | scatter | 2 bomb |
-| `boss` | Fixed | scatter | 1 Mode Boss |
+| Group                 | Composition      | Placement      | Entries                               |
+| --------------------- | ---------------- | -------------- | ------------------------------------- |
+| `small`               | Weighted total 3 | player-ring    | thrust weight 1; slash weight 1       |
+| `small-ranged`        | Fixed            | anchor-cluster | 2 thrust; 1 slash; 2 ranged           |
+| `small-ranged-charge` | Fixed            | anchor-cluster | 2 thrust; 1 slash; 1 ranged; 1 charge |
+| `ranged`              | Fixed            | anchor-cluster | 2 ranged                              |
+| `charge`              | Fixed            | scatter        | 2 charge                              |
+| `bomb`                | Fixed            | scatter        | 2 bomb                                |
+| `boss`                | Fixed            | scatter        | 1 Mode Boss                           |
 
 ### Waves And Progression
 
-| Wave | Cap | Ordered Group Slots |
-| --- | ---: | --- |
-| Demo 1 | 3 | small |
-| Demo 2 | 2 | ranged |
-| Demo 3 | 5 | small-ranged |
-| Demo 4 | 2 | charge |
-| Demo 5 | 5 | small-ranged-charge |
-| Demo 6 | 6 | small, ranged, charge |
-| Demo 7 | 7 | ranged, small, charge |
-| Demo 8 | 8 | small, ranged, charge, bomb |
-| Demo 9 | 9 | charge, ranged, small, bomb |
-| Demo 10 | 1 | boss (warning 2, level offset 3, boss) |
-| Endless | 10 | charge, ranged, small, bomb |
+| Wave    | Cap | Ordered Group Slots                    |
+| ------- | --: | -------------------------------------- |
+| Demo 1  |   3 | small                                  |
+| Demo 2  |   2 | ranged                                 |
+| Demo 3  |   5 | small-ranged                           |
+| Demo 4  |   2 | charge                                 |
+| Demo 5  |   5 | small-ranged-charge                    |
+| Demo 6  |   6 | small, ranged, charge                  |
+| Demo 7  |   7 | ranged, small, charge                  |
+| Demo 8  |   8 | small, ranged, charge, bomb            |
+| Demo 9  |   9 | charge, ranged, small, bomb            |
+| Demo 10 |   1 | boss (warning 2, level offset 3, boss) |
+| Endless |  10 | charge, ranged, small, bomb            |
 
 - The three growth curves have standard exponent `1`: HP `0.08`, damage `0.05`, Defense `0.60`. Their lethal coefficients/exponents are HP `0.15`/`1.2`, damage `0.10`/`1.1`, and Defense `1.20`/`1`.
 - Lethal level growth begins at level 10 through `max(level - 9, 0)`. Record this as profile data rather than precomputing a table or capping levels.
@@ -114,18 +114,18 @@ The result is a frozen wave-content catalog that rejects malformed composition, 
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Duplicate group or wave ID | Reject deterministically with its content path. |
-| Unknown enemy or group reference | Reject catalog construction; never retain a dangling ID. |
-| Weighted group has zero total or non-positive weight | Reject. |
-| Fixed group has zero count | Reject. |
-| Group expansion exceeds a wave cap | Reject even if a particular weighted draw could fit. |
-| Invalid enum through a cast/external value | Reject at runtime. |
-| Fractional or non-finite count, tick, offset, or cap | Reject; coefficients, weights, and exponents may be finite fractions. |
-| Slot order or group-entry order changes during validation | Forbidden; preserve authored order. |
-| Wave 10 boss offset applied to Guard growth | Forbidden; that offset affects final level only in later runtime. |
-| `mode_enemy` absent from groups | Valid; only Mode Boss is authored into the shipped encounter grammar. |
+| Case                                                      | Expected Handling                                                     |
+| --------------------------------------------------------- | --------------------------------------------------------------------- |
+| Duplicate group or wave ID                                | Reject deterministically with its content path.                       |
+| Unknown enemy or group reference                          | Reject catalog construction; never retain a dangling ID.              |
+| Weighted group has zero total or non-positive weight      | Reject.                                                               |
+| Fixed group has zero count                                | Reject.                                                               |
+| Group expansion exceeds a wave cap                        | Reject even if a particular weighted draw could fit.                  |
+| Invalid enum through a cast/external value                | Reject at runtime.                                                    |
+| Fractional or non-finite count, tick, offset, or cap      | Reject; coefficients, weights, and exponents may be finite fractions. |
+| Slot order or group-entry order changes during validation | Forbidden; preserve authored order.                                   |
+| Wave 10 boss offset applied to Guard growth               | Forbidden; that offset affects final level only in later runtime.     |
+| `mode_enemy` absent from groups                           | Valid; only Mode Boss is authored into the shipped encounter grammar. |
 
 ## Acceptance Criteria
 

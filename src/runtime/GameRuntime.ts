@@ -49,7 +49,9 @@ export class GameRuntime {
   }
 
   reset(): void {
-    if (!this.scenario) throw new Error("No scenario loaded.");
+    if (!this.scenario) {
+      throw new Error("No scenario loaded.");
+    }
     this.loadScenario(this.scenario);
   }
 
@@ -63,7 +65,9 @@ export class GameRuntime {
       });
     }
 
-    if (!this.world) return Promise.reject(new Error("No world loaded."));
+    if (!this.world) {
+      return Promise.reject(new Error("No world loaded."));
+    }
     const generation = this.currentGeneration;
     return new Promise<ActionResolution>((resolve, reject) => {
       this.queuedCommands.push({ command, generation, resolve, reject });
@@ -90,23 +94,38 @@ export class GameRuntime {
   }
 
   private async drainCommands(): Promise<void> {
-    if (this.processingCommands) return;
+    if (this.processingCommands) {
+      return;
+    }
+
     this.processingCommands = true;
+
     try {
       while (this.queuedCommands.length > 0) {
         const job = this.queuedCommands.shift();
-        if (!job) continue;
+
+        if (!job) {
+          continue;
+        }
+
         if (job.generation !== this.currentGeneration) {
           job.reject(new Error("Command cancelled by scenario replacement."));
           continue;
         }
 
         this.activeCommand = job;
+
         try {
           const resolution = resolveCommand(this.requireWorld(), job.command);
-          if (resolution.accepted) this.presentation.reserveMotionOwners(resolution.events, job.generation);
+
+          if (resolution.accepted) {
+            this.presentation.reserveMotionOwners(resolution.events, job.generation);
+          }
+
           this.emit();
+
           let presentationDone: Promise<void> | undefined;
+
           if (resolution.accepted) {
             presentationDone = this.presentation.play(resolution.events, job.generation);
             void presentationDone.then(
@@ -114,21 +133,30 @@ export class GameRuntime {
               () => this.notifyPresentationSettled(job.generation),
             );
           }
+
           if (job.generation !== this.currentGeneration) {
             job.reject(new Error("Command cancelled by scenario replacement."));
           } else {
             job.resolve(resolution);
           }
-          if (presentationDone) await presentationDone;
+
+          if (presentationDone) {
+            await presentationDone;
+          }
         } catch (error) {
           job.reject(error);
         } finally {
-          if (this.activeCommand === job) this.activeCommand = undefined;
+          if (this.activeCommand === job) {
+            this.activeCommand = undefined;
+          }
         }
       }
     } finally {
       this.processingCommands = false;
-      if (this.queuedCommands.length > 0) void this.drainCommands();
+
+      if (this.queuedCommands.length > 0) {
+        void this.drainCommands();
+      }
     }
   }
 
@@ -139,26 +167,38 @@ export class GameRuntime {
       this.activeCommand.reject(new Error(reason));
       this.activeCommand = undefined;
     }
-    for (const job of this.queuedCommands) job.reject(new Error(reason));
+    for (const job of this.queuedCommands) {
+      job.reject(new Error(reason));
+    }
     this.queuedCommands.length = 0;
   }
 
   private requireWorld(): World {
-    if (!this.world) throw new Error("No world loaded.");
+    if (!this.world) {
+      throw new Error("No world loaded.");
+    }
     return this.world;
   }
 
   private emit(): void {
-    if (!this.world) return;
+    if (!this.world) {
+      return;
+    }
     const snapshot = this.world.snapshot();
     this.renderer.updateSnapshot(snapshot);
-    for (const listener of this.listeners) listener(snapshot);
+    for (const listener of this.listeners) {
+      listener(snapshot);
+    }
   }
 
   private notifyPresentationSettled(generation: number): void {
-    if (generation !== this.currentGeneration || !this.world) return;
+    if (generation !== this.currentGeneration || !this.world) {
+      return;
+    }
     const snapshot = this.world.snapshot();
-    for (const listener of this.listeners) listener(snapshot);
+    for (const listener of this.listeners) {
+      listener(snapshot);
+    }
   }
 }
 

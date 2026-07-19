@@ -41,21 +41,21 @@ Killing Bomb before warning reaches zero disarms it. World clears its pending at
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/model/types.ts` | Medium | Add the narrow guardless/self-destruct and terminal follow-up snapshot data required by World and events. |
-| `src/core/enemies/area-shapes.ts` | Small (new) | Generic shape→offsets resolver (starting with `{ shape: "manhattan", radius }`) shared by content validation and runtime geometry, so validated shapes and generated offsets cannot diverge. |
-| `src/core/enemies/enemy-actions.ts` | Medium | Add adjacent-ring eligibility and self-centered area geometry via the new shape resolver. |
-| `src/core/actions/enemy-phase.ts` | Medium | Resolve Bomb detonation without requiring Guard; route to the terminal/death path instead of recovery. |
-| `src/core/world/world.ts` | Medium | Apply locked Bomb damage, clear telegraph, and atomically transition Bomb through the existing terminal/death path (`resolveCommittedEnemyAttack` branches on `metadata.selfDestruct` to skip `recovering`). |
-| `src/core/events/combat-events.ts` | Medium | Add `enemy_self_destructed`; Bomb's terminal transition also emits the standard `enemy_died` (with `attackerId` set to Bomb's own entity id) so existing death teardown applies unchanged. |
-| `src/harness/fixtures/shipped-arena.ts` | Medium | Generalize `actionFor` to resolve `shape: "manhattan"` (via the new shape resolver) and to omit `guardDefinition` when `guardId` is null; add deterministic Bomb placement and a kill-before-fuse scenario setup. |
-| `src/content/enemies/assets/lantern-red-sprite-sheet.png` | Small | Package the authored Bomb runtime sprite (kebab-case, matching `kappa-green-sprite-sheet.png` convention). |
-| `src/presentation/pixi/enemy-sprites.ts` | Medium | Extend `EnemySpriteSheetKey`/`EnemySpritePalette` for Bomb; add a generic independent alpha/blink channel to `EnemyPresentation` (separate from `tintTimeline`), reusable by future Special roles. |
-| `src/presentation/timelines/PresentationDirector.ts` | Medium | Present fuse blink, explosion, self-destruct, cancellation, and terminal cleanup without orphan effects. On `enemy_self_destructed`, drive the blink/explosion visual; on the accompanying `enemy_died`, reuse the existing terminal view-removal path. |
-| `test/unit/core/enemies/bomb-enemy-actions.test.ts` | Large | Assert commitment, footprint lock, fuse, disarm, hit/miss self-death, and reset. |
-| `test/unit/core/world/world.test.ts` | Medium | Assert guardless countdown, atomic terminal cleanup, occupancy release, and no later detonation. |
-| `test/e2e/testbed.spec.ts` | Medium | Observe Bomb fuse, hit/miss detonation, self-destruction, kill-before-fuse, reset, and idle cleanup. |
+| File                                                      | Change Size | Purpose                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                                 | Medium      | Add the narrow guardless/self-destruct and terminal follow-up snapshot data required by World and events.                                                                                                                                               |
+| `src/core/enemies/area-shapes.ts`                         | Small (new) | Generic shape→offsets resolver (starting with `{ shape: "manhattan", radius }`) shared by content validation and runtime geometry, so validated shapes and generated offsets cannot diverge.                                                            |
+| `src/core/enemies/enemy-actions.ts`                       | Medium      | Add adjacent-ring eligibility and self-centered area geometry via the new shape resolver.                                                                                                                                                               |
+| `src/core/actions/enemy-phase.ts`                         | Medium      | Resolve Bomb detonation without requiring Guard; route to the terminal/death path instead of recovery.                                                                                                                                                  |
+| `src/core/world/world.ts`                                 | Medium      | Apply locked Bomb damage, clear telegraph, and atomically transition Bomb through the existing terminal/death path (`resolveCommittedEnemyAttack` branches on `metadata.selfDestruct` to skip `recovering`).                                            |
+| `src/core/events/combat-events.ts`                        | Medium      | Add `enemy_self_destructed`; Bomb's terminal transition also emits the standard `enemy_died` (with `attackerId` set to Bomb's own entity id) so existing death teardown applies unchanged.                                                              |
+| `src/harness/fixtures/shipped-arena.ts`                   | Medium      | Generalize `actionFor` to resolve `shape: "manhattan"` (via the new shape resolver) and to omit `guardDefinition` when `guardId` is null; add deterministic Bomb placement and a kill-before-fuse scenario setup.                                       |
+| `src/content/enemies/assets/lantern-red-sprite-sheet.png` | Small       | Package the authored Bomb runtime sprite (kebab-case, matching `kappa-green-sprite-sheet.png` convention).                                                                                                                                              |
+| `src/presentation/pixi/enemy-sprites.ts`                  | Medium      | Extend `EnemySpriteSheetKey`/`EnemySpritePalette` for Bomb; add a generic independent alpha/blink channel to `EnemyPresentation` (separate from `tintTimeline`), reusable by future Special roles.                                                      |
+| `src/presentation/timelines/PresentationDirector.ts`      | Medium      | Present fuse blink, explosion, self-destruct, cancellation, and terminal cleanup without orphan effects. On `enemy_self_destructed`, drive the blink/explosion visual; on the accompanying `enemy_died`, reuse the existing terminal view-removal path. |
+| `test/unit/core/enemies/bomb-enemy-actions.test.ts`       | Large       | Assert commitment, footprint lock, fuse, disarm, hit/miss self-death, and reset.                                                                                                                                                                        |
+| `test/unit/core/world/world.test.ts`                      | Medium      | Assert guardless countdown, atomic terminal cleanup, occupancy release, and no later detonation.                                                                                                                                                        |
+| `test/e2e/testbed.spec.ts`                                | Medium      | Observe Bomb fuse, hit/miss detonation, self-destruction, kill-before-fuse, reset, and idle cleanup.                                                                                                                                                    |
 
 ## Execution Outline
 
@@ -82,9 +82,9 @@ Killing Bomb before warning reaches zero disarms it. World clears its pending at
 
 Bomb uses a standalone profile and adds a fuse blink independent from the damage-flash tint channel.
 
-| Asset | Source | Sheet Layout | Scale | Palette | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `lantern-red-sprite-sheet.png` | `bomb_enemy/assets/lantern-red-sprite-sheet.png` | 4×4: columns down, up, left, right; rows idle, move, prepare, commit | 5× | Dark red/black tones | Standalone sheet, kebab-case filename matching the existing `kappa-green-sprite-sheet.png` convention |
+| Asset                          | Source                                           | Sheet Layout                                                         | Scale | Palette              | Notes                                                                                                 |
+| ------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------- |
+| `lantern-red-sprite-sheet.png` | `bomb_enemy/assets/lantern-red-sprite-sheet.png` | 4×4: columns down, up, left, right; rows idle, move, prepare, commit | 5×    | Dark red/black tones | Standalone sheet, kebab-case filename matching the existing `kappa-green-sprite-sheet.png` convention |
 
 - Use nearest-neighbour filtering, the shared directional frame selector, and the A2 cell-relative scale convention.
 - Extend `EnemySpriteSheetKey`/`EnemySpritePalette` in `enemy-sprites.ts` with the Bomb entry, and register the new import alongside the other sheets.
@@ -94,15 +94,15 @@ Bomb uses a standalone profile and adds a fuse blink independent from the damage
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Player is diagonally adjacent | Bomb may commit because the full eight-cell ring is valid. |
-| Player shares Bomb's cell | Bomb does not commit from zero distance. |
-| Player leaves the footprint before detonation | Resolve with no player damage, then self-destruct. |
-| Bomb dies before the fuse ends | Clear attack, telegraph, reservations, fuse visual, and later explosion. |
-| Reset occurs during the fuse | Replacement World has no Bomb attack, telegraph, reservation, or transient fuse effect. |
-| Bomb has no Guard | It still decrements warning and resolves normally; no Guard/Stagger access is attempted. |
-| Bomb reaches an arena edge | Commit only in-bounds cells; do not create duplicate footprint cells. |
+| Case                                          | Expected Handling                                                                        |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Player is diagonally adjacent                 | Bomb may commit because the full eight-cell ring is valid.                               |
+| Player shares Bomb's cell                     | Bomb does not commit from zero distance.                                                 |
+| Player leaves the footprint before detonation | Resolve with no player damage, then self-destruct.                                       |
+| Bomb dies before the fuse ends                | Clear attack, telegraph, reservations, fuse visual, and later explosion.                 |
+| Reset occurs during the fuse                  | Replacement World has no Bomb attack, telegraph, reservation, or transient fuse effect.  |
+| Bomb has no Guard                             | It still decrements warning and resolves normally; no Guard/Stagger access is attempted. |
+| Bomb reaches an arena edge                    | Commit only in-bounds cells; do not create duplicate footprint cells.                    |
 
 ## Acceptance Criteria
 

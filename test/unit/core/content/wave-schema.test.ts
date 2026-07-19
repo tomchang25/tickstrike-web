@@ -52,9 +52,24 @@ const validContent: WaveContentInput = {
   },
   progressionProfile: {
     lethalLevelStart: 10,
-    hpCurve: { standardCoefficient: 0.08, standardExponent: 1, lethalCoefficient: 0.15, lethalExponent: 1.2 },
-    damageCurve: { standardCoefficient: 0.05, standardExponent: 1, lethalCoefficient: 0.1, lethalExponent: 1.1 },
-    defenseCurve: { standardCoefficient: 0.6, standardExponent: 1, lethalCoefficient: 1.2, lethalExponent: 1 },
+    hpCurve: {
+      standardCoefficient: 0.08,
+      standardExponent: 1,
+      lethalCoefficient: 0.15,
+      lethalExponent: 1.2,
+    },
+    damageCurve: {
+      standardCoefficient: 0.05,
+      standardExponent: 1,
+      lethalCoefficient: 0.1,
+      lethalExponent: 1.1,
+    },
+    defenseCurve: {
+      standardCoefficient: 0.6,
+      standardExponent: 1,
+      lethalCoefficient: 1.2,
+      lethalExponent: 1,
+    },
     guardGrowth: { basis: "base-wave", standardWaveLimit: 20, lethalTierCadence: 5 },
   },
 };
@@ -98,9 +113,9 @@ describe("wave content validation", () => {
       lethalExponent: Number.NaN,
     };
 
-    expect(() => createWaveContentCatalog(malformed as unknown as WaveContentInput, actorCatalog)).toThrow(
-      WaveContentValidationError,
-    );
+    expect(() =>
+      createWaveContentCatalog(malformed as unknown as WaveContentInput, actorCatalog),
+    ).toThrow(WaveContentValidationError);
     expect(validateWaveContent(malformed, actorCatalog).map(({ code }) => code)).toEqual([
       "population-cap-exceeded",
       "population-cap-exceeded",
@@ -118,7 +133,8 @@ describe("wave content validation", () => {
     expect(Object.isFrozen(catalog.groups[0]!.entries)).toBe(true);
     expect(Object.isFrozen(catalog.progressionProfile.hpCurve)).toBe(true);
     expect(() => {
-      (catalog.groups[0]!.entries as unknown as Array<{ enemyId: string }>)[0]!.enemyId = "slash_enemy";
+      (catalog.groups[0]!.entries as unknown as Array<{ enemyId: string }>)[0]!.enemyId =
+        "slash_enemy";
     }).toThrow();
   });
 });

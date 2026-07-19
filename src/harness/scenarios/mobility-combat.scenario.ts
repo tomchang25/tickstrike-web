@@ -6,7 +6,8 @@ export const scenarios: readonly TestScenario[] = [
   {
     id: "mobility-combat",
     title: "Mobility / Guard / I-frame",
-    description: "Dash crosses a guarded victim while an already committed enemy attack is ignored during release.",
+    description:
+      "Dash crosses a guarded victim while an already committed enemy attack is ignored during release.",
     seed: "mobility-combat-foundation",
     createWorld(seed) {
       const world = createTrainingArena(seed);

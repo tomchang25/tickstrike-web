@@ -62,7 +62,11 @@ describe("Charge cardinal range decisions", () => {
     expect(decision).toEqual({
       type: "attack",
       attack: charge,
-      cells: [{ x: 5, y: 4 }, { x: 5, y: 3 }, { x: 5, y: 2 }],
+      cells: [
+        { x: 5, y: 4 },
+        { x: 5, y: 3 },
+        { x: 5, y: 2 },
+      ],
       facing: { x: 0, y: -1 },
     });
   });
@@ -101,7 +105,9 @@ describe("Charge movement planning", () => {
   it("prefers a two-through-five-cell origin over closing to melee range", () => {
     const decision = decideEnemyAction(context(enemy({ cell: { x: 5, y: 11 } }), { x: 5, y: 5 }));
     expect(decision.type).toBe("move");
-    if (decision.type !== "move") return;
+    if (decision.type !== "move") {
+      return;
+    }
     expect(decision.candidates.length).toBeGreaterThan(0);
     const first = decision.candidates[0]!;
     const distance = Math.abs(first.goal.x - 5) + Math.abs(first.goal.y - 5);
@@ -121,7 +127,9 @@ describe("Charge movement planning", () => {
       isLegalTerrain: () => true,
     });
     expect(decision.type).toBe("move");
-    if (decision.type !== "move") return;
+    if (decision.type !== "move") {
+      return;
+    }
     expect(decision.candidates.length).toBeGreaterThan(0);
     for (const candidate of decision.candidates) {
       const distance = Math.abs(candidate.goal.x - 5) + Math.abs(candidate.goal.y - 5);
@@ -148,7 +156,11 @@ describe("Charge live warning-time retarget", () => {
   it("recomputes the path while the Player stays ahead on a legal range path", () => {
     const retarget = chargeLiveRetarget(enemy(), { x: 8, y: 5 }, () => true);
     expect(retarget).toEqual({
-      path: [{ x: 6, y: 5 }, { x: 7, y: 5 }, { x: 8, y: 5 }],
+      path: [
+        { x: 6, y: 5 },
+        { x: 7, y: 5 },
+        { x: 8, y: 5 },
+      ],
       facing: { x: 1, y: 0 },
     });
   });
@@ -162,7 +174,12 @@ describe("Charge live warning-time retarget", () => {
 });
 
 function createChargeWorld(): World {
-  const world = new World(12, 12, Array.from({ length: 144 }, () => "floor" as const), "charge-test");
+  const world = new World(
+    12,
+    12,
+    Array.from({ length: 144 }, () => "floor" as const),
+    "charge-test",
+  );
   world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 5, y: 6 }, hp: 100 });
   world.spawn({
     id: "enemy-charge",
@@ -180,11 +197,19 @@ describe("Charge committed lifecycle", () => {
   it("commits immediately against an already-aligned Player, then refreshes the path deterministically", () => {
     const world = createChargeWorld();
 
-    const committed = resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    const committed = resolveCommand(world, {
+      type: "attack",
+      actorId: "player",
+      direction: { x: 0, y: -1 },
+    });
     expect(world.requireEntity("enemy-charge")).toMatchObject({
       activity: "telegraphing",
       committedAttack: {
-        cells: [{ x: 5, y: 4 }, { x: 5, y: 5 }, { x: 5, y: 6 }],
+        cells: [
+          { x: 5, y: 4 },
+          { x: 5, y: 5 },
+          { x: 5, y: 6 },
+        ],
         warningTicks: 2,
       },
       facing: { x: 0, y: 1 },
@@ -192,21 +217,32 @@ describe("Charge committed lifecycle", () => {
     expect(committed.events.map((event) => event.type)).toContain("enemy_attack_committed");
     expect(world.playerCell).toEqual({ x: 5, y: 6 });
 
-    const retargeted = resolveCommand(world, { type: "move", actorId: "player", direction: { x: 0, y: 1 } });
+    const retargeted = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 0, y: 1 },
+    });
     expect(world.playerCell).toEqual({ x: 5, y: 7 });
     expect(world.requireEntity("enemy-charge")).toMatchObject({
       activity: "telegraphing",
       committedAttack: {
-        cells: [{ x: 5, y: 4 }, { x: 5, y: 5 }, { x: 5, y: 6 }, { x: 5, y: 7 }],
+        cells: [
+          { x: 5, y: 4 },
+          { x: 5, y: 5 },
+          { x: 5, y: 6 },
+          { x: 5, y: 7 },
+        ],
         warningTicks: 1,
       },
       facing: { x: 0, y: 1 },
     });
-    expect(retargeted.events).toContainEqual(expect.objectContaining({
-      type: "telegraph_changed",
-      sourceId: "enemy-charge",
-      cleared: false,
-    }));
+    expect(retargeted.events).toContainEqual(
+      expect.objectContaining({
+        type: "telegraph_changed",
+        sourceId: "enemy-charge",
+        cleared: false,
+      }),
+    );
   });
 
   it("retains the last valid target once the Player leaves the range rule", () => {

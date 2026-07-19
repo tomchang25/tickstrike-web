@@ -1,12 +1,14 @@
 import type { Seed } from "../model/types";
 
-export type WeightedEntry<T> = {
-  readonly item: T;
-  readonly weight: number;
-} | {
-  readonly value: T;
-  readonly weight: number;
-};
+export type WeightedEntry<T> =
+  | {
+      readonly item: T;
+      readonly weight: number;
+    }
+  | {
+      readonly value: T;
+      readonly weight: number;
+    };
 
 const UINT32_RANGE = 0x1_0000_0000;
 
@@ -22,7 +24,7 @@ export function normalizeSeed(seed: Seed = 0): number {
     hash ^= text.charCodeAt(index);
     hash = Math.imul(hash, 0x01000193);
   }
-  return (hash >>> 0) || 0x6d2b79f5;
+  return hash >>> 0 || 0x6d2b79f5;
 }
 
 /** A small environment-independent generator. Its state is never shared between domains. */
@@ -77,12 +79,16 @@ export class RandomStream {
   pickWeighted<T>(entries: readonly WeightedEntry<T>[]): T | undefined {
     const valid = entries.filter((entry) => Number.isFinite(entry.weight) && entry.weight > 0);
     const total = valid.reduce((sum, entry) => sum + entry.weight, 0);
-    if (valid.length === 0 || !Number.isFinite(total) || total <= 0) return undefined;
+    if (valid.length === 0 || !Number.isFinite(total) || total <= 0) {
+      return undefined;
+    }
 
     let target = this.nextUnit() * total;
     for (const entry of valid) {
       target -= entry.weight;
-      if (target < 0) return "item" in entry ? entry.item : entry.value;
+      if (target < 0) {
+        return "item" in entry ? entry.item : entry.value;
+      }
     }
     const last = valid[valid.length - 1];
     return last && ("item" in last ? last.item : last.value);
@@ -90,12 +96,16 @@ export class RandomStream {
 
   /** Select without replacement. Invalid requests return an empty deterministic result. */
   pickUnique<T>(items: readonly T[], count: number): readonly T[] {
-    if (!Number.isInteger(count) || count < 0 || count > items.length) return [];
+    if (!Number.isInteger(count) || count < 0 || count > items.length) {
+      return [];
+    }
     const remaining = [...items];
     const selected: T[] = [];
     while (selected.length < count) {
       const index = this.nextInt(0, remaining.length);
-      if (index === undefined) return [];
+      if (index === undefined) {
+        return [];
+      }
       selected.push(remaining[index]!);
       remaining.splice(index, 1);
     }

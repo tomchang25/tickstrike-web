@@ -18,7 +18,9 @@ afterEach(() => {
 describe("small enemy sprite profiles", () => {
   it("uses the reference four-direction, four-pose frame layout", () => {
     presentation = createEnemyPresentation("enemy.thrust", Texture.WHITE);
-    if (!presentation) throw new Error("Thrust presentation is missing.");
+    if (!presentation) {
+      throw new Error("Thrust presentation is missing.");
+    }
 
     expect(presentation.profileId).toBe("enemy.thrust");
     expect(presentation.palette).toBe("green");
@@ -40,7 +42,9 @@ describe("small enemy sprite profiles", () => {
   it("uses a fixed Slash palette sheet without a runtime filter", () => {
     const thrust = createEnemyPresentation("enemy.thrust", Texture.WHITE);
     presentation = createEnemyPresentation("enemy.slash", Texture.WHITE);
-    if (!thrust || !presentation) throw new Error("Small enemy presentations are missing.");
+    if (!thrust || !presentation) {
+      throw new Error("Small enemy presentations are missing.");
+    }
 
     expect(thrust.palette).toBe("green");
     expect(thrust.body.filters ?? []).toHaveLength(0);
@@ -52,7 +56,9 @@ describe("small enemy sprite profiles", () => {
 
   it("uses the authored Eye profile through the small-enemy renderer path", () => {
     presentation = createEnemyPresentation("enemy.ranged", Texture.WHITE);
-    if (!presentation) throw new Error("Ranged presentation is missing.");
+    if (!presentation) {
+      throw new Error("Ranged presentation is missing.");
+    }
 
     expect(presentation.profileId).toBe("enemy.ranged");
     expect(presentation.palette).toBe("eye");
@@ -67,7 +73,9 @@ describe("small enemy sprite profiles", () => {
 
   it("settles action and tint feedback back to idle base visuals", () => {
     presentation = createEnemyPresentation("enemy.slash", Texture.WHITE);
-    if (!presentation) throw new Error("Slash presentation is missing.");
+    if (!presentation) {
+      throw new Error("Slash presentation is missing.");
+    }
 
     presentation.playMove().progress(1);
     expect(presentation.pose).toBe("idle");

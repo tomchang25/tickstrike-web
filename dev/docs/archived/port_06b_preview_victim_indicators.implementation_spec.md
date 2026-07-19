@@ -76,14 +76,14 @@ Projection rules:
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `dev/docs/plans/port_06b_preview_victim_indicators.implementation_spec.md` | Small | Define the preview marker contract. |
-| `src/core/actions/action-preview.ts` | Medium | Project action-specific previews into common victim markers. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Medium | Draw and expose victim indicators through the existing pointer layer. |
-| `test/unit/core/actions/action-preview.test.ts` | Medium | Assert Normal Attack, Dash, and Smash marker projection. |
-| `test/e2e/testbed.spec.ts` | Medium | Assert browser-visible preview marker datasets and cleanup. |
-| `README.md` | Small | Document preview consequence indicators. |
+| File                                                                       | Change Size | Purpose                                                               |
+| -------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------- |
+| `dev/docs/plans/port_06b_preview_victim_indicators.implementation_spec.md` | Small       | Define the preview marker contract.                                   |
+| `src/core/actions/action-preview.ts`                                       | Medium      | Project action-specific previews into common victim markers.          |
+| `src/presentation/pixi/PixiGameRenderer.ts`                                | Medium      | Draw and expose victim indicators through the existing pointer layer. |
+| `test/unit/core/actions/action-preview.test.ts`                            | Medium      | Assert Normal Attack, Dash, and Smash marker projection.              |
+| `test/e2e/testbed.spec.ts`                                                 | Medium      | Assert browser-visible preview marker datasets and cleanup.           |
+| `README.md`                                                                | Small       | Document preview consequence indicators.                              |
 
 ## Execution Outline
 

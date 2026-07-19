@@ -21,7 +21,11 @@ function chargeAction(): EnemyActionDefinition {
     warningTicks: attack.warningTicks,
     recoveryTicks: attack.recoveryTicks,
     offsets: [],
-    chargeTuning: { minRange: 1, maxRange: attack.shape.length, preferredMinRange: CHARGE_PREFERRED_MIN_RANGE },
+    chargeTuning: {
+      minRange: 1,
+      maxRange: attack.shape.length,
+      preferredMinRange: CHARGE_PREFERRED_MIN_RANGE,
+    },
   };
 }
 
@@ -37,7 +41,9 @@ export function createChargeArena(seed?: Seed): World {
   const player = actorCatalog.characters.find((character) => character.id === "ninja");
   const heavyGuard = actorCatalog.guards.find((guard) => guard.id === "heavy");
   const charge = actorCatalog.enemies.find((enemy) => enemy.id === "charge_enemy");
-  if (!player || !heavyGuard || !charge) throw new Error("Charge scenario content is incomplete.");
+  if (!player || !heavyGuard || !charge) {
+    throw new Error("Charge scenario content is incomplete.");
+  }
 
   world.spawn({
     id: "player",
@@ -80,7 +86,8 @@ export const scenarios: readonly TestScenario[] = [
   {
     id: "charge-enemy",
     title: "Charge Enemy / Live Targeting and Impact",
-    description: "Three deterministic left moves end with same-direction Player movement and Charge knockback, while a side blocker and Charge landing move concurrently from their declared origins.",
+    description:
+      "Three deterministic left moves end with same-direction Player movement and Charge knockback, while a side blocker and Charge landing move concurrently from their declared origins.",
     seed: "charge-enemy-foundation",
     createWorld(seed) {
       return createChargeArena(seed ?? "charge-enemy-foundation");

@@ -47,29 +47,29 @@ The resulting foundation must support the first fixed scenario: one player and t
 
 ## Files to Change
 
-| File | Purpose |
-| --- | --- |
-| `src/core/model/types.ts` | Define cell, terrain, footprint, phase, reservation, Telegraph, seed, and snapshot values. |
-| `src/core/world/arena.ts` | Provide immutable twelve-by-twelve geometry and terrain queries. |
-| `src/core/world/world.ts` | Own entities, player cell, occupancy, reservations, Telegraphs, seed streams, tick state, and atomic transitions. |
-| `src/core/actions/commands.ts` | Preserve command inputs and the consumed-time distinction used by the advance boundary. |
-| `src/core/actions/action-resolver.ts` | Route current accepted/rejected commands through world-owned transitions and advancement. |
-| `src/core/events/combat-events.ts` | Carry stable command, world-advance, reservation, Telegraph, and terminal semantic events. |
-| `src/core/random/random-stream.ts` | Implement environment-stable deterministic stream and selection primitives. |
-| `src/core/random/random-streams.ts` | Derive independent named domain streams from one root seed. |
-| `src/runtime/GameRuntime.ts` | Own generation, cancellation, queue clearing, scenario reset, and presentation handoff. |
-| `src/presentation/timelines/PresentationDirector.ts` | Cancel old timelines and guard completion without mutating core state. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Project board, terrain, entities, terminal visuals, claims, Telegraphs, and cleanup. |
-| `src/harness/types.ts` | Carry scenario seed and foundation metadata. |
-| `src/harness/fixtures/shipped-arena.ts` | Create the fixed deterministic arena with one player and three fixtures. |
-| `src/harness/scenarios/empty-arena.scenario.ts` | Use the shipped arena and stable seed for the browser scenario. |
-| `src/harness/debug-api.ts` | Expose reset, generation, and idle inspection for browser assertions. |
-| `src/ui/SemanticMirror.tsx` | Expose stable board, generation, entity phase, Telegraph, and idle state. |
-| `test/unit/core/world/arena.test.ts` | Assert geometry, terrain, bounds, distances, directions, iteration, and footprints. |
-| `test/unit/core/world/world.test.ts` | Assert spawn, movement, terminal release, occupancy, reservations, Telegraphs, copies, and reset state. |
-| `test/unit/core/random/random-stream.test.ts` | Assert replay, bounds, weighted selection, invalid inputs, and stream isolation. |
-| `test/unit/core/actions/action-resolver.test.ts` | Assert accepted/rejected results, tick count, event order, and pre-presentation logical state. |
-| `test/e2e/testbed.spec.ts` | Assert the board, representative entities, reset determinism, cancellation, idle state, and stale-visual cleanup. |
+| File                                                 | Purpose                                                                                                           |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                            | Define cell, terrain, footprint, phase, reservation, Telegraph, seed, and snapshot values.                        |
+| `src/core/world/arena.ts`                            | Provide immutable twelve-by-twelve geometry and terrain queries.                                                  |
+| `src/core/world/world.ts`                            | Own entities, player cell, occupancy, reservations, Telegraphs, seed streams, tick state, and atomic transitions. |
+| `src/core/actions/commands.ts`                       | Preserve command inputs and the consumed-time distinction used by the advance boundary.                           |
+| `src/core/actions/action-resolver.ts`                | Route current accepted/rejected commands through world-owned transitions and advancement.                         |
+| `src/core/events/combat-events.ts`                   | Carry stable command, world-advance, reservation, Telegraph, and terminal semantic events.                        |
+| `src/core/random/random-stream.ts`                   | Implement environment-stable deterministic stream and selection primitives.                                       |
+| `src/core/random/random-streams.ts`                  | Derive independent named domain streams from one root seed.                                                       |
+| `src/runtime/GameRuntime.ts`                         | Own generation, cancellation, queue clearing, scenario reset, and presentation handoff.                           |
+| `src/presentation/timelines/PresentationDirector.ts` | Cancel old timelines and guard completion without mutating core state.                                            |
+| `src/presentation/pixi/PixiGameRenderer.ts`          | Project board, terrain, entities, terminal visuals, claims, Telegraphs, and cleanup.                              |
+| `src/harness/types.ts`                               | Carry scenario seed and foundation metadata.                                                                      |
+| `src/harness/fixtures/shipped-arena.ts`              | Create the fixed deterministic arena with one player and three fixtures.                                          |
+| `src/harness/scenarios/empty-arena.scenario.ts`      | Use the shipped arena and stable seed for the browser scenario.                                                   |
+| `src/harness/debug-api.ts`                           | Expose reset, generation, and idle inspection for browser assertions.                                             |
+| `src/ui/SemanticMirror.tsx`                          | Expose stable board, generation, entity phase, Telegraph, and idle state.                                         |
+| `test/unit/core/world/arena.test.ts`                 | Assert geometry, terrain, bounds, distances, directions, iteration, and footprints.                               |
+| `test/unit/core/world/world.test.ts`                 | Assert spawn, movement, terminal release, occupancy, reservations, Telegraphs, copies, and reset state.           |
+| `test/unit/core/random/random-stream.test.ts`        | Assert replay, bounds, weighted selection, invalid inputs, and stream isolation.                                  |
+| `test/unit/core/actions/action-resolver.test.ts`     | Assert accepted/rejected results, tick count, event order, and pre-presentation logical state.                    |
+| `test/e2e/testbed.spec.ts`                           | Assert the board, representative entities, reset determinism, cancellation, idle state, and stale-visual cleanup. |
 
 ## Execution Outline
 
@@ -96,23 +96,23 @@ The resulting foundation must support the first fixed scenario: one player and t
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Negative or edge coordinate | Bounds is false and terrain/walkability is non-walkable. |
-| Center cell | `(6,6)` is land and the deterministic player start. |
-| Terminal entity still has a visual | Its occupancy is released immediately; only its generation may finish the visual. |
-| Multi-cell spawn with one invalid cell | Entire spawn is rejected and no cell is indexed. |
-| Failed multi-cell reservation | No partial ownership is retained. |
-| Two Telegraph sources mark one cell | Both sources remain; projection resolves visible phase without changing claim legality. |
-| One overlapping source clears | Only that source is removed. |
-| Same seed and domain | The same sequence is produced across world recreation. |
-| One stream is consumed heavily | Other named streams keep their independent sequence. |
-| Empty weighted pool or invalid bounds | A deterministic no-selection/failure result is returned; no ambient randomness is used. |
-| Rejected destination | Tick and canonical state remain unchanged. |
-| Presentation timeline is delayed | Logical state and tick are already resolved. |
-| Reset during presentation | Old timelines/effects are cancelled, pending commands reject, and the new world starts at tick `0`. |
-| Reset with reused entity IDs | Old completion cannot mutate or remove views in the new generation. |
-| Runtime destroy | Timelines, effects, listeners, Pixi resources, and callbacks are cleaned safely. |
+| Case                                   | Expected Handling                                                                                   |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Negative or edge coordinate            | Bounds is false and terrain/walkability is non-walkable.                                            |
+| Center cell                            | `(6,6)` is land and the deterministic player start.                                                 |
+| Terminal entity still has a visual     | Its occupancy is released immediately; only its generation may finish the visual.                   |
+| Multi-cell spawn with one invalid cell | Entire spawn is rejected and no cell is indexed.                                                    |
+| Failed multi-cell reservation          | No partial ownership is retained.                                                                   |
+| Two Telegraph sources mark one cell    | Both sources remain; projection resolves visible phase without changing claim legality.             |
+| One overlapping source clears          | Only that source is removed.                                                                        |
+| Same seed and domain                   | The same sequence is produced across world recreation.                                              |
+| One stream is consumed heavily         | Other named streams keep their independent sequence.                                                |
+| Empty weighted pool or invalid bounds  | A deterministic no-selection/failure result is returned; no ambient randomness is used.             |
+| Rejected destination                   | Tick and canonical state remain unchanged.                                                          |
+| Presentation timeline is delayed       | Logical state and tick are already resolved.                                                        |
+| Reset during presentation              | Old timelines/effects are cancelled, pending commands reject, and the new world starts at tick `0`. |
+| Reset with reused entity IDs           | Old completion cannot mutate or remove views in the new generation.                                 |
+| Runtime destroy                        | Timelines, effects, listeners, Pixi resources, and callbacks are cleaned safely.                    |
 
 ## Acceptance Criteria
 

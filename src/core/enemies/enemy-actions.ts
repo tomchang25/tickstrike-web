@@ -38,7 +38,9 @@ export interface EnemyDecisionContext {
 /** Rotates a local offset where x is forward and y is lateral into world space. */
 export function rotateLocalOffset(offset: Cell, facing: Cell): Cell {
   const direction = cardinalDirection(facing);
-  if (!direction) throw new Error("Basic enemy facing must be cardinal.");
+  if (!direction) {
+    throw new Error("Basic enemy facing must be cardinal.");
+  }
   const lateral = { x: -direction.y, y: direction.x };
   return {
     x: direction.x * offset.x + lateral.x * offset.y,
@@ -55,7 +57,9 @@ export function rotatedAttackCells(
   const seen = new Set<string>();
   return cells.filter((cell) => {
     const key = `${cell.x},${cell.y}`;
-    if (seen.has(key)) return false;
+    if (seen.has(key)) {
+      return false;
+    }
     seen.add(key);
     return true;
   });
@@ -88,24 +92,27 @@ function rangedMovementCandidates(
   context: EnemyDecisionContext,
 ): readonly EnemyMovementCandidate[] {
   const tuning = action.rangedTuning;
-  if (!tuning || tuning.minDistance > tuning.maxDistance) return [];
+  if (!tuning || tuning.minDistance > tuning.maxDistance) {
+    return [];
+  }
 
   const distance = manhattanDistance(enemy.cell, playerCell);
-  if (distance >= tuning.minDistance && distance <= tuning.maxDistance) return [];
+  if (distance >= tuning.minDistance && distance <= tuning.maxDistance) {
+    return [];
+  }
   const movesTowardBand = distance > tuning.maxDistance;
-  const improves = (nextDistance: number) => movesTowardBand
-    ? nextDistance < distance
-    : nextDistance > distance;
-  const boundaryDistance = (nextDistance: number) => Math.min(
-    Math.abs(nextDistance - tuning.minDistance),
-    Math.abs(nextDistance - tuning.maxDistance),
-  );
+  const improves = (nextDistance: number) =>
+    movesTowardBand ? nextDistance < distance : nextDistance > distance;
+  const boundaryDistance = (nextDistance: number) =>
+    Math.min(
+      Math.abs(nextDistance - tuning.minDistance),
+      Math.abs(nextDistance - tuning.maxDistance),
+    );
 
-  return CARDINAL_DIRECTIONS
-    .map((direction) => ({
-      destination: { x: enemy.cell.x + direction.x, y: enemy.cell.y + direction.y },
-      facing: direction,
-    }))
+  return CARDINAL_DIRECTIONS.map((direction) => ({
+    destination: { x: enemy.cell.x + direction.x, y: enemy.cell.y + direction.y },
+    facing: direction,
+  }))
     .filter(({ destination }) => context.isInside(destination))
     .filter(({ destination }) => !sameCell(destination, playerCell))
     .map(({ destination, facing }) => ({
@@ -113,11 +120,18 @@ function rangedMovementCandidates(
       facing,
       distance: manhattanDistance(destination, playerCell),
     }))
-    .filter(({ destination, distance: nextDistance }) => context.canEndAt(destination) && context.canMove(destination) && improves(nextDistance))
+    .filter(
+      ({ destination, distance: nextDistance }) =>
+        context.canEndAt(destination) && context.canMove(destination) && improves(nextDistance),
+    )
     .sort((a, b) => {
       const boundaryResult = boundaryDistance(a.distance) - boundaryDistance(b.distance);
-      if (boundaryResult !== 0) return boundaryResult;
-      if (a.destination.y !== b.destination.y) return a.destination.y - b.destination.y;
+      if (boundaryResult !== 0) {
+        return boundaryResult;
+      }
+      if (a.destination.y !== b.destination.y) {
+        return a.destination.y - b.destination.y;
+      }
       return a.destination.x - b.destination.x;
     })
     .map(({ destination, facing }) => ({
@@ -136,18 +150,27 @@ function attackFacing(
 ): Cell | undefined {
   const candidates = [enemy.facing ?? preferred, preferred, ...CARDINAL_DIRECTIONS];
   return candidates.find((facing, index) => {
-    if (candidates.findIndex((candidate) => sameCell(candidate, facing)) !== index) return false;
-    return rotatedAttackCells(enemy.cell, facing, action.offsets).some((cell) => sameCell(cell, playerCell));
+    if (candidates.findIndex((candidate) => sameCell(candidate, facing)) !== index) {
+      return false;
+    }
+    return rotatedAttackCells(enemy.cell, facing, action.offsets).some((cell) =>
+      sameCell(cell, playerCell),
+    );
   });
 }
 
-export function attackOriginCellsFromShape(target: Cell, action: EnemyActionDefinition): readonly Cell[] {
+export function attackOriginCellsFromShape(
+  target: Cell,
+  action: EnemyActionDefinition,
+): readonly Cell[] {
   const origins: Cell[] = [];
   for (const facing of CARDINAL_DIRECTIONS) {
     for (const offset of action.offsets) {
       const rotated = rotateLocalOffset(offset, facing);
       const origin = { x: target.x - rotated.x, y: target.y - rotated.y };
-      if (!origins.some((candidate) => sameCell(candidate, origin))) origins.push(origin);
+      if (!origins.some((candidate) => sameCell(candidate, origin))) {
+        origins.push(origin);
+      }
     }
   }
   return origins;
@@ -160,15 +183,17 @@ function movementCandidates(
   context: EnemyDecisionContext,
 ): readonly EnemyMovementCandidate[] {
   const origins = attackOriginCellsFromShape(playerCell, action).filter(context.canEndAt);
-  const approachGoals = CARDINAL_DIRECTIONS
-    .map((direction) => ({ x: playerCell.x + direction.x, y: playerCell.y + direction.y }))
-    .filter(context.canEndAt);
-  const findPaths = (goals: readonly Cell[]) => findEnemyPaths({
-    start: enemy.cell,
-    goals,
-    canPathThrough: (cell) => context.isInside(cell) && context.canPathThrough(cell),
-    canEndAt: context.canEndAt,
-  });
+  const approachGoals = CARDINAL_DIRECTIONS.map((direction) => ({
+    x: playerCell.x + direction.x,
+    y: playerCell.y + direction.y,
+  })).filter(context.canEndAt);
+  const findPaths = (goals: readonly Cell[]) =>
+    findEnemyPaths({
+      start: enemy.cell,
+      goals,
+      canPathThrough: (cell) => context.isInside(cell) && context.canPathThrough(cell),
+      canEndAt: context.canEndAt,
+    });
   const paths = origins.length > 0 ? findPaths(origins) : [];
   const fallbackPaths = paths.length > 0 ? paths : findPaths(approachGoals);
   return fallbackPaths.map((path) => {
@@ -200,14 +225,20 @@ export function chargeRangePath(
   isLegalTerrain: (cell: Cell) => boolean,
 ): ChargeRangePath | undefined {
   const direction = cardinalLineDirection(origin, playerCell);
-  if (!direction) return undefined;
+  if (!direction) {
+    return undefined;
+  }
   const distance = manhattanDistance(origin, playerCell);
-  if (distance < CHARGE_MIN_RANGE || distance > maxRange) return undefined;
+  if (distance < CHARGE_MIN_RANGE || distance > maxRange) {
+    return undefined;
+  }
 
   const path: Cell[] = [];
   for (let step = 1; step <= distance; step += 1) {
     const cell = { x: origin.x + direction.x * step, y: origin.y + direction.y * step };
-    if (!isLegalTerrain(cell)) return undefined;
+    if (!isLegalTerrain(cell)) {
+      return undefined;
+    }
     path.push(cell);
   }
   return { path, facing: direction };
@@ -220,18 +251,26 @@ export function chargeLiveRetarget(
   isLegalTerrain: (cell: Cell) => boolean,
 ): ChargeRangePath | undefined {
   const tuning = enemy.enemyAction?.chargeTuning;
-  if (!tuning || !playerCell) return undefined;
+  if (!tuning || !playerCell) {
+    return undefined;
+  }
   const path = chargeRangePath(enemy.cell, playerCell, tuning.maxRange, isLegalTerrain);
   const facing = enemy.facing && cardinalDirection(enemy.facing);
   return path && facing && sameCell(path.facing, facing) ? path : undefined;
 }
 
-function chargeOriginCells(playerCell: Cell, maxRange: number): { primary: Cell[]; fallback: Cell[] } {
+function chargeOriginCells(
+  playerCell: Cell,
+  maxRange: number,
+): { primary: Cell[]; fallback: Cell[] } {
   const primary: Cell[] = [];
   const fallback: Cell[] = [];
   for (const direction of CARDINAL_DIRECTIONS) {
     for (let distance = CHARGE_MIN_RANGE; distance <= maxRange; distance += 1) {
-      const cell = { x: playerCell.x + direction.x * distance, y: playerCell.y + direction.y * distance };
+      const cell = {
+        x: playerCell.x + direction.x * distance,
+        y: playerCell.y + direction.y * distance,
+      };
       (distance >= CHARGE_PREFERRED_MIN_RANGE ? primary : fallback).push(cell);
     }
   }
@@ -245,12 +284,13 @@ function chargeMovementCandidates(
   context: EnemyDecisionContext,
 ): readonly EnemyMovementCandidate[] {
   const { primary, fallback } = chargeOriginCells(playerCell, tuning.maxRange);
-  const findPaths = (goals: readonly Cell[]) => findEnemyPaths({
-    start: enemy.cell,
-    goals: goals.filter(context.canEndAt),
-    canPathThrough: (cell) => context.isInside(cell) && context.canPathThrough(cell),
-    canEndAt: context.canEndAt,
-  });
+  const findPaths = (goals: readonly Cell[]) =>
+    findEnemyPaths({
+      start: enemy.cell,
+      goals: goals.filter(context.canEndAt),
+      canPathThrough: (cell) => context.isInside(cell) && context.canPathThrough(cell),
+      canEndAt: context.canEndAt,
+    });
   const primaryPaths = findPaths(primary);
   const paths = primaryPaths.length > 0 ? primaryPaths : findPaths(fallback);
   return paths.map((path) => {
@@ -275,7 +315,9 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDec
   if (action.role === "ranged") {
     const distance = manhattanDistance(enemy.cell, playerCell);
     const tuning = action.rangedTuning;
-    if (!tuning || tuning.minDistance > tuning.maxDistance) return { type: "wait" };
+    if (!tuning || tuning.minDistance > tuning.maxDistance) {
+      return { type: "wait" };
+    }
     if (distance >= tuning.minDistance && distance <= tuning.maxDistance) {
       return {
         type: "attack",
@@ -283,7 +325,7 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDec
         cells: rangedAttackCells(playerCell, rangedFacing(enemy), action, context.isInside),
         facing: rangedFacing(enemy),
         metadata: {
-          ...(action.metadata ?? {}),
+          ...action.metadata,
           targetCenter: { x: playerCell.x, y: playerCell.y },
         },
       };
@@ -295,8 +337,15 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDec
 
   if (action.role === "charge") {
     const tuning = action.chargeTuning;
-    if (!tuning) return { type: "wait" };
-    const rangePath = chargeRangePath(enemy.cell, playerCell, tuning.maxRange, context.isLegalTerrain);
+    if (!tuning) {
+      return { type: "wait" };
+    }
+    const rangePath = chargeRangePath(
+      enemy.cell,
+      playerCell,
+      tuning.maxRange,
+      context.isLegalTerrain,
+    );
     if (rangePath) {
       return {
         type: "attack",
@@ -306,12 +355,18 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDec
       };
     }
 
-    const candidates = chargeMovementCandidates(enemy, playerCell, tuning, context)
-      .filter((candidate) => context.canMove(candidate.destination));
+    const candidates = chargeMovementCandidates(enemy, playerCell, tuning, context).filter(
+      (candidate) => context.canMove(candidate.destination),
+    );
     return candidates.length > 0 ? { type: "move", candidates } : { type: "wait" };
   }
 
-  const attackDirection = attackFacing(enemy, playerCell, action, enemy.facing ?? CARDINAL_DIRECTIONS[0]!);
+  const attackDirection = attackFacing(
+    enemy,
+    playerCell,
+    action,
+    enemy.facing ?? CARDINAL_DIRECTIONS[0]!,
+  );
   if (attackDirection) {
     return {
       type: "attack",
@@ -321,8 +376,9 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDec
     };
   }
 
-  const candidates = movementCandidates(enemy, playerCell, action, context)
-    .filter((candidate) => context.canMove(candidate.destination));
+  const candidates = movementCandidates(enemy, playerCell, action, context).filter((candidate) =>
+    context.canMove(candidate.destination),
+  );
   return candidates.length > 0 ? { type: "move", candidates } : { type: "wait" };
 }
 

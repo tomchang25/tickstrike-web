@@ -61,7 +61,7 @@ Smash preview follows the reference project: the cursor resolves to a clamped la
 | `src/presentation/pixi/PixiGameRenderer.ts`          | Large       | Render Dash-through-enemy paths, selected Mobility previews, Smash areas, and locked Smash previews.                |
 | `src/presentation/timelines/PresentationDirector.ts` | Small       | Present Smash arm feedback and preserve release cleanup through the tracked timeline boundary.                      |
 | `src/app/App.tsx`                                    | Medium      | Own transient Mobility selection, remove direct keyboard Mobility bypasses, and route the selected pointer payload. |
-| `src/ui/TestbedPanel.tsx`                            | Medium      | Remove direct Move/Attack/Mobility action controls and expose the accessible Dash/Smash selection toggle.             |
+| `src/ui/TestbedPanel.tsx`                            | Medium      | Remove direct Move/Attack/Mobility action controls and expose the accessible Dash/Smash selection toggle.           |
 | `test/unit/core/actions/action-preview.test.ts`      | Medium      | Assert enemy traversal, non-enemy landing, Smash clamp, area, legality, and locked-target behavior.                 |
 | `test/unit/core/actions/action-resolver.test.ts`     | Large       | Assert Dash path/event behavior and Smash arm/release tick and outcome semantics.                                   |
 | `test/e2e/testbed.spec.ts`                           | Large       | Assert the reduced panel, Mobility toggle, Dash traversal preview, and two-stage Smash browser flow.                |
@@ -91,17 +91,17 @@ Smash preview follows the reference project: the cursor resolves to a clamped la
 
 ## Edge Cases
 
-| Case                                                                  | Expected Handling                                                                                      |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Case                                                                  | Expected Handling                                                                                                                            |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dash cursor path crosses one or more living enemies                   | Include those cells in the path, land on the farthest later non-enemy legal cell, and apply authored Mobility damage once per crossed enemy. |
-| Dash path contains only enemies before range or terrain blockage      | Reject without moving, ticking, or changing the event stream.                                          |
-| Smash cursor target is diagonal or beyond range                       | Clamp independently per axis and preview the resulting 3x3 center.                                     |
-| Smash target is occupied, reserved, water, wall, or outside the arena | Show blocked preview and reject the arm without advancing time.                                        |
-| Smash is armed and cursor moves                                       | Keep the locked center, area, and virtual player unchanged.                                            |
-| Smash release target becomes blocked                                  | Reject without advancing and keep Smash armed.                                                         |
-| Mobility toggle is pressed while Smash is armed or a command is busy  | Ignore the toggle until the action is no longer locked/busy; do not mutate the armed target.           |
-| Reset or scenario replacement occurs during an armed Smash            | Clear the armed target, selection preview, pointer listeners, and presentation work.                   |
-| Static inspection scenario receives pointer or toggle input           | Keep commands and selection disabled; do not mutate the snapshot.                                      |
+| Dash path contains only enemies before range or terrain blockage      | Reject without moving, ticking, or changing the event stream.                                                                                |
+| Smash cursor target is diagonal or beyond range                       | Clamp independently per axis and preview the resulting 3x3 center.                                                                           |
+| Smash target is occupied, reserved, water, wall, or outside the arena | Show blocked preview and reject the arm without advancing time.                                                                              |
+| Smash is armed and cursor moves                                       | Keep the locked center, area, and virtual player unchanged.                                                                                  |
+| Smash release target becomes blocked                                  | Reject without advancing and keep Smash armed.                                                                                               |
+| Mobility toggle is pressed while Smash is armed or a command is busy  | Ignore the toggle until the action is no longer locked/busy; do not mutate the armed target.                                                 |
+| Reset or scenario replacement occurs during an armed Smash            | Clear the armed target, selection preview, pointer listeners, and presentation work.                                                         |
+| Static inspection scenario receives pointer or toggle input           | Keep commands and selection disabled; do not mutate the snapshot.                                                                            |
 
 ## Acceptance Criteria
 

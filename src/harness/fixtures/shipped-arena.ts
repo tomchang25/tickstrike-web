@@ -23,7 +23,9 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
   if (!player || !thrust || !slash || !ranged || !charge || !smallGuard || !heavyGuard) {
     throw new Error("Shipped combat content is incomplete.");
   }
-  const actionFor = (enemy: typeof thrust | typeof slash | typeof ranged): EnemyActionDefinition => {
+  const actionFor = (
+    enemy: typeof thrust | typeof slash | typeof ranged,
+  ): EnemyActionDefinition => {
     const attackId = enemy.attackIds[0];
     const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
     if (!attack || attack.shape.shape !== "custom-offsets") {
@@ -38,7 +40,12 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
       recoveryTicks: attack.recoveryTicks,
       offsets: attack.shape.offsets,
       ...(enemy.roleTuning?.type === "ranged"
-        ? { rangedTuning: { minDistance: enemy.roleTuning.minDistance, maxDistance: enemy.roleTuning.maxDistance } }
+        ? {
+            rangedTuning: {
+              minDistance: enemy.roleTuning.minDistance,
+              maxDistance: enemy.roleTuning.maxDistance,
+            },
+          }
         : {}),
     };
   };
@@ -56,7 +63,11 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
       warningTicks: attack.warningTicks,
       recoveryTicks: attack.recoveryTicks,
       offsets: [],
-      chargeTuning: { minRange: 1, maxRange: attack.shape.length, preferredMinRange: CHARGE_PREFERRED_MIN_RANGE },
+      chargeTuning: {
+        minRange: 1,
+        maxRange: attack.shape.length,
+        preferredMinRange: CHARGE_PREFERRED_MIN_RANGE,
+      },
     };
   })();
   world.spawn({

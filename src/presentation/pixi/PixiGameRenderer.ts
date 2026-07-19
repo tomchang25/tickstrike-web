@@ -90,36 +90,72 @@ function cellToPixels(cell: Cell): { x: number; y: number } {
 }
 
 function entityColor(entity: EntityState): number {
-  if (entity.kind === "player") return 0x6ed0ff;
-  if (entity.phase === "drowning") return 0xf2d06b;
-  if (entity.phase === "dead") return 0xff6b6b;
-  if (entity.activity === "staggered") return 0xc79cff;
-  if (entity.activity === "telegraphing") return 0xffb86b;
-  if (entity.activity === "recovering") return 0xb5bfce;
+  if (entity.kind === "player") {
+    return 0x6ed0ff;
+  }
+  if (entity.phase === "drowning") {
+    return 0xf2d06b;
+  }
+  if (entity.phase === "dead") {
+    return 0xff6b6b;
+  }
+  if (entity.activity === "staggered") {
+    return 0xc79cff;
+  }
+  if (entity.activity === "telegraphing") {
+    return 0xffb86b;
+  }
+  if (entity.activity === "recovering") {
+    return 0xb5bfce;
+  }
   return 0xe8eef7;
 }
 
 function facingGlyph(facing: Cell | undefined): string {
-  if (!facing) return "";
-  if (facing.x > 0) return "→";
-  if (facing.x < 0) return "←";
-  if (facing.y > 0) return "↓";
+  if (!facing) {
+    return "";
+  }
+  if (facing.x > 0) {
+    return "→";
+  }
+  if (facing.x < 0) {
+    return "←";
+  }
+  if (facing.y > 0) {
+    return "↓";
+  }
   return "↑";
 }
 
 function debugStateLabel(entity: EntityState): string {
-  if (entity.phase !== "alive") return entity.phase;
-  if (entity.activity && entity.activity !== "ready") return entity.activity;
+  if (entity.phase !== "alive") {
+    return entity.phase;
+  }
+  if (entity.activity && entity.activity !== "ready") {
+    return entity.activity;
+  }
   return entity.lastDecision ?? "idle";
 }
 
 function combatStatusLabel(entity: EntityState): string {
-  if (entity.phase !== "alive") return entity.phase.toUpperCase();
-  if (entity.staggerTicks !== undefined) return `STAGGER ${entity.staggerTicks}`;
-  if (entity.protectionTicks !== undefined) return `PROTECT ${entity.protectionTicks}`;
-  if (entity.activity === "telegraphing") return `TELEGRAPH ${entity.committedAttack?.warningTicks ?? 0}`;
-  if (entity.activity === "recovering") return `RECOVER ${entity.recoveryTicks ?? 0}`;
-  if (entity.activity === "resting") return `REST ${entity.restTicks ?? 0}`;
+  if (entity.phase !== "alive") {
+    return entity.phase.toUpperCase();
+  }
+  if (entity.staggerTicks !== undefined) {
+    return `STAGGER ${entity.staggerTicks}`;
+  }
+  if (entity.protectionTicks !== undefined) {
+    return `PROTECT ${entity.protectionTicks}`;
+  }
+  if (entity.activity === "telegraphing") {
+    return `TELEGRAPH ${entity.committedAttack?.warningTicks ?? 0}`;
+  }
+  if (entity.activity === "recovering") {
+    return `RECOVER ${entity.recoveryTicks ?? 0}`;
+  }
+  if (entity.activity === "resting") {
+    return `REST ${entity.restTicks ?? 0}`;
+  }
   return "";
 }
 
@@ -133,7 +169,8 @@ function drawStatusBar(
   const width = 52;
   const height = 4;
   const ratio = maximum > 0 ? Math.max(0, Math.min(1, current / maximum)) : 0;
-  bar.clear()
+  bar
+    .clear()
     .roundRect(-width / 2, y, width, height, 2)
     .fill({ color: 0x080a0f, alpha: 0.92 })
     .roundRect(-width / 2 + 1, y + 1, (width - 2) * ratio, height - 2, 1)
@@ -196,7 +233,12 @@ export class PixiGameRenderer {
       autoDensity: true,
     });
     setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
-    const [greenEnemySpriteSheet, purpleEnemySpriteSheet, rangedEnemySpriteSheet, skullEnemySpriteSheet] = await Promise.all([
+    const [
+      greenEnemySpriteSheet,
+      purpleEnemySpriteSheet,
+      rangedEnemySpriteSheet,
+      skullEnemySpriteSheet,
+    ] = await Promise.all([
       Assets.load<Texture>(greenEnemySpriteSheetUrl),
       Assets.load<Texture>(purpleEnemySpriteSheetUrl),
       Assets.load<Texture>(rangedEnemySpriteSheetUrl),
@@ -241,21 +283,31 @@ export class PixiGameRenderer {
     const player = this.entityViews.get("player");
     player?.sprite?.setPose(pose);
     this.playerFacingLocked = pose !== "idle";
-    if (this.host) this.app.canvas.dataset.playerAnimation = pose;
+    if (this.host) {
+      this.app.canvas.dataset.playerAnimation = pose;
+    }
   }
 
   setPlayerFacing(facing: Cell, force = false): void {
     const direction = cardinalDirection(facing);
-    if (!direction) return;
-    if (this.playerFacingLocked && !force) return;
-    if (sameCell(this.playerFacing, direction)) return;
+    if (!direction) {
+      return;
+    }
+    if (this.playerFacingLocked && !force) {
+      return;
+    }
+    if (sameCell(this.playerFacing, direction)) {
+      return;
+    }
     this.applyPlayerFacing(direction);
   }
 
   private applyPlayerFacing(direction: Cell): void {
     this.playerFacing = direction;
     this.entityViews.get("player")?.sprite?.setFacing(direction);
-    if (this.host) this.app.canvas.dataset.playerFacing = `${direction.x},${direction.y}`;
+    if (this.host) {
+      this.app.canvas.dataset.playerFacing = `${direction.x},${direction.y}`;
+    }
   }
 
   sync(snapshot: WorldSnapshot): void {
@@ -278,7 +330,9 @@ export class PixiGameRenderer {
 
   updateSnapshot(snapshot: WorldSnapshot): void {
     this.snapshot = snapshot;
-    if (this.debugMode) this.drawArena(snapshot);
+    if (this.debugMode) {
+      this.drawArena(snapshot);
+    }
     this.projectSnapshot(snapshot);
     this.refreshPointerPreview();
   }
@@ -325,7 +379,9 @@ export class PixiGameRenderer {
         view.body.tint = entityColor(entity);
       }
       if (this.host && entity.kind === "player" && view.sprite) {
-        if (view.sprite.pose === "idle") view.sprite.setFacing(this.playerFacing);
+        if (view.sprite.pose === "idle") {
+          view.sprite.setFacing(this.playerFacing);
+        }
         view.body.tint = 0xffffff;
         this.app.canvas.dataset.playerProfile = view.sprite.profileId;
         this.app.canvas.dataset.playerFacing = `${this.playerFacing.x},${this.playerFacing.y}`;
@@ -337,18 +393,29 @@ export class PixiGameRenderer {
       }
       view.root.alpha = 1;
       view.root.scale.set(1);
-      drawStatusBar(view.hpBar, entity.hp, entity.maxHp, 0xff5c7a, entity.kind === "enemy" ? -42 : -34);
+      drawStatusBar(
+        view.hpBar,
+        entity.hp,
+        entity.maxHp,
+        0xff5c7a,
+        entity.kind === "enemy" ? -42 : -34,
+      );
       view.guardBar.visible = Boolean(entity.guard);
-      if (entity.guard) drawStatusBar(view.guardBar, entity.guard.current, entity.guard.max, 0x72d4ff, -36);
-      view.label.text = entity.kind === "player" && view.sprite || view.enemyPresentation
-        ? ""
-        : entity.kind === "player"
-          ? "P"
-          : "E";
+      if (entity.guard) {
+        drawStatusBar(view.guardBar, entity.guard.current, entity.guard.max, 0x72d4ff, -36);
+      }
+      view.label.text =
+        (entity.kind === "player" && view.sprite) || view.enemyPresentation
+          ? ""
+          : entity.kind === "player"
+            ? "P"
+            : "E";
       view.label.visible = entity.kind !== "player" || !view.sprite;
       view.facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
       view.facingMarker.text = facingGlyph(entity.facing);
-      if (entity.facing) view.facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
+      if (entity.facing) {
+        view.facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
+      }
       view.debugLabel.visible = this.debugMode && entity.kind === "enemy";
       view.debugLabel.text = debugStateLabel(entity);
       view.statusLabel.visible = entity.kind === "enemy" && Boolean(combatStatusLabel(entity));
@@ -358,7 +425,9 @@ export class PixiGameRenderer {
       this.app.canvas.dataset.enemyPresentations = snapshot.entities
         .map((entity) => {
           const presentation = this.entityViews.get(entity.id)?.enemyPresentation;
-          if (entity.kind !== "enemy" || !presentation) return undefined;
+          if (entity.kind !== "enemy" || !presentation) {
+            return undefined;
+          }
           return `${entity.id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}`;
         })
         .filter((value): value is string => value !== undefined)
@@ -381,17 +450,24 @@ export class PixiGameRenderer {
         motionTo = event.to;
       }
     }
-    if (!motionKey || motionKey === this.projectedPlayerMotionKey || !motionFrom || !motionTo) return;
+    if (!motionKey || motionKey === this.projectedPlayerMotionKey || !motionFrom || !motionTo) {
+      return;
+    }
     this.projectedPlayerMotionKey = motionKey;
     this.playerFacingLocked = true;
-    const direction = { x: Math.sign(motionTo.x - motionFrom.x), y: Math.sign(motionTo.y - motionFrom.y) };
+    const direction = {
+      x: Math.sign(motionTo.x - motionFrom.x),
+      y: Math.sign(motionTo.y - motionFrom.y),
+    };
     if (Math.abs(direction.x) + Math.abs(direction.y) === 1) {
       this.playerFacing = direction;
     }
   }
 
   setPointerMode(mode: PointerMode): void {
-    if (this.pointerMode === mode) return;
+    if (this.pointerMode === mode) {
+      return;
+    }
     this.pointerMode = mode;
     this.dashPreview = undefined;
     this.retainedDashPreview = undefined;
@@ -405,7 +481,9 @@ export class PixiGameRenderer {
     const canvas = this.app.canvas;
     const onPointerMove = (event: PointerEvent) => {
       const nextPointerCell = this.pointerToCell(event);
-      if (nextPointerCell && this.pointerCell && sameCell(nextPointerCell, this.pointerCell)) return;
+      if (nextPointerCell && this.pointerCell && sameCell(nextPointerCell, this.pointerCell)) {
+        return;
+      }
       this.pointerCell = nextPointerCell;
       this.refreshPointerPreview(true);
     };
@@ -416,27 +494,38 @@ export class PixiGameRenderer {
       this.retainedDashPreview = undefined;
       this.smashPreview = undefined;
       this.victimPreviewMarkers = [];
-      if (this.snapshot?.armedSmashTarget) this.refreshPointerPreview();
-      else this.clearPointerPreview();
+      if (this.snapshot?.armedSmashTarget) {
+        this.refreshPointerPreview();
+      } else {
+        this.clearPointerPreview();
+      }
     };
     const onClick = (event: MouseEvent) => {
-      if (event.button !== 0 || !binding.canInteract()) return;
+      if (event.button !== 0 || !binding.canInteract()) {
+        return;
+      }
       this.refreshPointerPreview();
       if (this.snapshot?.armedSmashTarget) {
-        if (!this.smashPreview?.accepted) return;
+        if (!this.smashPreview?.accepted) {
+          return;
+        }
         event.preventDefault();
         void binding.onPrimaryClick({ kind: "smash", target: this.smashPreview.target });
         return;
       }
       if (this.pointerMode === "attack") {
-        if (!this.attackPreview?.accepted) return;
+        if (!this.attackPreview?.accepted) {
+          return;
+        }
         event.preventDefault();
         this.lastAim = this.attackPreview.direction;
         void binding.onPrimaryClick({ kind: "attack", direction: this.attackPreview.direction });
         return;
       }
       if (this.activeMobility() === "dash") {
-        if (!this.dashPreview?.accepted) return;
+        if (!this.dashPreview?.accepted) {
+          return;
+        }
         event.preventDefault();
         this.lastAim = this.dashPreview.direction;
         void binding.onPrimaryClick({
@@ -446,7 +535,9 @@ export class PixiGameRenderer {
         });
         return;
       }
-      if (!this.smashPreview?.accepted) return;
+      if (!this.smashPreview?.accepted) {
+        return;
+      }
       event.preventDefault();
       void binding.onPrimaryClick({ kind: "smash", target: this.smashPreview.target });
     };
@@ -457,12 +548,16 @@ export class PixiGameRenderer {
 
     let active = true;
     const cleanup = () => {
-      if (!active) return;
+      if (!active) {
+        return;
+      }
       active = false;
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerleave", onPointerLeave);
       canvas.removeEventListener("click", onClick);
-      if (this.pointerCleanup === cleanup) this.pointerCleanup = undefined;
+      if (this.pointerCleanup === cleanup) {
+        this.pointerCleanup = undefined;
+      }
     };
     this.pointerCleanup = cleanup;
     return cleanup;
@@ -477,10 +572,14 @@ export class PixiGameRenderer {
   }
 
   releasePosition(id: EntityId): void {
-    if (!this.positionOwners.delete(id)) return;
+    if (!this.positionOwners.delete(id)) {
+      return;
+    }
     const entity = this.snapshot?.entities.find((candidate) => candidate.id === id);
     const view = this.entityViews.get(id);
-    if (!entity || !view) return;
+    if (!entity || !view) {
+      return;
+    }
     const pixels = cellToPixels(entity.cell);
     view.root.position.set(pixels.x, pixels.y);
   }
@@ -492,7 +591,9 @@ export class PixiGameRenderer {
   removeEntityView(id: EntityId): void {
     this.positionOwners.delete(id);
     const view = this.entityViews.get(id);
-    if (!view) return;
+    if (!view) {
+      return;
+    }
     view.root.destroy({ children: true });
     this.entityViews.delete(id);
     if (id === "player" && this.host) {
@@ -507,16 +608,22 @@ export class PixiGameRenderer {
   }
 
   resetEnemyPresentations(): void {
-    for (const view of this.entityViews.values()) view.enemyPresentation?.reset();
+    for (const view of this.entityViews.values()) {
+      view.enemyPresentation?.reset();
+    }
     this.refreshEnemyPresentationDataset();
   }
 
   refreshEnemyPresentationDataset(): void {
-    if (!this.host) return;
+    if (!this.host) {
+      return;
+    }
     this.app.canvas.dataset.enemyPresentations = [...this.entityViews.entries()]
       .map(([id, view]) => {
         const presentation = view.enemyPresentation;
-        if (!presentation) return undefined;
+        if (!presentation) {
+          return undefined;
+        }
         return `${id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}`;
       })
       .filter((value): value is string => value !== undefined)
@@ -526,7 +633,9 @@ export class PixiGameRenderer {
   getEntityBounds(id: EntityId): ScreenBounds | undefined {
     const view = this.entityViews.get(id);
     const canvas = this.app.canvas;
-    if (!view || !this.host || !canvas) return undefined;
+    if (!view || !this.host || !canvas) {
+      return undefined;
+    }
 
     const bounds = view.root.getBounds();
     const canvasRect = canvas.getBoundingClientRect();
@@ -554,12 +663,16 @@ export class PixiGameRenderer {
 
   releaseTransient(effect: Graphics): void {
     this.transientEffects.delete(effect);
-    if (!effect.destroyed) effect.destroy({ children: true });
+    if (!effect.destroyed) {
+      effect.destroy({ children: true });
+    }
   }
 
   clearTransient(): void {
     for (const effect of this.transientEffects) {
-      if (!effect.destroyed) effect.destroy({ children: true });
+      if (!effect.destroyed) {
+        effect.destroy({ children: true });
+      }
     }
     this.transientEffects.clear();
     this.effectsLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
@@ -590,7 +703,9 @@ export class PixiGameRenderer {
       return;
     }
 
-    const player = this.snapshot.entities.find((entity) => entity.id === "player" && entity.phase === "alive");
+    const player = this.snapshot.entities.find(
+      (entity) => entity.id === "player" && entity.phase === "alive",
+    );
     if (!player) {
       this.attackPreview = undefined;
       this.dashPreview = undefined;
@@ -607,7 +722,9 @@ export class PixiGameRenderer {
 
     if (this.snapshot.armedSmashTarget) {
       if (allowFacingUpdate) {
-        this.setPlayerFacing(resolveAimDirection(this.snapshot.armedSmashTarget, player.cell, this.lastAim));
+        this.setPlayerFacing(
+          resolveAimDirection(this.snapshot.armedSmashTarget, player.cell, this.lastAim),
+        );
       }
       this.smashPreview = previewSmash(this.snapshot, player.id, this.snapshot.armedSmashTarget);
       this.victimPreviewMarkers = previewSmashVictimMarkers(this.smashPreview);
@@ -621,7 +738,9 @@ export class PixiGameRenderer {
     }
 
     const direction = resolveAimDirection(this.pointerCell, player.cell, this.lastAim);
-    if (allowFacingUpdate) this.setPlayerFacing(direction);
+    if (allowFacingUpdate) {
+      this.setPlayerFacing(direction);
+    }
 
     if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
       this.attackPreview = previewAttack(this.snapshot, player.id, direction);
@@ -636,7 +755,9 @@ export class PixiGameRenderer {
       this.dashDistance = resolveAimDistance(this.pointerCell, player.cell, range);
       this.dashPreview = previewDash(this.snapshot, player.id, direction, this.dashDistance);
       this.victimPreviewMarkers = previewDashVictimMarkers(this.dashPreview);
-      if (this.dashPreview.accepted) this.retainedDashPreview = this.dashPreview;
+      if (this.dashPreview.accepted) {
+        this.retainedDashPreview = this.dashPreview;
+      }
     } else {
       this.smashPreview = previewSmash(
         this.snapshot,
@@ -693,7 +814,10 @@ export class PixiGameRenderer {
       for (const cell of preview.area) {
         const marker = new Graphics()
           .rect(cell.x * CELL_SIZE + 8, cell.y * CELL_SIZE + 8, CELL_SIZE - 16, CELL_SIZE - 16)
-          .fill({ color: preview.accepted ? 0x72d4ff : 0x8791a4, alpha: preview.accepted ? 0.2 : 0.12 });
+          .fill({
+            color: preview.accepted ? 0x72d4ff : 0x8791a4,
+            alpha: preview.accepted ? 0.2 : 0.12,
+          });
         this.pointerPreviewLayer.addChild(marker);
       }
       const center = preview.target;
@@ -703,7 +827,11 @@ export class PixiGameRenderer {
       this.pointerPreviewLayer.addChild(centerMarker);
       if (preview.accepted) {
         const virtualPlayer = new Graphics()
-          .circle(center.x * CELL_SIZE + CELL_SIZE / 2, center.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE * 0.28)
+          .circle(
+            center.x * CELL_SIZE + CELL_SIZE / 2,
+            center.y * CELL_SIZE + CELL_SIZE / 2,
+            CELL_SIZE * 0.28,
+          )
           .fill({ color: 0xf4fbff, alpha: 0.38 })
           .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
         this.pointerPreviewLayer.addChild(virtualPlayer);
@@ -735,7 +863,11 @@ export class PixiGameRenderer {
       .rect(landing.x * CELL_SIZE + 6, landing.y * CELL_SIZE + 6, CELL_SIZE - 12, CELL_SIZE - 12)
       .stroke({ color: 0x72d4ff, width: 5, alpha: 0.95 });
     const virtualPlayer = new Graphics()
-      .circle(landing.x * CELL_SIZE + CELL_SIZE / 2, landing.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE * 0.28)
+      .circle(
+        landing.x * CELL_SIZE + CELL_SIZE / 2,
+        landing.y * CELL_SIZE + CELL_SIZE / 2,
+        CELL_SIZE * 0.28,
+      )
       .fill({ color: 0xf4fbff, alpha: 0.38 })
       .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
     this.pointerPreviewLayer.addChild(landingMarker, virtualPlayer);
@@ -750,14 +882,21 @@ export class PixiGameRenderer {
     const displacements = markers.filter(
       (marker) => (marker.outcome === "knockback" || marker.outcome === "water") && marker.to,
     );
-    const terminal = markers.filter((marker) => marker.outcome === "crush" || marker.outcome === "water");
+    const terminal = markers.filter(
+      (marker) => marker.outcome === "crush" || marker.outcome === "water",
+    );
     const blocked = markers.filter((marker) => marker.outcome === "blocked");
 
     canvas.dataset.previewKills = kills.map((marker) => marker.enemyId).join(",");
     canvas.dataset.previewDisplacements = displacements
-      .map((marker) => `${marker.enemyId}:${marker.from.x},${marker.from.y}>${marker.to?.x},${marker.to?.y}`)
+      .map(
+        (marker) =>
+          `${marker.enemyId}:${marker.from.x},${marker.from.y}>${marker.to?.x},${marker.to?.y}`,
+      )
       .join(";");
-    canvas.dataset.previewTerminal = terminal.map((marker) => `${marker.enemyId}:${marker.outcome}`).join(";");
+    canvas.dataset.previewTerminal = terminal
+      .map((marker) => `${marker.enemyId}:${marker.outcome}`)
+      .join(";");
     canvas.dataset.previewBlocked = blocked.map((marker) => marker.enemyId).join(",");
 
     for (const marker of markers) {
@@ -780,7 +919,12 @@ export class PixiGameRenderer {
       if (marker.outcome === "crush") {
         this.pointerPreviewLayer.addChild(
           new Graphics()
-            .rect(marker.from.x * CELL_SIZE + 7, marker.from.y * CELL_SIZE + 7, CELL_SIZE - 14, CELL_SIZE - 14)
+            .rect(
+              marker.from.x * CELL_SIZE + 7,
+              marker.from.y * CELL_SIZE + 7,
+              CELL_SIZE - 14,
+              CELL_SIZE - 14,
+            )
             .fill({ color: 0xff8c42, alpha: 0.28 })
             .stroke({ color: 0xffd27d, width: 5, alpha: 1 }),
         );
@@ -797,7 +941,9 @@ export class PixiGameRenderer {
         continue;
       }
 
-      if (!marker.to) continue;
+      if (!marker.to) {
+        continue;
+      }
       const to = cellToPixels(marker.to);
       const color = marker.outcome === "water" ? 0xf2d06b : 0xffb86b;
       const directionX = to.x - from.x;
@@ -817,7 +963,12 @@ export class PixiGameRenderer {
           .lineTo(to.x - unitX * 16 + unitY * 8, to.y - unitY * 16 - unitX * 8)
           .stroke({ color, width: 4, alpha: 0.85 }),
         new Graphics()
-          .rect(marker.to.x * CELL_SIZE + 6, marker.to.y * CELL_SIZE + 6, CELL_SIZE - 12, CELL_SIZE - 12)
+          .rect(
+            marker.to.x * CELL_SIZE + 6,
+            marker.to.y * CELL_SIZE + 6,
+            CELL_SIZE - 12,
+            CELL_SIZE - 12,
+          )
           .fill({ color, alpha: 0.28 })
           .stroke({ color, width: 5, alpha: 1 }),
       );
@@ -826,7 +977,9 @@ export class PixiGameRenderer {
 
   private clearPointerPreview(): void {
     this.pointerPreviewLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
-    if (!this.host) return;
+    if (!this.host) {
+      return;
+    }
     const canvas = this.app.canvas;
     delete canvas.dataset.pointerMode;
     delete canvas.dataset.attackPreviewCell;
@@ -845,7 +998,9 @@ export class PixiGameRenderer {
   }
 
   private activeMobility(): MobilityKind {
-    return this.snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash";
+    return (
+      this.snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash"
+    );
   }
 
   private drawArena(snapshot: WorldSnapshot): void {
@@ -882,12 +1037,16 @@ export class PixiGameRenderer {
       for (let x = 0; x < snapshot.arena.width; x += 1) {
         const cell = { x, y };
         const tile = snapshot.arena.tiles[y * snapshot.arena.width + x];
-        if (tile !== "floor") blockedCells.add(cellKey(cell));
+        if (tile !== "floor") {
+          blockedCells.add(cellKey(cell));
+        }
       }
     }
 
     for (const entity of snapshot.entities) {
-      if (entity.phase !== "alive") continue;
+      if (entity.phase !== "alive") {
+        continue;
+      }
       for (const cell of [entity.cell, ...entity.footprint]) {
         const key = cellKey(cell);
         blockedCells.add(key);
@@ -919,7 +1078,9 @@ export class PixiGameRenderer {
       );
     }
 
-    if (!this.host) return;
+    if (!this.host) {
+      return;
+    }
     this.app.canvas.dataset.debugBlockedCount = String(blockedCells.size);
     this.app.canvas.dataset.debugBlockedCells = [...blockedCells].sort().join(";");
     this.app.canvas.dataset.debugNavigationBlockerCount = String(reservedCells.size);
@@ -961,8 +1122,10 @@ export class PixiGameRenderer {
     const placements = placeTelegraphLabels(summaries, occupiedCells);
 
     for (const placement of placements) {
-      const primaryFontSize = placement.primary && placement.offset.y < 0 ? 36 : placement.primary ? 52 : 26;
-      const multiplierFontSize = placement.primary && placement.offset.y < 0 ? 16 : placement.primary ? 22 : 14;
+      const primaryFontSize =
+        placement.primary && placement.offset.y < 0 ? 36 : placement.primary ? 52 : 26;
+      const multiplierFontSize =
+        placement.primary && placement.offset.y < 0 ? 16 : placement.primary ? 22 : 14;
       const label = new Container();
       label.label = `telegraph-${placement.cell.x}-${placement.cell.y}-${placement.ticks}`;
       label.position.set(
@@ -1004,7 +1167,12 @@ export class PixiGameRenderer {
       this.app.canvas.dataset.telegraphLabels = placements
         .map((placement) => {
           const multiplier = formatTelegraphMultiplier(placement.count) ?? "";
-          const position = placement.primary && placement.offset.y < 0 ? "@head" : placement.primary ? "@center" : "@side";
+          const position =
+            placement.primary && placement.offset.y < 0
+              ? "@head"
+              : placement.primary
+                ? "@center"
+                : "@side";
           return `${placement.cell.x},${placement.cell.y}:${placement.ticks}${multiplier}${position}`;
         })
         .join("|");
@@ -1023,24 +1191,37 @@ export class PixiGameRenderer {
     const guardBar = new Graphics();
     guardBar.visible = Boolean(entity.guard);
 
-    const playerSprite = entity.kind === "player"
-      ? createPlayerSprite(`character.${entity.archetype}`)
-      : undefined;
-    const enemyProfile = entity.kind === "enemy" && entity.presentationId
-      ? getEnemyPresentationProfile(entity.presentationId)
-      : undefined;
+    const playerSprite =
+      entity.kind === "player" ? createPlayerSprite(`character.${entity.archetype}`) : undefined;
+    const enemyProfile =
+      entity.kind === "enemy" && entity.presentationId
+        ? getEnemyPresentationProfile(entity.presentationId)
+        : undefined;
     const enemySpriteSheet = enemyProfile ? this.enemySpriteSheets[enemyProfile.sheet] : undefined;
-    const enemyPresentation = enemySpriteSheet && enemyProfile
-      ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, () => this.refreshEnemyPresentationDataset())
-      : undefined;
-    const body = playerSprite?.body ?? enemyPresentation?.body ?? new Graphics()
-      .roundRect(-22, -22, 44, 44, 10)
-      .fill(0xffffff)
-      .stroke({ color: 0x0a0c10, width: 4 });
-    if (!playerSprite && !enemyPresentation) body.tint = entityColor(entity);
+    const enemyPresentation =
+      enemySpriteSheet && enemyProfile
+        ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, () =>
+            this.refreshEnemyPresentationDataset(),
+          )
+        : undefined;
+    const body =
+      playerSprite?.body ??
+      enemyPresentation?.body ??
+      new Graphics()
+        .roundRect(-22, -22, 44, 44, 10)
+        .fill(0xffffff)
+        .stroke({ color: 0x0a0c10, width: 4 });
+    if (!playerSprite && !enemyPresentation) {
+      body.tint = entityColor(entity);
+    }
 
     const label = new Text({
-      text: entity.kind === "player" && playerSprite || enemyPresentation ? "" : entity.kind === "player" ? "P" : "E",
+      text:
+        (entity.kind === "player" && playerSprite) || enemyPresentation
+          ? ""
+          : entity.kind === "player"
+            ? "P"
+            : "E",
       style: {
         fill: 0x10131a,
         fontFamily: "monospace",
@@ -1088,12 +1269,18 @@ export class PixiGameRenderer {
     });
     facingMarker.anchor.set(0.5);
     facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
-    if (entity.facing) facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
+    if (entity.facing) {
+      facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
+    }
 
     root.addChild(
       hpBar,
       guardBar,
-      ...(playerSprite ? [playerSprite.root] : enemyPresentation ? [enemyPresentation.root] : [body]),
+      ...(playerSprite
+        ? [playerSprite.root]
+        : enemyPresentation
+          ? [enemyPresentation.root]
+          : [body]),
       label,
       facingMarker,
       debugLabel,

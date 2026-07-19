@@ -17,7 +17,10 @@ function createRenderer() {
   const effects = new Set<object>();
   const renderer = {
     getEntityView: vi.fn(() => view),
-    cellToPixels: (cell: { x: number; y: number }) => ({ x: cell.x * 64 + 32, y: cell.y * 64 + 32 }),
+    cellToPixels: (cell: { x: number; y: number }) => ({
+      x: cell.x * 64 + 32,
+      y: cell.y * 64 + 32,
+    }),
     createImpact: vi.fn(() => {
       const effect = { alpha: 1, scale: { x: 1, y: 1 } };
       effects.add(effect);
@@ -41,15 +44,43 @@ function createRenderer() {
 
 describe("PresentationDirector combat feedback", () => {
   it("normalizes every board-motion source in event order and omits no-op landing", () => {
-    expect(normalizeMotionEvents([
-      { type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
-      { type: "entity_displaced", entityId: "player", from: { x: 2, y: 1 }, to: { x: 3, y: 1 }, cause: "charge_target_knockback" },
-      { type: "charge_landed", enemyId: "enemy", from: { x: 4, y: 1 }, to: { x: 4, y: 1 } },
-      { type: "enemy_entered_water", enemyId: "enemy", from: { x: 2, y: 2 }, waterCell: { x: 2, y: 3 } },
-    ])).toEqual([
-      expect.objectContaining({ entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 }, kind: "move" }),
-      expect.objectContaining({ entityId: "player", from: { x: 2, y: 1 }, to: { x: 3, y: 1 }, kind: "displacement" }),
-      expect.objectContaining({ entityId: "enemy", from: { x: 2, y: 2 }, to: { x: 2, y: 3 }, kind: "water" }),
+    expect(
+      normalizeMotionEvents([
+        { type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
+        {
+          type: "entity_displaced",
+          entityId: "player",
+          from: { x: 2, y: 1 },
+          to: { x: 3, y: 1 },
+          cause: "charge_target_knockback",
+        },
+        { type: "charge_landed", enemyId: "enemy", from: { x: 4, y: 1 }, to: { x: 4, y: 1 } },
+        {
+          type: "enemy_entered_water",
+          enemyId: "enemy",
+          from: { x: 2, y: 2 },
+          waterCell: { x: 2, y: 3 },
+        },
+      ]),
+    ).toEqual([
+      expect.objectContaining({
+        entityId: "player",
+        from: { x: 1, y: 1 },
+        to: { x: 2, y: 1 },
+        kind: "move",
+      }),
+      expect.objectContaining({
+        entityId: "player",
+        from: { x: 2, y: 1 },
+        to: { x: 3, y: 1 },
+        kind: "displacement",
+      }),
+      expect.objectContaining({
+        entityId: "enemy",
+        from: { x: 2, y: 2 },
+        to: { x: 2, y: 3 },
+        kind: "water",
+      }),
     ]);
   });
 
@@ -58,7 +89,13 @@ describe("PresentationDirector combat feedback", () => {
     const director = new PresentationDirector(renderer);
     const events: CombatEvent[] = [
       { type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
-      { type: "entity_displaced", entityId: "player", from: { x: 2, y: 1 }, to: { x: 3, y: 1 }, cause: "charge_target_knockback" },
+      {
+        type: "entity_displaced",
+        entityId: "player",
+        from: { x: 2, y: 1 },
+        to: { x: 3, y: 1 },
+        cause: "charge_target_knockback",
+      },
       { type: "enemy_moved", enemyId: "enemy", from: { x: 4, y: 1 }, to: { x: 3, y: 1 } },
     ];
 
@@ -77,26 +114,36 @@ describe("PresentationDirector combat feedback", () => {
     const { renderer } = createRenderer();
     const director = new PresentationDirector(renderer);
     const events: CombatEvent[] = [
-      { type: "enemy_attack_committed", enemyId: "enemy", attack: {
-        attackId: "thrust",
-        cells: [{ x: 6, y: 6 }],
-        damage: 10,
-        warningTicks: 1,
-        recoveryTicks: 1,
-      } },
-      { type: "enemy_attack_detonated", enemyId: "enemy", attack: {
-        attackId: "thrust",
-        cells: [{ x: 6, y: 6 }],
-        damage: 10,
-        warningTicks: 0,
-        recoveryTicks: 1,
-      }, target: { x: 6, y: 6 }, hit: {
-        targetId: "player",
-        damage: 10,
-        hpBefore: 100,
-        hpAfter: 90,
-        killed: false,
-      } },
+      {
+        type: "enemy_attack_committed",
+        enemyId: "enemy",
+        attack: {
+          attackId: "thrust",
+          cells: [{ x: 6, y: 6 }],
+          damage: 10,
+          warningTicks: 1,
+          recoveryTicks: 1,
+        },
+      },
+      {
+        type: "enemy_attack_detonated",
+        enemyId: "enemy",
+        attack: {
+          attackId: "thrust",
+          cells: [{ x: 6, y: 6 }],
+          damage: 10,
+          warningTicks: 0,
+          recoveryTicks: 1,
+        },
+        target: { x: 6, y: 6 },
+        hit: {
+          targetId: "player",
+          damage: 10,
+          hpBefore: 100,
+          hpAfter: 90,
+          killed: false,
+        },
+      },
       { type: "enemy_guard_damaged", enemyId: "enemy", damage: 4, guard: 28, maxGuard: 32 },
       { type: "enemy_guard_broken", enemyId: "enemy", staggerTicks: 3 },
       { type: "enemy_staggered", enemyId: "enemy", ticks: 3 },
@@ -115,9 +162,10 @@ describe("PresentationDirector combat feedback", () => {
   it("cancels stale terminal presentation when the generation changes", async () => {
     const { renderer } = createRenderer();
     const director = new PresentationDirector(renderer);
-    const playing = director.play([
-      { type: "enemy_died", enemyId: "enemy", attackerId: "player", cell: { x: 5, y: 6 } },
-    ], 0);
+    const playing = director.play(
+      [{ type: "enemy_died", enemyId: "enemy", attackerId: "player", cell: { x: 5, y: 6 } }],
+      0,
+    );
 
     director.setGeneration(1);
     await playing;
@@ -133,22 +181,33 @@ describe("PresentationDirector combat feedback", () => {
     const director = new PresentationDirector(renderer);
 
     const first = director.play([
-      { type: "player_attacked", actorId: "player", direction: { x: 1, y: 0 }, target: { x: 6, y: 6 } },
+      {
+        type: "player_attacked",
+        actorId: "player",
+        direction: { x: 1, y: 0 },
+        target: { x: 6, y: 6 },
+      },
     ]);
     const second = director.play([
-      { type: "enemy_attack_detonated", enemyId: "enemy", attack: {
-        attackId: "thrust",
-        cells: [{ x: 6, y: 6 }],
-        damage: 10,
-        warningTicks: 0,
-        recoveryTicks: 1,
-      }, target: { x: 6, y: 6 }, hit: {
-        targetId: "player",
-        damage: 10,
-        hpBefore: 100,
-        hpAfter: 90,
-        killed: false,
-      } },
+      {
+        type: "enemy_attack_detonated",
+        enemyId: "enemy",
+        attack: {
+          attackId: "thrust",
+          cells: [{ x: 6, y: 6 }],
+          damage: 10,
+          warningTicks: 0,
+          recoveryTicks: 1,
+        },
+        target: { x: 6, y: 6 },
+        hit: {
+          targetId: "player",
+          damage: 10,
+          hpBefore: 100,
+          hpAfter: 90,
+          killed: false,
+        },
+      },
     ]);
 
     expect(director.isIdle).toBe(false);
@@ -164,13 +223,18 @@ describe("PresentationDirector combat feedback", () => {
     const director = new PresentationDirector(renderer);
 
     await director.play([
-      { type: "enemy_attack_detonated", enemyId: "enemy", attack: {
-        attackId: "thrust",
-        cells: [{ x: 6, y: 6 }],
-        damage: 10,
-        warningTicks: 0,
-        recoveryTicks: 1,
-      }, target: { x: 6, y: 6 } },
+      {
+        type: "enemy_attack_detonated",
+        enemyId: "enemy",
+        attack: {
+          attackId: "thrust",
+          cells: [{ x: 6, y: 6 }],
+          damage: 10,
+          warningTicks: 0,
+          recoveryTicks: 1,
+        },
+        target: { x: 6, y: 6 },
+      },
     ]);
 
     expect(renderer.createImpact).not.toHaveBeenCalled();
@@ -198,7 +262,11 @@ describe("PresentationDirector combat feedback", () => {
         actorId: "player",
         from: { x: 1, y: 1 },
         to: { x: 4, y: 1 },
-        path: [{ x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }],
+        path: [
+          { x: 2, y: 1 },
+          { x: 3, y: 1 },
+          { x: 4, y: 1 },
+        ],
       },
     ]);
 
@@ -225,7 +293,12 @@ describe("PresentationDirector combat feedback", () => {
     const director = new PresentationDirector(renderer);
 
     await director.play([
-      { type: "player_attacked", actorId: "player", direction: { x: -1, y: 0 }, target: { x: 4, y: 3 } },
+      {
+        type: "player_attacked",
+        actorId: "player",
+        direction: { x: -1, y: 0 },
+        target: { x: 4, y: 3 },
+      },
     ]);
 
     expect(renderer.setPlayerFacing).toHaveBeenCalledWith({ x: -1, y: 0 }, true);
@@ -242,32 +315,49 @@ describe("PresentationDirector combat feedback", () => {
       playStaggerEnded: vi.fn(() => gsap.timeline()),
       clearAction: vi.fn(),
     };
-    (renderer as unknown as { getEnemyPresentation: () => typeof presentation }).getEnemyPresentation = vi.fn(() => presentation);
+    (
+      renderer as unknown as { getEnemyPresentation: () => typeof presentation }
+    ).getEnemyPresentation = vi.fn(() => presentation);
 
     await new PresentationDirector(renderer).play([
       { type: "enemy_moved", enemyId: "enemy", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
-      { type: "enemy_attack_committed", enemyId: "enemy", attack: {
-        attackId: "thrust",
-        cells: [{ x: 3, y: 1 }],
-        damage: 10,
-        warningTicks: 1,
-        recoveryTicks: 1,
-      } },
-      { type: "enemy_attack_detonated", enemyId: "enemy", attack: {
-        attackId: "thrust",
-        cells: [{ x: 3, y: 1 }],
-        damage: 10,
-        warningTicks: 0,
-        recoveryTicks: 1,
-      }, target: { x: 3, y: 1 } },
-      { type: "enemy_damaged", enemyId: "enemy", hit: {
-        targetId: "enemy",
-        attackerId: "player",
-        damage: 10,
-        hpBefore: 100,
-        hpAfter: 90,
-        killed: false,
-      }, hp: 90, maxHp: 100 },
+      {
+        type: "enemy_attack_committed",
+        enemyId: "enemy",
+        attack: {
+          attackId: "thrust",
+          cells: [{ x: 3, y: 1 }],
+          damage: 10,
+          warningTicks: 1,
+          recoveryTicks: 1,
+        },
+      },
+      {
+        type: "enemy_attack_detonated",
+        enemyId: "enemy",
+        attack: {
+          attackId: "thrust",
+          cells: [{ x: 3, y: 1 }],
+          damage: 10,
+          warningTicks: 0,
+          recoveryTicks: 1,
+        },
+        target: { x: 3, y: 1 },
+      },
+      {
+        type: "enemy_damaged",
+        enemyId: "enemy",
+        hit: {
+          targetId: "enemy",
+          attackerId: "player",
+          damage: 10,
+          hpBefore: 100,
+          hpAfter: 90,
+          killed: false,
+        },
+        hp: 90,
+        maxHp: 100,
+      },
       { type: "enemy_staggered", enemyId: "enemy", ticks: 3 },
       { type: "enemy_stagger_ended", enemyId: "enemy", guard: 32, maxGuard: 32 },
       { type: "enemy_attack_interrupted", enemyId: "enemy" },

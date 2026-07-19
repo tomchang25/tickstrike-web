@@ -3,9 +3,7 @@ import type { ActorContentInput } from "./actor-schema";
 export type WaveCompositionMode = "fixed" | "weighted";
 export type PlacementStrategy = "player-ring" | "anchor-cluster" | "scatter";
 export type WaveStartCondition =
-  | "previous-group-cleared"
-  | "previous-group-survivors-at-most"
-  | "immediate-overlap";
+  "previous-group-cleared" | "previous-group-survivors-at-most" | "immediate-overlap";
 
 export interface FixedCompositionEntry {
   readonly enemyId: string;
@@ -125,7 +123,11 @@ function addDiagnostic(
   diagnostics.push({ code, path, message });
 }
 
-function requireId(value: unknown, path: string, diagnostics: WaveContentDiagnostic[]): value is string {
+function requireId(
+  value: unknown,
+  path: string,
+  diagnostics: WaveContentDiagnostic[],
+): value is string {
   if (!isSafeId(value)) {
     addDiagnostic(
       diagnostics,
@@ -187,7 +189,11 @@ function requireEnum(
   return true;
 }
 
-function requireBoolean(value: unknown, path: string, diagnostics: WaveContentDiagnostic[]): boolean {
+function requireBoolean(
+  value: unknown,
+  path: string,
+  diagnostics: WaveContentDiagnostic[],
+): boolean {
   if (typeof value !== "boolean") {
     addDiagnostic(diagnostics, "invalid-boolean", path, "must be true or false");
     return false;
@@ -202,9 +208,16 @@ function validateUniqueIds(
 ): void {
   const seen = new Set<string>();
   values.forEach((value, index) => {
-    if (!isRecord(value) || typeof value.id !== "string") return;
+    if (!isRecord(value) || typeof value.id !== "string") {
+      return;
+    }
     if (seen.has(value.id)) {
-      addDiagnostic(diagnostics, "duplicate-id", `${domain}[${index}].id`, `duplicates ${domain} ID ${value.id}`);
+      addDiagnostic(
+        diagnostics,
+        "duplicate-id",
+        `${domain}[${index}].id`,
+        `duplicates ${domain} ID ${value.id}`,
+      );
     }
     seen.add(value.id);
   });
@@ -251,11 +264,26 @@ function validateGroup(
     return;
   }
   requireId(value.id, `${path}.id`, diagnostics);
-  requireEnum(value.placementStrategy, ["player-ring", "anchor-cluster", "scatter"], `${path}.placementStrategy`, diagnostics);
-  const modeValid = requireEnum(value.compositionMode, ["fixed", "weighted"], `${path}.compositionMode`, diagnostics);
+  requireEnum(
+    value.placementStrategy,
+    ["player-ring", "anchor-cluster", "scatter"],
+    `${path}.placementStrategy`,
+    diagnostics,
+  );
+  const modeValid = requireEnum(
+    value.compositionMode,
+    ["fixed", "weighted"],
+    `${path}.compositionMode`,
+    diagnostics,
+  );
   requireNonNegative(value.weightedTotalCount, `${path}.weightedTotalCount`, diagnostics, true);
   if (!Array.isArray(value.entries) || value.entries.length === 0) {
-    addDiagnostic(diagnostics, "empty-group", `${path}.entries`, "must contain at least one composition entry");
+    addDiagnostic(
+      diagnostics,
+      "empty-group",
+      `${path}.entries`,
+      "must contain at least one composition entry",
+    );
   } else if (modeValid) {
     value.entries.forEach((entry, entryIndex) => {
       validateCompositionEntry(
@@ -326,16 +354,22 @@ function validateSlot(
 }
 
 function groupExpansion(value: unknown): number | null {
-  if (!isRecord(value) || !Array.isArray(value.entries)) return null;
+  if (!isRecord(value) || !Array.isArray(value.entries)) {
+    return null;
+  }
   if (value.compositionMode === "weighted") {
     return isInteger(value.weightedTotalCount) && value.weightedTotalCount > 0
       ? value.weightedTotalCount
       : null;
   }
-  if (value.compositionMode !== "fixed") return null;
+  if (value.compositionMode !== "fixed") {
+    return null;
+  }
   let total = 0;
   for (const entry of value.entries) {
-    if (!isRecord(entry) || !isInteger(entry.count) || entry.count <= 0) return null;
+    if (!isRecord(entry) || !isInteger(entry.count) || entry.count <= 0) {
+      return null;
+    }
     total += entry.count;
   }
   return total;
@@ -360,7 +394,9 @@ function validateWave(
   }
   value.slots.forEach((slot, slotIndex) => {
     validateSlot(slot, path, slotIndex, groupIds, diagnostics);
-    if (!isRecord(slot) || typeof slot.spawnGroupId !== "string") return;
+    if (!isRecord(slot) || typeof slot.spawnGroupId !== "string") {
+      return;
+    }
     const group = groupsById.get(slot.spawnGroupId);
     const expansion = groupExpansion(group);
     if (expansion !== null && isInteger(value.populationCap) && expansion > value.populationCap) {
@@ -385,10 +421,7 @@ function validateCurve(value: unknown, path: string, diagnostics: WaveContentDia
   requirePositive(value.lethalExponent, `${path}.lethalExponent`, diagnostics);
 }
 
-function validateProgression(
-  value: unknown,
-  diagnostics: WaveContentDiagnostic[],
-): void {
+function validateProgression(value: unknown, diagnostics: WaveContentDiagnostic[]): void {
   const path = "progressionProfile";
   if (!isRecord(value)) {
     addDiagnostic(diagnostics, "invalid-definition", path, "must be an object");
@@ -404,8 +437,18 @@ function validateProgression(
     return;
   }
   requireEnum(value.guardGrowth.basis, ["base-wave"], `${guardPath}.basis`, diagnostics);
-  requirePositive(value.guardGrowth.standardWaveLimit, `${guardPath}.standardWaveLimit`, diagnostics, true);
-  requirePositive(value.guardGrowth.lethalTierCadence, `${guardPath}.lethalTierCadence`, diagnostics, true);
+  requirePositive(
+    value.guardGrowth.standardWaveLimit,
+    `${guardPath}.standardWaveLimit`,
+    diagnostics,
+    true,
+  );
+  requirePositive(
+    value.guardGrowth.lethalTierCadence,
+    `${guardPath}.lethalTierCadence`,
+    diagnostics,
+    true,
+  );
 }
 
 export function validateWaveContent(
@@ -419,9 +462,15 @@ export function validateWaveContent(
 
   const groups = Array.isArray(input.groups) ? input.groups : [];
   const demoWaves = Array.isArray(input.demoWaves) ? input.demoWaves : [];
-  if (!Array.isArray(input.groups)) addDiagnostic(diagnostics, "invalid-domain", "groups", "must be an array");
-  if (!Array.isArray(input.demoWaves)) addDiagnostic(diagnostics, "invalid-domain", "demoWaves", "must be an array");
-  if (!isRecord(input.endlessTemplate)) addDiagnostic(diagnostics, "invalid-domain", "endlessTemplate", "must be an object");
+  if (!Array.isArray(input.groups)) {
+    addDiagnostic(diagnostics, "invalid-domain", "groups", "must be an array");
+  }
+  if (!Array.isArray(input.demoWaves)) {
+    addDiagnostic(diagnostics, "invalid-domain", "demoWaves", "must be an array");
+  }
+  if (!isRecord(input.endlessTemplate)) {
+    addDiagnostic(diagnostics, "invalid-domain", "endlessTemplate", "must be an object");
+  }
 
   validateUniqueIds(groups, "groups", diagnostics);
   validateUniqueIds(demoWaves, "demoWaves", diagnostics);
@@ -437,16 +486,21 @@ export function validateWaveContent(
     }
   }
 
-  const actorValues = isRecord(actorCatalog) && Array.isArray(actorCatalog.enemies) ? actorCatalog.enemies : [];
+  const actorValues =
+    isRecord(actorCatalog) && Array.isArray(actorCatalog.enemies) ? actorCatalog.enemies : [];
   const enemyIds = new Set(
-    actorValues.flatMap((enemy) => (isRecord(enemy) && typeof enemy.id === "string" ? [enemy.id] : [])),
+    actorValues.flatMap((enemy) =>
+      isRecord(enemy) && typeof enemy.id === "string" ? [enemy.id] : [],
+    ),
   );
   const groupIds = new Set(
     groups.flatMap((group) => (isRecord(group) && typeof group.id === "string" ? [group.id] : [])),
   );
   const groupsById = new Map<string, unknown>();
   groups.forEach((group) => {
-    if (isRecord(group) && typeof group.id === "string") groupsById.set(group.id, group);
+    if (isRecord(group) && typeof group.id === "string") {
+      groupsById.set(group.id, group);
+    }
   });
 
   groups.forEach((group, index) => validateGroup(group, index, enemyIds, diagnostics));
@@ -479,6 +533,8 @@ export function createWaveContentCatalog(
   actorCatalog: ActorContentInput,
 ): WaveContentCatalog {
   const diagnostics = validateWaveContent(input, actorCatalog);
-  if (diagnostics.length > 0) throw new WaveContentValidationError(diagnostics);
+  if (diagnostics.length > 0) {
+    throw new WaveContentValidationError(diagnostics);
+  }
   return cloneAndFreeze(input);
 }

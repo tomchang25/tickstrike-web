@@ -4,7 +4,13 @@ import { createShippedArena } from "../../../../src/harness/fixtures/shipped-are
 describe("world reservations and telegraphs", () => {
   it("arbitrates active movement before attack intent atomically", () => {
     const world = createShippedArena();
-    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 6, y: 6 }, hp: 10 });
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 6, y: 6 },
+      hp: 10,
+    });
 
     const movement = world.requestReservation({
       ownerId: "movement",
@@ -15,12 +21,17 @@ describe("world reservations and telegraphs", () => {
     const attack = world.requestReservation({
       ownerId: "attack",
       purpose: "attack",
-      cells: [{ x: 5, y: 6 }, { x: 4, y: 6 }],
+      cells: [
+        { x: 5, y: 6 },
+        { x: 4, y: 6 },
+      ],
     });
 
     expect(movement.granted).toBe(true);
     expect(attack.granted).toBe(false);
-    expect(world.listReservations().map((reservation) => reservation.ownerId)).toEqual(["movement"]);
+    expect(world.listReservations().map((reservation) => reservation.ownerId)).toEqual([
+      "movement",
+    ]);
   });
 
   it("replaces claims and keeps overlapping telegraph sources independent", () => {
@@ -34,7 +45,9 @@ describe("world reservations and telegraphs", () => {
     expect(world.isReserved({ x: 3, y: 2 })).toBe(true);
     expect(world.getTelegraphsAt({ x: 4, y: 4 })).toHaveLength(2);
     world.clearTelegraph("one");
-    expect(world.getTelegraphsAt({ x: 4, y: 4 }).map((telegraph) => telegraph.sourceId)).toEqual(["two"]);
+    expect(world.getTelegraphsAt({ x: 4, y: 4 }).map((telegraph) => telegraph.sourceId)).toEqual([
+      "two",
+    ]);
   });
 
   it("releases terminal occupancy and owned semantic state immediately", () => {
@@ -52,7 +65,13 @@ describe("world reservations and telegraphs", () => {
 
   it("arbitrates contested movement atomically and releases claims after application", () => {
     const world = createShippedArena();
-    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 3, y: 6 }, hp: 10 });
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 3, y: 6 },
+      hp: 10,
+    });
     world.spawn({ id: "enemy-a", kind: "enemy", archetype: "enemy", cell: { x: 2, y: 2 }, hp: 10 });
     world.spawn({ id: "enemy-b", kind: "enemy", archetype: "enemy", cell: { x: 4, y: 2 }, hp: 10 });
 
@@ -87,7 +106,13 @@ describe("world reservations and telegraphs", () => {
 
   it("allows a losing movement intent to retry a different candidate", () => {
     const world = createShippedArena();
-    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 6, y: 6 }, hp: 10 });
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 6, y: 6 },
+      hp: 10,
+    });
     world.spawn({ id: "enemy-a", kind: "enemy", archetype: "enemy", cell: { x: 2, y: 2 }, hp: 10 });
     world.spawn({ id: "enemy-b", kind: "enemy", archetype: "enemy", cell: { x: 4, y: 2 }, hp: 10 });
 

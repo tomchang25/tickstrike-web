@@ -1,9 +1,6 @@
 import type { CombatEvent } from "../events/combat-events";
 import type { BasicHitResult, DirectionalHitResult } from "../model/types";
-import {
-  isCardinalDirection,
-  type Cell,
-} from "../model/types";
+import { isCardinalDirection, type Cell } from "../model/types";
 import type { World } from "../world/world";
 import type { GameCommand } from "./commands";
 import {
@@ -40,7 +37,9 @@ function appendEnemyHitEvents(
   const hit = isDirectionalHit(preview.hit)
     ? world.applyDirectionalHit(preview.hit)
     : world.applyBasicHit(preview.hit);
-  if (!hit) return false;
+  if (!hit) {
+    return false;
+  }
 
   const target = world.requireEntity(hit.targetId);
   if (isDirectionalHit(hit)) {
@@ -57,7 +56,9 @@ function appendEnemyHitEvents(
         damage: hit.guardDamage,
         guard: target.guard.current,
         maxGuard: target.guard.max,
-        ...(target.protectionTicks !== undefined ? { protectionTicks: target.protectionTicks } : {}),
+        ...(target.protectionTicks !== undefined
+          ? { protectionTicks: target.protectionTicks }
+          : {}),
       });
     }
   }
@@ -75,7 +76,12 @@ function appendEnemyHitEvents(
       ...(target.staggerTicks !== undefined ? { staggerTicks: target.staggerTicks } : {}),
     });
     if (!hit.killed && hit.staggerBurst) {
-      if (targetBefore.committedAttack || targetBefore.recoveryTicks !== undefined || reservationBefore || telegraphBefore) {
+      if (
+        targetBefore.committedAttack ||
+        targetBefore.recoveryTicks !== undefined ||
+        reservationBefore ||
+        telegraphBefore
+      ) {
         events.push({ type: "enemy_attack_interrupted", enemyId: target.id });
       }
       const staggered = world.requireEntity(target.id);
@@ -102,28 +108,54 @@ function appendEnemyHitEvents(
 function resolveSmashVictim(world: World, events: CombatEvent[], victim: SmashVictimPreview): void {
   if (victim.displacement === "crush") {
     const enemy = world.requireEntity(victim.enemyId);
-    if (victim.hit) appendEnemyHitEvents(world, events, { hit: victim.hit });
-    if (world.requireEntity(enemy.id).phase === "alive") world.setPhase(enemy.id, "dead");
+    if (victim.hit) {
+      appendEnemyHitEvents(world, events, { hit: victim.hit });
+    }
+    if (world.requireEntity(enemy.id).phase === "alive") {
+      world.setPhase(enemy.id, "dead");
+    }
     events.push({ type: "enemy_crushed", enemyId: enemy.id, cell: victim.origin });
     return;
   }
 
-  if (!victim.hit || !appendEnemyHitEvents(world, events, { hit: victim.hit })) return;
-  if ((victim.displacement !== "knockback" && victim.displacement !== "water") || !victim.destination) return;
+  if (!victim.hit || !appendEnemyHitEvents(world, events, { hit: victim.hit })) {
+    return;
+  }
+  if (
+    (victim.displacement !== "knockback" && victim.displacement !== "water") ||
+    !victim.destination
+  ) {
+    return;
+  }
 
   const enemy = world.requireEntity(victim.enemyId);
-  if (enemy.phase !== "alive") return;
+  if (enemy.phase !== "alive") {
+    return;
+  }
   if (victim.displacement === "water") {
     world.moveEntityToPhase(enemy.id, victim.destination, "drowning");
-    events.push({ type: "enemy_entered_water", enemyId: enemy.id, from: victim.origin, waterCell: victim.destination });
+    events.push({
+      type: "enemy_entered_water",
+      enemyId: enemy.id,
+      from: victim.origin,
+      waterCell: victim.destination,
+    });
     return;
   }
 
   world.moveEntity(enemy.id, victim.destination);
-  events.push({ type: "enemy_knocked", enemyId: enemy.id, from: victim.origin, to: victim.destination });
+  events.push({
+    type: "enemy_knocked",
+    enemyId: enemy.id,
+    from: victim.origin,
+    to: victim.destination,
+  });
 }
 
-function resolveMove(world: World, command: Extract<GameCommand, { type: "move" }>): PlayerActionResult {
+function resolveMove(
+  world: World,
+  command: Extract<GameCommand, { type: "move" }>,
+): PlayerActionResult {
   const actor = world.requireEntity(command.actorId);
   const destination = add(actor.cell, command.direction);
 
@@ -141,16 +173,21 @@ function resolveMove(world: World, command: Extract<GameCommand, { type: "move" 
   world.moveEntity(actor.id, destination);
   return {
     accepted: true,
-    events: [{
-      type: "actor_moved",
-      entityId: actor.id,
-      from: actor.cell,
-      to: destination,
-    }],
+    events: [
+      {
+        type: "actor_moved",
+        entityId: actor.id,
+        from: actor.cell,
+        to: destination,
+      },
+    ],
   };
 }
 
-function resolveAttack(world: World, command: Extract<GameCommand, { type: "attack" }>): PlayerActionResult {
+function resolveAttack(
+  world: World,
+  command: Extract<GameCommand, { type: "attack" }>,
+): PlayerActionResult {
   const actor = world.requireEntity(command.actorId);
   if (actor.phase !== "alive") {
     return { accepted: false, reason: "Actor is not active.", events: [] };
@@ -193,7 +230,9 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
             damage: hit.guardDamage,
             guard: target.guard.current,
             maxGuard: target.guard.max,
-            ...(target.protectionTicks !== undefined ? { protectionTicks: target.protectionTicks } : {}),
+            ...(target.protectionTicks !== undefined
+              ? { protectionTicks: target.protectionTicks }
+              : {}),
           });
         }
       }
@@ -211,7 +250,12 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
           ...(target.staggerTicks !== undefined ? { staggerTicks: target.staggerTicks } : {}),
         });
         if (!hit.killed && hit.staggerBurst) {
-          if (targetBefore.committedAttack || targetBefore.recoveryTicks !== undefined || reservationBefore || telegraphBefore) {
+          if (
+            targetBefore.committedAttack ||
+            targetBefore.recoveryTicks !== undefined ||
+            reservationBefore ||
+            telegraphBefore
+          ) {
             events.push({ type: "enemy_attack_interrupted", enemyId: target.id });
           }
           const staggered = world.requireEntity(target.id);
@@ -237,7 +281,10 @@ function resolveAttack(world: World, command: Extract<GameCommand, { type: "atta
   return { accepted: true, events };
 }
 
-function resolveDash(world: World, command: Extract<GameCommand, { type: "dash" }>): PlayerActionResult {
+function resolveDash(
+  world: World,
+  command: Extract<GameCommand, { type: "dash" }>,
+): PlayerActionResult {
   const actor = world.requireEntity(command.actorId);
   if (actor.mobility && actor.mobility.kind !== "dash") {
     return { accepted: false, reason: "Active Mobility is not Dash.", events: [] };
@@ -266,11 +313,16 @@ function resolveDash(world: World, command: Extract<GameCommand, { type: "dash" 
     appendEnemyHitEvents(world, events, victim);
   }
   world.moveEntity(actor.id, landing);
-  if (actor.mobility) world.setMobilityCooldown(actor.id, actor.mobility.cooldown);
+  if (actor.mobility) {
+    world.setMobilityCooldown(actor.id, actor.mobility.cooldown);
+  }
   return { accepted: true, events };
 }
 
-function resolveSmash(world: World, command: Extract<GameCommand, { type: "smash" }>): PlayerActionResult {
+function resolveSmash(
+  world: World,
+  command: Extract<GameCommand, { type: "smash" }>,
+): PlayerActionResult {
   const actor = world.requireEntity(command.actorId);
   if (actor.phase !== "alive") {
     return { accepted: false, reason: "Actor is not active.", events: [] };

@@ -77,30 +77,57 @@ function multiply(cell: Cell, amount: number): Cell {
   return { x: cell.x * amount, y: cell.y * amount };
 }
 
-function entityAt(snapshot: WorldSnapshot, cell: Cell, kind?: EntityState["kind"]): EntityState | undefined {
+function entityAt(
+  snapshot: WorldSnapshot,
+  cell: Cell,
+  kind?: EntityState["kind"],
+): EntityState | undefined {
   return snapshot.entities.find((entity) => {
-    if (entity.phase !== "alive" || (kind && entity.kind !== kind)) return false;
+    if (entity.phase !== "alive" || (kind && entity.kind !== kind)) {
+      return false;
+    }
     return entity.footprint.some((occupied) => sameCell(occupied, cell));
   });
 }
 
 function isWalkable(snapshot: WorldSnapshot, cell: Cell, allowEnemyTraversal = false): boolean {
-  if (!Number.isInteger(cell.x) || !Number.isInteger(cell.y)) return false;
-  if (cell.x < 0 || cell.y < 0 || cell.x >= snapshot.arena.width || cell.y >= snapshot.arena.height) return false;
-  if (snapshot.arena.terrain[cell.y * snapshot.arena.width + cell.x] !== "land") return false;
-  if (snapshot.reservations.some((reservation) => reservation.cells.some((reserved) => sameCell(reserved, cell)))) return false;
+  if (!Number.isInteger(cell.x) || !Number.isInteger(cell.y)) {
+    return false;
+  }
+  if (
+    cell.x < 0 ||
+    cell.y < 0 ||
+    cell.x >= snapshot.arena.width ||
+    cell.y >= snapshot.arena.height
+  ) {
+    return false;
+  }
+  if (snapshot.arena.terrain[cell.y * snapshot.arena.width + cell.x] !== "land") {
+    return false;
+  }
+  if (
+    snapshot.reservations.some((reservation) =>
+      reservation.cells.some((reserved) => sameCell(reserved, cell)),
+    )
+  ) {
+    return false;
+  }
   const occupant = entityAt(snapshot, cell);
   return !occupant || (allowEnemyTraversal && occupant.kind === "enemy");
 }
 
-function activeMobility(actor: EntityState): {
-  readonly kind: MobilityKind;
-  readonly damage: number;
-  readonly range: number;
-  readonly staggerMultiplier: number;
-  readonly remainingCooldown: number;
-} | undefined {
-  if (actor.mobility) return actor.mobility;
+function activeMobility(actor: EntityState):
+  | {
+      readonly kind: MobilityKind;
+      readonly damage: number;
+      readonly range: number;
+      readonly staggerMultiplier: number;
+      readonly remainingCooldown: number;
+    }
+  | undefined {
+  if (actor.mobility) {
+    return actor.mobility;
+  }
   return {
     kind: "dash",
     damage: actor.mobilityAttackDamage ?? 0,
@@ -137,8 +164,12 @@ function previewMobilityHit(
 function knockDirection(from: Cell, center: Cell): Cell {
   const dx = Math.sign(from.x - center.x);
   const dy = Math.sign(from.y - center.y);
-  if (dx === 0 && dy === 0) return { x: 0, y: 0 };
-  if (Math.abs(from.x - center.x) > Math.abs(from.y - center.y)) return { x: dx, y: 0 };
+  if (dx === 0 && dy === 0) {
+    return { x: 0, y: 0 };
+  }
+  if (Math.abs(from.x - center.x) > Math.abs(from.y - center.y)) {
+    return { x: dx, y: 0 };
+  }
   return { x: 0, y: dy };
 }
 
@@ -160,9 +191,24 @@ function displacementCandidate(
 ): boolean {
   const footprint = translatedFootprint(entity, destination);
   return footprint.every((cell) => {
-    if (cell.x < 0 || cell.y < 0 || cell.x >= snapshot.arena.width || cell.y >= snapshot.arena.height) return false;
-    if (snapshot.arena.tiles[cell.y * snapshot.arena.width + cell.x] === "wall") return false;
-    if (snapshot.reservations.some((reservation) => reservation.cells.some((reserved) => sameCell(reserved, cell)))) return false;
+    if (
+      cell.x < 0 ||
+      cell.y < 0 ||
+      cell.x >= snapshot.arena.width ||
+      cell.y >= snapshot.arena.height
+    ) {
+      return false;
+    }
+    if (snapshot.arena.tiles[cell.y * snapshot.arena.width + cell.x] === "wall") {
+      return false;
+    }
+    if (
+      snapshot.reservations.some((reservation) =>
+        reservation.cells.some((reserved) => sameCell(reserved, cell)),
+      )
+    ) {
+      return false;
+    }
     return !occupied.has(`${cell.x},${cell.y}`);
   });
 }
@@ -176,7 +222,9 @@ function smashVictimPreviews(
   const victimsById = new Map<string, EntityState>();
   for (const cell of smashArea(target)) {
     const enemy = entityAt(snapshot, cell, "enemy");
-    if (enemy) victimsById.set(enemy.id, enemy);
+    if (enemy) {
+      victimsById.set(enemy.id, enemy);
+    }
   }
 
   const victims = [...victimsById.values()].sort((a, b) => {
@@ -192,11 +240,14 @@ function smashVictimPreviews(
   const results: SmashVictimPreview[] = [];
 
   for (const enemy of victims) {
-    for (const key of footprintKeys(enemy.footprint)) occupied.delete(key);
+    for (const key of footprintKeys(enemy.footprint)) {
+      occupied.delete(key);
+    }
     const direction = knockDirection(enemy.cell, target);
-    const hit = mobility.damage > 0
-      ? previewMobilityHit(actor, enemy, target, mobility.damage, mobility.staggerMultiplier).hit
-      : undefined;
+    const hit =
+      mobility.damage > 0
+        ? previewMobilityHit(actor, enemy, target, mobility.damage, mobility.staggerMultiplier).hit
+        : undefined;
     if (direction.x === 0 && direction.y === 0) {
       results.push({
         enemyId: enemy.id,
@@ -208,7 +259,12 @@ function smashVictimPreviews(
     }
 
     if (!hit || hit.killed) {
-      results.push({ enemyId: enemy.id, origin: enemy.cell, ...(hit ? { hit } : {}), displacement: "none" });
+      results.push({
+        enemyId: enemy.id,
+        origin: enemy.cell,
+        ...(hit ? { hit } : {}),
+        displacement: "none",
+      });
       continue;
     }
 
@@ -221,13 +277,23 @@ function smashVictimPreviews(
       }
     }
     if (!destination) {
-      for (const key of footprintKeys(enemy.footprint)) occupied.add(key);
+      for (const key of footprintKeys(enemy.footprint)) {
+        occupied.add(key);
+      }
+
       results.push({ enemyId: enemy.id, origin: enemy.cell, hit, displacement: "blocked" });
       continue;
     }
 
-    const isWater = snapshot.arena.tiles[destination.y * snapshot.arena.width + destination.x] === "water";
-    if (!isWater) for (const key of footprintKeys(translatedFootprint(enemy, destination))) occupied.add(key);
+    const isWater =
+      snapshot.arena.tiles[destination.y * snapshot.arena.width + destination.x] === "water";
+
+    if (!isWater) {
+      for (const key of footprintKeys(translatedFootprint(enemy, destination))) {
+        occupied.add(key);
+      }
+    }
+
     results.push({
       enemyId: enemy.id,
       origin: enemy.cell,
@@ -236,6 +302,7 @@ function smashVictimPreviews(
       destination,
     });
   }
+
   return results;
 }
 
@@ -243,7 +310,11 @@ export function attackTarget(origin: Cell, direction: Cell): Cell {
   return add(origin, direction);
 }
 
-export function previewBasicHit(attackerId: EntityId, target: EntityState, damage: number): BasicHitResult {
+export function previewBasicHit(
+  attackerId: EntityId,
+  target: EntityState,
+  damage: number,
+): BasicHitResult {
   const hpAfter = Math.max(0, target.hp - damage);
   return {
     attackerId,
@@ -277,7 +348,14 @@ export function previewSmashVictimMarkers(preview: SmashPreview): readonly Previ
         }
         if (victim.displacement === "knockback" || victim.displacement === "water") {
           return victim.destination
-            ? [{ enemyId: victim.enemyId, from: victim.origin, to: victim.destination, outcome: victim.displacement }]
+            ? [
+                {
+                  enemyId: victim.enemyId,
+                  from: victim.origin,
+                  to: victim.destination,
+                  outcome: victim.displacement,
+                },
+              ]
             : [];
         }
         if (victim.displacement === "blocked") {
@@ -290,7 +368,11 @@ export function previewSmashVictimMarkers(preview: SmashPreview): readonly Previ
     : [];
 }
 
-export function previewAttack(source: PreviewSource, actorId: string, direction: Cell): AttackPreview {
+export function previewAttack(
+  source: PreviewSource,
+  actorId: string,
+  direction: Cell,
+): AttackPreview {
   const snapshot = snapshotOf(source);
   const actor = snapshot.entities.find((entity) => entity.id === actorId);
   const target = actor ? attackTarget(actor.cell, direction) : direction;
@@ -313,16 +395,17 @@ export function previewAttack(source: PreviewSource, actorId: string, direction:
     };
   }
   const targetEntity = entityAt(snapshot, target, "enemy");
-  const hit = targetEntity && actor.normalAttackDamage && actor.normalAttackDamage > 0
-    ? targetEntity.enemyAction
-      ? calculateDirectionalHit({
-          attackerId: actor.id,
-          attackerCell: actor.cell,
-          target: targetEntity,
-          damage: actor.normalAttackDamage,
-        })
-      : previewBasicHit(actor.id, targetEntity, actor.normalAttackDamage)
-    : undefined;
+  const hit =
+    targetEntity && actor.normalAttackDamage && actor.normalAttackDamage > 0
+      ? targetEntity.enemyAction
+        ? calculateDirectionalHit({
+            attackerId: actor.id,
+            attackerCell: actor.cell,
+            target: targetEntity,
+            damage: actor.normalAttackDamage,
+          })
+        : previewBasicHit(actor.id, targetEntity, actor.normalAttackDamage)
+      : undefined;
   return {
     accepted: true,
     direction,
@@ -345,16 +428,38 @@ export function previewDash(
     return { accepted: false, direction, path: [], victims: [], reason: "Actor is not active." };
   }
   if (!isCardinalDirection(direction)) {
-    return { accepted: false, direction, path: [], victims: [], reason: "Direction must be cardinal." };
+    return {
+      accepted: false,
+      direction,
+      path: [],
+      victims: [],
+      reason: "Direction must be cardinal.",
+    };
   }
   if (!mobility || mobility.kind !== "dash") {
-    return { accepted: false, direction, path: [], victims: [], reason: "Active Mobility is not Dash." };
+    return {
+      accepted: false,
+      direction,
+      path: [],
+      victims: [],
+      reason: "Active Mobility is not Dash.",
+    };
   }
   if (mobility.remainingCooldown > 0) {
-    return { accepted: false, direction, path: [], victims: [], reason: "Mobility is on cooldown." };
+    return {
+      accepted: false,
+      direction,
+      path: [],
+      victims: [],
+      reason: "Mobility is on cooldown.",
+    };
   }
   const requestedDistance = distance ?? mobility.range;
-  if (!Number.isInteger(requestedDistance) || requestedDistance < 1 || requestedDistance > mobility.range) {
+  if (
+    !Number.isInteger(requestedDistance) ||
+    requestedDistance < 1 ||
+    requestedDistance > mobility.range
+  ) {
     return {
       accepted: false,
       direction,
@@ -370,7 +475,9 @@ export function previewDash(
   let landingStep = -1;
   for (let step = 1; step <= requestedDistance; step += 1) {
     const candidate = add(actor.cell, multiply(direction, step));
-    if (!isWalkable(snapshot, candidate, true)) break;
+    if (!isWalkable(snapshot, candidate, true)) {
+      break;
+    }
     path.push(candidate);
     const enemy = entityAt(snapshot, candidate, "enemy");
     if (enemy) {
@@ -409,9 +516,7 @@ export function previewDash(
     direction,
     path: travelPath,
     landing,
-    victims: victims
-      .filter(({ step }) => step <= landingStep)
-      .map(({ preview }) => preview),
+    victims: victims.filter(({ step }) => step <= landingStep).map(({ preview }) => preview),
   };
 }
 
@@ -446,22 +551,28 @@ export function previewSmash(source: PreviewSource, actorId: string, target: Cel
   if (mobility.remainingCooldown > 0) {
     return { accepted: false, target, area, victims: [], reason: "Mobility is on cooldown." };
   }
-  if (Math.abs(target.x - actor.cell.x) > mobility.range || Math.abs(target.y - actor.cell.y) > mobility.range) {
+  if (
+    Math.abs(target.x - actor.cell.x) > mobility.range ||
+    Math.abs(target.y - actor.cell.y) > mobility.range
+  ) {
     return { accepted: false, target, area, victims: [], reason: "Smash target is out of range." };
   }
   const landingOccupant = entityAt(snapshot, target);
-  const landingReserved = snapshot.reservations.some((reservation) => reservation.cells.some((cell) => sameCell(cell, target)));
+  const landingReserved = snapshot.reservations.some((reservation) =>
+    reservation.cells.some((cell) => sameCell(cell, target)),
+  );
   const targetTile = snapshot.arena.tiles[target.y * snapshot.arena.width + target.x];
-  const landingLegal = Number.isInteger(target.x)
-    && Number.isInteger(target.y)
-    && target.x >= 0
-    && target.y >= 0
-    && target.x < snapshot.arena.width
-    && target.y < snapshot.arena.height
-    && targetTile !== "wall"
-    && targetTile !== "water"
-    && !landingReserved
-    && (!landingOccupant || landingOccupant.kind === "enemy");
+  const landingLegal =
+    Number.isInteger(target.x) &&
+    Number.isInteger(target.y) &&
+    target.x >= 0 &&
+    target.y >= 0 &&
+    target.x < snapshot.arena.width &&
+    target.y < snapshot.arena.height &&
+    targetTile !== "wall" &&
+    targetTile !== "water" &&
+    !landingReserved &&
+    (!landingOccupant || landingOccupant.kind === "enemy");
   if (!landingLegal) {
     return { accepted: false, target, area, victims: [], reason: "Smash landing is blocked." };
   }

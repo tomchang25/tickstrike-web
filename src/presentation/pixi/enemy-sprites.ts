@@ -48,7 +48,9 @@ const ENEMY_PRESENTATION_PROFILES: Readonly<Record<string, EnemyPresentationProf
   "enemy.charge": { id: "enemy.charge", sheet: "skull", palette: "skull", scale: SPRITE_SCALE },
 };
 
-export function getEnemyPresentationProfile(profileId: string): EnemyPresentationProfile | undefined {
+export function getEnemyPresentationProfile(
+  profileId: string,
+): EnemyPresentationProfile | undefined {
   return ENEMY_PRESENTATION_PROFILES[profileId];
 }
 
@@ -67,13 +69,23 @@ const POSE_ROWS: Record<EnemySpritePose, number> = {
 };
 
 function isCardinal(cell: Cell): boolean {
-  return Number.isInteger(cell.x) && Number.isInteger(cell.y) && Math.abs(cell.x) + Math.abs(cell.y) === 1;
+  return (
+    Number.isInteger(cell.x) &&
+    Number.isInteger(cell.y) &&
+    Math.abs(cell.x) + Math.abs(cell.y) === 1
+  );
 }
 
 function directionColumn(direction: Cell): number {
-  if (direction.y > 0) return DIRECTION_COLUMNS.down;
-  if (direction.y < 0) return DIRECTION_COLUMNS.up;
-  if (direction.x < 0) return DIRECTION_COLUMNS.left;
+  if (direction.y > 0) {
+    return DIRECTION_COLUMNS.down;
+  }
+  if (direction.y < 0) {
+    return DIRECTION_COLUMNS.up;
+  }
+  if (direction.x < 0) {
+    return DIRECTION_COLUMNS.left;
+  }
   return DIRECTION_COLUMNS.right;
 }
 
@@ -89,8 +101,12 @@ function forwardFor(facing: Cell): Cell {
 }
 
 function sideRotation(facing: Cell, amount: number): number {
-  if (facing.x < 0) return -amount;
-  if (facing.x > 0) return amount;
+  if (facing.x < 0) {
+    return -amount;
+  }
+  if (facing.x > 0) {
+    return amount;
+  }
   return 0;
 }
 
@@ -115,7 +131,9 @@ class SmallEnemyPresentation implements EnemyPresentation {
     const frameAt = (column: number, row: number): Texture => {
       const key = `${column},${row}`;
       const existing = frames.get(key);
-      if (existing) return existing;
+      if (existing) {
+        return existing;
+      }
       const frame = frameTexture(sheet, column, row);
       frames.set(key, frame);
       return frame;
@@ -163,7 +181,9 @@ class SmallEnemyPresentation implements EnemyPresentation {
     }
 
     this.isStaggered = entity.phase === "alive" && entity.activity === "staggered";
-    if (!this.tintTimeline?.isActive()) this.body.tint = this.isStaggered ? STAGGER_TINT : BASE_TINT;
+    if (!this.tintTimeline?.isActive()) {
+      this.body.tint = this.isStaggered ? STAGGER_TINT : BASE_TINT;
+    }
   }
 
   playMove(): gsap.core.Timeline {
@@ -172,23 +192,33 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.root.position.set(-forward.x * 2, -forward.y * 2);
     this.root.rotation = sideRotation(this.currentFacing, 0.08);
     this.root.scale.set(1.05, 0.95);
-    timeline.to(this.root.position, {
-      x: forward.x * 7,
-      y: forward.y * 7,
-      duration: 0.08,
-      ease: "power2.out",
-    }, 0);
-    timeline.to(this.root.scale, {
-      x: 1,
-      y: 1,
-      duration: 0.1,
-      ease: "power2.out",
-    }, 0);
+    timeline.to(
+      this.root.position,
+      {
+        x: forward.x * 7,
+        y: forward.y * 7,
+        duration: 0.08,
+        ease: "power2.out",
+      },
+      0,
+    );
+    timeline.to(
+      this.root.scale,
+      {
+        x: 1,
+        y: 1,
+        duration: 0.1,
+        ease: "power2.out",
+      },
+      0,
+    );
     timeline.to(this.root, { rotation: 0, duration: 0.1, ease: "power2.out" }, 0);
     timeline.call(() => {
       this.root.position.set(0, 0);
       this.setPose("idle");
-      if (this.actionTimeline === timeline) this.actionTimeline = undefined;
+      if (this.actionTimeline === timeline) {
+        this.actionTimeline = undefined;
+      }
     });
     return timeline;
   }
@@ -221,7 +251,9 @@ class SmallEnemyPresentation implements EnemyPresentation {
     });
     timeline.call(() => {
       this.setPose("idle");
-      if (this.actionTimeline === timeline) this.actionTimeline = undefined;
+      if (this.actionTimeline === timeline) {
+        this.actionTimeline = undefined;
+      }
     });
     return timeline;
   }
@@ -235,7 +267,9 @@ class SmallEnemyPresentation implements EnemyPresentation {
     timeline.to(this.body, { tint: BASE_TINT, duration: 0.08 });
     timeline.call(() => {
       this.body.tint = this.isStaggered ? STAGGER_TINT : BASE_TINT;
-      if (this.tintTimeline === timeline) this.tintTimeline = undefined;
+      if (this.tintTimeline === timeline) {
+        this.tintTimeline = undefined;
+      }
     });
     return timeline;
   }
@@ -243,28 +277,36 @@ class SmallEnemyPresentation implements EnemyPresentation {
   playStaggered(): gsap.core.Timeline | undefined {
     this.isStaggered = true;
     this.clearAction();
-    if (this.tintTimeline?.isActive()) return undefined;
+    if (this.tintTimeline?.isActive()) {
+      return undefined;
+    }
     this.tintTimeline?.kill();
     const timeline = gsap.timeline();
     this.tintTimeline = timeline;
     timeline.to(this.body, { tint: STAGGER_TINT, duration: 0.2 });
     timeline.call(() => {
       this.body.tint = STAGGER_TINT;
-      if (this.tintTimeline === timeline) this.tintTimeline = undefined;
+      if (this.tintTimeline === timeline) {
+        this.tintTimeline = undefined;
+      }
     });
     return timeline;
   }
 
   playStaggerEnded(): gsap.core.Timeline | undefined {
     this.isStaggered = false;
-    if (this.tintTimeline?.isActive()) return undefined;
+    if (this.tintTimeline?.isActive()) {
+      return undefined;
+    }
     this.tintTimeline?.kill();
     const timeline = gsap.timeline();
     this.tintTimeline = timeline;
     timeline.to(this.body, { tint: BASE_TINT, duration: 0.3 });
     timeline.call(() => {
       this.body.tint = BASE_TINT;
-      if (this.tintTimeline === timeline) this.tintTimeline = undefined;
+      if (this.tintTimeline === timeline) {
+        this.tintTimeline = undefined;
+      }
     });
     return timeline;
   }
@@ -302,7 +344,10 @@ class SmallEnemyPresentation implements EnemyPresentation {
   }
 
   private applyFrame(): void {
-    this.body.texture = this.frameAt(directionColumn(this.currentFacing), POSE_ROWS[this.currentPose]);
+    this.body.texture = this.frameAt(
+      directionColumn(this.currentFacing),
+      POSE_ROWS[this.currentPose],
+    );
   }
 }
 

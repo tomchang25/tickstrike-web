@@ -22,7 +22,9 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   const canvas = page.getByTestId("game-canvas");
   const pointForCell = async (x: number, y: number) => {
     const box = await canvas.boundingBox();
-    if (!box) throw new Error("Game canvas has no layout box.");
+    if (!box) {
+      throw new Error("Game canvas has no layout box.");
+    }
     return {
       x: box.x + ((x + 0.5) / 12) * box.width,
       y: box.y + ((y + 0.5) / 12) * box.height,
@@ -36,8 +38,14 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(canvas).toHaveAttribute("data-smash-preview-cell", "4,3");
   await expect(canvas).toHaveAttribute("data-smash-preview-valid", "true");
   await expect(canvas).toHaveAttribute("data-preview-kills", "");
-  await expect(canvas).toHaveAttribute("data-preview-displacements", "enemy-right:5,3>7,3;enemy-water:4,4>4,6");
-  await expect(canvas).toHaveAttribute("data-preview-terminal", "enemy-center:crush;enemy-water:water");
+  await expect(canvas).toHaveAttribute(
+    "data-preview-displacements",
+    "enemy-right:5,3>7,3;enemy-water:4,4>4,6",
+  );
+  await expect(canvas).toHaveAttribute(
+    "data-preview-terminal",
+    "enemy-center:crush;enemy-water:water",
+  );
   await expect(canvas).toHaveAttribute("data-preview-blocked", "enemy-blocked");
   await page.mouse.click(smashTarget.x, smashTarget.y);
   await page.keyboard.up("Alt");
@@ -85,11 +93,14 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
 
-  const executeLeft = () => page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
-    await api.execute({ type: "move", actorId: "player", direction: { x: -1, y: 0 } });
-  });
+  const executeLeft = () =>
+    page.evaluate(async () => {
+      const api = window.__TICKSTRIKE__;
+      if (!api) {
+        throw new Error("Tickstrike debug API is unavailable.");
+      }
+      await api.execute({ type: "move", actorId: "player", direction: { x: -1, y: 0 } });
+    });
   await executeLeft();
   await executeLeft();
   await executeLeft();
@@ -107,13 +118,15 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
     const api = window.__TICKSTRIKE__;
     const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=game-canvas]");
     const bounds = api?.getEntityBounds("player");
-    if (!api || !canvas || !bounds) throw new Error("Charge motion bounds are unavailable.");
+    if (!api || !canvas || !bounds) {
+      throw new Error("Charge motion bounds are unavailable.");
+    }
     const rect = canvas.getBoundingClientRect();
     const state = api.getState();
     return {
       logicalCell: state.entities.find((entity) => entity.id === "player")?.cell,
       visualCenterX: bounds.x + bounds.width / 2,
-      finalCellCenterX: rect.left + ((3.5) / 12) * rect.width,
+      finalCellCenterX: rect.left + (3.5 / 12) * rect.width,
     };
   });
   expect(inMotion.logicalCell).toEqual({ x: 3, y: 3 });
@@ -124,15 +137,19 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
     const api = window.__TICKSTRIKE__;
     const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=game-canvas]");
     const bounds = api?.getEntityBounds("player");
-    if (!api || !canvas || !bounds) throw new Error("Settled Charge bounds are unavailable.");
+    if (!api || !canvas || !bounds) {
+      throw new Error("Settled Charge bounds are unavailable.");
+    }
     const rect = canvas.getBoundingClientRect();
-    return Math.round((bounds.x + bounds.width / 2) - (rect.left + (3.5 / 12) * rect.width));
+    return Math.round(bounds.x + bounds.width / 2 - (rect.left + (3.5 / 12) * rect.width));
   });
   expect(settled).toBe(0);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "move", actorId: "player", direction: { x: 0, y: -1 } });
   });
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "3");
@@ -146,16 +163,23 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   await expect(canvas).toHaveAttribute("data-player-animation", "idle");
 });
 
-test("Charge retains its facing-direction telegraph when the Player moves aside", async ({ page }) => {
+test("Charge retains its facing-direction telegraph when the Player moves aside", async ({
+  page,
+}) => {
   await page.goto("/?scenario=charge-enemy");
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "move", actorId: "player", direction: { x: -1, y: 0 } });
   });
-  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute(
+    "data-activity",
+    "telegraphing",
+  );
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
     "data-telegraph-labels",
     /8,3:2.*7,3:2.*6,3:2/,
@@ -163,13 +187,18 @@ test("Charge retains its facing-direction telegraph when the Player moves aside"
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "move", actorId: "player", direction: { x: 0, y: -1 } });
   });
 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "2");
-  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute("data-attack-warning-ticks", "1");
+  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute(
+    "data-attack-warning-ticks",
+    "1",
+  );
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
     "data-telegraph-labels",
     /8,3:1.*7,3:1.*6,3:1/,
@@ -197,7 +226,9 @@ test("Enemy navigation testbed exposes blocked and reserved grid cells", async (
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "move", actorId: "player", direction: { x: 0, y: -1 } });
   });
 
@@ -214,7 +245,10 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
+    "data-player-profile",
+    "character.ninja",
+  );
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
 
@@ -224,7 +258,9 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   expect(arena?.terrain.filter((terrain) => terrain === "sea")).toHaveLength(44);
 });
 
-test("Held movement queues steps and settles each player presentation in order", async ({ page }) => {
+test("Held movement queues steps and settles each player presentation in order", async ({
+  page,
+}) => {
   await page.goto("/?scenario=empty-arena");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
@@ -232,12 +268,18 @@ test("Held movement queues steps and settles each player presentation in order",
   const canvas = page.getByTestId("game-canvas");
   await expect(page.locator("html")).toHaveAttribute("data-keyboard-input-ready", "true");
   await page.keyboard.down("ArrowRight");
-  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.getState().tick ?? 0)).toBeGreaterThan(1);
+  await expect
+    .poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.getState().tick ?? 0))
+    .toBeGreaterThan(1);
   await expect(canvas).toHaveAttribute("data-player-animation", "move");
   const canvasBox = await canvas.boundingBox();
-  if (!canvasBox) throw new Error("Game canvas has no layout box.");
+  if (!canvasBox) {
+    throw new Error("Game canvas has no layout box.");
+  }
   const playerCell = await page.evaluate(() => window.__TICKSTRIKE__?.getState().playerCell);
-  if (!playerCell) throw new Error("Player cell is unavailable.");
+  if (!playerCell) {
+    throw new Error("Player cell is unavailable.");
+  }
   await page.mouse.move(
     canvasBox.x + ((playerCell.x + 0.5) / 12) * canvasBox.width,
     canvasBox.y + ((playerCell.y - 2 + 0.5) / 12) * canvasBox.height,
@@ -252,7 +294,9 @@ test("Held movement queues steps and settles each player presentation in order",
   expect(state?.playerCell?.x).toBeGreaterThan(6);
   await expect(canvas).toHaveAttribute("data-player-animation", "idle");
   await expect(canvas).toHaveAttribute("data-player-facing", "1,0");
-  if (!state?.playerCell) throw new Error("Player cell is unavailable after movement.");
+  if (!state?.playerCell) {
+    throw new Error("Player cell is unavailable after movement.");
+  }
   await page.mouse.move(
     canvasBox.x + ((state.playerCell.x + 0.5) / 12) * canvasBox.width,
     canvasBox.y + ((state.playerCell.y - 3 + 0.5) / 12) * canvasBox.height,
@@ -260,7 +304,9 @@ test("Held movement queues steps and settles each player presentation in order",
   await expect(canvas).toHaveAttribute("data-player-facing", "0,-1");
 });
 
-test("Foundation arena resets its generation without stale presentation state", async ({ page }) => {
+test("Foundation arena resets its generation without stale presentation state", async ({
+  page,
+}) => {
   await page.goto("/?scenario=tick-arena");
 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
@@ -279,7 +325,10 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-facing-x", "1");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-facing-y", "0");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-telegraph", "false");
-  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "0");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute(
+    "data-committed-attack-count",
+    "0",
+  );
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-width", "12");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-height", "12");
   await expect(page.getByTestId("debug-mode")).not.toBeChecked();
@@ -301,7 +350,9 @@ test("Foundation arena resets its generation without stale presentation state", 
 
   const reset = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   expect(reset).toEqual(initial);
-  expect(await page.getByTestId("semantic-mirror").getAttribute("data-reservation-count")).toBe("0");
+  expect(await page.getByTestId("semantic-mirror").getAttribute("data-reservation-count")).toBe(
+    "0",
+  );
   expect(await page.getByTestId("semantic-mirror").getAttribute("data-telegraph-count")).toBe("0");
 });
 
@@ -324,17 +375,35 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
     "data-telegraph-labels",
     /7,6:.*@head.*8,6:.*@head/,
   );
-  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "telegraphing");
-  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "2");
-  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-attack-warning-ticks", "2");
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute(
+    "data-activity",
+    "telegraphing",
+  );
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute(
+    "data-attack-warning-ticks",
+    "2",
+  );
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute(
+    "data-attack-warning-ticks",
+    "2",
+  );
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
+    "data-activity",
+    "telegraphing",
+  );
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
+    "data-attack-warning-ticks",
+    "2",
+  );
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
     "data-enemy-presentations",
     /enemy-thrust:enemy\.thrust:green:prepareAttack.*enemy-slash:enemy\.slash:purple:prepareAttack.*enemy-ranged:enemy\.ranged:eye:prepareAttack/,
   );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-telegraph", "true");
-  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "3");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute(
+    "data-committed-attack-count",
+    "3",
+  );
   await expect(page.getByTestId("enemy-telegraph-count")).toHaveText("3");
 
   await page.keyboard.press("l");
@@ -343,13 +412,18 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-state", "alive");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "96");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-guard", "28");
-  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-status", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute(
+    "data-status",
+    "telegraphing",
+  );
   await expect(page.getByTestId("enemy-guard-enemy-slash")).toContainText("28/32");
   await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
 
   const canvas = page.getByTestId("game-canvas");
   const box = await canvas.boundingBox();
-  if (!box) throw new Error("Game canvas has no layout box.");
+  if (!box) {
+    throw new Error("Game canvas has no layout box.");
+  }
   const dashTarget = {
     x: box.x + ((9 + 0.5) / 12) * box.width,
     y: box.y + ((6 + 0.5) / 12) * box.height,
@@ -369,14 +443,25 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   const dashEvent = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents[1]);
   expect(dashEvent).toMatchObject({
     type: "player_dashed",
-     path: [{ x: 8, y: 6 }, { x: 9, y: 6 }],
+    path: [
+      { x: 8, y: 6 },
+      { x: 9, y: 6 },
+    ],
   });
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
-  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain("directional_hit");
-  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain("enemy_attack_detonated");
-  const observedEventTypes = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents.map((event) => event.type));
-  expect(observedEventTypes).toEqual(await page.getByTestId("event-log").locator("li").allTextContents());
+  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain(
+    "directional_hit",
+  );
+  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain(
+    "enemy_attack_detonated",
+  );
+  const observedEventTypes = await page.evaluate(() =>
+    window.__TICKSTRIKE__?.getState().lastEvents.map((event) => event.type),
+  );
+  expect(observedEventTypes).toEqual(
+    await page.getByTestId("event-log").locator("li").allTextContents(),
+  );
 });
 
 test("Dash aimed at an enemy lands before it without dealing damage", async ({ page }) => {
@@ -385,7 +470,9 @@ test("Dash aimed at an enemy lands before it without dealing damage", async ({ p
   const canvas = page.getByTestId("game-canvas");
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
   const box = await canvas.boundingBox();
-  if (!box) throw new Error("Game canvas has no layout box.");
+  if (!box) {
+    throw new Error("Game canvas has no layout box.");
+  }
 
   const enemyTarget = {
     x: box.x + ((8 + 0.5) / 12) * box.width,
@@ -403,14 +490,18 @@ test("Dash aimed at an enemy lands before it without dealing damage", async ({ p
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "100");
 
   const lastEvents = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents);
-  expect(lastEvents).not.toContainEqual(expect.objectContaining({
-    type: "enemy_damaged",
-    enemyId: "enemy-slash",
-  }));
+  expect(lastEvents).not.toContainEqual(
+    expect.objectContaining({
+      type: "enemy_damaged",
+      enemyId: "enemy-slash",
+    }),
+  );
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
-test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets cleanly", async ({ page }) => {
+test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets cleanly", async ({
+  page,
+}) => {
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
@@ -418,7 +509,9 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   const canvas = page.getByTestId("game-canvas");
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
   });
 
@@ -426,14 +519,21 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "resting");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-cell-y", "3");
-  const movementState = await page.evaluate(() => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged"));
+  const movementState = await page.evaluate(() =>
+    window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged"),
+  );
   expect(movementState).toMatchObject({ cell: { x: 6, y: 3 }, lastDecision: "move" });
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:idle/);
+  await expect(canvas).toHaveAttribute(
+    "data-enemy-presentations",
+    /enemy-ranged:enemy\.ranged:eye:idle/,
+  );
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
   });
 
@@ -442,35 +542,70 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
   });
 
   await expect(page.getByTestId("tick-value")).toHaveText("3");
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");
-  const committed = await page.evaluate(() => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack);
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
+    "data-activity",
+    "telegraphing",
+  );
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
+    "data-attack-warning-ticks",
+    "2",
+  );
+  const committed = await page.evaluate(
+    () =>
+      window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")
+        ?.committedAttack,
+  );
   expect(committed).toMatchObject({
     metadata: { targetCenter: { x: 6, y: 6 } },
-    cells: [{ x: 6, y: 6 }, { x: 6, y: 5 }, { x: 6, y: 7 }, { x: 7, y: 6 }, { x: 5, y: 6 }],
+    cells: [
+      { x: 6, y: 6 },
+      { x: 6, y: 5 },
+      { x: 6, y: 7 },
+      { x: 7, y: 6 },
+      { x: 5, y: 6 },
+    ],
   });
-  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:prepareAttack/);
+  await expect(canvas).toHaveAttribute(
+    "data-enemy-presentations",
+    /enemy-ranged:enemy\.ranged:eye:prepareAttack/,
+  );
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
   });
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "1");
-  const lockedDuringWarning = await page.evaluate(() => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack?.cells);
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
+    "data-attack-warning-ticks",
+    "1",
+  );
+  const lockedDuringWarning = await page.evaluate(
+    () =>
+      window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")
+        ?.committedAttack?.cells,
+  );
   expect(lockedDuringWarning).toEqual(committed?.cells);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
   });
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "recovering");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
+    "data-activity",
+    "recovering",
+  );
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-telegraph", "false");
   await expect(page.getByTestId("event-log")).toContainText("enemy_attack_detonated");
 
@@ -479,16 +614,23 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "0");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:idle/);
+  await expect(canvas).toHaveAttribute(
+    "data-enemy-presentations",
+    /enemy-ranged:enemy\.ranged:eye:idle/,
+  );
 });
 
-test("Pointer aiming previews attack and Mobility without advancing until click", async ({ page }) => {
+test("Pointer aiming previews attack and Mobility without advancing until click", async ({
+  page,
+}) => {
   await page.goto("/?scenario=tick-arena");
 
   const canvas = page.getByTestId("game-canvas");
   const pointForCell = async (x: number, y: number) => {
     const box = await canvas.boundingBox();
-    if (!box) throw new Error("Game canvas has no layout box.");
+    if (!box) {
+      throw new Error("Game canvas has no layout box.");
+    }
     return {
       x: box.x + ((x + 0.5) / 12) * box.width,
       y: box.y + ((y + 0.5) / 12) * box.height,
@@ -525,7 +667,9 @@ test("Pointer aiming previews attack and Mobility without advancing until click"
   await page.keyboard.up("Alt");
 });
 
-test("Tick Arena reaches victory through one deterministic browser command loop", async ({ page }) => {
+test("Tick Arena reaches victory through one deterministic browser command loop", async ({
+  page,
+}) => {
   test.setTimeout(30_000);
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
@@ -533,33 +677,62 @@ test("Tick Arena reaches victory through one deterministic browser command loop"
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     const directions = [
       { x: 0, y: -1 },
       { x: 1, y: 0 },
       { x: 0, y: 1 },
       { x: -1, y: 0 },
     ];
-    const sameCell = (a: { x: number; y: number }, b: { x: number; y: number }) => a.x === b.x && a.y === b.y;
-    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    const sameCell = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+      a.x === b.x && a.y === b.y;
+    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+      Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
     for (let step = 0; step < 300; step += 1) {
       const state = api.getState();
-      if (state.outcome !== "running") break;
+      if (state.outcome !== "running") {
+        break;
+      }
       const player = state.entities.find((entity) => entity.id === "player");
-      if (!player) throw new Error("Player is missing from the scenario.");
-      const enabledEnemies = state.entities.filter((entity) => entity.kind === "enemy" && entity.enemyAction && entity.phase === "alive");
-      if (enabledEnemies.length === 0) break;
+      if (!player) {
+        throw new Error("Player is missing from the scenario.");
+      }
+      const enabledEnemies = state.entities.filter(
+        (entity) => entity.kind === "enemy" && entity.enemyAction && entity.phase === "alive",
+      );
+      if (enabledEnemies.length === 0) {
+        break;
+      }
 
       const candidates = directions.filter((direction) => {
         const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
-        if (cell.x < 0 || cell.y < 0 || cell.x >= state.arena.width || cell.y >= state.arena.height) return false;
+        if (
+          cell.x < 0 ||
+          cell.y < 0 ||
+          cell.x >= state.arena.width ||
+          cell.y >= state.arena.height
+        ) {
+          return false;
+        }
         const index = cell.y * state.arena.width + cell.x;
-        if (state.arena.tiles[index] !== "floor") return false;
-        if (state.entities.some((entity) => entity.phase === "alive" && sameCell(entity.cell, cell))) return false;
-        return !state.telegraphs.some((telegraph) => telegraph.cells.some((telegraphCell) => sameCell(telegraphCell, cell)));
+        if (state.arena.tiles[index] !== "floor") {
+          return false;
+        }
+        if (
+          state.entities.some((entity) => entity.phase === "alive" && sameCell(entity.cell, cell))
+        ) {
+          return false;
+        }
+        return !state.telegraphs.some((telegraph) =>
+          telegraph.cells.some((telegraphCell) => sameCell(telegraphCell, cell)),
+        );
       });
-      const playerIsThreatened = state.telegraphs.some((telegraph) => telegraph.cells.some((cell) => sameCell(cell, player.cell)));
+      const playerIsThreatened = state.telegraphs.some((telegraph) =>
+        telegraph.cells.some((cell) => sameCell(cell, player.cell)),
+      );
       if (playerIsThreatened && candidates.length > 0) {
         await api.execute({ type: "move", actorId: "player", direction: candidates[0] });
         continue;
@@ -568,11 +741,18 @@ test("Tick Arena reaches victory through one deterministic browser command loop"
       const adjacent = enabledEnemies.find((enemy) => distance(enemy.cell, player.cell) === 1);
       if (adjacent) {
         const relation = { x: player.cell.x - adjacent.cell.x, y: player.cell.y - adjacent.cell.y };
-        const isFront = adjacent.facing && relation.x === adjacent.facing.x && relation.y === adjacent.facing.y;
+        const isFront =
+          adjacent.facing && relation.x === adjacent.facing.x && relation.y === adjacent.facing.y;
         if (isFront) {
           const flank = candidates.find((direction) => {
             const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
-            return distance(cell, adjacent.cell) === 1 && !(cell.x - adjacent.cell.x === adjacent.facing?.x && cell.y - adjacent.cell.y === adjacent.facing?.y);
+            return (
+              distance(cell, adjacent.cell) === 1 &&
+              !(
+                cell.x - adjacent.cell.x === adjacent.facing?.x &&
+                cell.y - adjacent.cell.y === adjacent.facing?.y
+              )
+            );
           });
           if (flank) {
             await api.execute({ type: "move", actorId: "player", direction: flank });
@@ -587,25 +767,36 @@ test("Tick Arena reaches victory through one deterministic browser command loop"
         continue;
       }
 
-      const aligned = enabledEnemies.find((enemy) => enemy.cell.x === player.cell.x || enemy.cell.y === player.cell.y);
+      const aligned = enabledEnemies.find(
+        (enemy) => enemy.cell.x === player.cell.x || enemy.cell.y === player.cell.y,
+      );
       if (aligned && (!player.mobility || player.mobility.remainingCooldown === 0)) {
-        const direction = aligned.cell.x === player.cell.x
-          ? { x: 0, y: Math.sign(aligned.cell.y - player.cell.y) }
-          : { x: Math.sign(aligned.cell.x - player.cell.x), y: 0 };
+        const direction =
+          aligned.cell.x === player.cell.x
+            ? { x: 0, y: Math.sign(aligned.cell.y - player.cell.y) }
+            : { x: Math.sign(aligned.cell.x - player.cell.x), y: 0 };
         await api.execute({ type: "dash", actorId: "player", direction });
         continue;
       }
 
-      const target = [...enabledEnemies].sort((a, b) => distance(a.cell, player.cell) - distance(b.cell, player.cell))[0];
+      const target = [...enabledEnemies].sort(
+        (a, b) => distance(a.cell, player.cell) - distance(b.cell, player.cell),
+      )[0];
       const toward = directions
-        .filter((direction) => direction.x !== 0 ? target.cell.x !== player.cell.x : target.cell.y !== player.cell.y)
+        .filter((direction) =>
+          direction.x !== 0 ? target.cell.x !== player.cell.x : target.cell.y !== player.cell.y,
+        )
         .sort((a, b) => {
           const nextA = { x: player.cell.x + a.x, y: player.cell.y + a.y };
           const nextB = { x: player.cell.x + b.x, y: player.cell.y + b.y };
           return distance(nextA, target.cell) - distance(nextB, target.cell);
         })
         .find((direction) => candidates.some((candidate) => sameCell(candidate, direction)));
-      await api.execute({ type: "move", actorId: "player", direction: toward ?? candidates[0] ?? directions[0] });
+      await api.execute({
+        type: "move",
+        actorId: "player",
+        direction: toward ?? candidates[0] ?? directions[0],
+      });
     }
 
     for (let step = 0; step < 24 && api.getState().outcome === "running"; step += 1) {
@@ -627,7 +818,9 @@ test("Tick Arena presents defeat and restarts cleanly after a committed hit", as
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     for (let step = 0; step < 30 && api.getState().outcome === "running"; step += 1) {
       await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
     }
@@ -646,7 +839,9 @@ test("Tick Arena presents defeat and restarts cleanly after a committed hit", as
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
-test("Terminal presentation is cancelled before reset and scenario replacement", async ({ page }) => {
+test("Terminal presentation is cancelled before reset and scenario replacement", async ({
+  page,
+}) => {
   test.setTimeout(30_000);
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
@@ -656,11 +851,15 @@ test("Terminal presentation is cancelled before reset and scenario replacement",
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     for (let step = 0; step < 30 && api.getState().outcome === "running"; step += 1) {
       await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
     }
-    if (api.getState().outcome !== "defeat") throw new Error("Expected the terminal defeat state before reset.");
+    if (api.getState().outcome !== "defeat") {
+      throw new Error("Expected the terminal defeat state before reset.");
+    }
     api.reset();
   });
 
@@ -673,11 +872,15 @@ test("Terminal presentation is cancelled before reset and scenario replacement",
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     for (let step = 0; step < 30 && api.getState().outcome === "running"; step += 1) {
       await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
     }
-    if (api.getState().outcome !== "defeat") throw new Error("Expected the terminal defeat state before replacement.");
+    if (api.getState().outcome !== "defeat") {
+      throw new Error("Expected the terminal defeat state before replacement.");
+    }
     api.loadScenario("empty-arena");
   });
 

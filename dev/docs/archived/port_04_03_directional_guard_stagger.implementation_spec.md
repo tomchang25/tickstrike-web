@@ -43,18 +43,18 @@ The selected reference behavior is explicit: Front, Side, and Back apply 4, 16, 
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/model/types.ts` | Large | Add directional result, Guard runtime, and Stagger/Protection activity snapshot data. |
-| `src/core/combat/directional-hit.ts` | Medium | Classify Front/Side/Back and calculate the shared directional hit result. |
-| `src/core/world/world.ts` | Large | Own Guard/status mutation, countdown advancement, and Guard-break interruption cleanup. |
-| `src/core/actions/action-preview.ts` | Medium | Return the same directional hit projection used by Normal Attack commit. |
-| `src/core/actions/action-resolver.ts` | Medium | Apply the shared Guard/HP result and preserve ordered enemy-phase status handling. |
-| `src/core/events/combat-events.ts` | Large | Add directional hit, Guard, Stagger, Protection, and interruption events. |
-| `src/content/enemies/enemy-definitions.ts` | Small | Continue using existing Small Guard content and expose no mutable runtime state. |
-| `test/unit/core/combat/directional-hit.test.ts` | Large | Assert angle classification, formulas, ordering, and preview/commit parity. |
-| `test/unit/core/world/world.test.ts` | Medium | Assert status countdown, interruption, reset, and terminal cleanup. |
-| `test/unit/core/actions/action-resolver.test.ts` | Medium | Assert committed Normal Attack outcomes and event order. |
+| File                                             | Change Size | Purpose                                                                                 |
+| ------------------------------------------------ | ----------- | --------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                        | Large       | Add directional result, Guard runtime, and Stagger/Protection activity snapshot data.   |
+| `src/core/combat/directional-hit.ts`             | Medium      | Classify Front/Side/Back and calculate the shared directional hit result.               |
+| `src/core/world/world.ts`                        | Large       | Own Guard/status mutation, countdown advancement, and Guard-break interruption cleanup. |
+| `src/core/actions/action-preview.ts`             | Medium      | Return the same directional hit projection used by Normal Attack commit.                |
+| `src/core/actions/action-resolver.ts`            | Medium      | Apply the shared Guard/HP result and preserve ordered enemy-phase status handling.      |
+| `src/core/events/combat-events.ts`               | Large       | Add directional hit, Guard, Stagger, Protection, and interruption events.               |
+| `src/content/enemies/enemy-definitions.ts`       | Small       | Continue using existing Small Guard content and expose no mutable runtime state.        |
+| `test/unit/core/combat/directional-hit.test.ts`  | Large       | Assert angle classification, formulas, ordering, and preview/commit parity.             |
+| `test/unit/core/world/world.test.ts`             | Medium      | Assert status countdown, interruption, reset, and terminal cleanup.                     |
+| `test/unit/core/actions/action-resolver.test.ts` | Medium      | Assert committed Normal Attack outcomes and event order.                                |
 
 ## Execution Outline
 
@@ -74,14 +74,14 @@ The selected reference behavior is explicit: Front, Side, and Back apply 4, 16, 
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Same-cell or zero-facing attacker relationship | Return no directional hit and apply no Guard/HP result. |
-| Side or Back hit against protected Guard | Apply the Protection multiplier to Guard damage before break evaluation. |
-| Guard-breaking hit | Apply full Defense-adjusted HP damage, clear committed attack/recovery, and enter Stagger once. |
-| Hit during Stagger | Do not apply ordinary Guard damage; use the defined HP hit path and do not restart Stagger. |
-| Stagger countdown reaches zero | Restore Guard, begin five Protection Ticks, and leave the enemy unable to act until the next eligible phase. |
-| Reset or terminal death | Remove current Guard damage, Stagger, Protection, committed attack, Telegraph, and reservations from the new/terminal state. |
+| Case                                           | Expected Handling                                                                                                            |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Same-cell or zero-facing attacker relationship | Return no directional hit and apply no Guard/HP result.                                                                      |
+| Side or Back hit against protected Guard       | Apply the Protection multiplier to Guard damage before break evaluation.                                                     |
+| Guard-breaking hit                             | Apply full Defense-adjusted HP damage, clear committed attack/recovery, and enter Stagger once.                              |
+| Hit during Stagger                             | Do not apply ordinary Guard damage; use the defined HP hit path and do not restart Stagger.                                  |
+| Stagger countdown reaches zero                 | Restore Guard, begin five Protection Ticks, and leave the enemy unable to act until the next eligible phase.                 |
+| Reset or terminal death                        | Remove current Guard damage, Stagger, Protection, committed attack, Telegraph, and reservations from the new/terminal state. |
 
 ## Acceptance Criteria
 

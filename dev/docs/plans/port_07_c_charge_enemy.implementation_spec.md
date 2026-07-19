@@ -44,21 +44,21 @@ At detonation, every non-target entity on the target path attempts to move one c
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/enemies/enemy-actions.ts` | Large | Add Charge range-path selection, preferred planning origins, and warning-time target refresh data. |
-| `src/core/actions/enemy-phase.ts` | Large | Order Charge detonation/damage, impact/landing, telegraph changes, and recovery without owning placement rules. |
-| `src/core/world/world.ts` | Large | Split detonation, atomic Charge impact/landing, and recovery entry; preserve placement and terminal invariants. |
-| `src/core/events/combat-events.ts` | Medium | Add generic displacement and Charge impact/landing outcome events. |
-| `src/harness/fixtures/shipped-arena.ts` | Medium | Add the authored Charge fixture while preserving existing foundation fixtures. |
-| `src/harness/scenarios/charge-enemy.scenario.ts` | Medium | Define deterministic normal, blocked, and retargetable Charge browser setups. |
-| `src/content/enemies/assets/skull-sprite-sheet.png` | Small | Package the authored Charge runtime sprite from the Skull SpriteSheet source. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Small | Import and load the Charge Skull texture. |
-| `src/presentation/pixi/enemy-sprites.ts` | Medium | Add the standalone Charge profile and normal/blocked impact feedback surfaces. |
-| `src/presentation/timelines/PresentationDirector.ts` | Medium | Present displacement, landing, and blocked-impact feedback with cleanup. |
-| `test/unit/core/enemies/charge-enemy-actions.test.ts` | Large | Assert range, preferred planning, retargeting, and path construction. |
-| `test/unit/core/world/world.test.ts` | Large | Assert atomic displacement, normal and blocked impact, fallback landing, damage, occupancy, and terminal cleanup. |
-| `test/e2e/testbed.spec.ts` | Large | Observe Charge telegraph retargeting, displacement, normal/blocked impact, reset cleanup, and idle presentation. |
+| File                                                  | Change Size | Purpose                                                                                                           |
+| ----------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| `src/core/enemies/enemy-actions.ts`                   | Large       | Add Charge range-path selection, preferred planning origins, and warning-time target refresh data.                |
+| `src/core/actions/enemy-phase.ts`                     | Large       | Order Charge detonation/damage, impact/landing, telegraph changes, and recovery without owning placement rules.   |
+| `src/core/world/world.ts`                             | Large       | Split detonation, atomic Charge impact/landing, and recovery entry; preserve placement and terminal invariants.   |
+| `src/core/events/combat-events.ts`                    | Medium      | Add generic displacement and Charge impact/landing outcome events.                                                |
+| `src/harness/fixtures/shipped-arena.ts`               | Medium      | Add the authored Charge fixture while preserving existing foundation fixtures.                                    |
+| `src/harness/scenarios/charge-enemy.scenario.ts`      | Medium      | Define deterministic normal, blocked, and retargetable Charge browser setups.                                     |
+| `src/content/enemies/assets/skull-sprite-sheet.png`   | Small       | Package the authored Charge runtime sprite from the Skull SpriteSheet source.                                     |
+| `src/presentation/pixi/PixiGameRenderer.ts`           | Small       | Import and load the Charge Skull texture.                                                                         |
+| `src/presentation/pixi/enemy-sprites.ts`              | Medium      | Add the standalone Charge profile and normal/blocked impact feedback surfaces.                                    |
+| `src/presentation/timelines/PresentationDirector.ts`  | Medium      | Present displacement, landing, and blocked-impact feedback with cleanup.                                          |
+| `test/unit/core/enemies/charge-enemy-actions.test.ts` | Large       | Assert range, preferred planning, retargeting, and path construction.                                             |
+| `test/unit/core/world/world.test.ts`                  | Large       | Assert atomic displacement, normal and blocked impact, fallback landing, damage, occupancy, and terminal cleanup. |
+| `test/e2e/testbed.spec.ts`                            | Large       | Observe Charge telegraph retargeting, displacement, normal/blocked impact, reset cleanup, and idle presentation.  |
 
 ## Execution Outline
 
@@ -82,17 +82,17 @@ At detonation, every non-target entity on the target path attempts to move one c
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Player moves to another legal range path during warning | Refresh target, facing, path, and telegraph to the Player's new cell. |
-| Player leaves Charge range during warning | Preserve the latest valid target; its current occupant receives detonation effects. |
-| Target cell is empty at detonation | Charge lands on the target cell when legal and applies no target damage. |
-| A non-target path entity has one free side | Move it to that side without damage. |
-| A non-target path entity has no free side | Keep it in place and apply normal Charge damage; Charge may traverse it transiently. |
+| Case                                                                         | Expected Handling                                                                                            |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Player moves to another legal range path during warning                      | Refresh target, facing, path, and telegraph to the Player's new cell.                                        |
+| Player leaves Charge range during warning                                    | Preserve the latest valid target; its current occupant receives detonation effects.                          |
+| Target cell is empty at detonation                                           | Charge lands on the target cell when legal and applies no target damage.                                     |
+| A non-target path entity has one free side                                   | Move it to that side without damage.                                                                         |
+| A non-target path entity has no free side                                    | Keep it in place and apply normal Charge damage; Charge may traverse it transiently.                         |
 | Target forward cell is wall, water, outside the arena, reserved, or occupied | Keep target in place, apply double damage, emit blocked impact, and land Charge before target when possible. |
-| Target-adjacent fallback landing cell is occupied | Scan backward toward the Charge origin; remain at origin when no legal path cell exists. |
-| Player is adjacent to Charge | Charge may attack. A blocked forward target leaves Charge at origin and deals double damage. |
-| Charge dies or is Guard-broken while telegraphing | Clear telegraph and pending live-target data without detonation, landing, or recovery. |
+| Target-adjacent fallback landing cell is occupied                            | Scan backward toward the Charge origin; remain at origin when no legal path cell exists.                     |
+| Player is adjacent to Charge                                                 | Charge may attack. A blocked forward target leaves Charge at origin and deals double damage.                 |
+| Charge dies or is Guard-broken while telegraphing                            | Clear telegraph and pending live-target data without detonation, landing, or recovery.                       |
 
 ## Acceptance Criteria
 

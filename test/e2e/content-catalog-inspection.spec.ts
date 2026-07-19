@@ -9,7 +9,9 @@ test("content catalog inspection is visible and read-only", async ({ page }) => 
   await expect(page.getByTestId("inspection-ninja-mobility")).toHaveText("dash");
   await expect(page.getByTestId("inspection-ninja-mobility-range")).toHaveText("5");
   await expect(page.getByTestId("inspection-mode-boss-guard")).toHaveText("Boss");
-  await expect(page.getByTestId("inspection-mode-boss-attacks")).toContainText("Mode Boss Wide Tile");
+  await expect(page.getByTestId("inspection-mode-boss-attacks")).toContainText(
+    "Mode Boss Wide Tile",
+  );
   await expect(page.getByTestId("inspection-demo-10-group")).toHaveText("boss");
   await expect(page.getByTestId("inspection-demo-10-warning")).toHaveText("2");
   await expect(page.getByTestId("inspection-demo-10-level-offset")).toHaveText("3");

@@ -238,8 +238,12 @@ export function directionBetween(from: Cell, to: Cell): Cell | undefined {
 export function cardinalLineDirection(from: Cell, to: Cell): Cell | undefined {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
-  if (dx === 0 && dy === 0) return undefined;
-  if (dx !== 0 && dy !== 0) return undefined;
+  if (dx === 0 && dy === 0) {
+    return undefined;
+  }
+  if (dx !== 0 && dy !== 0) {
+    return undefined;
+  }
   return dx !== 0 ? { x: Math.sign(dx), y: 0 } : { x: 0, y: Math.sign(dy) };
 }
 

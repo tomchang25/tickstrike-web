@@ -46,28 +46,28 @@ Pointer previews render the same accepted plan and per-target results that a com
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/model/types.ts` | Medium | Define player Mobility runtime and snapshot state. |
-| `src/core/world/world.ts` | Large | Own Mobility state, cooldown upkeep, invulnerability, and damage gating. |
-| `src/core/combat/directional-hit.ts` | Medium | Parameterize the shared resolver for Mobility origins and stagger payoff. |
-| `src/core/actions/action-preview.ts` | Large | Produce shared Dash/Smash plans and predicted hit results. |
-| `src/core/actions/player-actions.ts` | Large | Commit shared Mobility plans and remove prototype Smash-only outcomes. |
-| `src/core/actions/action-resolver.ts` | Small | Bound accepted-action Mobility upkeep and release cleanup around the enemy phase. |
-| `src/harness/fixtures/shipped-arena.ts` | Medium | Spawn the default Ninja with authored Mobility state. |
-| `src/harness/scenarios/smash-water.scenario.ts` | Medium | Replace the prototype water fixture with deterministic Smash Guard coverage. |
-| `src/harness/scenarios/mobility-combat.scenario.ts` | Medium | Add a deterministic Dash, Telegraph, Guard, cooldown, and i-frame fixture. |
-| `src/presentation/pixi/pointer-aim.ts` | Small | Accept the active authored Dash range when clamping pointer distance. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Large | Render shared Mobility previews and commit only the calculated path, landing, and target feedback. |
-| `src/app/App.tsx` | Medium | Derive pointer Mobility mode from the active player instead of a local selector. |
-| `src/ui/TestbedPanel.tsx` | Small | Surface active Mobility and its cooldown without a class picker. |
-| `src/ui/SemanticMirror.tsx` | Small | Expose player Mobility state for browser assertions. |
-| `README.md` | Small | Replace obsolete Smash crush/knockback/water sample behavior. |
-| `test/unit/core/actions/action-preview.test.ts` | Large | Assert Mobility plan and prediction purity/equality. |
-| `test/unit/core/actions/action-resolver.test.ts` | Large | Assert cooldown, i-frame, directional resolution, and cleanup. |
-| `test/unit/core/combat/directional-hit.test.ts` | Medium | Assert Mobility-origin and stagger-multiplier use of the shared resolver. |
-| `test/e2e/testbed.spec.ts` | Large | Replace prototype Smash assertions with shared-Mobility browser behavior. |
-| `test/e2e/mobility-combat.spec.ts` | Medium | Assert deterministic Dash preview/commit, Telegraph avoidance, cooldown, and settled presentation. |
+| File                                                | Change Size | Purpose                                                                                            |
+| --------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                           | Medium      | Define player Mobility runtime and snapshot state.                                                 |
+| `src/core/world/world.ts`                           | Large       | Own Mobility state, cooldown upkeep, invulnerability, and damage gating.                           |
+| `src/core/combat/directional-hit.ts`                | Medium      | Parameterize the shared resolver for Mobility origins and stagger payoff.                          |
+| `src/core/actions/action-preview.ts`                | Large       | Produce shared Dash/Smash plans and predicted hit results.                                         |
+| `src/core/actions/player-actions.ts`                | Large       | Commit shared Mobility plans and remove prototype Smash-only outcomes.                             |
+| `src/core/actions/action-resolver.ts`               | Small       | Bound accepted-action Mobility upkeep and release cleanup around the enemy phase.                  |
+| `src/harness/fixtures/shipped-arena.ts`             | Medium      | Spawn the default Ninja with authored Mobility state.                                              |
+| `src/harness/scenarios/smash-water.scenario.ts`     | Medium      | Replace the prototype water fixture with deterministic Smash Guard coverage.                       |
+| `src/harness/scenarios/mobility-combat.scenario.ts` | Medium      | Add a deterministic Dash, Telegraph, Guard, cooldown, and i-frame fixture.                         |
+| `src/presentation/pixi/pointer-aim.ts`              | Small       | Accept the active authored Dash range when clamping pointer distance.                              |
+| `src/presentation/pixi/PixiGameRenderer.ts`         | Large       | Render shared Mobility previews and commit only the calculated path, landing, and target feedback. |
+| `src/app/App.tsx`                                   | Medium      | Derive pointer Mobility mode from the active player instead of a local selector.                   |
+| `src/ui/TestbedPanel.tsx`                           | Small       | Surface active Mobility and its cooldown without a class picker.                                   |
+| `src/ui/SemanticMirror.tsx`                         | Small       | Expose player Mobility state for browser assertions.                                               |
+| `README.md`                                         | Small       | Replace obsolete Smash crush/knockback/water sample behavior.                                      |
+| `test/unit/core/actions/action-preview.test.ts`     | Large       | Assert Mobility plan and prediction purity/equality.                                               |
+| `test/unit/core/actions/action-resolver.test.ts`    | Large       | Assert cooldown, i-frame, directional resolution, and cleanup.                                     |
+| `test/unit/core/combat/directional-hit.test.ts`     | Medium      | Assert Mobility-origin and stagger-multiplier use of the shared resolver.                          |
+| `test/e2e/testbed.spec.ts`                          | Large       | Replace prototype Smash assertions with shared-Mobility browser behavior.                          |
+| `test/e2e/mobility-combat.spec.ts`                  | Medium      | Assert deterministic Dash preview/commit, Telegraph avoidance, cooldown, and settled presentation. |
 
 ## Execution Outline
 
@@ -89,14 +89,14 @@ Pointer previews render the same accepted plan and per-target results that a com
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Selected Dash distance exceeds the active range | Clamp pointer intent to the active authored range; direct invalid commands reject without mutation. |
-| Every reachable Dash cell is occupied, reserved, or non-land | Reject without tick, cooldown change, or i-frame. |
-| Dash victim breaks Guard while Telegraphing | Apply the ordinary Guard-break interruption before the enemy phase; clear its reservation and Telegraph. |
-| A different enemy detonates on the Dash/Smash release landing | Resolve the detonation but suppress player damage for that one release window. |
-| Mobility is on cooldown | Reject without advancing the enemy phase or replacing an armed Smash target. |
-| Reset or terminal outcome occurs during presentation | Logical Mobility state is fresh/cleared immediately; the existing generation cancellation removes all transient visuals. |
+| Case                                                          | Expected Handling                                                                                                        |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Selected Dash distance exceeds the active range               | Clamp pointer intent to the active authored range; direct invalid commands reject without mutation.                      |
+| Every reachable Dash cell is occupied, reserved, or non-land  | Reject without tick, cooldown change, or i-frame.                                                                        |
+| Dash victim breaks Guard while Telegraphing                   | Apply the ordinary Guard-break interruption before the enemy phase; clear its reservation and Telegraph.                 |
+| A different enemy detonates on the Dash/Smash release landing | Resolve the detonation but suppress player damage for that one release window.                                           |
+| Mobility is on cooldown                                       | Reject without advancing the enemy phase or replacing an armed Smash target.                                             |
+| Reset or terminal outcome occurs during presentation          | Logical Mobility state is fresh/cleared immediately; the existing generation cancellation removes all transient visuals. |
 
 ## Acceptance Criteria
 

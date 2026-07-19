@@ -97,7 +97,11 @@ function addDiagnostic(
   diagnostics.push({ code, path, message });
 }
 
-function requireId(value: unknown, path: string, diagnostics: ArtifactContentDiagnostic[]): boolean {
+function requireId(
+  value: unknown,
+  path: string,
+  diagnostics: ArtifactContentDiagnostic[],
+): boolean {
   if (!isSafeId(value)) {
     addDiagnostic(
       diagnostics,
@@ -154,7 +158,11 @@ function requireEnum(
   return true;
 }
 
-function requireBoolean(value: unknown, path: string, diagnostics: ArtifactContentDiagnostic[]): boolean {
+function requireBoolean(
+  value: unknown,
+  path: string,
+  diagnostics: ArtifactContentDiagnostic[],
+): boolean {
   if (typeof value !== "boolean") {
     addDiagnostic(diagnostics, "invalid-boolean", path, "must be true or false");
     return false;
@@ -168,11 +176,20 @@ function validatePresentation(
   diagnostics: ArtifactContentDiagnostic[],
 ): void {
   if (!isRecord(value) || !isProfileId(value.id)) {
-    addDiagnostic(diagnostics, "invalid-profile-id", `${path}.id`, "must be a semantic profile identifier");
+    addDiagnostic(
+      diagnostics,
+      "invalid-profile-id",
+      `${path}.id`,
+      "must be a semantic profile identifier",
+    );
   }
 }
 
-function validateEffect(value: unknown, path: string, diagnostics: ArtifactContentDiagnostic[]): void {
+function validateEffect(
+  value: unknown,
+  path: string,
+  diagnostics: ArtifactContentDiagnostic[],
+): void {
   if (!isRecord(value)) {
     addDiagnostic(diagnostics, "invalid-definition", path, "must be an effect object");
     return;
@@ -195,7 +212,12 @@ function validateEffect(value: unknown, path: string, diagnostics: ArtifactConte
     );
     requirePositive(value.amount, `${path}.amount`, diagnostics);
   } else if (value.kind === "trigger") {
-    requireEnum(value.trigger, ["guard-shredder", "execution", "chain-dash"], `${path}.trigger`, diagnostics);
+    requireEnum(
+      value.trigger,
+      ["guard-shredder", "execution", "chain-dash"],
+      `${path}.trigger`,
+      diagnostics,
+    );
   }
 }
 
@@ -213,19 +235,40 @@ function validateEffectList(
   value.forEach((effect, index) => validateEffect(effect, `${path}[${index}]`, diagnostics));
 
   if (value.length !== 1) {
-    addDiagnostic(diagnostics, "invalid-effect-list", path, "must contain exactly one shipped effect");
+    addDiagnostic(
+      diagnostics,
+      "invalid-effect-list",
+      path,
+      "must contain exactly one shipped effect",
+    );
   }
   const effect = value[0];
-  if (!isRecord(effect)) return;
+  if (!isRecord(effect)) {
+    return;
+  }
   if (category === "minor" && effect.kind === "trigger") {
-    addDiagnostic(diagnostics, "unsupported-effect", `${path}[0].kind`, "minor artifacts require a channel effect");
+    addDiagnostic(
+      diagnostics,
+      "unsupported-effect",
+      `${path}[0].kind`,
+      "minor artifacts require a channel effect",
+    );
   }
   if (category === "major" && effect.kind === "channel") {
-    addDiagnostic(diagnostics, "unsupported-effect", `${path}[0].kind`, "major artifacts require a trigger effect");
+    addDiagnostic(
+      diagnostics,
+      "unsupported-effect",
+      `${path}[0].kind`,
+      "major artifacts require a trigger effect",
+    );
   }
 }
 
-function validateArtifact(value: unknown, index: number, diagnostics: ArtifactContentDiagnostic[]): void {
+function validateArtifact(
+  value: unknown,
+  index: number,
+  diagnostics: ArtifactContentDiagnostic[],
+): void {
   const path = `artifacts[${index}]`;
   if (!isRecord(value)) {
     addDiagnostic(diagnostics, "invalid-definition", path, "must be an object");
@@ -234,13 +277,36 @@ function validateArtifact(value: unknown, index: number, diagnostics: ArtifactCo
 
   requireId(value.id, `${path}.id`, diagnostics);
   requireText(value.name, `${path}.name`, diagnostics, "invalid-display-name");
-  requireText(value.descriptionTemplate, `${path}.descriptionTemplate`, diagnostics, "invalid-description-template");
-  const categoryValid = requireEnum(value.category, ["minor", "major"], `${path}.category`, diagnostics);
+  requireText(
+    value.descriptionTemplate,
+    `${path}.descriptionTemplate`,
+    diagnostics,
+    "invalid-description-template",
+  );
+  const categoryValid = requireEnum(
+    value.category,
+    ["minor", "major"],
+    `${path}.category`,
+    diagnostics,
+  );
   requirePositive(value.maxStacks, `${path}.maxStacks`, diagnostics, true);
-  if (typeof value.exclusivityGroup !== "string" || (!value.exclusivityGroup && value.exclusivityGroup !== "")) {
-    addDiagnostic(diagnostics, "invalid-exclusivity-group", `${path}.exclusivityGroup`, "must be an empty or safe identifier");
+  if (
+    typeof value.exclusivityGroup !== "string" ||
+    (!value.exclusivityGroup && value.exclusivityGroup !== "")
+  ) {
+    addDiagnostic(
+      diagnostics,
+      "invalid-exclusivity-group",
+      `${path}.exclusivityGroup`,
+      "must be an empty or safe identifier",
+    );
   } else if (value.exclusivityGroup !== "" && !isSafeId(value.exclusivityGroup)) {
-    addDiagnostic(diagnostics, "invalid-exclusivity-group", `${path}.exclusivityGroup`, "must be an empty or safe identifier");
+    addDiagnostic(
+      diagnostics,
+      "invalid-exclusivity-group",
+      `${path}.exclusivityGroup`,
+      "must be an empty or safe identifier",
+    );
   }
   requireBoolean(value.isCurse, `${path}.isCurse`, diagnostics);
   requirePositive(value.minWave, `${path}.minWave`, diagnostics, true);
@@ -270,12 +336,22 @@ function validateArtifact(value: unknown, index: number, diagnostics: ArtifactCo
   validatePresentation(value.presentation, `${path}.presentation`, diagnostics);
 }
 
-function validateUniqueIds(values: readonly unknown[], diagnostics: ArtifactContentDiagnostic[]): void {
+function validateUniqueIds(
+  values: readonly unknown[],
+  diagnostics: ArtifactContentDiagnostic[],
+): void {
   const seen = new Set<string>();
   values.forEach((value, index) => {
-    if (!isRecord(value) || typeof value.id !== "string") return;
+    if (!isRecord(value) || typeof value.id !== "string") {
+      return;
+    }
     if (seen.has(value.id)) {
-      addDiagnostic(diagnostics, "duplicate-id", `artifacts[${index}].id`, `duplicates artifact ID ${value.id}`);
+      addDiagnostic(
+        diagnostics,
+        "duplicate-id",
+        `artifacts[${index}].id`,
+        `duplicates artifact ID ${value.id}`,
+      );
     }
     seen.add(value.id);
   });
@@ -311,6 +387,8 @@ function cloneAndFreeze<T>(value: T): T {
 
 export function createArtifactContentCatalog(input: ArtifactContentInput): ArtifactContentCatalog {
   const diagnostics = validateArtifactContent(input);
-  if (diagnostics.length > 0) throw new ArtifactContentValidationError(diagnostics);
+  if (diagnostics.length > 0) {
+    throw new ArtifactContentValidationError(diagnostics);
+  }
   return cloneAndFreeze(input);
 }

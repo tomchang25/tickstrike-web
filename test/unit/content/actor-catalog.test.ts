@@ -4,7 +4,12 @@ import { actorCatalog } from "../../../src/content/actor-catalog";
 describe("canonical actor content", () => {
   it("contains the complete shipped inventory", () => {
     expect(actorCatalog.characters.map((entry) => entry.id)).toEqual(["ninja", "viking"]);
-    expect(actorCatalog.guards.map((entry) => entry.id)).toEqual(["small", "heavy", "elite", "boss"]);
+    expect(actorCatalog.guards.map((entry) => entry.id)).toEqual([
+      "small",
+      "heavy",
+      "elite",
+      "boss",
+    ]);
     expect(actorCatalog.attacks).toHaveLength(15);
     expect(actorCatalog.enemies.map((entry) => entry.id)).toEqual([
       "thrust_enemy",
@@ -43,7 +48,9 @@ describe("canonical actor content", () => {
   });
 
   it("records guard values, attack payloads, and every enemy assignment", () => {
-    expect(actorCatalog.guards.map(({ id, base, lethalTierGain }) => ({ id, base, lethalTierGain }))).toEqual([
+    expect(
+      actorCatalog.guards.map(({ id, base, lethalTierGain }) => ({ id, base, lethalTierGain })),
+    ).toEqual([
       { id: "small", base: 32, lethalTierGain: 8 },
       { id: "heavy", base: 64, lethalTierGain: 16 },
       { id: "elite", base: 96, lethalTierGain: 24 },
@@ -62,13 +69,19 @@ describe("canonical actor content", () => {
       ],
     });
     expect(actorCatalog.attacks.find((attack) => attack.id === "mode_charge")?.damage).toBe(10);
-    expect(actorCatalog.attacks.find((attack) => attack.id === "mode_boss_charge")?.damage).toBe(10);
-    expect(actorCatalog.attacks.filter((attack) => attack.id === "thrust" || attack.id === "slash")).toMatchObject([
+    expect(actorCatalog.attacks.find((attack) => attack.id === "mode_boss_charge")?.damage).toBe(
+      10,
+    );
+    expect(
+      actorCatalog.attacks.filter((attack) => attack.id === "thrust" || attack.id === "slash"),
+    ).toMatchObject([
       { id: "thrust", warningTicks: 2, recoveryTicks: 2 },
       { id: "slash", warningTicks: 2, recoveryTicks: 2 },
     ]);
 
-    expect(actorCatalog.enemies.map(({ id, guardId, attackIds }) => ({ id, guardId, attackIds }))).toEqual([
+    expect(
+      actorCatalog.enemies.map(({ id, guardId, attackIds }) => ({ id, guardId, attackIds })),
+    ).toEqual([
       { id: "thrust_enemy", guardId: "small", attackIds: ["thrust"] },
       { id: "slash_enemy", guardId: "small", attackIds: ["slash"] },
       { id: "ranged_enemy", guardId: "small", attackIds: ["ranged_cross"] },
@@ -77,7 +90,13 @@ describe("canonical actor content", () => {
       {
         id: "mode_enemy",
         guardId: "elite",
-        attackIds: ["mode_tile_wide", "mode_tile_square", "mode_tile_line", "mode_charge", "mode_area"],
+        attackIds: [
+          "mode_tile_wide",
+          "mode_tile_square",
+          "mode_tile_line",
+          "mode_charge",
+          "mode_area",
+        ],
       },
       {
         id: "mode_boss",

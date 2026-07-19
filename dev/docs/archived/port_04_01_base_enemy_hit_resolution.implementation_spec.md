@@ -42,16 +42,16 @@ The result is intentionally extensible: it starts with attacker, target, HP dama
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/model/types.ts` | Medium | Add typed basic hit-result data and any canonical combat state needed by HP-only resolution. |
-| `src/core/world/world.ts` | Medium | Own atomic HP mutation, terminal transition, and player damage access. |
-| `src/core/actions/action-preview.ts` | Medium | Project whether an adjacent target exists and the shared basic hit result without mutation. |
-| `src/core/actions/action-resolver.ts` | Medium | Apply Normal Attack results while preserving accepted whiff and tick behavior. |
-| `src/core/events/combat-events.ts` | Medium | Add typed hit, damage, and death semantic payloads. |
-| `src/harness/fixtures/shipped-arena.ts` | Small | Align Thrust and Slash fixture HP with authored basic-enemy content while retaining current fixture IDs. |
-| `test/unit/core/actions/action-resolver.test.ts` | Medium | Assert occupied-target damage, whiff compatibility, event order, and tick behavior. |
-| `test/unit/core/world/world.test.ts` | Medium | Assert atomic damage, overkill, terminal occupancy release, and snapshot copying. |
+| File                                             | Change Size | Purpose                                                                                                  |
+| ------------------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                        | Medium      | Add typed basic hit-result data and any canonical combat state needed by HP-only resolution.             |
+| `src/core/world/world.ts`                        | Medium      | Own atomic HP mutation, terminal transition, and player damage access.                                   |
+| `src/core/actions/action-preview.ts`             | Medium      | Project whether an adjacent target exists and the shared basic hit result without mutation.              |
+| `src/core/actions/action-resolver.ts`            | Medium      | Apply Normal Attack results while preserving accepted whiff and tick behavior.                           |
+| `src/core/events/combat-events.ts`               | Medium      | Add typed hit, damage, and death semantic payloads.                                                      |
+| `src/harness/fixtures/shipped-arena.ts`          | Small       | Align Thrust and Slash fixture HP with authored basic-enemy content while retaining current fixture IDs. |
+| `test/unit/core/actions/action-resolver.test.ts` | Medium      | Assert occupied-target damage, whiff compatibility, event order, and tick behavior.                      |
+| `test/unit/core/world/world.test.ts`             | Medium      | Assert atomic damage, overkill, terminal occupancy release, and snapshot copying.                        |
 
 ## Execution Outline
 
@@ -70,14 +70,14 @@ The result is intentionally extensible: it starts with attacker, target, HP dama
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Empty adjacent target | Accept the Normal Attack, emit the player attack result, apply no damage, and advance one Tick. |
-| Adjacent non-enemy entity | Accept the command but do not apply enemy damage. |
-| Damage equal to current HP | Set HP to zero, enter `dead`, release occupancy immediately, and emit one death result. |
-| Damage greater than current HP | Clamp HP to zero and emit the same single terminal result without duplicate death events. |
-| Inactive player or non-cardinal direction | Reject without HP, phase, event, or Tick mutation. |
-| Reset during death presentation | Keep old visual cleanup generation-scoped; the replacement world starts without the old entity ownership. |
+| Case                                      | Expected Handling                                                                                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Empty adjacent target                     | Accept the Normal Attack, emit the player attack result, apply no damage, and advance one Tick.           |
+| Adjacent non-enemy entity                 | Accept the command but do not apply enemy damage.                                                         |
+| Damage equal to current HP                | Set HP to zero, enter `dead`, release occupancy immediately, and emit one death result.                   |
+| Damage greater than current HP            | Clamp HP to zero and emit the same single terminal result without duplicate death events.                 |
+| Inactive player or non-cardinal direction | Reject without HP, phase, event, or Tick mutation.                                                        |
+| Reset during death presentation           | Keep old visual cleanup generation-scoped; the replacement world starts without the old entity ownership. |
 
 ## Acceptance Criteria
 

@@ -47,17 +47,17 @@ The current Web Port 03 Mobility payload is Dash. This child does not add pointe
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/actions/action-preview.ts` | Small | Provide read-only attack target and Dash path/landing geometry shared by preview and commit. |
-| `src/core/actions/action-resolver.ts` | Medium | Reuse the shared Dash geometry without changing accepted/rejected outcomes or event order. |
-| `src/presentation/pixi/pointer-aim.ts` | Small | Convert canvas coordinates to cells and resolve dominant cardinal aim with last-aim fallback. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Large | Bind board-level pointer events and render/clear attack, Mobility, and virtual-player previews. |
-| `src/runtime/GameRuntime.ts` | Small | Keep the renderer's read-only snapshot current after command resolution without snapping presentation timelines. |
-| `src/app/App.tsx` | Medium | Own transient pointer mode, Alt lifecycle, command gating, and pointer callback registration. |
-| `test/unit/core/actions/action-preview.test.ts` | Small | Assert read-only target/path decisions and parity with current Port 03 legality. |
-| `test/unit/presentation/pixi/pointer-aim.test.ts` | Small | Assert coordinate conversion and dominant-direction fallback behavior. |
-| `test/e2e/testbed.spec.ts` | Medium | Assert browser-visible pointer hover, mode switch, click dispatch, tick/event results, and preview retention. |
+| File                                              | Change Size | Purpose                                                                                                          |
+| ------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| `src/core/actions/action-preview.ts`              | Small       | Provide read-only attack target and Dash path/landing geometry shared by preview and commit.                     |
+| `src/core/actions/action-resolver.ts`             | Medium      | Reuse the shared Dash geometry without changing accepted/rejected outcomes or event order.                       |
+| `src/presentation/pixi/pointer-aim.ts`            | Small       | Convert canvas coordinates to cells and resolve dominant cardinal aim with last-aim fallback.                    |
+| `src/presentation/pixi/PixiGameRenderer.ts`       | Large       | Bind board-level pointer events and render/clear attack, Mobility, and virtual-player previews.                  |
+| `src/runtime/GameRuntime.ts`                      | Small       | Keep the renderer's read-only snapshot current after command resolution without snapping presentation timelines. |
+| `src/app/App.tsx`                                 | Medium      | Own transient pointer mode, Alt lifecycle, command gating, and pointer callback registration.                    |
+| `test/unit/core/actions/action-preview.test.ts`   | Small       | Assert read-only target/path decisions and parity with current Port 03 legality.                                 |
+| `test/unit/presentation/pixi/pointer-aim.test.ts` | Small       | Assert coordinate conversion and dominant-direction fallback behavior.                                           |
+| `test/e2e/testbed.spec.ts`                        | Medium      | Assert browser-visible pointer hover, mode switch, click dispatch, tick/event results, and preview retention.    |
 
 ## Execution Outline
 
@@ -81,16 +81,16 @@ The current Web Port 03 Mobility payload is Dash. This child does not add pointe
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Pointer leaves the canvas or is outside the arena | Clear the active hover preview and do not submit a command. |
-| Cursor delta is zero or perfectly diagonal | Use the last non-zero cardinal aim, initially right, for both preview and commit. |
-| Attack target has no enemy | Show the red non-target outline; left click still submits the Normal Attack whiff. |
-| Mobility aim has no legal landing | Do not change the retained Mobility preview or virtual player node; do not submit a command. |
-| Alt is released while a Mobility preview is visible | Return to Attack mode and replace the Mobility preview with the Attack preview for the current cursor. |
-| Pointer click occurs while busy or commands are disabled | Ignore the commit and leave the world snapshot and tick unchanged. |
-| Scenario reset or replacement occurs during a preview or presentation | Clear listeners and preview visuals; no stale pointer state may affect the new generation. |
-| Panel control is clicked | Only the panel action runs; the same click must not submit a canvas command. |
+| Case                                                                  | Expected Handling                                                                                      |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Pointer leaves the canvas or is outside the arena                     | Clear the active hover preview and do not submit a command.                                            |
+| Cursor delta is zero or perfectly diagonal                            | Use the last non-zero cardinal aim, initially right, for both preview and commit.                      |
+| Attack target has no enemy                                            | Show the red non-target outline; left click still submits the Normal Attack whiff.                     |
+| Mobility aim has no legal landing                                     | Do not change the retained Mobility preview or virtual player node; do not submit a command.           |
+| Alt is released while a Mobility preview is visible                   | Return to Attack mode and replace the Mobility preview with the Attack preview for the current cursor. |
+| Pointer click occurs while busy or commands are disabled              | Ignore the commit and leave the world snapshot and tick unchanged.                                     |
+| Scenario reset or replacement occurs during a preview or presentation | Clear listeners and preview visuals; no stale pointer state may affect the new generation.             |
+| Panel control is clicked                                              | Only the panel action runs; the same click must not submit a canvas command.                           |
 
 ## Acceptance Criteria
 

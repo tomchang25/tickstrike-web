@@ -54,19 +54,19 @@ The existing Web arena and Smash content remains behaviorally unchanged but move
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/content/actor-content.ts` | Large | Own readonly actor-content contracts, validation diagnostics, catalog construction, reference checks, and recursive freezing. |
-| `src/content/characters/character-definitions.ts` | Medium | Author the two complete shipped character definitions. |
-| `src/content/enemies/enemy-definitions.ts` | Large | Author four Guard profiles, fifteen attacks, and seven enemy definitions with stable references. |
-| `src/content/actor-content.ts` | Small | Assemble and validate the canonical production actor catalog. |
-| `src/content/arenas/training-arena.ts` -> `src/harness/fixtures/training-arena.ts` | Small | Move the synthetic arena under harness ownership without changing its layout. |
-| `src/content/enemies/spawn-training-enemies.ts` -> `src/harness/fixtures/spawn-training-enemies.ts` | Small | Move synthetic enemy setup under harness ownership and use training-only archetype identity. |
-| `src/harness/scenarios/empty-arena.scenario.ts` | Small | Import the moved fixture and stop labeling its synthetic player as a canonical class. |
-| `src/harness/scenarios/smash-water.scenario.ts` | Small | Import the moved fixtures and stop labeling its synthetic player as a canonical class. |
-| `test/unit/core/actions/action-resolver.test.ts` | Small | Import the moved fixtures and preserve the existing experimental Smash assertions with training identity. |
-| `test/unit/core/content/actor-content.test.ts` | Large | Prove malformed content diagnostics, reference validation, ordering preservation, and recursive immutability. |
-| `test/unit/content/actor-content.test.ts` | Large | Prove the exact shipped actor inventory, effective values, assignments, and semantic identifiers. |
+| File                                                                                                | Change Size | Purpose                                                                                                                       |
+| --------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `src/core/content/actor-content.ts`                                                                 | Large       | Own readonly actor-content contracts, validation diagnostics, catalog construction, reference checks, and recursive freezing. |
+| `src/content/characters/character-definitions.ts`                                                   | Medium      | Author the two complete shipped character definitions.                                                                        |
+| `src/content/enemies/enemy-definitions.ts`                                                          | Large       | Author four Guard profiles, fifteen attacks, and seven enemy definitions with stable references.                              |
+| `src/content/actor-content.ts`                                                                      | Small       | Assemble and validate the canonical production actor catalog.                                                                 |
+| `src/content/arenas/training-arena.ts` -> `src/harness/fixtures/training-arena.ts`                  | Small       | Move the synthetic arena under harness ownership without changing its layout.                                                 |
+| `src/content/enemies/spawn-training-enemies.ts` -> `src/harness/fixtures/spawn-training-enemies.ts` | Small       | Move synthetic enemy setup under harness ownership and use training-only archetype identity.                                  |
+| `src/harness/scenarios/empty-arena.scenario.ts`                                                     | Small       | Import the moved fixture and stop labeling its synthetic player as a canonical class.                                         |
+| `src/harness/scenarios/smash-water.scenario.ts`                                                     | Small       | Import the moved fixtures and stop labeling its synthetic player as a canonical class.                                        |
+| `test/unit/core/actions/action-resolver.test.ts`                                                    | Small       | Import the moved fixtures and preserve the existing experimental Smash assertions with training identity.                     |
+| `test/unit/core/content/actor-content.test.ts`                                                      | Large       | Prove malformed content diagnostics, reference validation, ordering preservation, and recursive immutability.                 |
+| `test/unit/content/actor-content.test.ts`                                                           | Large       | Prove the exact shipped actor inventory, effective values, assignments, and semantic identifiers.                             |
 
 ## Execution Outline
 
@@ -89,31 +89,31 @@ The existing Web arena and Smash content remains behaviorally unchanged but move
 
 ### Character Values
 
-| ID | Name | HP | Speed Fill | Normal Damage / Range | Mobility | Damage / Range / Cooldown | Presentation / Audio |
-| --- | --- | ---: | ---: | --- | --- | --- | --- |
-| `ninja` | Ninja | 100 | 20 | 20 / 1 cardinal cell | `dash` | 30 / 5 / 4 | `character.ninja` / `player.combat` |
-| `viking` | Viking | 100 | 10 | 20 / 1 cardinal cell | `smash` | 30 / 3 / 6 | `character.viking` / `player.combat` |
+| ID       | Name   |  HP | Speed Fill | Normal Damage / Range | Mobility | Damage / Range / Cooldown | Presentation / Audio                 |
+| -------- | ------ | --: | ---------: | --------------------- | -------- | ------------------------- | ------------------------------------ |
+| `ninja`  | Ninja  | 100 |         20 | 20 / 1 cardinal cell  | `dash`   | 30 / 5 / 4                | `character.ninja` / `player.combat`  |
+| `viking` | Viking | 100 |         10 | 20 / 1 cardinal cell  | `smash`  | 30 / 3 / 6                | `character.viking` / `player.combat` |
 
 Normal hits use the shipped Stagger multiplier `1.0`; Mobility hits use `2.0`. These are immutable attack inputs, not mutable class state.
 
 ### Guard And Enemy Values
 
 | Guard ID | Base | Lethal Tier Gain | Stagger | Protection | Protection Multiplier |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `small` | 32 | 8 | 3 | 5 | 0.5 |
-| `heavy` | 64 | 16 | 3 | 5 | 0.5 |
-| `elite` | 96 | 24 | 3 | 5 | 0.5 |
-| `boss` | 128 | 32 | 3 | 5 | 0.5 |
+| -------- | ---: | ---------------: | ------: | ---------: | --------------------: |
+| `small`  |   32 |                8 |       3 |          5 |                   0.5 |
+| `heavy`  |   64 |               16 |       3 |          5 |                   0.5 |
+| `elite`  |   96 |               24 |       3 |          5 |                   0.5 |
+| `boss`   |  128 |               32 |       3 |          5 |                   0.5 |
 
-| Enemy ID | Role | Speed | HP | Defense | Guard | Ordered Attacks | Role Tuning | Presentation / Audio |
-| --- | --- | ---: | ---: | ---: | --- | --- | --- | --- |
-| `thrust_enemy` | `thrust` | 75 | 100 | 0 | `small` | `thrust` | None | `enemy.thrust` / `enemy.guarded` |
-| `slash_enemy` | `slash` | 75 | 100 | 0 | `small` | `slash` | None | `enemy.slash` / `enemy.guarded` |
-| `ranged_enemy` | `ranged` | 75 | 100 | 0 | `small` | `ranged_cross` | Distance band 3-5 | `enemy.ranged` / `enemy.guarded` |
-| `charge_enemy` | `charge` | 100 | 150 | 0 | `heavy` | `charge` | None | `enemy.charge` / `enemy.guarded` |
-| `bomb_enemy` | `bomb` | 75 | 50 | 0 | None | `bomb_area` | Adjacent commitment | `enemy.bomb` / `enemy.guardless` |
-| `mode_enemy` | `mode` | 100 | 180 | 0 | `elite` | Five `mode_*` attacks below | Retaliation 10 ticks, warning reduction 1, damage multiplier 1.25 | `enemy.mode` / `enemy.mode` |
-| `mode_boss` | `mode` | 100 | 600 | 5 | `boss` | Five `mode_boss_*` attacks below | Same Mode retaliation; distinct boss identity | `enemy.mode-boss` / `enemy.mode` |
+| Enemy ID       | Role     | Speed |  HP | Defense | Guard   | Ordered Attacks                  | Role Tuning                                                       | Presentation / Audio             |
+| -------------- | -------- | ----: | --: | ------: | ------- | -------------------------------- | ----------------------------------------------------------------- | -------------------------------- |
+| `thrust_enemy` | `thrust` |    75 | 100 |       0 | `small` | `thrust`                         | None                                                              | `enemy.thrust` / `enemy.guarded` |
+| `slash_enemy`  | `slash`  |    75 | 100 |       0 | `small` | `slash`                          | None                                                              | `enemy.slash` / `enemy.guarded`  |
+| `ranged_enemy` | `ranged` |    75 | 100 |       0 | `small` | `ranged_cross`                   | Distance band 3-5                                                 | `enemy.ranged` / `enemy.guarded` |
+| `charge_enemy` | `charge` |   100 | 150 |       0 | `heavy` | `charge`                         | None                                                              | `enemy.charge` / `enemy.guarded` |
+| `bomb_enemy`   | `bomb`   |    75 |  50 |       0 | None    | `bomb_area`                      | Adjacent commitment                                               | `enemy.bomb` / `enemy.guardless` |
+| `mode_enemy`   | `mode`   |   100 | 180 |       0 | `elite` | Five `mode_*` attacks below      | Retaliation 10 ticks, warning reduction 1, damage multiplier 1.25 | `enemy.mode` / `enemy.mode`      |
+| `mode_boss`    | `mode`   |   100 | 600 |       5 | `boss`  | Five `mode_boss_*` attacks below | Same Mode retaliation; distinct boss identity                     | `enemy.mode-boss` / `enemy.mode` |
 
 Mode Boss is not a separate AI role. Bomb's missing Guard is intentional. Guard lethal-tier cadence and projection belong to the wave/progression child; this child stores only profile inputs.
 
@@ -121,23 +121,23 @@ Mode Boss is not a separate AI role. Bomb's missing Guard is intentional. Guard 
 
 Every attack has finite positive damage, integer warning and recovery ticks, and the shown shape payload. Omitted Godot values below are recorded explicitly.
 
-| Attack ID | Kind / Shape | Damage | Warning | Recovery | Payload |
-| --- | --- | ---: | ---: | ---: | --- |
-| `thrust` | tile / custom offsets | 10 | 1 | 1 | `(1,0), (2,0), (3,0)` |
-| `slash` | tile / custom offsets | 10 | 2 | 1 | `(1,-1), (1,0), (1,1)` |
-| `ranged_cross` | tile / custom offsets | 10 | 2 | 1 | `(0,0), (1,0), (-1,0), (0,1), (0,-1)` |
-| `charge` | charge / line | 8 | 2 | 2 | Length 5 |
-| `bomb_area` | area / manhattan | 50 | 3 | 1 | Radius 4 |
-| `mode_tile_wide` | tile / wide | 12 | 2 | 1 | Width 3, depth 2 |
-| `mode_tile_square` | tile / square | 12 | 2 | 1 | Radius 1 |
-| `mode_tile_line` | tile / line | 12 | 2 | 1 | Length 4 |
-| `mode_charge` | charge / full-line | 10 | 3 | 2 | Unbounded line |
-| `mode_area` | area / square | 14 | 2 | 1 | Radius 1 |
-| `mode_boss_tile_wide` | tile / wide | 20 | 2 | 1 | Width 3, depth 2 |
-| `mode_boss_tile_square` | tile / square | 20 | 2 | 1 | Radius 1 |
-| `mode_boss_tile_line` | tile / line | 20 | 2 | 1 | Length 4 |
-| `mode_boss_charge` | charge / full-line | 10 | 3 | 2 | Unbounded line |
-| `mode_boss_area` | area / square | 22 | 2 | 1 | Radius 1 |
+| Attack ID               | Kind / Shape          | Damage | Warning | Recovery | Payload                               |
+| ----------------------- | --------------------- | -----: | ------: | -------: | ------------------------------------- |
+| `thrust`                | tile / custom offsets |     10 |       1 |        1 | `(1,0), (2,0), (3,0)`                 |
+| `slash`                 | tile / custom offsets |     10 |       2 |        1 | `(1,-1), (1,0), (1,1)`                |
+| `ranged_cross`          | tile / custom offsets |     10 |       2 |        1 | `(0,0), (1,0), (-1,0), (0,1), (0,-1)` |
+| `charge`                | charge / line         |      8 |       2 |        2 | Length 5                              |
+| `bomb_area`             | area / manhattan      |     50 |       3 |        1 | Radius 4                              |
+| `mode_tile_wide`        | tile / wide           |     12 |       2 |        1 | Width 3, depth 2                      |
+| `mode_tile_square`      | tile / square         |     12 |       2 |        1 | Radius 1                              |
+| `mode_tile_line`        | tile / line           |     12 |       2 |        1 | Length 4                              |
+| `mode_charge`           | charge / full-line    |     10 |       3 |        2 | Unbounded line                        |
+| `mode_area`             | area / square         |     14 |       2 |        1 | Radius 1                              |
+| `mode_boss_tile_wide`   | tile / wide           |     20 |       2 |        1 | Width 3, depth 2                      |
+| `mode_boss_tile_square` | tile / square         |     20 |       2 |        1 | Radius 1                              |
+| `mode_boss_tile_line`   | tile / line           |     20 |       2 |        1 | Length 4                              |
+| `mode_boss_charge`      | charge / full-line    |     10 |       3 |        2 | Unbounded line                        |
+| `mode_boss_area`        | area / square         |     22 |       2 |        1 | Radius 1                              |
 
 The two Mode charge attacks deal 10 because they inherit the attack-resource default; do not normalize them to their role's surrounding damage. Recovery values remain authored ticks and do not include the later runtime `+1` recovery-counter rule. Ranged's `(0,0)` offset is valid because its cross is centered on the locked target cell.
 
@@ -159,19 +159,19 @@ The two Mode charge attacks deal 10 because they inherit the attack-resource def
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Duplicate definition ID | Reject with the domain, duplicate ID, and deterministic content path. |
-| Unknown Guard or attack reference | Reject catalog construction; never expose a dangling reference. |
-| Bomb has no Guard | Accept; canonical assertions prove Bomb alone is guardless. |
-| `NaN`, infinity, or fractional tick/cell value | Reject explicitly. |
-| Empty or duplicate custom offset | Reject; preserve valid offset order. |
-| Custom offset `(0,0)` | Accept for target-centered footprints such as Ranged. |
-| Invalid enum introduced through a cast or external value | Reject at runtime despite TypeScript typing. |
-| Mutation through a cast after import | Recursively frozen nested content remains unchanged. |
-| Validation sorts definitions or attack references | Forbidden; input and Mode attack order remain intact. |
-| Old training module path retained as a re-export | Forbidden; harness-only ownership must be explicit. |
-| Current experimental Smash sees canonical Viking content | Forbidden; training behavior remains isolated. |
+| Case                                                     | Expected Handling                                                     |
+| -------------------------------------------------------- | --------------------------------------------------------------------- |
+| Duplicate definition ID                                  | Reject with the domain, duplicate ID, and deterministic content path. |
+| Unknown Guard or attack reference                        | Reject catalog construction; never expose a dangling reference.       |
+| Bomb has no Guard                                        | Accept; canonical assertions prove Bomb alone is guardless.           |
+| `NaN`, infinity, or fractional tick/cell value           | Reject explicitly.                                                    |
+| Empty or duplicate custom offset                         | Reject; preserve valid offset order.                                  |
+| Custom offset `(0,0)`                                    | Accept for target-centered footprints such as Ranged.                 |
+| Invalid enum introduced through a cast or external value | Reject at runtime despite TypeScript typing.                          |
+| Mutation through a cast after import                     | Recursively frozen nested content remains unchanged.                  |
+| Validation sorts definitions or attack references        | Forbidden; input and Mode attack order remain intact.                 |
+| Old training module path retained as a re-export         | Forbidden; harness-only ownership must be explicit.                   |
+| Current experimental Smash sees canonical Viking content | Forbidden; training behavior remains isolated.                        |
 
 ## Acceptance Criteria
 

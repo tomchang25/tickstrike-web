@@ -47,15 +47,15 @@ Remove World methods that only forward to the canonical operation. Add browser r
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/actions/action-resolver.ts` | Medium | Retain the public command boundary and accepted-result assembly while delegating existing player and enemy responsibilities. |
-| `src/core/actions/player-actions.ts` | Medium | Add the framework-independent direct player command resolver extracted from the current Move, Attack, Dash, and Smash logic. |
-| `src/core/actions/enemy-phase.ts` | Medium | Add the framework-independent deterministic enemy-phase resolver extracted from the current resolver. |
-| `src/core/world/world.ts` | Small | Remove forwarding-only aliases and retain the canonical World operations. |
-| `test/unit/core/world/world.test.ts` | Small | Migrate reservation tests to the canonical World API. |
-| `test/unit/core/combat/directional-hit.test.ts` | Small | Migrate reservation setup to the canonical World API. |
-| `test/e2e/testbed.spec.ts` | Medium | Prove reset and scenario replacement cannot leak an in-flight terminal presentation into the replacement state. |
+| File                                            | Change Size | Purpose                                                                                                                      |
+| ----------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `src/core/actions/action-resolver.ts`           | Medium      | Retain the public command boundary and accepted-result assembly while delegating existing player and enemy responsibilities. |
+| `src/core/actions/player-actions.ts`            | Medium      | Add the framework-independent direct player command resolver extracted from the current Move, Attack, Dash, and Smash logic. |
+| `src/core/actions/enemy-phase.ts`               | Medium      | Add the framework-independent deterministic enemy-phase resolver extracted from the current resolver.                        |
+| `src/core/world/world.ts`                       | Small       | Remove forwarding-only aliases and retain the canonical World operations.                                                    |
+| `test/unit/core/world/world.test.ts`            | Small       | Migrate reservation tests to the canonical World API.                                                                        |
+| `test/unit/core/combat/directional-hit.test.ts` | Small       | Migrate reservation setup to the canonical World API.                                                                        |
+| `test/e2e/testbed.spec.ts`                      | Medium      | Prove reset and scenario replacement cannot leak an in-flight terminal presentation into the replacement state.              |
 
 ## Execution Outline
 
@@ -76,13 +76,13 @@ Remove World methods that only forward to the canonical operation. Add browser r
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Rejected or terminal command | Return the existing rejection result, leave World state and recorded events unchanged, and do not enter player or enemy extracted logic. |
-| Smash arm and release | Preserve the existing two accepted actions, locked target behavior, Tick advancement, and ordered events across the player-action extraction. |
-| Enemy killed or interrupted before its turn | Preserve current entity filtering, reservation and Telegraph cleanup, and event order during enemy-phase extraction. |
-| Reset while a terminal timeline is active | Cancel the old generation, restore the deterministic initial scenario snapshot, retain its entity views, and eventually report idle without a stale removal callback. |
-| Scenario replacement while a terminal timeline is active | Cancel the old generation and show only the replacement scenario's snapshot and entity views; the old terminal callback must have no visible or listener effect. |
+| Case                                                     | Expected Handling                                                                                                                                                     |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rejected or terminal command                             | Return the existing rejection result, leave World state and recorded events unchanged, and do not enter player or enemy extracted logic.                              |
+| Smash arm and release                                    | Preserve the existing two accepted actions, locked target behavior, Tick advancement, and ordered events across the player-action extraction.                         |
+| Enemy killed or interrupted before its turn              | Preserve current entity filtering, reservation and Telegraph cleanup, and event order during enemy-phase extraction.                                                  |
+| Reset while a terminal timeline is active                | Cancel the old generation, restore the deterministic initial scenario snapshot, retain its entity views, and eventually report idle without a stale removal callback. |
+| Scenario replacement while a terminal timeline is active | Cancel the old generation and show only the replacement scenario's snapshot and entity views; the old terminal callback must have no visible or listener effect.      |
 
 ## Acceptance Criteria
 

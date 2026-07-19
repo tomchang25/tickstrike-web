@@ -56,12 +56,20 @@ describe("action previews", () => {
 
     expect(previewDash(world, "player", { x: 1, y: 0 }, 3)).toMatchObject({
       accepted: true,
-      path: [{ x: 7, y: 6 }, { x: 8, y: 6 }, { x: 9, y: 6 }],
+      path: [
+        { x: 7, y: 6 },
+        { x: 8, y: 6 },
+        { x: 9, y: 6 },
+      ],
       landing: { x: 9, y: 6 },
     });
     expect(previewDash(world, "player", { x: -1, y: 0 }, 3)).toMatchObject({
       accepted: true,
-      path: [{ x: 5, y: 6 }, { x: 4, y: 6 }, { x: 3, y: 6 }],
+      path: [
+        { x: 5, y: 6 },
+        { x: 4, y: 6 },
+        { x: 3, y: 6 },
+      ],
       landing: { x: 3, y: 6 },
     });
     expect(world.snapshot().tick).toBe(0);
@@ -96,10 +104,12 @@ describe("action previews", () => {
       distance: 2,
     });
 
-    expect(result.events).not.toContainEqual(expect.objectContaining({
-      type: "enemy_damaged",
-      enemyId: "enemy-slash",
-    }));
+    expect(result.events).not.toContainEqual(
+      expect.objectContaining({
+        type: "enemy_damaged",
+        enemyId: "enemy-slash",
+      }),
+    );
     expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 100, phase: "alive" });
     expect(world.playerCell).toEqual({ x: 7, y: 6 });
   });
@@ -108,7 +118,9 @@ describe("action previews", () => {
     const world = createFoundationArena();
     const preview = previewDash(world, "player", { x: 1, y: 0 }, 3);
     const predicted = preview.victims.find((victim) => victim.enemyId === "enemy-slash");
-    if (!predicted) throw new Error("Expected the Dash preview to include enemy-slash.");
+    if (!predicted) {
+      throw new Error("Expected the Dash preview to include enemy-slash.");
+    }
 
     const result = resolveCommand(world, {
       type: "dash",
@@ -159,15 +171,41 @@ describe("action previews", () => {
       hp: 100,
       mobility: { kind: "smash", damage: 30, range: 3, cooldown: 6, staggerMultiplier: 2 },
     });
-    world.spawn({ id: "enemy-center", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 3 }, hp: 100 });
-    world.spawn({ id: "enemy-blocked", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 2 }, hp: 100 });
-    world.spawn({ id: "enemy-right", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 3 }, hp: 100 });
-    world.spawn({ id: "enemy-water", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 4 }, hp: 100 });
-    expect(world.requestReservation({
-      ownerId: "fixture-blocker",
-      purpose: "movement",
-      cells: [{ x: 4, y: 1 }],
-    }).granted).toBe(true);
+    world.spawn({
+      id: "enemy-center",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 3 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "enemy-blocked",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 2 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "enemy-right",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 5, y: 3 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "enemy-water",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 4 },
+      hp: 100,
+    });
+    expect(
+      world.requestReservation({
+        ownerId: "fixture-blocker",
+        purpose: "movement",
+        cells: [{ x: 4, y: 1 }],
+      }).granted,
+    ).toBe(true);
 
     const preview = previewSmash(world, "player", { x: 4, y: 3 });
 
@@ -196,7 +234,13 @@ describe("action previews", () => {
       hp: 100,
       normalAttackDamage: 4,
     });
-    attackWorld.spawn({ id: "enemy", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 3 }, hp: 1 });
+    attackWorld.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 3 },
+      hp: 1,
+    });
     const attackPreview = previewAttack(attackWorld, "player", { x: 1, y: 0 });
     expect(previewAttackVictimMarkers(attackPreview)).toEqual([
       { enemyId: "enemy", from: { x: 4, y: 3 }, outcome: "kill" },
@@ -211,7 +255,13 @@ describe("action previews", () => {
       hp: 100,
       mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 1 },
     });
-    dashWorld.spawn({ id: "enemy", kind: "enemy", archetype: "training-grunt", cell: { x: 2, y: 1 }, hp: 1 });
+    dashWorld.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 2, y: 1 },
+      hp: 1,
+    });
     const dashPreview = previewDash(dashWorld, "player", { x: 1, y: 0 }, 3);
     expect(previewDashVictimMarkers(dashPreview)).toEqual([
       { enemyId: "enemy", from: { x: 2, y: 1 }, outcome: "kill" },
@@ -228,7 +278,13 @@ describe("action previews", () => {
       hp: 100,
       normalAttackDamage: 4,
     });
-    world.spawn({ id: "enemy", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 3 }, hp: 100 });
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 3 },
+      hp: 100,
+    });
 
     expect(previewAttackVictimMarkers(previewAttack(world, "player", { x: 1, y: 0 }))).toEqual([]);
   });

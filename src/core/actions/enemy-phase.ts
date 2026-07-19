@@ -9,9 +9,9 @@ import {
 } from "../enemies/enemy-actions";
 
 function enabledEnemies(world: World): readonly EntityState[] {
-  return world.listEntities().filter(
-    (entity) => entity.kind === "enemy" && entity.enemyAction !== undefined,
-  );
+  return world
+    .listEntities()
+    .filter((entity) => entity.kind === "enemy" && entity.enemyAction !== undefined);
 }
 
 interface EnemyDecisionRecord {
@@ -40,7 +40,9 @@ function damageEventsFor(
     const events: CombatEvent[] = [
       { type: "player_damaged", playerId: targetId, damage, hp: target.hp, maxHp: target.maxHp },
     ];
-    if (damage.killed) events.push({ type: "player_died", playerId: targetId, cell: target.cell });
+    if (damage.killed) {
+      events.push({ type: "player_died", playerId: targetId, cell: target.cell });
+    }
     return events;
   }
   const events: CombatEvent[] = [
@@ -52,7 +54,9 @@ function damageEventsFor(
       maxHp: target.maxHp,
     },
   ];
-  if (damage.killed) events.push({ type: "enemy_died", enemyId: targetId, attackerId, cell: target.cell });
+  if (damage.killed) {
+    events.push({ type: "enemy_died", enemyId: targetId, attackerId, cell: target.cell });
+  }
   return events;
 }
 
@@ -62,7 +66,12 @@ function chargeResolutionEvents(
   resolution: ChargeAttackResolution,
 ): CombatEvent[] {
   const events: CombatEvent[] = [
-    { type: "enemy_attack_detonated", enemyId, attack: resolution.attack, target: resolution.impact.cell },
+    {
+      type: "enemy_attack_detonated",
+      enemyId,
+      attack: resolution.attack,
+      target: resolution.impact.cell,
+    },
   ];
 
   for (const displacement of resolution.displacements) {
@@ -80,7 +89,9 @@ function chargeResolutionEvents(
       outcome: resolution.impact.outcome,
     });
     if (resolution.impact.damage) {
-      events.push(...damageEventsFor(world, enemyId, resolution.impact.targetId, resolution.impact.damage));
+      events.push(
+        ...damageEventsFor(world, enemyId, resolution.impact.targetId, resolution.impact.damage),
+      );
     }
   } else {
     events.push({ type: "charge_impact", enemyId, cell: resolution.impact.cell, outcome: "empty" });
@@ -97,7 +108,11 @@ function chargeResolutionEvents(
       });
     }
   }
-  if (resolution.impact.outcome === "normal" && resolution.impact.targetId && resolution.impact.to) {
+  if (
+    resolution.impact.outcome === "normal" &&
+    resolution.impact.targetId &&
+    resolution.impact.to
+  ) {
     events.push({
       type: "entity_displaced",
       entityId: resolution.impact.targetId,
@@ -107,55 +122,88 @@ function chargeResolutionEvents(
     });
   }
 
-  events.push({ type: "charge_landed", enemyId, from: resolution.landing.from, to: resolution.landing.to });
+  events.push({
+    type: "charge_landed",
+    enemyId,
+    from: resolution.landing.from,
+    to: resolution.landing.to,
+  });
   events.push({ type: "telegraph_changed", sourceId: enemyId, cleared: true });
-  events.push({ type: "enemy_recovering", enemyId, recoveryTicks: resolution.attack.recoveryTicks });
+  events.push({
+    type: "enemy_recovering",
+    enemyId,
+    recoveryTicks: resolution.attack.recoveryTicks,
+  });
   return events;
 }
 
 export function resolveEnemyPhase(world: World): CombatEvent[] {
   const enemies = enabledEnemies(world);
   const readyAtStart = new Set(
-    enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "ready").map((enemy) => enemy.id),
+    enemies
+      .filter((enemy) => enemy.phase === "alive" && enemy.activity === "ready")
+      .map((enemy) => enemy.id),
   );
   const recoveringAtStart = new Set(
-    enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "recovering").map((enemy) => enemy.id),
+    enemies
+      .filter((enemy) => enemy.phase === "alive" && enemy.activity === "recovering")
+      .map((enemy) => enemy.id),
   );
   const restingAtStart = new Set(
-    enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "resting").map((enemy) => enemy.id),
+    enemies
+      .filter((enemy) => enemy.phase === "alive" && enemy.activity === "resting")
+      .map((enemy) => enemy.id),
   );
   const recoveredThisPhase = new Set<string>();
   const events: CombatEvent[] = [];
   const decisions: EnemyDecisionRecord[] = [];
-  const movementEvents = new Map<string, Extract<CombatEvent, { type: "enemy_moved" | "enemy_waited" }>>();
+  const movementEvents = new Map<
+    string,
+    Extract<CombatEvent, { type: "enemy_moved" | "enemy_waited" }>
+  >();
 
   for (const enemy of enemies) {
     const current = world.getEntity(enemy.id);
-    if (!current || current.phase !== "alive" || current.activity !== "telegraphing") continue;
+    if (!current || current.phase !== "alive" || current.activity !== "telegraphing") {
+      continue;
+    }
 
     if (current.enemyAction?.role === "charge") {
-      const retarget = chargeLiveRetarget(current, world.playerCell, (cell) => world.isLegalCell(cell));
+      const retarget = chargeLiveRetarget(current, world.playerCell, (cell) =>
+        world.isLegalCell(cell),
+      );
       if (retarget) {
         const result = world.retargetChargeAttack(current.id, retarget.path, retarget.facing);
         if (result.changed && result.telegraph) {
-          events.push({ type: "telegraph_changed", sourceId: current.id, telegraph: result.telegraph, cleared: false });
+          events.push({
+            type: "telegraph_changed",
+            sourceId: current.id,
+            telegraph: result.telegraph,
+            cleared: false,
+          });
         }
       }
     }
 
     const telegraph = world.getTelegraph(enemy.id);
     const attack = world.decrementEnemyAttackWarning(enemy.id);
-    if (!attack || attack.warningTicks > 0) continue;
+    if (!attack || attack.warningTicks > 0) {
+      continue;
+    }
 
     if (current.enemyAction?.role === "charge") {
       const chargeResolution = world.resolveChargeAttack(enemy.id);
-      if (!chargeResolution) continue;
+      if (!chargeResolution) {
+        continue;
+      }
       events.push(...chargeResolutionEvents(world, enemy.id, chargeResolution));
       continue;
     }
 
     const resolution = world.resolveCommittedEnemyAttack(enemy.id);
-    if (!resolution) continue;
+    if (!resolution) {
+      continue;
+    }
     events.push({
       type: "enemy_attack_detonated",
       enemyId: enemy.id,
@@ -177,13 +225,19 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
       }
     }
     events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: true });
-    events.push({ type: "enemy_recovering", enemyId: enemy.id, recoveryTicks: resolution.attack.recoveryTicks });
+    events.push({
+      type: "enemy_recovering",
+      enemyId: enemy.id,
+      recoveryTicks: resolution.attack.recoveryTicks,
+    });
   }
 
   events.push(...world.advanceEnemyStatuses());
 
   for (const enemy of enemies) {
-    if (!recoveringAtStart.has(enemy.id)) continue;
+    if (!recoveringAtStart.has(enemy.id)) {
+      continue;
+    }
     if (world.advanceEnemyRecovery(enemy.id)) {
       recoveredThisPhase.add(enemy.id);
       events.push({ type: "enemy_recovered", enemyId: enemy.id });
@@ -191,23 +245,31 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
   }
 
   for (const enemy of enemies) {
-    if (!restingAtStart.has(enemy.id)) continue;
+    if (!restingAtStart.has(enemy.id)) {
+      continue;
+    }
     world.advanceEnemyRest(enemy.id);
   }
 
   for (const enemy of enemies) {
-    if (!readyAtStart.has(enemy.id) && !recoveredThisPhase.has(enemy.id)) continue;
+    if (!readyAtStart.has(enemy.id) && !recoveredThisPhase.has(enemy.id)) {
+      continue;
+    }
     const current = world.getEntity(enemy.id);
-    if (!current || current.phase !== "alive" || current.activity !== "ready") continue;
+    if (!current || current.phase !== "alive" || current.activity !== "ready") {
+      continue;
+    }
     const decision = decideEnemyAction({
       enemy: current,
       playerCell: world.playerCell,
       isInside: (cell) => world.isInside(cell),
-      canMove: (destination) => destination.x !== world.playerCell?.x || destination.y !== world.playerCell?.y
-        ? world.isWalkable(destination)
-        : false,
-      canPathThrough: (cell) => world.isLegalCell(cell)
-        && (world.playerCell === undefined || !sameCell(cell, world.playerCell)),
+      canMove: (destination) =>
+        destination.x !== world.playerCell?.x || destination.y !== world.playerCell?.y
+          ? world.isWalkable(destination)
+          : false,
+      canPathThrough: (cell) =>
+        world.isLegalCell(cell) &&
+        (world.playerCell === undefined || !sameCell(cell, world.playerCell)),
       canEndAt: (cell) => world.isWalkable(cell),
       isLegalTerrain: (cell) => world.isLegalCell(cell),
     });
@@ -218,19 +280,24 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
     (candidate): candidate is MovementDecision => candidate.decision.type === "move",
   );
   const pendingMovements = new Map<string, PendingMovement>(
-    movementDecisions.map(({ enemy, decision }) => [enemy.id, { enemy, decision, nextCandidate: 0 }]),
+    movementDecisions.map(({ enemy, decision }) => [
+      enemy.id,
+      { enemy, decision, nextCandidate: 0 },
+    ]),
   );
 
   while (pendingMovements.size > 0) {
     const claims: PendingMovement[] = [];
     for (const pending of pendingMovements.values()) {
       while (
-        pending.nextCandidate < pending.decision.candidates.length
-        && !world.isWalkable(pending.decision.candidates[pending.nextCandidate]!.destination)
+        pending.nextCandidate < pending.decision.candidates.length &&
+        !world.isWalkable(pending.decision.candidates[pending.nextCandidate]!.destination)
       ) {
         pending.nextCandidate += 1;
       }
-      if (pending.nextCandidate < pending.decision.candidates.length) claims.push(pending);
+      if (pending.nextCandidate < pending.decision.candidates.length) {
+        claims.push(pending);
+      }
     }
 
     if (claims.length === 0) {
@@ -270,7 +337,9 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
         world.setEnemyFacing(current.id, candidate.facing);
         world.setEnemyDecision(current.id, "move");
         world.moveEntity(current.id, candidate.destination);
-        if (current.enemyAction?.role === "ranged") world.setEnemyResting(current.id);
+        if (current.enemyAction?.role === "ranged") {
+          world.setEnemyResting(current.id);
+        }
         movementEvents.set(current.id, {
           type: "enemy_moved",
           enemyId: current.id,
@@ -279,10 +348,14 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
         });
       }
     } finally {
-      for (const claim of claims) world.releaseReservation(claim.enemy.id);
+      for (const claim of claims) {
+        world.releaseReservation(claim.enemy.id);
+      }
     }
 
-    for (const winner of winners) pendingMovements.delete(winner.enemy.id);
+    for (const winner of winners) {
+      pendingMovements.delete(winner.enemy.id);
+    }
     for (const pending of [...pendingMovements.values()]) {
       if (pending.nextCandidate >= pending.decision.candidates.length) {
         movementEvents.set(pending.enemy.id, { type: "enemy_waited", enemyId: pending.enemy.id });
@@ -296,7 +369,9 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
       case "move": {
         const movementEvent = movementEvents.get(enemy.id);
         if (movementEvent) {
-          if (movementEvent.type === "enemy_waited") world.setEnemyDecision(enemy.id, "wait");
+          if (movementEvent.type === "enemy_waited") {
+            world.setEnemyDecision(enemy.id, "wait");
+          }
           events.push(movementEvent);
         }
         break;
@@ -316,7 +391,9 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
         );
         events.push({ type: "enemy_attack_committed", enemyId: enemy.id, attack: committed });
         const telegraph = world.getTelegraph(enemy.id);
-        if (telegraph) events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: false });
+        if (telegraph) {
+          events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: false });
+        }
         break;
       }
       case "wait":

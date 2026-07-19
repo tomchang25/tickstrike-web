@@ -18,7 +18,10 @@ describe("canonical world occupancy", () => {
       kind: "enemy",
       archetype: "training-grunt",
       cell: { x: 4, y: 2 },
-      footprint: [{ x: 4, y: 2 }, { x: 5, y: 2 }],
+      footprint: [
+        { x: 4, y: 2 },
+        { x: 5, y: 2 },
+      ],
       hp: 10,
     });
 
@@ -46,7 +49,10 @@ describe("canonical world occupancy", () => {
         kind: "enemy",
         archetype: "training-grunt",
         cell: { x: 4, y: 2 },
-        footprint: [{ x: 4, y: 2 }, { x: 4, y: 2 }],
+        footprint: [
+          { x: 4, y: 2 },
+          { x: 4, y: 2 },
+        ],
         hp: 10,
       }),
     ).toThrow("duplicate footprint");
@@ -86,7 +92,10 @@ describe("canonical world occupancy", () => {
       kind: "enemy",
       archetype: "training-grunt",
       cell: { x: 2, y: 2 },
-      footprint: [{ x: 2, y: 2 }, { x: 3, y: 2 }],
+      footprint: [
+        { x: 2, y: 2 },
+        { x: 3, y: 2 },
+      ],
       hp: 10,
     });
     const before = world.requireEntity("enemy");
@@ -177,13 +186,18 @@ describe("canonical world occupancy", () => {
       kind: "enemy",
       archetype: "training-grunt",
       cell: { x: 4, y: 2 },
-      footprint: [{ x: 4, y: 2 }, { x: 5, y: 2 }],
+      footprint: [
+        { x: 4, y: 2 },
+        { x: 5, y: 2 },
+      ],
       hp: 10,
     });
 
     const snapshot = world.snapshot();
     const enemySnapshot = snapshot.entities.find((entity) => entity.id === "enemy");
-    if (!enemySnapshot) throw new Error("Expected enemy snapshot.");
+    if (!enemySnapshot) {
+      throw new Error("Expected enemy snapshot.");
+    }
     (snapshot.playerCell as { x: number; y: number }).x = 9;
     (enemySnapshot.cell as { x: number; y: number }).x = 9;
     (enemySnapshot.footprint[0] as { x: number; y: number }).x = 9;
@@ -191,7 +205,10 @@ describe("canonical world occupancy", () => {
     expect(world.playerCell).toEqual({ x: 2, y: 2 });
     expect(world.requireEntity("enemy")).toMatchObject({
       cell: { x: 4, y: 2 },
-      footprint: [{ x: 4, y: 2 }, { x: 5, y: 2 }],
+      footprint: [
+        { x: 4, y: 2 },
+        { x: 5, y: 2 },
+      ],
     });
     expect(world.getOccupantAt({ x: 4, y: 2 })?.id).toBe("enemy");
   });
@@ -209,7 +226,12 @@ const chargeAction: EnemyActionDefinition = {
 };
 
 function chargeWorld(): World {
-  return new World(12, 12, Array.from({ length: 144 }, () => "floor" as const), "charge-world-test");
+  return new World(
+    12,
+    12,
+    Array.from({ length: 144 }, () => "floor" as const),
+    "charge-world-test",
+  );
 }
 
 function spawnCharge(world: World, cell: { x: number; y: number } = { x: 8, y: 5 }): void {
@@ -238,9 +260,25 @@ describe("Charge attack resolution", () => {
   it("displaces a side entity sideways and knocks a normal target forward", () => {
     const world = chargeWorld();
     spawnCharge(world);
-    world.spawn({ id: "blocker-a", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 5 }, hp: 100 });
-    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 5, y: 5 }, hp: 100 });
-    commitCharge(world, [{ x: 7, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 5 }]);
+    world.spawn({
+      id: "blocker-a",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 7, y: 5 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 5, y: 5 },
+      hp: 100,
+    });
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+      { x: 5, y: 5 },
+    ]);
 
     const resolution = world.resolveChargeAttack("enemy-charge");
     expect(resolution).toBeDefined();
@@ -272,13 +310,54 @@ describe("Charge attack resolution", () => {
   it("keeps a side entity in place and damages it when both sides are blocked, and applies double damage on a blocked impact with a scanned fallback landing", () => {
     const world = chargeWorld();
     spawnCharge(world);
-    world.spawn({ id: "blocker-a", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 5 }, hp: 100 });
-    world.spawn({ id: "pinned", kind: "enemy", archetype: "training-grunt", cell: { x: 6, y: 5 }, hp: 100 });
-    world.spawn({ id: "pin-south", kind: "enemy", archetype: "training-grunt", cell: { x: 6, y: 6 }, hp: 100 });
-    world.spawn({ id: "pin-north", kind: "enemy", archetype: "training-grunt", cell: { x: 6, y: 4 }, hp: 100 });
-    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 4, y: 5 }, hp: 100 });
-    world.spawn({ id: "forward-block", kind: "enemy", archetype: "training-grunt", cell: { x: 3, y: 5 }, hp: 100 });
-    commitCharge(world, [{ x: 7, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 5 }, { x: 4, y: 5 }]);
+    world.spawn({
+      id: "blocker-a",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 7, y: 5 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "pinned",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 6, y: 5 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "pin-south",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 6, y: 6 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "pin-north",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 6, y: 4 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 4, y: 5 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "forward-block",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 3, y: 5 },
+      hp: 100,
+    });
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+      { x: 5, y: 5 },
+      { x: 4, y: 5 },
+    ]);
 
     const resolution = world.resolveChargeAttack("enemy-charge");
     expect(resolution?.displacements).toEqual([
@@ -308,12 +387,45 @@ describe("Charge attack resolution", () => {
   it("remains at its origin when no fallback landing cell is free", () => {
     const world = chargeWorld();
     spawnCharge(world);
-    world.spawn({ id: "pinned", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 5 }, hp: 100 });
-    world.spawn({ id: "pin-south", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 6 }, hp: 100 });
-    world.spawn({ id: "pin-north", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 4 }, hp: 100 });
-    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 6, y: 5 }, hp: 100 });
-    world.spawn({ id: "forward-block", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 5 }, hp: 100 });
-    commitCharge(world, [{ x: 7, y: 5 }, { x: 6, y: 5 }]);
+    world.spawn({
+      id: "pinned",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 7, y: 5 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "pin-south",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 7, y: 6 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "pin-north",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 7, y: 4 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 6, y: 5 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "forward-block",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 5, y: 5 },
+      hp: 100,
+    });
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+    ]);
 
     const resolution = world.resolveChargeAttack("enemy-charge");
     expect(resolution?.impact.outcome).toBe("blocked");
@@ -324,7 +436,11 @@ describe("Charge attack resolution", () => {
   it("lands on the target cell and deals no damage when it is empty at detonation", () => {
     const world = chargeWorld();
     spawnCharge(world);
-    commitCharge(world, [{ x: 7, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 5 }]);
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+      { x: 5, y: 5 },
+    ]);
 
     const resolution = world.resolveChargeAttack("enemy-charge");
     expect(resolution?.impact).toEqual({ cell: { x: 5, y: 5 }, outcome: "empty" });
@@ -335,7 +451,11 @@ describe("Charge attack resolution", () => {
   it("clears the telegraph immediately when Charge becomes terminal during warning", () => {
     const world = chargeWorld();
     spawnCharge(world);
-    commitCharge(world, [{ x: 7, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 5 }]);
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+      { x: 5, y: 5 },
+    ]);
 
     world.setPhase("enemy-charge", "dead");
 

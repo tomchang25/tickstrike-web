@@ -60,12 +60,16 @@ export interface ContentInspection {
 }
 
 function requireValue<T>(value: T | undefined, label: string): T {
-  if (!value) throw new Error(`Missing inspection content: ${label}`);
+  if (!value) {
+    throw new Error(`Missing inspection content: ${label}`);
+  }
   return value;
 }
 
 function freeze<T>(value: T): T {
-  if (Array.isArray(value)) return Object.freeze(value.map((item) => freeze(item))) as T;
+  if (Array.isArray(value)) {
+    return Object.freeze(value.map((item) => freeze(item))) as T;
+  }
   if (typeof value === "object" && value !== null) {
     const clone = Object.fromEntries(
       Object.entries(value).map(([key, item]) => [key, freeze(item)]),
@@ -88,7 +92,10 @@ const bossGuard = requireValue(
   "boss guard",
 );
 const modeBossAttacks = modeBoss.attackIds.map((id) =>
-  requireValue(contentCatalog.actor.attacks.find((attack) => attack.id === id), `attack ${id}`),
+  requireValue(
+    contentCatalog.actor.attacks.find((attack) => attack.id === id),
+    `attack ${id}`,
+  ),
 );
 const demoWave10 = requireValue(
   contentCatalog.wave.demoWaves.find((wave) => wave.id === "demo-10"),
@@ -104,7 +111,9 @@ const guardShredder = requireValue(
   "guard_shredder",
 );
 const trigger = guardShredder.effects[0];
-if (!trigger || trigger.kind !== "trigger") throw new Error("Guard Shredder must have a trigger effect.");
+if (!trigger || trigger.kind !== "trigger") {
+  throw new Error("Guard Shredder must have a trigger effect.");
+}
 
 export const contentInspection: ContentInspection = freeze({
   ninja: {

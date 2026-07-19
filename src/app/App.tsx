@@ -23,16 +23,15 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [pointerMode, setPointerMode] = useState<PointerMode>("attack");
-  const selectedScenario = useMemo(
-    () => requireScenario(selectedScenarioId),
-    [selectedScenarioId],
-  );
+  const selectedScenario = useMemo(() => requireScenario(selectedScenarioId), [selectedScenarioId]);
   const commandsEnabled = selectedScenario.commandsEnabled !== false;
   const encounterRunning = snapshot?.outcome === "running";
 
   useEffect(() => {
     const host = canvasHostRef.current;
-    if (!host) return;
+    if (!host) {
+      return;
+    }
 
     const runtime = new GameRuntime();
     runtimeRef.current = runtime;
@@ -41,7 +40,9 @@ export function App() {
     let cancelled = false;
 
     void runtime.mount(host).then(() => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       runtime.loadScenario(selectedScenario);
       unsubscribe = runtime.subscribe(setSnapshot);
       uninstallDebug = installDebugApi(runtime);
@@ -58,7 +59,9 @@ export function App() {
 
   const changeScenario = useCallback((id: string) => {
     const runtime = runtimeRef.current;
-    if (!runtime) return;
+    if (!runtime) {
+      return;
+    }
     const scenario = requireScenario(id);
     setPointerMode("attack");
     setSelectedScenarioId(id);
@@ -84,9 +87,13 @@ export function App() {
 
   const move = useCallback(
     async (direction: Cell) => {
-      if (!commandsEnabled || !encounterRunning) return;
+      if (!commandsEnabled || !encounterRunning) {
+        return;
+      }
       const runtime = runtimeRef.current;
-      if (!runtime) return;
+      if (!runtime) {
+        return;
+      }
       await execute(() => runtime.execute({ type: "move", actorId: "player", direction }));
     },
     [commandsEnabled, encounterRunning, execute],
@@ -94,9 +101,13 @@ export function App() {
 
   const attack = useCallback(
     async (direction: Cell) => {
-      if (!commandsEnabled || !encounterRunning) return;
+      if (!commandsEnabled || !encounterRunning) {
+        return;
+      }
       const runtime = runtimeRef.current;
-      if (!runtime) return;
+      if (!runtime) {
+        return;
+      }
       await execute(() => runtime.execute({ type: "attack", actorId: "player", direction }));
     },
     [commandsEnabled, encounterRunning, execute],
@@ -104,28 +115,43 @@ export function App() {
 
   const dash = useCallback(
     async (direction: Cell, distance?: number) => {
-      if (!commandsEnabled || !encounterRunning) return;
+      if (!commandsEnabled || !encounterRunning) {
+        return;
+      }
       const runtime = runtimeRef.current;
-      if (!runtime) return;
-      await execute(() => runtime.execute({ type: "dash", actorId: "player", direction, distance }));
+      if (!runtime) {
+        return;
+      }
+      await execute(() =>
+        runtime.execute({ type: "dash", actorId: "player", direction, distance }),
+      );
     },
     [commandsEnabled, encounterRunning, execute],
   );
 
-  const smash = useCallback(async (target: Cell) => {
-    if (!commandsEnabled || !encounterRunning) return;
-    const runtime = runtimeRef.current;
-    if (!runtime) return;
-    const player = runtime.snapshot().entities.find((entity) => entity.id === "player");
-    if (!player) return;
-    await execute(() =>
-      runtime.execute({
-        type: "smash",
-        actorId: player.id,
-        target,
-      }),
-    );
-  }, [commandsEnabled, encounterRunning, execute]);
+  const smash = useCallback(
+    async (target: Cell) => {
+      if (!commandsEnabled || !encounterRunning) {
+        return;
+      }
+      const runtime = runtimeRef.current;
+      if (!runtime) {
+        return;
+      }
+      const player = runtime.snapshot().entities.find((entity) => entity.id === "player");
+      if (!player) {
+        return;
+      }
+      await execute(() =>
+        runtime.execute({
+          type: "smash",
+          actorId: player.id,
+          target,
+        }),
+      );
+    },
+    [commandsEnabled, encounterRunning, execute],
+  );
 
   useEffect(() => {
     const heldMovement = new Map<string, number>();
@@ -137,7 +163,9 @@ export function App() {
         }
         return;
       }
-      if (!commandsEnabled || !encounterRunning) return;
+      if (!commandsEnabled || !encounterRunning) {
+        return;
+      }
       const directions: Record<string, Cell | undefined> = {
         ArrowUp: { x: 0, y: -1 },
         ArrowDown: { x: 0, y: 1 },
@@ -158,10 +186,14 @@ export function App() {
       const direction = directions[key];
       if (direction) {
         event.preventDefault();
-        if (heldMovement.has(key)) return;
+        if (heldMovement.has(key)) {
+          return;
+        }
         const repeatMove = () => {
           const runtime = runtimeRef.current;
-          if (!runtime || !runtime.isIdle) return;
+          if (!runtime || !runtime.isIdle) {
+            return;
+          }
           void move(direction);
         };
         repeatMove();
@@ -170,13 +202,17 @@ export function App() {
       }
       const attackDirection = attackDirections[key];
       if (attackDirection) {
-        if (event.repeat) return;
+        if (event.repeat) {
+          return;
+        }
         event.preventDefault();
         void attack(attackDirection);
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Alt") setPointerMode("attack");
+      if (event.key === "Alt") {
+        setPointerMode("attack");
+      }
       const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
       const timer = heldMovement.get(key);
       if (timer !== undefined) {
@@ -188,7 +224,9 @@ export function App() {
     window.addEventListener("keyup", onKeyUp);
     document.documentElement.dataset.keyboardInputReady = "true";
     return () => {
-      for (const timer of heldMovement.values()) window.clearInterval(timer);
+      for (const timer of heldMovement.values()) {
+        window.clearInterval(timer);
+      }
       heldMovement.clear();
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
@@ -198,20 +236,27 @@ export function App() {
 
   useEffect(() => {
     const runtime = runtimeRef.current;
-    if (!runtime || !snapshot) return;
+    if (!runtime || !snapshot) {
+      return;
+    }
     runtime.renderer.setDebugMode(debugMode);
     runtime.renderer.setPointerMode(pointerMode);
     return runtime.renderer.bindPointerInput({
       canInteract: () => commandsEnabled && encounterRunning,
       onPrimaryClick: (commit: PointerCommit) => {
-        if (commit.kind === "attack") return attack(commit.direction);
-        if (commit.kind === "dash") return dash(commit.direction, commit.distance);
+        if (commit.kind === "attack") {
+          return attack(commit.direction);
+        }
+        if (commit.kind === "dash") {
+          return dash(commit.direction, commit.distance);
+        }
         return smash(commit.target);
       },
     });
   }, [attack, commandsEnabled, dash, debugMode, encounterRunning, pointerMode, smash, snapshot]);
 
-  const activeMobility: MobilityKind = snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash";
+  const activeMobility: MobilityKind =
+    snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash";
 
   return (
     <main className="app-shell">
@@ -236,7 +281,9 @@ export function App() {
                 aria-live="polite"
               >
                 <strong>{snapshot.outcome === "victory" ? "Victory" : "Defeat"}</strong>
-                <span>{snapshot.outcome === "victory" ? "Arena cleared." : "The player fell."}</span>
+                <span>
+                  {snapshot.outcome === "victory" ? "Arena cleared." : "The player fell."}
+                </span>
               </div>
             ) : null}
             {snapshot ? (
@@ -248,7 +295,9 @@ export function App() {
             ) : null}
           </div>
           <p className="hint">
-            {commandsEnabled ? "WASD / arrows move · IJKL attack · Hold Alt + hover for selected Mobility" : "Static inspection: gameplay commands disabled"}
+            {commandsEnabled
+              ? "WASD / arrows move · IJKL attack · Hold Alt + hover for selected Mobility"
+              : "Static inspection: gameplay commands disabled"}
           </p>
         </section>
 

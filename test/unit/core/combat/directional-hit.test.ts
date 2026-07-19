@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { calculateDirectionalHit, classifyHitAngle } from "../../../../src/core/combat/directional-hit";
+import {
+  calculateDirectionalHit,
+  classifyHitAngle,
+} from "../../../../src/core/combat/directional-hit";
 import { previewAttack } from "../../../../src/core/actions/action-preview";
 import { resolveCommand } from "../../../../src/core/actions/action-resolver";
 import { actorCatalog } from "../../../../src/content/actor-catalog";
@@ -9,7 +12,9 @@ import type { EntityState } from "../../../../src/core/model/types";
 
 function targetAt(cell: { x: number; y: number }, facing: { x: number; y: number }): EntityState {
   const guard = actorCatalog.guards.find((candidate) => candidate.id === "small");
-  if (!guard) throw new Error("Small Guard content is incomplete.");
+  if (!guard) {
+    throw new Error("Small Guard content is incomplete.");
+  }
   return {
     id: "enemy",
     kind: "enemy",
@@ -64,8 +69,20 @@ describe("directional Guard hit resolution", () => {
       damage: 20,
     });
 
-    expect(front).toMatchObject({ angle: "front", guardDamage: 4, guardAfter: 28, hpDamage: 4, damage: 2 });
-    expect(side).toMatchObject({ angle: "side", guardDamage: 16, guardAfter: 16, hpDamage: 4, damage: 2 });
+    expect(front).toMatchObject({
+      angle: "front",
+      guardDamage: 4,
+      guardAfter: 28,
+      hpDamage: 4,
+      damage: 2,
+    });
+    expect(side).toMatchObject({
+      angle: "side",
+      guardDamage: 16,
+      guardAfter: 16,
+      hpDamage: 4,
+      damage: 2,
+    });
     expect(back).toMatchObject({
       angle: "back",
       guardDamage: 32,
@@ -117,7 +134,9 @@ describe("directional Guard hit resolution", () => {
   it("keeps preview and commit on the same directional result", () => {
     const world = createFoundationArena();
     const preview = previewAttack(world, "player", { x: -1, y: 0 });
-    if (!preview.hit || !("angle" in preview.hit)) throw new Error("Expected a directional preview hit.");
+    if (!preview.hit || !("angle" in preview.hit)) {
+      throw new Error("Expected a directional preview hit.");
+    }
 
     const result = resolveCommand(world, {
       type: "attack",
@@ -125,7 +144,9 @@ describe("directional Guard hit resolution", () => {
       direction: { x: -1, y: 0 },
     });
 
-    expect(result.events.find((event) => event.type === "directional_hit")).toMatchObject({ hit: preview.hit });
+    expect(result.events.find((event) => event.type === "directional_hit")).toMatchObject({
+      hit: preview.hit,
+    });
     expect(world.requireEntity("enemy-thrust")).toMatchObject({
       hp: 96,
       guard: { current: 28, max: 32 },

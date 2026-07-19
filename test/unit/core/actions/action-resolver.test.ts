@@ -15,9 +15,27 @@ describe("Smash action", () => {
       hp: 100,
       mobility: { kind: "smash", damage: 30, range: 3, cooldown: 6, staggerMultiplier: 2 },
     });
-    world.spawn({ id: "enemy-center", kind: "enemy", archetype: "training-grunt", cell: { x: 3, y: 2 }, hp: 100 });
-    world.spawn({ id: "enemy-right", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 3 }, hp: 100 });
-    world.spawn({ id: "enemy-water", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 4 }, hp: 100 });
+    world.spawn({
+      id: "enemy-center",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 3, y: 2 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "enemy-right",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 5, y: 3 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "enemy-water",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 4 },
+      hp: 100,
+    });
 
     const armed = resolveCommand(world, {
       type: "smash",
@@ -57,7 +75,11 @@ describe("Smash action", () => {
     expect(world.requireEntity("enemy-center").cell).toEqual({ x: 3, y: 1 });
     expect(world.requireEntity("enemy-right").hp).toBe(70);
     expect(world.requireEntity("enemy-right").cell).toEqual({ x: 7, y: 3 });
-    expect(world.requireEntity("enemy-water")).toMatchObject({ cell: { x: 4, y: 6 }, hp: 70, phase: "drowning" });
+    expect(world.requireEntity("enemy-water")).toMatchObject({
+      cell: { x: 4, y: 6 },
+      hp: 70,
+      phase: "drowning",
+    });
     expect(world.playerCell).toEqual({ x: 4, y: 3 });
     expect(world.getOccupantAt({ x: 4, y: 6 })).toBeUndefined();
     expect(world.listEntities()).toHaveLength(4);
@@ -168,7 +190,11 @@ describe("player verbs", () => {
       "telegraph_changed",
       "world_advanced",
     ]);
-    expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 96, phase: "alive", guard: { current: 28 } });
+    expect(world.requireEntity("enemy-thrust")).toMatchObject({
+      hp: 96,
+      phase: "alive",
+      guard: { current: 28 },
+    });
     expect(world.snapshot().tick).toBe(1);
     expect(world.snapshot().lastEvents).toEqual(occupied.events);
 
@@ -214,7 +240,12 @@ describe("player verbs", () => {
       "telegraph_changed",
       "world_advanced",
     ]);
-    expect(world.requireEntity("enemy-thrust")).toMatchObject({ hp: 1, maxHp: 100, phase: "alive", guard: { current: 28 } });
+    expect(world.requireEntity("enemy-thrust")).toMatchObject({
+      hp: 1,
+      maxHp: 100,
+      phase: "alive",
+      guard: { current: 28 },
+    });
     expect(world.getOccupantAt({ x: 5, y: 6 })?.id).toBe("enemy-thrust");
     expect(world.snapshot().tick).toBe(1);
   });
@@ -235,13 +266,19 @@ describe("player verbs", () => {
       actorId: "player",
       from: { x: 6, y: 6 },
       to: { x: 9, y: 6 },
-      path: [{ x: 7, y: 6 }, { x: 8, y: 6 }, { x: 9, y: 6 }],
+      path: [
+        { x: 7, y: 6 },
+        { x: 8, y: 6 },
+        { x: 9, y: 6 },
+      ],
     });
-    expect(result.events).toContainEqual(expect.objectContaining({
-      type: "directional_hit",
-      targetId: "enemy-slash",
-      hit: expect.objectContaining({ angle: "front", guardDamage: 4, hpDamage: 6, hpAfter: 94 }),
-    }));
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: "directional_hit",
+        targetId: "enemy-slash",
+        hit: expect.objectContaining({ angle: "front", guardDamage: 4, hpDamage: 6, hpAfter: 94 }),
+      }),
+    );
     expect(result.events.map((event) => event.type)).toEqual([
       "command_resolved",
       "player_dashed",
@@ -258,7 +295,11 @@ describe("player verbs", () => {
     ]);
     expect(world.playerCell).toEqual({ x: 9, y: 6 });
     expect(world.getOccupantAt({ x: 8, y: 6 })?.id).toBe("enemy-slash");
-    expect(world.requireEntity("enemy-slash")).toMatchObject({ hp: 94, phase: "alive", guard: { current: 28 } });
+    expect(world.requireEntity("enemy-slash")).toMatchObject({
+      hp: 94,
+      phase: "alive",
+      guard: { current: 28 },
+    });
     expect(world.snapshot().tick).toBe(1);
   });
 
@@ -300,7 +341,13 @@ describe("player verbs", () => {
     });
     expect(armed.accepted).toBe(true);
 
-    world.spawn({ id: "smash-blocker", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 5 }, hp: 100 });
+    world.spawn({
+      id: "smash-blocker",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 5, y: 5 },
+      hp: 100,
+    });
     const beforeRelease = world.snapshot();
     const release = resolveCommand(world, {
       type: "smash",
@@ -320,9 +367,27 @@ describe("player verbs", () => {
     world.removeEntity("enemy-thrust");
     world.removeEntity("enemy-slash");
     world.removeEntity("enemy-ranged");
-    world.spawn({ id: "enemy-a", kind: "enemy", archetype: "training-grunt", cell: { x: 5, y: 6 }, hp: 10 });
-    world.spawn({ id: "enemy-b", kind: "enemy", archetype: "training-grunt", cell: { x: 4, y: 6 }, hp: 10 });
-    world.spawn({ id: "enemy-c", kind: "enemy", archetype: "training-grunt", cell: { x: 3, y: 6 }, hp: 10 });
+    world.spawn({
+      id: "enemy-a",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 5, y: 6 },
+      hp: 10,
+    });
+    world.spawn({
+      id: "enemy-b",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 6 },
+      hp: 10,
+    });
+    world.spawn({
+      id: "enemy-c",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 3, y: 6 },
+      hp: 10,
+    });
     const before = world.snapshot();
 
     const result = resolveCommand(world, {
@@ -361,7 +426,11 @@ describe("player verbs", () => {
     expect(world.playerCell).toEqual({ x: 4, y: 1 });
     expect(result.events[1]).toMatchObject({
       type: "player_dashed",
-      path: [{ x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }],
+      path: [
+        { x: 2, y: 1 },
+        { x: 3, y: 1 },
+        { x: 4, y: 1 },
+      ],
     });
     expect(world.snapshot().tick).toBe(1);
   });
@@ -460,7 +529,11 @@ describe("player-clocked action boundary", () => {
       direction: { x: 1, y: 0 },
       distance: 1,
     });
-    expect(rejected).toMatchObject({ accepted: false, consumedTime: false, reason: "Mobility is on cooldown." });
+    expect(rejected).toMatchObject({
+      accepted: false,
+      consumedTime: false,
+      reason: "Mobility is on cooldown.",
+    });
     expect(world.snapshot().tick).toBe(1);
   });
 
@@ -508,7 +581,11 @@ describe("player-clocked action boundary", () => {
 
     expect(result.events.map((event) => event.type)).toContain("enemy_attack_detonated");
     expect(result.events.map((event) => event.type)).not.toContain("player_damaged");
-    expect(world.requireEntity("player")).toMatchObject({ hp: 100, phase: "alive", cell: { x: 4, y: 3 } });
+    expect(world.requireEntity("player")).toMatchObject({
+      hp: 100,
+      phase: "alive",
+      cell: { x: 4, y: 3 },
+    });
   });
 });
 
@@ -529,7 +606,11 @@ describe("playable encounter outcomes", () => {
     expect(result.accepted).toBe(true);
     expect(world.snapshot()).toMatchObject({ tick: 1, outcome: "victory", telegraphs: [] });
     expect(result.events.map((event) => event.type)).toContain("encounter_ended");
-    expect(result.events.at(-1)).toEqual({ type: "world_advanced", tick: 1, phases: ["foundation", "enemy"] });
+    expect(result.events.at(-1)).toEqual({
+      type: "world_advanced",
+      tick: 1,
+      phases: ["foundation", "enemy"],
+    });
 
     const beforeRejected = world.snapshot();
     const rejected = resolveCommand(world, {
@@ -579,7 +660,11 @@ describe("playable encounter outcomes", () => {
     const escaped = createDuel();
     resolveCommand(escaped, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
     resolveCommand(escaped, { type: "move", actorId: "player", direction: { x: 0, y: 1 } });
-    const escapedResult = resolveCommand(escaped, { type: "move", actorId: "player", direction: { x: 0, y: 1 } });
+    const escapedResult = resolveCommand(escaped, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 0, y: 1 },
+    });
 
     expect(escapedResult.accepted).toBe(true);
     expect(escaped.requireEntity("player")).toMatchObject({ hp: 10, phase: "alive" });

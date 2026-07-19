@@ -35,11 +35,15 @@ export function aggregateTelegraphLabels(
   const cells = new Map<string, { readonly cell: Cell; readonly counts: Map<number, number> }>();
 
   for (const source of sources) {
-    if (!Number.isFinite(source.ticks) || source.ticks <= 0) continue;
+    if (!Number.isFinite(source.ticks) || source.ticks <= 0) {
+      continue;
+    }
     const seenCells = new Set<string>();
     for (const cell of source.cells) {
       const key = cellKey(cell);
-      if (seenCells.has(key)) continue;
+      if (seenCells.has(key)) {
+        continue;
+      }
       seenCells.add(key);
 
       let summary = cells.get(key);
@@ -68,7 +72,9 @@ export function placeTelegraphLabels(
   for (const summary of summaries) {
     const occupied = occupiedCells.some((cell) => sameCell(cell, summary.cell));
     const [earliest, ...later] = summary.entries;
-    if (!earliest) continue;
+    if (!earliest) {
+      continue;
+    }
 
     placements.push({
       ...earliest,
@@ -79,7 +85,9 @@ export function placeTelegraphLabels(
 
     later.slice(0, CORNER_OFFSETS.length).forEach((entry, index) => {
       const offset = CORNER_OFFSETS[index];
-      if (!offset) return;
+      if (!offset) {
+        return;
+      }
       placements.push({
         ...entry,
         cell: summary.cell,

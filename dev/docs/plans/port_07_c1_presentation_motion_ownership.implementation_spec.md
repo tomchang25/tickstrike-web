@@ -44,17 +44,17 @@ The result preserves immediate core state while showing Player `N -> N+1 -> N+2`
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/runtime/GameRuntime.ts` | Medium | Reserve the resolved batch's motion owners before snapshot projection and preserve generation-safe lifecycle ordering. |
-| `src/presentation/timelines/PresentationDirector.ts` | Large | Normalize motion events, build ordered per-entity GSAP tracks, and release ownership after settlement or cancellation. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Large | Track renderer-owned board-position reservations, skip reserved position projection, and reconcile released roots to the current snapshot. |
-| `src/harness/scenarios/charge-enemy.scenario.ts` | Medium | Add a deterministic same-direction movement setup with a normal Charge target knockback and side displacement. |
-| `test/unit/runtime/GameRuntime.test.ts` | Medium | Assert motion ownership is reserved before renderer snapshot projection and cleared through command lifecycle invalidation. |
-| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Large | Assert motion source normalization, same-entity sequencing, cross-entity concurrency, release, and cancellation cleanup. |
-| `test/unit/presentation/pixi/PixiGameRenderer.test.ts` | Medium (new) | Assert reserved roots retain their visual origin through snapshot projection and reconcile to the latest snapshot on release. |
-| `test/e2e/testbed.spec.ts` | Large | Verify Chromium-visible sequential Player displacement, Charge side/landing motion, final logical/visual agreement, and reset cleanup. |
-| `dev/docs/plans/port_07_complete_enemy_roster_and_navigation.md` | Small | Register C1 in the ordered Port 07 child overview. |
+| File                                                             | Change Size  | Purpose                                                                                                                                    |
+| ---------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/runtime/GameRuntime.ts`                                     | Medium       | Reserve the resolved batch's motion owners before snapshot projection and preserve generation-safe lifecycle ordering.                     |
+| `src/presentation/timelines/PresentationDirector.ts`             | Large        | Normalize motion events, build ordered per-entity GSAP tracks, and release ownership after settlement or cancellation.                     |
+| `src/presentation/pixi/PixiGameRenderer.ts`                      | Large        | Track renderer-owned board-position reservations, skip reserved position projection, and reconcile released roots to the current snapshot. |
+| `src/harness/scenarios/charge-enemy.scenario.ts`                 | Medium       | Add a deterministic same-direction movement setup with a normal Charge target knockback and side displacement.                             |
+| `test/unit/runtime/GameRuntime.test.ts`                          | Medium       | Assert motion ownership is reserved before renderer snapshot projection and cleared through command lifecycle invalidation.                |
+| `test/unit/presentation/timelines/PresentationDirector.test.ts`  | Large        | Assert motion source normalization, same-entity sequencing, cross-entity concurrency, release, and cancellation cleanup.                   |
+| `test/unit/presentation/pixi/PixiGameRenderer.test.ts`           | Medium (new) | Assert reserved roots retain their visual origin through snapshot projection and reconcile to the latest snapshot on release.              |
+| `test/e2e/testbed.spec.ts`                                       | Large        | Verify Chromium-visible sequential Player displacement, Charge side/landing motion, final logical/visual agreement, and reset cleanup.     |
+| `dev/docs/plans/port_07_complete_enemy_roster_and_navigation.md` | Small        | Register C1 in the ordered Port 07 child overview.                                                                                         |
 
 ## Execution Outline
 
@@ -77,14 +77,14 @@ The result preserves immediate core state while showing Player `N -> N+1 -> N+2`
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| One entity receives normal movement and forced displacement in one command | Play event-order steps serially on one root; retain ownership until both settle. |
-| Several entities move during Charge resolution | Play one track per entity concurrently without sharing root `x` or `y` writers. |
-| Snapshot changes HP, activity, telegraph, facing, or labels during ownership | Apply every non-position projection immediately; suppress only board position for the reserved root. |
-| Track is cancelled by reset or scenario replacement | Kill its GSAP timeline, clear all reservations, clear transient/local presentation state, and let the replacement snapshot position every root. |
-| Terminal entity enters water or dies while moving | Keep its view through the matching terminal timeline, then remove it; no reservation or orphan view remains. |
-| A later command begins after presentation settles | The renderer has reconciled the prior final snapshot, so its new motion starts from the same cell shown by the semantic mirror. |
+| Case                                                                         | Expected Handling                                                                                                                               |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| One entity receives normal movement and forced displacement in one command   | Play event-order steps serially on one root; retain ownership until both settle.                                                                |
+| Several entities move during Charge resolution                               | Play one track per entity concurrently without sharing root `x` or `y` writers.                                                                 |
+| Snapshot changes HP, activity, telegraph, facing, or labels during ownership | Apply every non-position projection immediately; suppress only board position for the reserved root.                                            |
+| Track is cancelled by reset or scenario replacement                          | Kill its GSAP timeline, clear all reservations, clear transient/local presentation state, and let the replacement snapshot position every root. |
+| Terminal entity enters water or dies while moving                            | Keep its view through the matching terminal timeline, then remove it; no reservation or orphan view remains.                                    |
+| A later command begins after presentation settles                            | The renderer has reconciled the prior final snapshot, so its new motion starts from the same cell shown by the semantic mirror.                 |
 
 ## Acceptance Criteria
 

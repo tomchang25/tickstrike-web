@@ -44,25 +44,25 @@ This port intentionally uses at most one action per enabled basic enemy per acce
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/model/types.ts` | Large | Add enemy activity, facing, and committed-attack snapshot data to canonical state. |
-| `src/core/world/world.ts` | Large | Own enemy activity mutation, tick phase data, committed attack lifecycle, and player damage application. |
-| `src/core/enemies/basic-enemy-actions.ts` | Large | Add pure shared Thrust/Slash decision, facing, footprint, and one-action transition rules. |
-| `src/core/actions/action-resolver.ts` | Large | Run the ordered enemy phase after accepted player results and before the terminal world-advance event. |
-| `src/core/events/combat-events.ts` | Large | Add enemy movement, attack commit, detonation, recovery, damage, and Telegraph events. |
-| `src/content/enemies/enemy-definitions.ts` | Small | Confirm or adjust only the Thrust/Slash authored timing and offsets used by the shared runtime. |
-| `src/harness/fixtures/shipped-arena.ts` | Medium | Provide deterministic positions that exercise Thrust and Slash without adding a second scenario. |
-| `src/app/App.tsx` | Small | Route the Debug-mode presentation toggle to the renderer. |
-| `src/app/styles.css` | Small | Style the compact Debug-mode checkbox. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Medium | Project enemy facing markers and Debug-mode action labels while preserving snapshot ownership. |
-| `src/presentation/timelines/PresentationDirector.ts` | Small | Animate enemy movement from semantic event origins to destinations. |
-| `src/ui/SemanticMirror.tsx` | Small | Expose enemy activity, facing, recovery, and committed-attack fields to the browser harness. |
-| `src/ui/TestbedPanel.tsx` | Small | Provide the Debug-mode toggle without owning enemy state. |
-| `test/unit/core/enemies/basic-enemy-actions.test.ts` | Large | Assert footprint rotation, decisions, countdowns, conflicts, and stable one-action behavior. |
-| `test/unit/core/actions/action-resolver.test.ts` | Large | Assert player result, enemy phase, event order, rejected action behavior, and tick advancement. |
-| `test/unit/core/world/world.test.ts` | Medium | Assert committed attack cleanup, player damage, reset-safe state, and terminal ownership. |
-| `test/e2e/testbed.spec.ts` | Small | Assert browser-visible Telegraph state, Debug-mode activation, and ordered enemy events. |
+| File                                                 | Change Size | Purpose                                                                                                  |
+| ---------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                            | Large       | Add enemy activity, facing, and committed-attack snapshot data to canonical state.                       |
+| `src/core/world/world.ts`                            | Large       | Own enemy activity mutation, tick phase data, committed attack lifecycle, and player damage application. |
+| `src/core/enemies/basic-enemy-actions.ts`            | Large       | Add pure shared Thrust/Slash decision, facing, footprint, and one-action transition rules.               |
+| `src/core/actions/action-resolver.ts`                | Large       | Run the ordered enemy phase after accepted player results and before the terminal world-advance event.   |
+| `src/core/events/combat-events.ts`                   | Large       | Add enemy movement, attack commit, detonation, recovery, damage, and Telegraph events.                   |
+| `src/content/enemies/enemy-definitions.ts`           | Small       | Confirm or adjust only the Thrust/Slash authored timing and offsets used by the shared runtime.          |
+| `src/harness/fixtures/shipped-arena.ts`              | Medium      | Provide deterministic positions that exercise Thrust and Slash without adding a second scenario.         |
+| `src/app/App.tsx`                                    | Small       | Route the Debug-mode presentation toggle to the renderer.                                                |
+| `src/app/styles.css`                                 | Small       | Style the compact Debug-mode checkbox.                                                                   |
+| `src/presentation/pixi/PixiGameRenderer.ts`          | Medium      | Project enemy facing markers and Debug-mode action labels while preserving snapshot ownership.           |
+| `src/presentation/timelines/PresentationDirector.ts` | Small       | Animate enemy movement from semantic event origins to destinations.                                      |
+| `src/ui/SemanticMirror.tsx`                          | Small       | Expose enemy activity, facing, recovery, and committed-attack fields to the browser harness.             |
+| `src/ui/TestbedPanel.tsx`                            | Small       | Provide the Debug-mode toggle without owning enemy state.                                                |
+| `test/unit/core/enemies/basic-enemy-actions.test.ts` | Large       | Assert footprint rotation, decisions, countdowns, conflicts, and stable one-action behavior.             |
+| `test/unit/core/actions/action-resolver.test.ts`     | Large       | Assert player result, enemy phase, event order, rejected action behavior, and tick advancement.          |
+| `test/unit/core/world/world.test.ts`                 | Medium      | Assert committed attack cleanup, player damage, reset-safe state, and terminal ownership.                |
+| `test/e2e/testbed.spec.ts`                           | Small       | Assert browser-visible Telegraph state, Debug-mode activation, and ordered enemy events.                 |
 
 ## Execution Outline
 
@@ -85,16 +85,16 @@ This port intentionally uses at most one action per enabled basic enemy per acce
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Rejected player command | Preserve tick, activity, countdowns, Telegraphs, reservations, and events. |
-| Player moves after Telegraph commit | Keep committed cells and damage unchanged; only the next enemy decision observes the new player cell. |
-| Player remains inside committed cells | Apply enemy damage once at countdown zero, clear the attack, and start recovery. |
-| Telegraph overlaps another Telegraph | Keep both source-owned Telegraphs independent and do not make either one occupancy authority. |
+| Case                                                                    | Expected Handling                                                                                                      |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Rejected player command                                                 | Preserve tick, activity, countdowns, Telegraphs, reservations, and events.                                             |
+| Player moves after Telegraph commit                                     | Keep committed cells and damage unchanged; only the next enemy decision observes the new player cell.                  |
+| Player remains inside committed cells                                   | Apply enemy damage once at countdown zero, clear the attack, and start recovery.                                       |
+| Telegraph overlaps another Telegraph                                    | Keep both source-owned Telegraphs independent and do not make either one occupancy authority.                          |
 | Movement destination is occupied, reserved, illegal, or the player cell | Try the fixed alternate cardinal directions; wait only when all candidates are unavailable, without partial placement. |
-| Recovery countdown reaches zero | Enter `ready` and execute at most one new action in that same accepted Tick. |
-| Enemy dies while telegraphing or recovering | Release ownership immediately and prevent later detonation or recovery events. |
-| Reset during a committed attack | Clear all activity, countdowns, reservations, and Telegraphs in the replacement world. |
+| Recovery countdown reaches zero                                         | Enter `ready` and execute at most one new action in that same accepted Tick.                                           |
+| Enemy dies while telegraphing or recovering                             | Release ownership immediately and prevent later detonation or recovery events.                                         |
+| Reset during a committed attack                                         | Clear all activity, countdowns, reservations, and Telegraphs in the replacement world.                                 |
 
 ## Acceptance Criteria
 

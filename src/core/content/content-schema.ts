@@ -43,7 +43,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function validateShape(input: Record<string, unknown>, diagnostics: ContentCatalogDiagnostic[]): boolean {
+function validateShape(
+  input: Record<string, unknown>,
+  diagnostics: ContentCatalogDiagnostic[],
+): boolean {
   let valid = true;
   const domains = [
     ["actor", ["characters", "guards", "attacks", "enemies"]],
@@ -68,17 +71,30 @@ function validateShape(input: Record<string, unknown>, diagnostics: ContentCatal
 
   const wave = input.wave;
   if (isRecord(wave) && !isRecord(wave.endlessTemplate)) {
-    addDiagnostic(diagnostics, "invalid-domain", "wave.endlessTemplate", "must be a wave definition");
+    addDiagnostic(
+      diagnostics,
+      "invalid-domain",
+      "wave.endlessTemplate",
+      "must be a wave definition",
+    );
     valid = false;
   }
   if (isRecord(wave) && !isRecord(wave.progressionProfile)) {
-    addDiagnostic(diagnostics, "invalid-domain", "wave.progressionProfile", "must be a progression profile");
+    addDiagnostic(
+      diagnostics,
+      "invalid-domain",
+      "wave.progressionProfile",
+      "must be a progression profile",
+    );
     valid = false;
   }
   return valid;
 }
 
-function validateInventory(input: ContentCatalogInput, diagnostics: ContentCatalogDiagnostic[]): void {
+function validateInventory(
+  input: ContentCatalogInput,
+  diagnostics: ContentCatalogDiagnostic[],
+): void {
   const expected = [
     ["actor.characters", input.actor.characters.length, 2],
     ["actor.guards", input.actor.guards.length, 4],
@@ -102,7 +118,11 @@ function validateInventory(input: ContentCatalogInput, diagnostics: ContentCatal
 
   const orderedIds = [
     ["actor.characters", input.actor.characters.map((value) => value.id), ["ninja", "viking"]],
-    ["actor.guards", input.actor.guards.map((value) => value.id), ["small", "heavy", "elite", "boss"]],
+    [
+      "actor.guards",
+      input.actor.guards.map((value) => value.id),
+      ["small", "heavy", "elite", "boss"],
+    ],
     [
       "actor.attacks",
       input.actor.attacks.map((value) => value.id),
@@ -127,7 +147,15 @@ function validateInventory(input: ContentCatalogInput, diagnostics: ContentCatal
     [
       "actor.enemies",
       input.actor.enemies.map((value) => value.id),
-      ["thrust_enemy", "slash_enemy", "ranged_enemy", "charge_enemy", "bomb_enemy", "mode_enemy", "mode_boss"],
+      [
+        "thrust_enemy",
+        "slash_enemy",
+        "ranged_enemy",
+        "charge_enemy",
+        "bomb_enemy",
+        "mode_enemy",
+        "mode_boss",
+      ],
     ],
     [
       "wave.groups",
@@ -137,12 +165,33 @@ function validateInventory(input: ContentCatalogInput, diagnostics: ContentCatal
     [
       "wave.demoWaves",
       input.wave.demoWaves.map((value) => value.id),
-      ["demo-01", "demo-02", "demo-03", "demo-04", "demo-05", "demo-06", "demo-07", "demo-08", "demo-09", "demo-10"],
+      [
+        "demo-01",
+        "demo-02",
+        "demo-03",
+        "demo-04",
+        "demo-05",
+        "demo-06",
+        "demo-07",
+        "demo-08",
+        "demo-09",
+        "demo-10",
+      ],
     ],
     [
       "artifact.artifacts",
       input.artifact.artifacts.map((value) => value.id),
-      ["attack_up", "speed_up", "dash_attack_up", "mobility_cooldown_down", "mobility_range_up", "max_health_up", "guard_shredder", "execution", "chain_dash"],
+      [
+        "attack_up",
+        "speed_up",
+        "dash_attack_up",
+        "mobility_cooldown_down",
+        "mobility_range_up",
+        "max_health_up",
+        "guard_shredder",
+        "execution",
+        "chain_dash",
+      ],
     ],
   ] as const;
 
@@ -228,7 +277,6 @@ function validateCrossReferences(
       }
     });
   });
-
 }
 
 function validateMobilityAvailability(
@@ -268,7 +316,9 @@ export function validateContentCatalog(input: unknown): readonly ContentCatalogD
 
 export function createContentCatalog(input: ContentCatalogInput): ContentCatalog {
   const diagnostics = validateContentCatalog(input);
-  if (diagnostics.length > 0) throw new ContentCatalogValidationError(diagnostics);
+  if (diagnostics.length > 0) {
+    throw new ContentCatalogValidationError(diagnostics);
+  }
 
   return Object.freeze({
     actor: input.actor,

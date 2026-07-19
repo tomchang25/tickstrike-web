@@ -42,17 +42,17 @@ The Cross center and clipped cells are copied into `CommittedAttack.metadata` an
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/enemies/enemy-actions.ts` | Medium | Add Ranged distance-band decisions, deterministic cardinal candidate ordering, and player-centered Cross helpers. |
-| `src/core/actions/enemy-phase.ts` | Small | Preserve the shared decision/commit flow while passing Ranged commit metadata and clipping through the common World boundary. |
-| `src/core/model/types.ts` | Small | Add the narrow typed metadata or normalized action shape required to distinguish Ranged tuning without content imports. |
-| `src/harness/fixtures/shipped-arena.ts` | Medium | Activate Ranged with authored action data, deterministic tuning, and a stable position in `tick-arena`. |
-| `src/content/enemies/assets/eye-sprite-sheet.png` | Small | Package the authored Ranged runtime sprite. |
-| `src/presentation/pixi/enemy-sprites.ts` | Medium | Add the Ranged directional sprite profile and reuse A2 small-enemy feedback values. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Small | Resolve the Ranged profile while preserving the generic fallback. |
-| `test/unit/core/enemies/ranged-enemy-actions.test.ts` | Large | Assert band decisions, candidate ordering, Cross geometry, clipping, lock behavior, and no melee fallback. |
-| `test/e2e/testbed.spec.ts` | Medium | Observe Ranged movement, commitment, locked telegraph cells, resolution, recovery, and presentation idle state. |
+| File                                                  | Change Size | Purpose                                                                                                                       |
+| ----------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `src/core/enemies/enemy-actions.ts`                   | Medium      | Add Ranged distance-band decisions, deterministic cardinal candidate ordering, and player-centered Cross helpers.             |
+| `src/core/actions/enemy-phase.ts`                     | Small       | Preserve the shared decision/commit flow while passing Ranged commit metadata and clipping through the common World boundary. |
+| `src/core/model/types.ts`                             | Small       | Add the narrow typed metadata or normalized action shape required to distinguish Ranged tuning without content imports.       |
+| `src/harness/fixtures/shipped-arena.ts`               | Medium      | Activate Ranged with authored action data, deterministic tuning, and a stable position in `tick-arena`.                       |
+| `src/content/enemies/assets/eye-sprite-sheet.png`     | Small       | Package the authored Ranged runtime sprite.                                                                                   |
+| `src/presentation/pixi/enemy-sprites.ts`              | Medium      | Add the Ranged directional sprite profile and reuse A2 small-enemy feedback values.                                           |
+| `src/presentation/pixi/PixiGameRenderer.ts`           | Small       | Resolve the Ranged profile while preserving the generic fallback.                                                             |
+| `test/unit/core/enemies/ranged-enemy-actions.test.ts` | Large       | Assert band decisions, candidate ordering, Cross geometry, clipping, lock behavior, and no melee fallback.                    |
+| `test/e2e/testbed.spec.ts`                            | Medium      | Observe Ranged movement, commitment, locked telegraph cells, resolution, recovery, and presentation idle state.               |
 
 ## Execution Outline
 
@@ -77,9 +77,9 @@ The Cross center and clipped cells are copied into `CommittedAttack.metadata` an
 
 Ranged reuses the A2 small-enemy presentation boundary but has an authored eye sheet rather than the Kappa sheet used by Thrust and Slash.
 
-| Asset | Source | Sheet Layout | Scale | Palette | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `eye_sprite_sheet.png` | `ranged_enemy/assets/eye_sprite_sheet.png` | 4×4: columns down, up, left, right; rows idle, move, prepare, commit | 5× | Source green/yellow tones | Same nearest-neighbour and directional frame contract as A2 |
+| Asset                  | Source                                     | Sheet Layout                                                         | Scale | Palette                   | Notes                                                       |
+| ---------------------- | ------------------------------------------ | -------------------------------------------------------------------- | ----- | ------------------------- | ----------------------------------------------------------- |
+| `eye_sprite_sheet.png` | `ranged_enemy/assets/eye_sprite_sheet.png` | 4×4: columns down, up, left, right; rows idle, move, prepare, commit | 5×    | Source green/yellow tones | Same nearest-neighbour and directional frame contract as A2 |
 
 - Package the sheet under the enemy content asset owner and load it through the existing Pixi asset path.
 - Use `hframes = 4`, `vframes = 4`, nearest-neighbour filtering, and the shared directional frame selector. Do not add a Godot scene, lifecycle, or presentation-owned gameplay state.
@@ -87,15 +87,15 @@ Ranged reuses the A2 small-enemy presentation boundary but has an authored eye s
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Player is distance 2 | Ranged retreats when a legal distance-increasing cell exists; otherwise waits and does not commit. |
-| Player is distance 3 through 5 | Ranged commits the Cross immediately when alive and ready. |
-| Player is distance 6 or more | Ranged takes one legal distance-reducing step or waits. |
-| Player shares Ranged's cell | Ranged never commits; it attempts a legal distance-increasing step or waits. |
-| Player moves after commitment | The committed center and cells remain unchanged; resolution checks the new player cell against the locked cells. |
-| Cross reaches an arena edge | Only in-bounds cells are committed, with no duplicates. |
-| All improving cells are blocked | Ranged waits and leaves no reservation or telegraph. |
+| Case                                  | Expected Handling                                                                                                                  |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Player is distance 2                  | Ranged retreats when a legal distance-increasing cell exists; otherwise waits and does not commit.                                 |
+| Player is distance 3 through 5        | Ranged commits the Cross immediately when alive and ready.                                                                         |
+| Player is distance 6 or more          | Ranged takes one legal distance-reducing step or waits.                                                                            |
+| Player shares Ranged's cell           | Ranged never commits; it attempts a legal distance-increasing step or waits.                                                       |
+| Player moves after commitment         | The committed center and cells remain unchanged; resolution checks the new player cell against the locked cells.                   |
+| Cross reaches an arena edge           | Only in-bounds cells are committed, with no duplicates.                                                                            |
+| All improving cells are blocked       | Ranged waits and leaves no reservation or telegraph.                                                                               |
 | Ranged becomes terminal while warning | World clears its committed attack, telegraph, occupancy, and reservations immediately; presentation may finish its death timeline. |
 
 ## Acceptance Criteria

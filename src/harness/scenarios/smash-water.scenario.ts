@@ -6,13 +6,16 @@ export const scenarios: readonly TestScenario[] = [
   {
     id: "smash-water",
     title: "Smash / Displacement and Water",
-    description: "A fixed Smash player crushes the impact victim, knocks back a land victim, blocks a reserved victim, and sends one victim into water.",
+    description:
+      "A fixed Smash player crushes the impact victim, knocks back a land victim, blocks a reserved victim, and sends one victim into water.",
     seed: "smash-water-foundation",
     createWorld(seed) {
       const world = createTrainingArena(seed);
       const player = actorCatalog.characters.find((character) => character.id === "viking");
       const guard = actorCatalog.guards.find((candidate) => candidate.id === "small");
-      if (!player || !guard) throw new Error("Shipped combat content is incomplete.");
+      if (!player || !guard) {
+        throw new Error("Shipped combat content is incomplete.");
+      }
       world.spawn({
         id: "player",
         kind: "player",
@@ -68,7 +71,9 @@ export const scenarios: readonly TestScenario[] = [
         purpose: "movement",
         cells: [{ x: 4, y: 1 }],
       });
-      if (!reservation.granted) throw new Error("Smash fixture reservation was not granted.");
+      if (!reservation.granted) {
+        throw new Error("Smash fixture reservation was not granted.");
+      }
       return world;
     },
   },

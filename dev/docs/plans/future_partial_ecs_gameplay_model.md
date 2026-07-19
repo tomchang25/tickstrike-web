@@ -51,15 +51,15 @@ Each phase must use stable entity ordering and produce deterministic results for
 
 ### Composition Examples
 
-| Gameplay role | Composed capabilities |
-| --- | --- |
-| Slash or Thrust enemy | Position, Health, Guard, facing, attack intent, Telegraph, and role-specific decision data |
-| Suicide, Charge, or Dash enemy | Position, Health, movement intent, attack or fuse state, and role-specific decision data |
-| Arrow tower | Position, cooldown, target selection, and projectile spawning |
-| Flame tower | Position, cooldown, target selection, and area attack |
-| Trap | Position, grid trigger, and attack payload |
-| Fire floor | Persistent grid-area hazard, whether represented as arena effect data or a gameplay participant |
-| Boss | Shared position, health, and lifecycle data plus explicit boss state and dedicated behavior |
+| Gameplay role                  | Composed capabilities                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Slash or Thrust enemy          | Position, Health, Guard, facing, attack intent, Telegraph, and role-specific decision data      |
+| Suicide, Charge, or Dash enemy | Position, Health, movement intent, attack or fuse state, and role-specific decision data        |
+| Arrow tower                    | Position, cooldown, target selection, and projectile spawning                                   |
+| Flame tower                    | Position, cooldown, target selection, and area attack                                           |
+| Trap                           | Position, grid trigger, and attack payload                                                      |
+| Fire floor                     | Persistent grid-area hazard, whether represented as arena effect data or a gameplay participant |
+| Boss                           | Shared position, health, and lifecycle data plus explicit boss state and dedicated behavior     |
 
 The boss exception is intentional. A boss does not need to be decomposed into generic components when its phase machine or pattern state is clearer as custom data, but it must not bypass deterministic ordering or shared cleanup.
 

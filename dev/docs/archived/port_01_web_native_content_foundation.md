@@ -24,24 +24,24 @@ Godot numeric enums become stable semantic identifiers. Godot UIDs, scene inheri
 
 The initial inventory is:
 
-| Domain | Shipped content |
-| --- | --- |
-| Character classes | Ninja, Viking |
-| Enemy presentations/roles | Thrust, Slash, Ranged, Charge, Bomb, Mode, Mode Boss |
-| Guard profiles | Small, Heavy, Elite, Boss |
-| Wave content | Ten demo waves, one Endless template, seven reusable groups |
-| Rewards | Six Minor Artifacts and three Major Artifacts |
+| Domain                    | Shipped content                                             |
+| ------------------------- | ----------------------------------------------------------- |
+| Character classes         | Ninja, Viking                                               |
+| Enemy presentations/roles | Thrust, Slash, Ranged, Charge, Bomb, Mode, Mode Boss        |
+| Guard profiles            | Small, Heavy, Elite, Boss                                   |
+| Wave content              | Ten demo waves, one Endless template, seven reusable groups |
+| Rewards                   | Six Minor Artifacts and three Major Artifacts               |
 
 The existing Web training content may remain as harness-only material only when it is clearly separated from parity content and cannot be selected by the production run.
 
 ### Child Overview
 
-| Child | Focus | Current document |
-| --- | --- | --- |
-| 01 | Complete Character, Enemy, Attack, and Guard content with concrete validation | [Implementation Spec](port_01_web_native_content_foundation_01_actor_content.implementation_spec.md) |
-| 02 | Spawn Groups, demo waves, Endless, and progression content | [Implementation Spec](port_01_web_native_content_foundation_02_wave_content.implementation_spec.md) |
-| 03 | Artifact definitions, effects, categories, eligibility, and restrictions | [Implementation Spec](port_01_web_native_content_foundation_03_artifact_content.implementation_spec.md) |
-| 04 | Integrated catalog and deterministic browser content inspection | [Implementation Spec](port_01_web_native_content_foundation_04_catalog_inspection.implementation_spec.md) |
+| Child | Focus                                                                         | Current document                                                                                          |
+| ----- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 01    | Complete Character, Enemy, Attack, and Guard content with concrete validation | [Implementation Spec](port_01_web_native_content_foundation_01_actor_content.implementation_spec.md)      |
+| 02    | Spawn Groups, demo waves, Endless, and progression content                    | [Implementation Spec](port_01_web_native_content_foundation_02_wave_content.implementation_spec.md)       |
+| 03    | Artifact definitions, effects, categories, eligibility, and restrictions      | [Implementation Spec](port_01_web_native_content_foundation_03_artifact_content.implementation_spec.md)   |
+| 04    | Integrated catalog and deterministic browser content inspection               | [Implementation Spec](port_01_web_native_content_foundation_04_catalog_inspection.implementation_spec.md) |
 
 Recommended landing order: 01 -> 02 -> 03 -> 04. Each child extends the concrete shipped catalog; no child creates a speculative general content framework.
 

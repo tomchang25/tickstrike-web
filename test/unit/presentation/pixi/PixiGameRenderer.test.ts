@@ -14,16 +14,18 @@ function snapshot(cell: { x: number; y: number }): WorldSnapshot {
     },
     playerCell: cell,
     armedSmashTarget: undefined,
-    entities: [{
-      id: "player",
-      kind: "player",
-      archetype: "unknown",
-      cell,
-      footprint: [cell],
-      hp: 100,
-      maxHp: 100,
-      phase: "alive",
-    }],
+    entities: [
+      {
+        id: "player",
+        kind: "player",
+        archetype: "unknown",
+        cell,
+        footprint: [cell],
+        hp: 100,
+        maxHp: 100,
+        phase: "alive",
+      },
+    ],
     reservations: [],
     telegraphs: [],
     seed: 1,
@@ -39,7 +41,9 @@ describe("PixiGameRenderer position ownership", () => {
     renderer.sync(snapshot(origin));
 
     const view = renderer.getEntityView("player");
-    if (!view) throw new Error("Player view was not created.");
+    if (!view) {
+      throw new Error("Player view was not created.");
+    }
     const originPixels = renderer.cellToPixels(origin);
     const destinationPixels = renderer.cellToPixels(destination);
     view.position.set(originPixels.x, originPixels.y);

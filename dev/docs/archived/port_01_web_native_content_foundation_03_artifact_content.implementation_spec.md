@@ -47,13 +47,13 @@ The result is one frozen, validated Artifact catalog. It validates IDs, categori
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/content/artifact-content.ts` | Large | Own readonly Artifact/effect contracts, validation diagnostics, and recursive freezing. |
-| `src/content/artifacts/artifact-definitions.ts` | Large | Author all nine shipped Artifacts and their semantic effect declarations in registry order. |
-| `src/content/artifact-content.ts` | Medium | Assemble and validate the canonical Artifact catalog. |
-| `test/unit/core/content/artifact-content.test.ts` | Large | Prove malformed Artifact diagnostics, Mobility references, effect domains, order, and immutability. |
-| `test/unit/content/artifact-content.test.ts` | Large | Prove every shipped Artifact's effective values, category, effects, restrictions, and order. |
+| File                                              | Change Size | Purpose                                                                                             |
+| ------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
+| `src/core/content/artifact-content.ts`            | Large       | Own readonly Artifact/effect contracts, validation diagnostics, and recursive freezing.             |
+| `src/content/artifacts/artifact-definitions.ts`   | Large       | Author all nine shipped Artifacts and their semantic effect declarations in registry order.         |
+| `src/content/artifact-content.ts`                 | Medium      | Assemble and validate the canonical Artifact catalog.                                               |
+| `test/unit/core/content/artifact-content.test.ts` | Large       | Prove malformed Artifact diagnostics, Mobility references, effect domains, order, and immutability. |
+| `test/unit/content/artifact-content.test.ts`      | Large       | Prove every shipped Artifact's effective values, category, effects, restrictions, and order.        |
 
 ## Execution Outline
 
@@ -74,17 +74,17 @@ The result is one frozen, validated Artifact catalog. It validates IDs, categori
 
 ### Shipped Registry
 
-| Order | ID | Category | Stacks | Min Wave | Mobility | Effect |
-| ---: | --- | --- | ---: | ---: | --- | --- |
-| 1 | `attack_up` | minor | 3 | 1 | none | channel `normal-attack-damage`, amount 10 |
-| 2 | `speed_up` | minor | 5 | 1 | none | channel `speed`, amount 1 |
-| 3 | `dash_attack_up` | minor | 3 | 1 | none | channel `mobility-attack-damage`, amount 20 |
-| 4 | `mobility_cooldown_down` | minor | 3 | 1 | none | channel `mobility-cooldown`, amount 1 |
-| 5 | `mobility_range_up` | minor | 3 | 1 | none | channel `mobility-range`, amount 1 |
-| 6 | `max_health_up` | minor | 2 | 1 | none | channel `max-health`, amount 20 |
-| 7 | `guard_shredder` | major | 1 | 2 | dash | trigger `guard-shredder` |
-| 8 | `execution` | major | 1 | 2 | dash | trigger `execution` |
-| 9 | `chain_dash` | major | 1 | 2 | dash | trigger `chain-dash` |
+| Order | ID                       | Category | Stacks | Min Wave | Mobility | Effect                                      |
+| ----: | ------------------------ | -------- | -----: | -------: | -------- | ------------------------------------------- |
+|     1 | `attack_up`              | minor    |      3 |        1 | none     | channel `normal-attack-damage`, amount 10   |
+|     2 | `speed_up`               | minor    |      5 |        1 | none     | channel `speed`, amount 1                   |
+|     3 | `dash_attack_up`         | minor    |      3 |        1 | none     | channel `mobility-attack-damage`, amount 20 |
+|     4 | `mobility_cooldown_down` | minor    |      3 |        1 | none     | channel `mobility-cooldown`, amount 1       |
+|     5 | `mobility_range_up`      | minor    |      3 |        1 | none     | channel `mobility-range`, amount 1          |
+|     6 | `max_health_up`          | minor    |      2 |        1 | none     | channel `max-health`, amount 20             |
+|     7 | `guard_shredder`         | major    |      1 |        2 | dash     | trigger `guard-shredder`                    |
+|     8 | `execution`              | major    |      1 |        2 | dash     | trigger `execution`                         |
+|     9 | `chain_dash`             | major    |      1 |        2 | dash     | trigger `chain-dash`                        |
 
 - Minor magnitudes match their channel amount: 10, 1, 20, 1, 1, and 20 respectively. Major effective magnitude is 1. Do not omit values in Web definitions.
 - Preserve display names and templates: Sharpened Edge, Fleet Step, Impact Dash, Light Footwork, Extended Mobility, Vital Spark, Guard Shredder, Execution, and Chain Dash. The descriptions remain immutable display content; validators must not parse them into behavior.
@@ -98,18 +98,18 @@ The result is one frozen, validated Artifact catalog. It validates IDs, categori
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Duplicate Artifact ID | Reject with deterministic content path and ID. |
-| Unknown Mobility, channel, trigger, category, or effect kind | Reject at catalog construction. |
-| Empty effect list or unsupported effect combination | Reject. |
-| Zero/negative/fractional stack or minimum-wave value | Reject. |
-| Non-finite or non-positive channel amount/magnitude | Reject. |
+| Case                                                           | Expected Handling                                         |
+| -------------------------------------------------------------- | --------------------------------------------------------- |
+| Duplicate Artifact ID                                          | Reject with deterministic content path and ID.            |
+| Unknown Mobility, channel, trigger, category, or effect kind   | Reject at catalog construction.                           |
+| Empty effect list or unsupported effect combination            | Reject.                                                   |
+| Zero/negative/fractional stack or minimum-wave value           | Reject.                                                   |
+| Non-finite or non-positive channel amount/magnitude            | Reject.                                                   |
 | Major without Dash requirement or Minor with a shipped trigger | Reject the concrete authored catalog through exact tests. |
-| Impact Dash inferred as Dash-only from its text | Forbidden; it remains unrestricted. |
-| Declared repeatable stack count becomes a hard cap | Forbidden in this child. |
-| Validation sorts registry order | Forbidden; preserve the nine-definition authored order. |
-| Caller mutates nested effect through a cast | Accepted catalog remains recursively frozen. |
+| Impact Dash inferred as Dash-only from its text                | Forbidden; it remains unrestricted.                       |
+| Declared repeatable stack count becomes a hard cap             | Forbidden in this child.                                  |
+| Validation sorts registry order                                | Forbidden; preserve the nine-definition authored order.   |
+| Caller mutates nested effect through a cast                    | Accepted catalog remains recursively frozen.              |
 
 ## Acceptance Criteria
 

@@ -60,23 +60,23 @@ The old `smash-water` fixture and its prose were not fully consistent: the fixtu
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/model/types.ts` | Medium | Define typed Smash displacement predictions and semantic result data. |
-| `src/core/world/world.ts` | Medium | Apply forced movement and water terminalization through existing occupancy/phase ownership. |
-| `src/core/actions/action-preview.ts` | Large | Extend the shared Smash plan with post-hit displacement predictions. |
-| `src/core/actions/player-actions.ts` | Large | Apply shared Smash hits, then crush/knockback/water results in deterministic order. |
-| `src/core/events/combat-events.ts` | Small | Add or refine typed displacement event payloads if the existing events cannot carry the resolved result. |
-| `src/harness/scenarios/smash-water.scenario.ts` | Medium | Establish fixed crush, blocked knockback, land knockback, and water victims. |
-| `src/presentation/timelines/PresentationDirector.ts` | Medium | Keep crush, knockback, and water timelines aligned with the new event ordering and cleanup. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Small | Expose any semantic preview markers needed for displacement acceptance. |
-| `test/unit/core/actions/action-preview.test.ts` | Medium | Assert pure Smash displacement predictions and preview/commit inputs. |
-| `test/unit/core/actions/action-resolver.test.ts` | Large | Assert crush, deterministic knockback, blocked destinations, and water phase transitions. |
-| `test/unit/core/world/world.test.ts` | Medium | Assert occupancy release and terminal placement for forced displacement. |
-| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Medium | Assert every displacement timeline settles and terminal views are removed. |
-| `test/e2e/testbed.spec.ts` | Medium | Replace the Port 06 Smash-only assertions with the complete aftermath contract. |
-| `test/e2e/smash-displacement.spec.ts` | Medium | Assert browser-visible crush, land knockback, water state, event order, and idle cleanup. |
-| `README.md` | Small | Document the restored Smash aftermath sample. |
+| File                                                            | Change Size | Purpose                                                                                                  |
+| --------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                                       | Medium      | Define typed Smash displacement predictions and semantic result data.                                    |
+| `src/core/world/world.ts`                                       | Medium      | Apply forced movement and water terminalization through existing occupancy/phase ownership.              |
+| `src/core/actions/action-preview.ts`                            | Large       | Extend the shared Smash plan with post-hit displacement predictions.                                     |
+| `src/core/actions/player-actions.ts`                            | Large       | Apply shared Smash hits, then crush/knockback/water results in deterministic order.                      |
+| `src/core/events/combat-events.ts`                              | Small       | Add or refine typed displacement event payloads if the existing events cannot carry the resolved result. |
+| `src/harness/scenarios/smash-water.scenario.ts`                 | Medium      | Establish fixed crush, blocked knockback, land knockback, and water victims.                             |
+| `src/presentation/timelines/PresentationDirector.ts`            | Medium      | Keep crush, knockback, and water timelines aligned with the new event ordering and cleanup.              |
+| `src/presentation/pixi/PixiGameRenderer.ts`                     | Small       | Expose any semantic preview markers needed for displacement acceptance.                                  |
+| `test/unit/core/actions/action-preview.test.ts`                 | Medium      | Assert pure Smash displacement predictions and preview/commit inputs.                                    |
+| `test/unit/core/actions/action-resolver.test.ts`                | Large       | Assert crush, deterministic knockback, blocked destinations, and water phase transitions.                |
+| `test/unit/core/world/world.test.ts`                            | Medium      | Assert occupancy release and terminal placement for forced displacement.                                 |
+| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Medium      | Assert every displacement timeline settles and terminal views are removed.                               |
+| `test/e2e/testbed.spec.ts`                                      | Medium      | Replace the Port 06 Smash-only assertions with the complete aftermath contract.                          |
+| `test/e2e/smash-displacement.spec.ts`                           | Medium      | Assert browser-visible crush, land knockback, water state, event order, and idle cleanup.                |
+| `README.md`                                                     | Small       | Document the restored Smash aftermath sample.                                                            |
 
 ## Execution Outline
 
@@ -99,16 +99,16 @@ The old `smash-water` fixture and its prose were not fully consistent: the fixtu
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Smash impact cell is empty | No crush result; the player lands normally and surrounding victims still resolve hit/displacement. |
-| Smash impact cell contains an enemy | Treat it as the crush victim only; resolve its shared hit, terminalize it as crushed, then allow player landing. |
-| A non-center enemy has no legal destination | Keep its post-hit cell unchanged and emit no knockback event. |
-| The farthest candidate is occupied but the nearer candidate is legal | Use the nearer candidate. |
-| Both displacement candidates are water | Use the farthest water cell and enter drowning there. |
-| A victim is killed by the shared hit | Emit the normal death result and do not also emit knockback or water-fall. |
-| A victim is affected by an earlier displacement | Re-check live occupancy for its own destination; never overlap active entities. |
-| Reset or scenario replacement occurs during a displacement timeline | Keep logical state from the fresh scenario and cancel all stale timelines through the existing generation boundary. |
+| Case                                                                 | Expected Handling                                                                                                   |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Smash impact cell is empty                                           | No crush result; the player lands normally and surrounding victims still resolve hit/displacement.                  |
+| Smash impact cell contains an enemy                                  | Treat it as the crush victim only; resolve its shared hit, terminalize it as crushed, then allow player landing.    |
+| A non-center enemy has no legal destination                          | Keep its post-hit cell unchanged and emit no knockback event.                                                       |
+| The farthest candidate is occupied but the nearer candidate is legal | Use the nearer candidate.                                                                                           |
+| Both displacement candidates are water                               | Use the farthest water cell and enter drowning there.                                                               |
+| A victim is killed by the shared hit                                 | Emit the normal death result and do not also emit knockback or water-fall.                                          |
+| A victim is affected by an earlier displacement                      | Re-check live occupancy for its own destination; never overlap active entities.                                     |
+| Reset or scenario replacement occurs during a displacement timeline  | Keep logical state from the fresh scenario and cancel all stale timelines through the existing generation boundary. |
 
 ## Acceptance Criteria
 

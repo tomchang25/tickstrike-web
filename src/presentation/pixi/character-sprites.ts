@@ -30,13 +30,23 @@ const BODY_DIRECTION_COLUMNS = {
 let ninjaSpriteSheet: Texture | undefined;
 
 function isCardinal(cell: Cell): boolean {
-  return Number.isInteger(cell.x) && Number.isInteger(cell.y) && Math.abs(cell.x) + Math.abs(cell.y) === 1;
+  return (
+    Number.isInteger(cell.x) &&
+    Number.isInteger(cell.y) &&
+    Math.abs(cell.x) + Math.abs(cell.y) === 1
+  );
 }
 
 function directionColumn(direction: Cell): number {
-  if (direction.y > 0) return BODY_DIRECTION_COLUMNS.down;
-  if (direction.y < 0) return BODY_DIRECTION_COLUMNS.up;
-  if (direction.x < 0) return BODY_DIRECTION_COLUMNS.left;
+  if (direction.y > 0) {
+    return BODY_DIRECTION_COLUMNS.down;
+  }
+  if (direction.y < 0) {
+    return BODY_DIRECTION_COLUMNS.up;
+  }
+  if (direction.x < 0) {
+    return BODY_DIRECTION_COLUMNS.left;
+  }
   return BODY_DIRECTION_COLUMNS.right;
 }
 
@@ -59,15 +69,15 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
   const frameAt = (column: number, row: number): Texture => {
     const key = `${column},${row}`;
     const existing = frames.get(key);
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
     const frame = frameTexture(sheet, column, row);
     frames.set(key, frame);
     return frame;
   };
 
-  const shadow = new Graphics()
-    .ellipse(0, 23, 20, 6)
-    .fill({ color: 0x05070b, alpha: 0.48 });
+  const shadow = new Graphics().ellipse(0, 23, 20, 6).fill({ color: 0x05070b, alpha: 0.48 });
   const body = new Sprite(frameAt(directionColumn(DEFAULT_FACING), BODY_IDLE_ROW));
   body.anchor.set(0.5);
   body.scale.set(SPRITE_SCALE);
@@ -77,11 +87,12 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
   const setFacing = (facing: Cell): void => {
     const direction = isCardinal(facing) ? facing : DEFAULT_FACING;
     currentFacing = { x: direction.x, y: direction.y };
-    const row = currentPose === "dash"
-      ? BODY_DASH_ROW
-      : currentPose === "move"
-        ? currentMoveRow
-        : BODY_IDLE_ROW;
+    const row =
+      currentPose === "dash"
+        ? BODY_DASH_ROW
+        : currentPose === "move"
+          ? currentMoveRow
+          : BODY_IDLE_ROW;
     body.texture = frameAt(directionColumn(direction), row);
   };
 
@@ -113,7 +124,9 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
 }
 
 export function createPlayerSprite(profileId: string): PlayerSprite | undefined {
-  if (profileId === NINJA_PROFILE_ID && ninjaSpriteSheet) return createNinjaSprite(ninjaSpriteSheet);
+  if (profileId === NINJA_PROFILE_ID && ninjaSpriteSheet) {
+    return createNinjaSprite(ninjaSpriteSheet);
+  }
   return undefined;
 }
 

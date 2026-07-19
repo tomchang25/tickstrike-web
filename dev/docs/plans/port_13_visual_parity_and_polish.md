@@ -39,13 +39,13 @@ Every priority must retain the same deterministic scenario and semantic event st
 
 ### Child decomposition
 
-| Child | Focus | Current document form |
-| --- | --- | --- |
-| 13.1 | Reference inventory and parity matrix | Plan child; create a verified implementation spec immediately before execution |
-| 13.2 | Layered arena and tile presentation | Plan child; create a sketch before implementation |
-| 13.3 | Player and enemy visual profiles | Plan child; create a sketch before implementation |
-| 13.4 | Combat feedback, audio, and terminal presentation | Plan child; create a sketch before implementation |
-| 13.5 | HUD, responsive layout, and visual regression gates | Plan child; create a verified implementation spec immediately before execution |
+| Child | Focus                                               | Current document form                                                          |
+| ----- | --------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 13.1  | Reference inventory and parity matrix               | Plan child; create a verified implementation spec immediately before execution |
+| 13.2  | Layered arena and tile presentation                 | Plan child; create a sketch before implementation                              |
+| 13.3  | Player and enemy visual profiles                    | Plan child; create a sketch before implementation                              |
+| 13.4  | Combat feedback, audio, and terminal presentation   | Plan child; create a sketch before implementation                              |
+| 13.5  | HUD, responsive layout, and visual regression gates | Plan child; create a verified implementation spec immediately before execution |
 
 Recommended landing order is 13.1, 13.2, 13.3, 13.4, then 13.5. Child 13.1 may update the scope and acceptance targets of later children, but it must not introduce a second runtime or alter deterministic gameplay rules.
 

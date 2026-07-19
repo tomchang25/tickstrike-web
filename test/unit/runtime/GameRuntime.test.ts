@@ -39,7 +39,9 @@ describe("GameRuntime command and presentation ordering", () => {
     await runtime.execute({ type: "move", actorId: "player", direction: { x: 1, y: 0 } });
 
     expect(reserve).toHaveBeenCalledOnce();
-    expect(reserve.mock.invocationCallOrder[0]).toBeLessThan(update.mock.invocationCallOrder.at(-1) ?? Infinity);
+    expect(reserve.mock.invocationCallOrder[0]).toBeLessThan(
+      update.mock.invocationCallOrder.at(-1) ?? Infinity,
+    );
     await vi.waitFor(() => expect(runtime.presentation.isIdle).toBe(true));
     expect(runtime.renderer.positionOwnerCount).toBe(0);
   });

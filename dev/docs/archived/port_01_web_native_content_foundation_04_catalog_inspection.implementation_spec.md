@@ -46,21 +46,21 @@ The final result proves the complete Port 1 inventory is available together: two
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/content/content-catalog.ts` | Medium | Own aggregate catalog contract and cross-catalog validation diagnostics. |
-| `src/content/content-catalog.ts` | Medium | Assemble Child 01-03 accepted catalogs into one frozen production catalog. |
-| `src/harness/content-inspection.ts` | Medium | Own readonly inspection projection derived from the canonical aggregate. |
-| `src/harness/types.ts` | Small | Add optional immutable inspection metadata and command capability to scenarios. |
-| `src/harness/scenarios/content-catalog-inspection.scenario.ts` | Medium | Define the deterministic empty inspection scenario. |
-| `src/runtime/GameRuntime.ts` | Small | Expose current scenario inspection metadata and reject disabled scenario commands. |
-| `src/harness/debug-api.ts` | Small | Expose the current inspection projection as read-only debug data. |
-| `src/app/App.tsx` | Medium | Pass metadata to UI and gate keyboard/pointer command dispatch. |
-| `src/ui/TestbedPanel.tsx` | Medium | Render accessible resolved-content inspection and disable command controls when required. |
-| `src/app/styles.css` | Small | Style the static inspection section if existing panel rules are insufficient. |
-| `test/unit/core/content/content-catalog.test.ts` | Medium | Prove aggregate inventory, cross references, ordering, diagnostics, and immutability. |
-| `test/unit/harness/content-catalog-inspection.scenario.test.ts` | Medium | Prove deterministic empty scenario, projection derivation, and disabled commands. |
-| `test/e2e/content-catalog-inspection.spec.ts` | Medium | Prove direct browser loading, visible values, debug parity, reset, and absence of mutable gameplay state. |
+| File                                                            | Change Size | Purpose                                                                                                   |
+| --------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
+| `src/core/content/content-catalog.ts`                           | Medium      | Own aggregate catalog contract and cross-catalog validation diagnostics.                                  |
+| `src/content/content-catalog.ts`                                | Medium      | Assemble Child 01-03 accepted catalogs into one frozen production catalog.                                |
+| `src/harness/content-inspection.ts`                             | Medium      | Own readonly inspection projection derived from the canonical aggregate.                                  |
+| `src/harness/types.ts`                                          | Small       | Add optional immutable inspection metadata and command capability to scenarios.                           |
+| `src/harness/scenarios/content-catalog-inspection.scenario.ts`  | Medium      | Define the deterministic empty inspection scenario.                                                       |
+| `src/runtime/GameRuntime.ts`                                    | Small       | Expose current scenario inspection metadata and reject disabled scenario commands.                        |
+| `src/harness/debug-api.ts`                                      | Small       | Expose the current inspection projection as read-only debug data.                                         |
+| `src/app/App.tsx`                                               | Medium      | Pass metadata to UI and gate keyboard/pointer command dispatch.                                           |
+| `src/ui/TestbedPanel.tsx`                                       | Medium      | Render accessible resolved-content inspection and disable command controls when required.                 |
+| `src/app/styles.css`                                            | Small       | Style the static inspection section if existing panel rules are insufficient.                             |
+| `test/unit/core/content/content-catalog.test.ts`                | Medium      | Prove aggregate inventory, cross references, ordering, diagnostics, and immutability.                     |
+| `test/unit/harness/content-catalog-inspection.scenario.test.ts` | Medium      | Prove deterministic empty scenario, projection derivation, and disabled commands.                         |
+| `test/e2e/content-catalog-inspection.spec.ts`                   | Medium      | Prove direct browser loading, visible values, debug parity, reset, and absence of mutable gameplay state. |
 
 ## Execution Outline
 
@@ -95,16 +95,16 @@ The final result proves the complete Port 1 inventory is available together: two
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| A leaf catalog is incomplete or cross-reference is missing | Reject aggregate construction with deterministic diagnostics. |
-| Inspection projection duplicates literals or exposes mutable definitions | Forbidden; derive and freeze/clone from aggregate. |
-| Inspection data added to `WorldSnapshot` or entity state | Forbidden. |
-| Inspection scenario receives a command by API, button, or keyboard | Reject without changing tick, entities, or events. |
-| Reset inspection scenario | Recreate the same empty world and resolved inspection values with no timeline/effects. |
-| Inspection UI leaks into training scenarios | Omit the section when metadata is absent; preserve existing controls. |
-| Debug API called outside inspection scenario | Return `undefined`; do not throw or expose full catalog. |
-| Browser test assumes debug loading updates React selector | Out of scope; test direct URL loading and read-only debug projection only. |
+| Case                                                                     | Expected Handling                                                                      |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| A leaf catalog is incomplete or cross-reference is missing               | Reject aggregate construction with deterministic diagnostics.                          |
+| Inspection projection duplicates literals or exposes mutable definitions | Forbidden; derive and freeze/clone from aggregate.                                     |
+| Inspection data added to `WorldSnapshot` or entity state                 | Forbidden.                                                                             |
+| Inspection scenario receives a command by API, button, or keyboard       | Reject without changing tick, entities, or events.                                     |
+| Reset inspection scenario                                                | Recreate the same empty world and resolved inspection values with no timeline/effects. |
+| Inspection UI leaks into training scenarios                              | Omit the section when metadata is absent; preserve existing controls.                  |
+| Debug API called outside inspection scenario                             | Return `undefined`; do not throw or expose full catalog.                               |
+| Browser test assumes debug loading updates React selector                | Out of scope; test direct URL loading and read-only debug projection only.             |
 
 ## Acceptance Criteria
 

@@ -29,14 +29,20 @@ export function findEnemyPaths(query: EnemyPathQuery): readonly (readonly Cell[]
     const currentKey = cellKey(current);
     if (goalKeys.has(currentKey) && query.canEndAt(current)) {
       const path = reconstructPath(cameFrom, current);
-      if (path.length > 0) paths.push(path);
+      if (path.length > 0) {
+        paths.push(path);
+      }
     }
 
     for (const direction of CARDINAL_DIRECTIONS) {
       const next = { x: current.x + direction.x, y: current.y + direction.y };
       const nextKey = cellKey(next);
-      if (cameFrom.has(nextKey) || !query.canPathThrough(next)) continue;
-      if (sameCell(current, query.start) && !query.canEndAt(next)) continue;
+      if (cameFrom.has(nextKey) || !query.canPathThrough(next)) {
+        continue;
+      }
+      if (sameCell(current, query.start) && !query.canEndAt(next)) {
+        continue;
+      }
       cameFrom.set(nextKey, current);
       distances.set(nextKey, (distances.get(currentKey) ?? 0) + 1);
       queue.push(next);
@@ -61,15 +67,25 @@ function comparePaths(
   b: readonly Cell[],
   distances: ReadonlyMap<string, number>,
 ): number {
-  if (a.length !== b.length) return a.length - b.length;
+  if (a.length !== b.length) {
+    return a.length - b.length;
+  }
   const aGoal = a[a.length - 1]!;
   const bGoal = b[b.length - 1]!;
-  if (aGoal.y !== bGoal.y) return aGoal.y - bGoal.y;
-  if (aGoal.x !== bGoal.x) return aGoal.x - bGoal.x;
+  if (aGoal.y !== bGoal.y) {
+    return aGoal.y - bGoal.y;
+  }
+  if (aGoal.x !== bGoal.x) {
+    return aGoal.x - bGoal.x;
+  }
   const aFirst = a[0]!;
   const bFirst = b[0]!;
-  if (aFirst.y !== bFirst.y) return aFirst.y - bFirst.y;
-  if (aFirst.x !== bFirst.x) return aFirst.x - bFirst.x;
+  if (aFirst.y !== bFirst.y) {
+    return aFirst.y - bFirst.y;
+  }
+  if (aFirst.x !== bFirst.x) {
+    return aFirst.x - bFirst.x;
+  }
   return (distances.get(cellKey(aGoal)) ?? 0) - (distances.get(cellKey(bGoal)) ?? 0);
 }
 

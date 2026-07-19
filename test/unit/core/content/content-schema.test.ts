@@ -70,8 +70,16 @@ describe("content catalog aggregation", () => {
       { code: "invalid-domain", path: "wave.groups", message: "must be an array" },
       { code: "invalid-domain", path: "wave.demoWaves", message: "must be an array" },
       { code: "invalid-domain", path: "artifact.artifacts", message: "must be an array" },
-      { code: "invalid-domain", path: "wave.endlessTemplate", message: "must be a wave definition" },
-      { code: "invalid-domain", path: "wave.progressionProfile", message: "must be a progression profile" },
+      {
+        code: "invalid-domain",
+        path: "wave.endlessTemplate",
+        message: "must be a wave definition",
+      },
+      {
+        code: "invalid-domain",
+        path: "wave.progressionProfile",
+        message: "must be a progression profile",
+      },
     ]);
   });
 

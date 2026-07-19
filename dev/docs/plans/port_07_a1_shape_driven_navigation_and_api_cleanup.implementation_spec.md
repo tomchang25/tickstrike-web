@@ -41,19 +41,19 @@ The file `basic-enemy-actions.ts` becomes `enemy-actions.ts`; all compatibility 
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/enemies/basic-enemy-actions.ts` | Delete / Rename | Replace the basic-only module with `enemy-actions.ts`. |
-| `src/core/enemies/enemy-actions.ts` | Large | Own role-neutral action geometry, attack-origin derivation, and movement candidate decisions. |
-| `src/core/enemies/enemy-path-planner.ts` | Medium | Provide pure deterministic BFS and path reconstruction. |
-| `src/core/model/types.ts` | Medium | Remove the BasicEnemyActionDefinition alias and expose role-neutral movement candidates. |
-| `src/core/actions/enemy-phase.ts` | Large | Collect decisions, arbitrate movement in retry rounds, and apply one winner per enemy. |
-| `src/core/world/world.ts` | Medium | Support atomic movement-round claims and preserve cleanup/invariant enforcement. |
-| `src/harness/fixtures/shipped-arena.ts` | Small | Use the renamed role-neutral action type without changing fixture identity. |
-| `test/unit/core/enemies/enemy-actions.test.ts` | Rename / Large | Cover shape-derived origins, BFS candidates, and role-neutral actions. |
-| `test/unit/core/world/reservations.test.ts` | Medium | Cover retry rounds, deterministic priority, atomic claims, and cleanup. |
-| `test/unit/core/actions/action-resolver.test.ts` | Medium | Preserve one-action, rejection, lock, and event-order behavior. |
-| `test/e2e/testbed.spec.ts` | Small | Preserve browser-visible Thrust/Slash behavior and presentation idle after movement/telegraph activity. |
+| File                                             | Change Size     | Purpose                                                                                                 |
+| ------------------------------------------------ | --------------- | ------------------------------------------------------------------------------------------------------- |
+| `src/core/enemies/basic-enemy-actions.ts`        | Delete / Rename | Replace the basic-only module with `enemy-actions.ts`.                                                  |
+| `src/core/enemies/enemy-actions.ts`              | Large           | Own role-neutral action geometry, attack-origin derivation, and movement candidate decisions.           |
+| `src/core/enemies/enemy-path-planner.ts`         | Medium          | Provide pure deterministic BFS and path reconstruction.                                                 |
+| `src/core/model/types.ts`                        | Medium          | Remove the BasicEnemyActionDefinition alias and expose role-neutral movement candidates.                |
+| `src/core/actions/enemy-phase.ts`                | Large           | Collect decisions, arbitrate movement in retry rounds, and apply one winner per enemy.                  |
+| `src/core/world/world.ts`                        | Medium          | Support atomic movement-round claims and preserve cleanup/invariant enforcement.                        |
+| `src/harness/fixtures/shipped-arena.ts`          | Small           | Use the renamed role-neutral action type without changing fixture identity.                             |
+| `test/unit/core/enemies/enemy-actions.test.ts`   | Rename / Large  | Cover shape-derived origins, BFS candidates, and role-neutral actions.                                  |
+| `test/unit/core/world/reservations.test.ts`      | Medium          | Cover retry rounds, deterministic priority, atomic claims, and cleanup.                                 |
+| `test/unit/core/actions/action-resolver.test.ts` | Medium          | Preserve one-action, rejection, lock, and event-order behavior.                                         |
+| `test/e2e/testbed.spec.ts`                       | Small           | Preserve browser-visible Thrust/Slash behavior and presentation idle after movement/telegraph activity. |
 
 ## Execution Outline
 
@@ -74,14 +74,14 @@ The file `basic-enemy-actions.ts` becomes `enemy-actions.ts`; all compatibility 
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Current cell already covers the player with the authored shape | Commit one attack and do not plan movement. |
-| Several attack origins are reachable | Select the deterministic shortest/ranked path and expose alternatives for contention retry. |
-| First movement step loses arbitration | Keep the enemy in place and retry its next candidate within the same movement action. |
-| Every candidate first step loses or is invalid | Remain in place, emit one `enemy_waited`, and leave no reservation. |
-| Player cell changes after attack commitment | Preserve committed cells, damage, warning, recovery, kind, and metadata. |
-| Enemy becomes terminal during pending activity | Release occupancy, reservations, telegraphs, and committed activity immediately. |
+| Case                                                           | Expected Handling                                                                           |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Current cell already covers the player with the authored shape | Commit one attack and do not plan movement.                                                 |
+| Several attack origins are reachable                           | Select the deterministic shortest/ranked path and expose alternatives for contention retry. |
+| First movement step loses arbitration                          | Keep the enemy in place and retry its next candidate within the same movement action.       |
+| Every candidate first step loses or is invalid                 | Remain in place, emit one `enemy_waited`, and leave no reservation.                         |
+| Player cell changes after attack commitment                    | Preserve committed cells, damage, warning, recovery, kind, and metadata.                    |
+| Enemy becomes terminal during pending activity                 | Release occupancy, reservations, telegraphs, and committed activity immediately.            |
 
 ## Acceptance Criteria
 

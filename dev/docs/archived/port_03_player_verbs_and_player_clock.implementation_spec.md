@@ -41,18 +41,18 @@ The implementation adds two player-result events, preserves the single `command_
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/actions/commands.ts` | Small | Add `attack` and `dash` command variants and include both in `commandConsumesTime()`. |
-| `src/core/actions/action-resolver.ts` | Medium | Validate and resolve Attack and Dash, preserving the shared acceptance and tick boundary. |
-| `src/core/events/combat-events.ts` | Small | Define the player attack and dash event payloads. |
-| `src/harness/fixtures/shipped-arena.ts` | Small | Place foundation enemies at deterministic adjacent and Dash-blocking cells. |
-| `src/presentation/timelines/PresentationDirector.ts` | Small | Present attack impact and fast Dash movement, including transient cleanup. |
-| `src/ui/TestbedPanel.tsx` | Medium | Preserve the Mobility selector and browser-visible command/status surface; direct directional command buttons are not required. |
-| `src/app/App.tsx` | Small | Dispatch the new commands and bind directional keyboard input. |
-| `test/unit/core/actions/action-resolver.test.ts` | Medium | Assert command validity, outcomes, event order, and one-tick behavior. |
-| `test/e2e/testbed.spec.ts` | Small | Assert the shared browser sequence and visible ordered result. |
-| `dev/docs/plans/tickstrike_full_port_roadmap.md` | Small | Point roadmap item 03 to this implementation spec. |
+| File                                                 | Change Size | Purpose                                                                                                                         |
+| ---------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `src/core/actions/commands.ts`                       | Small       | Add `attack` and `dash` command variants and include both in `commandConsumesTime()`.                                           |
+| `src/core/actions/action-resolver.ts`                | Medium      | Validate and resolve Attack and Dash, preserving the shared acceptance and tick boundary.                                       |
+| `src/core/events/combat-events.ts`                   | Small       | Define the player attack and dash event payloads.                                                                               |
+| `src/harness/fixtures/shipped-arena.ts`              | Small       | Place foundation enemies at deterministic adjacent and Dash-blocking cells.                                                     |
+| `src/presentation/timelines/PresentationDirector.ts` | Small       | Present attack impact and fast Dash movement, including transient cleanup.                                                      |
+| `src/ui/TestbedPanel.tsx`                            | Medium      | Preserve the Mobility selector and browser-visible command/status surface; direct directional command buttons are not required. |
+| `src/app/App.tsx`                                    | Small       | Dispatch the new commands and bind directional keyboard input.                                                                  |
+| `test/unit/core/actions/action-resolver.test.ts`     | Medium      | Assert command validity, outcomes, event order, and one-tick behavior.                                                          |
+| `test/e2e/testbed.spec.ts`                           | Small       | Assert the shared browser sequence and visible ordered result.                                                                  |
+| `dev/docs/plans/tickstrike_full_port_roadmap.md`     | Small       | Point roadmap item 03 to this implementation spec.                                                                              |
 
 ## Execution Outline
 
@@ -74,15 +74,15 @@ The implementation adds two player-result events, preserves the single `command_
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Non-cardinal Attack or Dash direction | Reject with no world mutation, no stored events, and no tick advancement. |
-| Inactive actor | Reject with the existing inactive-actor behavior and no tick advancement. |
-| Attack target empty, blocked, or outside the arena | Accept as a whiff; emit `player_attacked` and advance one tick. |
+| Case                                                        | Expected Handling                                                                                                                            |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Non-cardinal Attack or Dash direction                       | Reject with no world mutation, no stored events, and no tick advancement.                                                                    |
+| Inactive actor                                              | Reject with the existing inactive-actor behavior and no tick advancement.                                                                    |
+| Attack target empty, blocked, or outside the arena          | Accept as a whiff; emit `player_attacked` and advance one tick.                                                                              |
 | Dash encounters an enemy cell after at least one legal step | Include the enemy cell in the path, apply authored Mobility damage once to that enemy, and continue toward the last legal non-enemy landing. |
-| Dash encounters a blocking cell immediately | Reject; do not emit a Dash event or advance the tick. |
-| Dash reaches three legal cells | Land on the third cell and do not inspect or traverse a fourth cell. |
-| Runtime reset during Attack or Dash presentation | Cancel the tracked timeline and transient effect through the existing generation/reset path; the new scenario has no stale visual. |
+| Dash encounters a blocking cell immediately                 | Reject; do not emit a Dash event or advance the tick.                                                                                        |
+| Dash reaches three legal cells                              | Land on the third cell and do not inspect or traverse a fourth cell.                                                                         |
+| Runtime reset during Attack or Dash presentation            | Cancel the tracked timeline and transient effect through the existing generation/reset path; the new scenario has no stale visual.           |
 
 ## Acceptance Criteria
 

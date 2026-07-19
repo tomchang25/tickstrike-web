@@ -16,7 +16,11 @@ const thrust: EnemyActionDefinition = {
   damage: 10,
   warningTicks: 1,
   recoveryTicks: 1,
-  offsets: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }],
+  offsets: [
+    { x: 1, y: 0 },
+    { x: 2, y: 0 },
+    { x: 3, y: 0 },
+  ],
 };
 
 function enemy(overrides: Partial<EntityState> = {}): EntityState {
@@ -56,40 +60,99 @@ describe("role-neutral enemy action decisions", () => {
   it("derives attack origins by reversing the authored shape", () => {
     const origins = attackOriginCellsFromShape({ x: 3, y: 2 }, thrust);
     expect(origins).toHaveLength(12);
-    expect(origins).toEqual(expect.arrayContaining([
-      { x: 2, y: 2 },
-      { x: 1, y: 2 },
-      { x: 3, y: 1 },
-      { x: 3, y: 0 },
-      { x: 4, y: 2 },
-      { x: 5, y: 2 },
-      { x: 3, y: 3 },
-      { x: 3, y: 4 },
-    ]));
+    expect(origins).toEqual(
+      expect.arrayContaining([
+        { x: 2, y: 2 },
+        { x: 1, y: 2 },
+        { x: 3, y: 1 },
+        { x: 3, y: 0 },
+        { x: 4, y: 2 },
+        { x: 5, y: 2 },
+        { x: 3, y: 3 },
+        { x: 3, y: 4 },
+      ]),
+    );
   });
 
   it("uses exactly one move, attack, or wait decision", () => {
-    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 3, y: 1 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true })).toEqual({
+    expect(
+      decideEnemyAction({
+        enemy: enemy(),
+        playerCell: { x: 3, y: 1 },
+        isInside: testBounds,
+        canMove: () => true,
+        canPathThrough: () => true,
+        canEndAt: () => true,
+        isLegalTerrain: () => true,
+      }),
+    ).toEqual({
       type: "attack",
       attack: thrust,
-      cells: [{ x: 3, y: 2 }, { x: 3, y: 1 }, { x: 3, y: 0 }],
+      cells: [
+        { x: 3, y: 2 },
+        { x: 3, y: 1 },
+        { x: 3, y: 0 },
+      ],
       facing: { x: 0, y: -1 },
     });
-    const firstMove = decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true });
+    const firstMove = decideEnemyAction({
+      enemy: enemy({ facing: { x: 0, y: -1 } }),
+      playerCell: { x: 3, y: -1 },
+      isInside: testBounds,
+      canMove: () => true,
+      canPathThrough: () => true,
+      canEndAt: () => true,
+      isLegalTerrain: () => true,
+    });
     expect(firstMove).toMatchObject({ type: "move" });
-    expect(firstMove.type === "move" ? firstMove.candidates[0] : undefined).toMatchObject({ destination: { x: 3, y: 2 }, facing: { x: 0, y: -1 } });
+    expect(firstMove.type === "move" ? firstMove.candidates[0] : undefined).toMatchObject({
+      destination: { x: 3, y: 2 },
+      facing: { x: 0, y: -1 },
+    });
 
-    const secondMove = decideEnemyAction({ enemy: enemy(), playerCell: { x: 6, y: 4 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true });
+    const secondMove = decideEnemyAction({
+      enemy: enemy(),
+      playerCell: { x: 6, y: 4 },
+      isInside: testBounds,
+      canMove: () => true,
+      canPathThrough: () => true,
+      canEndAt: () => true,
+      isLegalTerrain: () => true,
+    });
     expect(secondMove).toMatchObject({ type: "move" });
     if (secondMove.type === "move") {
       expect(secondMove.candidates.length).toBeGreaterThan(0);
       expect(secondMove.candidates[0]!.path.length).toBeGreaterThan(0);
     }
-    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 4, y: 3 }, isInside: testBounds, canMove: () => true, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true })).toMatchObject({
+    expect(
+      decideEnemyAction({
+        enemy: enemy(),
+        playerCell: { x: 4, y: 3 },
+        isInside: testBounds,
+        canMove: () => true,
+        canPathThrough: () => true,
+        canEndAt: () => true,
+        isLegalTerrain: () => true,
+      }),
+    ).toMatchObject({
       type: "attack",
-      cells: [{ x: 4, y: 3 }, { x: 5, y: 3 }, { x: 6, y: 3 }],
+      cells: [
+        { x: 4, y: 3 },
+        { x: 5, y: 3 },
+        { x: 6, y: 3 },
+      ],
     });
-    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, isInside: testBounds, canMove: () => false, canPathThrough: () => true, canEndAt: () => true, isLegalTerrain: () => true })).toEqual({
+    expect(
+      decideEnemyAction({
+        enemy: enemy({ facing: { x: 0, y: -1 } }),
+        playerCell: { x: 3, y: -1 },
+        isInside: testBounds,
+        canMove: () => false,
+        canPathThrough: () => true,
+        canEndAt: () => true,
+        isLegalTerrain: () => true,
+      }),
+    ).toEqual({
       type: "wait",
     });
   });
@@ -121,7 +184,13 @@ describe("role-neutral enemy action decisions", () => {
 describe("shared enemy tick lifecycle", () => {
   function createWorld() {
     const world = createShippedArena();
-    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 6, y: 6 }, hp: 100 });
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 6, y: 6 },
+      hp: 100,
+    });
     world.spawn({
       id: "enemy",
       kind: "enemy",
@@ -136,21 +205,39 @@ describe("shared enemy tick lifecycle", () => {
 
   it("locks committed cells, resolves once, and can act when recovery ends", () => {
     const world = createWorld();
-    const committed = resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    const committed = resolveCommand(world, {
+      type: "attack",
+      actorId: "player",
+      direction: { x: 0, y: -1 },
+    });
 
     expect(committed.accepted).toBe(true);
     expect(world.requireEntity("enemy")).toMatchObject({
       activity: "telegraphing",
       committedAttack: {
         attackId: "thrust",
-        cells: [{ x: 6, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }],
+        cells: [
+          { x: 6, y: 6 },
+          { x: 7, y: 6 },
+          { x: 8, y: 6 },
+        ],
         warningTicks: 1,
         damage: 10,
       },
     });
-    expect(world.getTelegraph("enemy")).toMatchObject({ cells: [{ x: 6, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }] });
+    expect(world.getTelegraph("enemy")).toMatchObject({
+      cells: [
+        { x: 6, y: 6 },
+        { x: 7, y: 6 },
+        { x: 8, y: 6 },
+      ],
+    });
 
-    const dodge = resolveCommand(world, { type: "move", actorId: "player", direction: { x: 0, y: -1 } });
+    const dodge = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 0, y: -1 },
+    });
     expect(dodge.events.map((event) => event.type)).toEqual([
       "command_resolved",
       "actor_moved",
@@ -160,10 +247,17 @@ describe("shared enemy tick lifecycle", () => {
       "world_advanced",
     ]);
     expect(world.requireEntity("player")).toMatchObject({ hp: 100, cell: { x: 6, y: 5 } });
-    expect(world.requireEntity("enemy")).toMatchObject({ activity: "recovering", recoveryTicks: 1 });
+    expect(world.requireEntity("enemy")).toMatchObject({
+      activity: "recovering",
+      recoveryTicks: 1,
+    });
     expect(world.getTelegraph("enemy")).toBeUndefined();
 
-    const recovered = resolveCommand(world, { type: "move", actorId: "player", direction: { x: -1, y: 0 } });
+    const recovered = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: -1, y: 0 },
+    });
     expect(recovered.events.map((event) => event.type)).toEqual([
       "command_resolved",
       "actor_moved",
@@ -172,7 +266,10 @@ describe("shared enemy tick lifecycle", () => {
       "telegraph_changed",
       "world_advanced",
     ]);
-    expect(world.requireEntity("enemy")).toMatchObject({ activity: "telegraphing", lastDecision: "attack" });
+    expect(world.requireEntity("enemy")).toMatchObject({
+      activity: "telegraphing",
+      lastDecision: "attack",
+    });
   });
 
   it("keeps the role-neutral committed snapshot intact through warning", () => {
@@ -197,14 +294,22 @@ describe("shared enemy tick lifecycle", () => {
     expect(world.requireEntity("enemy").committedAttack).toMatchObject({
       role: "future-role",
       kind: "tile",
-      cells: [{ x: 6, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }],
+      cells: [
+        { x: 6, y: 6 },
+        { x: 7, y: 6 },
+        { x: 8, y: 6 },
+      ],
       metadata: { center: { x: 6, y: 6 } },
       warningTicks: 2,
     });
 
     resolveCommand(world, { type: "move", actorId: "player", direction: { x: 0, y: -1 } });
     expect(world.requireEntity("enemy").committedAttack).toMatchObject({
-      cells: [{ x: 6, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }],
+      cells: [
+        { x: 6, y: 6 },
+        { x: 7, y: 6 },
+        { x: 8, y: 6 },
+      ],
       metadata: { center: { x: 6, y: 6 } },
       warningTicks: 1,
       damage: 10,
@@ -214,7 +319,11 @@ describe("shared enemy tick lifecycle", () => {
   it("uses the committed damage when the player remains in the telegraph", () => {
     const world = createWorld();
     resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
-    const result = resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    const result = resolveCommand(world, {
+      type: "attack",
+      actorId: "player",
+      direction: { x: 0, y: -1 },
+    });
 
     expect(result.events.map((event) => event.type)).toEqual([
       "command_resolved",
@@ -270,7 +379,10 @@ describe("shared enemy tick lifecycle", () => {
       "enemy_recovering",
       "world_advanced",
     ]);
-    expect(world.requireEntity("enemy")).toMatchObject({ activity: "recovering", recoveryTicks: 2 });
+    expect(world.requireEntity("enemy")).toMatchObject({
+      activity: "recovering",
+      recoveryTicks: 2,
+    });
   });
 
   it("does not let rejected commands advance enemy state", () => {
@@ -278,7 +390,11 @@ describe("shared enemy tick lifecycle", () => {
     resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
     const before = world.snapshot();
 
-    const rejected = resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 1, y: 1 } });
+    const rejected = resolveCommand(world, {
+      type: "attack",
+      actorId: "player",
+      direction: { x: 1, y: 1 },
+    });
 
     expect(rejected).toMatchObject({ accepted: false, consumedTime: false, events: [] });
     expect(world.snapshot()).toEqual(before);

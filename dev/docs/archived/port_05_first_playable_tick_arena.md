@@ -28,9 +28,9 @@ Logical death is immediate. Visual death is an event timeline that must finish b
 
 ### Child Work
 
-| Child | Focus | Current document |
-| --- | --- | --- |
-| 05.z | Post-playable architecture consolidation | [Implementation Spec](port_05_z_architecture_consolidation_decision.implementation_spec.md) |
+| Child | Focus                                    | Current document                                                                            |
+| ----- | ---------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 05.z  | Post-playable architecture consolidation | [Implementation Spec](port_05_z_architecture_consolidation_decision.implementation_spec.md) |
 
 Port 05 and the bounded 05.z consolidation passed their acceptance gates. Do not introduce another architecture layer before Port 06; retain the current simulation-core, runtime-boundary, and presentation-consumer ownership split.
 

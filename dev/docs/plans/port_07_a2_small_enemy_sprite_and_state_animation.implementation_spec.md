@@ -45,17 +45,17 @@ The renderer keeps its generic enemy body as the fallback for unknown or not-yet
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/content/enemies/assets/kappa-green-sprite-sheet.png` | Small | Package the verified source Kappa sheet for Vite runtime loading. |
-| `src/content/enemies/assets/kappa-purple-sprite-sheet.png` | Small | Package the offline Godot-palette-matched Slash sheet. |
-| `src/presentation/pixi/enemy-sprites.ts` | Large | Own small-enemy profiles, frame selection, fixed palette identity, and local feedback surface. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Large | Load the sheet, create/project sprite-backed enemy views, preserve fallback views, and expose sprite feedback to the director. |
-| `src/presentation/timelines/PresentationDirector.ts` | Medium | Route existing enemy events to sprite-local timelines while retaining generic fallback and terminal cleanup behavior. |
-| `test/unit/presentation/pixi/enemy-sprites.test.ts` | Medium | Assert profile resolution, frame selection, palette setup, fallback, and visual reset behavior. |
-| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Medium | Assert semantic enemy events select the expected local presentation feedback and all tracked timelines settle. |
-| `test/e2e/testbed.spec.ts` | Medium | Assert the Tick Arena exposes both rendered small-enemy profiles, state transitions, palette distinction, and idle reset in Chromium. |
-| `dev/docs/plans/port_07_complete_enemy_roster_and_navigation.md` | Small | Register A2 in the ordered Port 07 child overview. |
+| File                                                             | Change Size | Purpose                                                                                                                               |
+| ---------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/content/enemies/assets/kappa-green-sprite-sheet.png`        | Small       | Package the verified source Kappa sheet for Vite runtime loading.                                                                     |
+| `src/content/enemies/assets/kappa-purple-sprite-sheet.png`       | Small       | Package the offline Godot-palette-matched Slash sheet.                                                                                |
+| `src/presentation/pixi/enemy-sprites.ts`                         | Large       | Own small-enemy profiles, frame selection, fixed palette identity, and local feedback surface.                                        |
+| `src/presentation/pixi/PixiGameRenderer.ts`                      | Large       | Load the sheet, create/project sprite-backed enemy views, preserve fallback views, and expose sprite feedback to the director.        |
+| `src/presentation/timelines/PresentationDirector.ts`             | Medium      | Route existing enemy events to sprite-local timelines while retaining generic fallback and terminal cleanup behavior.                 |
+| `test/unit/presentation/pixi/enemy-sprites.test.ts`              | Medium      | Assert profile resolution, frame selection, palette setup, fallback, and visual reset behavior.                                       |
+| `test/unit/presentation/timelines/PresentationDirector.test.ts`  | Medium      | Assert semantic enemy events select the expected local presentation feedback and all tracked timelines settle.                        |
+| `test/e2e/testbed.spec.ts`                                       | Medium      | Assert the Tick Arena exposes both rendered small-enemy profiles, state transitions, palette distinction, and idle reset in Chromium. |
+| `dev/docs/plans/port_07_complete_enemy_roster_and_navigation.md` | Small       | Register A2 in the ordered Port 07 child overview.                                                                                    |
 
 ## Execution Outline
 
@@ -78,14 +78,14 @@ The renderer keeps its generic enemy body as the fallback for unknown or not-yet
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Unknown enemy archetype or unavailable sheet | Retain the current rounded-rectangle rendering and generic timelines without throwing or creating a blank sprite. |
-| Attack detonation misses the player | Play the small-enemy commit cue, but create no impact effect, preserving the existing hit-only impact rule. |
-| Guard break or interrupted telegraph occurs during prepare | Cancel local action feedback, clear the prepared pose, then apply the current stagger/interruption snapshot state. |
-| Damage flash overlaps stagger | The flash has temporary tint priority and settles to blue while staggered, otherwise the profile base tint. |
-| Reset, scenario replacement, or terminal removal occurs mid-timeline | Generation cancellation kills the tracked timeline; local transforms/tint cannot survive onto a replacement or orphaned view. |
-| A later Port 07 archetype lacks an authored profile | It remains visible through the existing fallback until that child supplies a profile; this child must not map it to Kappa art. |
+| Case                                                                 | Expected Handling                                                                                                              |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Unknown enemy archetype or unavailable sheet                         | Retain the current rounded-rectangle rendering and generic timelines without throwing or creating a blank sprite.              |
+| Attack detonation misses the player                                  | Play the small-enemy commit cue, but create no impact effect, preserving the existing hit-only impact rule.                    |
+| Guard break or interrupted telegraph occurs during prepare           | Cancel local action feedback, clear the prepared pose, then apply the current stagger/interruption snapshot state.             |
+| Damage flash overlaps stagger                                        | The flash has temporary tint priority and settles to blue while staggered, otherwise the profile base tint.                    |
+| Reset, scenario replacement, or terminal removal occurs mid-timeline | Generation cancellation kills the tracked timeline; local transforms/tint cannot survive onto a replacement or orphaned view.  |
+| A later Port 07 archetype lacks an authored profile                  | It remains visible through the existing fallback until that child supplies a profile; this child must not map it to Kappa art. |
 
 ## Acceptance Criteria
 

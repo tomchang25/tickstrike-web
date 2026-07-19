@@ -28,11 +28,13 @@ describe("canonical wave content", () => {
   });
 
   it("records group composition, placement, and authored entry order", () => {
-    expect(waveCatalog.groups.map(({ id, compositionMode, placementStrategy }) => ({
-      id,
-      compositionMode,
-      placementStrategy,
-    }))).toEqual([
+    expect(
+      waveCatalog.groups.map(({ id, compositionMode, placementStrategy }) => ({
+        id,
+        compositionMode,
+        placementStrategy,
+      })),
+    ).toEqual([
       { id: "small", compositionMode: "weighted", placementStrategy: "player-ring" },
       { id: "small-ranged", compositionMode: "fixed", placementStrategy: "anchor-cluster" },
       { id: "small-ranged-charge", compositionMode: "fixed", placementStrategy: "anchor-cluster" },
@@ -54,11 +56,13 @@ describe("canonical wave content", () => {
   });
 
   it("preserves wave caps, slot order, and the boss slot override", () => {
-    expect(waveCatalog.demoWaves.map((wave) => ({
-      id: wave.id,
-      cap: wave.populationCap,
-      groups: wave.slots.map((slot) => slot.spawnGroupId),
-    }))).toEqual([
+    expect(
+      waveCatalog.demoWaves.map((wave) => ({
+        id: wave.id,
+        cap: wave.populationCap,
+        groups: wave.slots.map((slot) => slot.spawnGroupId),
+      })),
+    ).toEqual([
       { id: "demo-01", cap: 3, groups: ["small"] },
       { id: "demo-02", cap: 2, groups: ["ranged"] },
       { id: "demo-03", cap: 5, groups: ["small-ranged"] },
@@ -89,9 +93,24 @@ describe("canonical wave content", () => {
   it("records progression inputs without projecting runtime stats", () => {
     expect(waveCatalog.progressionProfile).toEqual({
       lethalLevelStart: 10,
-      hpCurve: { standardCoefficient: 0.08, standardExponent: 1, lethalCoefficient: 0.15, lethalExponent: 1.2 },
-      damageCurve: { standardCoefficient: 0.05, standardExponent: 1, lethalCoefficient: 0.1, lethalExponent: 1.1 },
-      defenseCurve: { standardCoefficient: 0.6, standardExponent: 1, lethalCoefficient: 1.2, lethalExponent: 1 },
+      hpCurve: {
+        standardCoefficient: 0.08,
+        standardExponent: 1,
+        lethalCoefficient: 0.15,
+        lethalExponent: 1.2,
+      },
+      damageCurve: {
+        standardCoefficient: 0.05,
+        standardExponent: 1,
+        lethalCoefficient: 0.1,
+        lethalExponent: 1.1,
+      },
+      defenseCurve: {
+        standardCoefficient: 0.6,
+        standardExponent: 1,
+        lethalCoefficient: 1.2,
+        lethalExponent: 1,
+      },
       guardGrowth: { basis: "base-wave", standardWaveLimit: 20, lethalTierCadence: 5 },
     });
   });

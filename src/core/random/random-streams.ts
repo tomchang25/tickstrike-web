@@ -21,7 +21,9 @@ export class RandomStreams {
   }
 
   get(domain: string): RandomStream {
-    if (!domain) throw new Error("Random stream domains must not be empty.");
+    if (!domain) {
+      throw new Error("Random stream domains must not be empty.");
+    }
     let stream = this.streams.get(domain);
     if (!stream) {
       stream = new RandomStream(hashDomain(this.rootSeed, domain));

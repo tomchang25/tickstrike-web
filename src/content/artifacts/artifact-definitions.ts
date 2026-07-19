@@ -116,7 +116,8 @@ export const artifactDefinitions: readonly ArtifactDefinition[] = [
   {
     id: "chain_dash",
     name: "Chain Dash",
-    descriptionTemplate: "Back, guard-break, stagger, or kill Dash hits clear Dash cooldown and ready your next move or attack (%d)",
+    descriptionTemplate:
+      "Back, guard-break, stagger, or kill Dash hits clear Dash cooldown and ready your next move or attack (%d)",
     category: "major",
     maxStacks: 1,
     exclusivityGroup: "",

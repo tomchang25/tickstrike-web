@@ -41,19 +41,19 @@ The enemy phase will make decisions in stable entity order, arbitrate movement c
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/model/types.ts` | Large | Replace basic-only action snapshots with role-neutral enemy runtime data. |
-| `src/core/world/world.ts` | Large | Own generalized activity, commitment, recovery, reservation, and terminal operations. |
-| `src/core/enemies/basic-enemy-actions.ts` | Large | Rename/generalize the pure decision and attack-geometry boundary for shared use. |
-| `src/core/actions/enemy-phase.ts` | Large | Separate decision, movement arbitration, attack commitment, and status processing. |
-| `src/core/actions/action-resolver.ts` | Small | Preserve the existing accepted-command to enemy-phase ordering. |
-| `src/core/events/combat-events.ts` | Medium | Extend semantic payloads for role-neutral movement and committed attack snapshots. |
-| `src/harness/fixtures/shipped-arena.ts` | Medium | Keep deterministic Thrust/Slash fixtures on the generalized contract. |
-| `test/unit/core/enemies/basic-enemy-actions.test.ts` | Large | Migrate and extend shared decision, geometry, lock, and conflict assertions. |
-| `test/unit/core/world/reservations.test.ts` | Medium | Assert atomic contested movement arbitration and cleanup. |
-| `test/unit/core/actions/action-resolver.test.ts` | Medium | Preserve event order and rejected-command behavior. |
-| `test/e2e/testbed.spec.ts` | Small | Preserve browser-visible Thrust/Slash behavior and idle cleanup. |
+| File                                                 | Change Size | Purpose                                                                               |
+| ---------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                            | Large       | Replace basic-only action snapshots with role-neutral enemy runtime data.             |
+| `src/core/world/world.ts`                            | Large       | Own generalized activity, commitment, recovery, reservation, and terminal operations. |
+| `src/core/enemies/basic-enemy-actions.ts`            | Large       | Rename/generalize the pure decision and attack-geometry boundary for shared use.      |
+| `src/core/actions/enemy-phase.ts`                    | Large       | Separate decision, movement arbitration, attack commitment, and status processing.    |
+| `src/core/actions/action-resolver.ts`                | Small       | Preserve the existing accepted-command to enemy-phase ordering.                       |
+| `src/core/events/combat-events.ts`                   | Medium      | Extend semantic payloads for role-neutral movement and committed attack snapshots.    |
+| `src/harness/fixtures/shipped-arena.ts`              | Medium      | Keep deterministic Thrust/Slash fixtures on the generalized contract.                 |
+| `test/unit/core/enemies/basic-enemy-actions.test.ts` | Large       | Migrate and extend shared decision, geometry, lock, and conflict assertions.          |
+| `test/unit/core/world/reservations.test.ts`          | Medium      | Assert atomic contested movement arbitration and cleanup.                             |
+| `test/unit/core/actions/action-resolver.test.ts`     | Medium      | Preserve event order and rejected-command behavior.                                   |
+| `test/e2e/testbed.spec.ts`                           | Small       | Preserve browser-visible Thrust/Slash behavior and idle cleanup.                      |
 
 ## Execution Outline
 
@@ -72,13 +72,13 @@ The enemy phase will make decisions in stable entity order, arbitrate movement c
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Two enemies request the same destination | The deterministic reservation winner moves; the loser remains in place and emits `enemy_waited`. |
-| A movement claim loses before application | No partial movement, duplicate occupancy, or stale reservation remains. |
-| Player moves after commitment | The committed cells and damage remain unchanged; only the next decision reads the new player cell. |
-| Enemy becomes terminal while telegraphing | The attack, telegraph, reservation, and later detonation are cleared immediately. |
-| Rejected player command | Tick, enemy activity, reservations, telegraphs, and events remain unchanged. |
+| Case                                      | Expected Handling                                                                                  |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Two enemies request the same destination  | The deterministic reservation winner moves; the loser remains in place and emits `enemy_waited`.   |
+| A movement claim loses before application | No partial movement, duplicate occupancy, or stale reservation remains.                            |
+| Player moves after commitment             | The committed cells and damage remain unchanged; only the next decision reads the new player cell. |
+| Enemy becomes terminal while telegraphing | The attack, telegraph, reservation, and later detonation are cleared immediately.                  |
+| Rejected player command                   | Tick, enemy activity, reservations, telegraphs, and events remain unchanged.                       |
 
 ## Acceptance Criteria
 

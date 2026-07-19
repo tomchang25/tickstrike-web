@@ -46,7 +46,10 @@ const validContent: ActorContentInput = {
       recoveryTicks: 1,
       shape: {
         shape: "custom-offsets",
-        offsets: [{ x: 1, y: 0 }, { x: 2, y: 0 }],
+        offsets: [
+          { x: 1, y: 0 },
+          { x: 2, y: 0 },
+        ],
       },
     },
   ],
@@ -76,7 +79,10 @@ describe("actor content validation", () => {
     const attacks = malformed.attacks as Array<Record<string, unknown>>;
     attacks[0]!.shape = {
       shape: "custom-offsets",
-      offsets: [{ x: 0, y: 0 }, { x: 0, y: 0 }],
+      offsets: [
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+      ],
     };
     const enemies = malformed.enemies as Array<Record<string, unknown>>;
     enemies[0]!.guardId = "missing";
@@ -118,7 +124,9 @@ describe("actor content validation", () => {
     expect(Object.isFrozen(catalog.characters[0]!.mobility)).toBe(true);
     const shape = catalog.attacks[0]!.shape;
     expect(Object.isFrozen(shape)).toBe(true);
-    if (shape.shape !== "custom-offsets") throw new Error("Expected custom offsets");
+    if (shape.shape !== "custom-offsets") {
+      throw new Error("Expected custom offsets");
+    }
     expect(Object.isFrozen(shape.offsets)).toBe(true);
     expect(() => {
       (shape.offsets as unknown as Array<{ x: number; y: number }>)[0]!.x = 99;

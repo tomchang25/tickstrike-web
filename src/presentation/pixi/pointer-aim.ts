@@ -33,23 +33,30 @@ export function screenPointToCell(
     return undefined;
   }
 
-  const x = Math.floor(((point.x - rect.left) / rect.width) * screenWidth / cellSize);
-  const y = Math.floor(((point.y - rect.top) / rect.height) * screenHeight / cellSize);
+  const x = Math.floor((((point.x - rect.left) / rect.width) * screenWidth) / cellSize);
+  const y = Math.floor((((point.y - rect.top) / rect.height) * screenHeight) / cellSize);
   return { x, y };
 }
 
 export function dominantDirection(delta: Cell, lastAim: Cell = INITIAL_AIM): Cell {
-  if (delta.x === 0 && delta.y === 0) return lastAim;
-  if (Math.abs(delta.x) === Math.abs(delta.y)) return lastAim;
-  if (Math.abs(delta.x) > Math.abs(delta.y)) return { x: Math.sign(delta.x), y: 0 };
+  if (delta.x === 0 && delta.y === 0) {
+    return lastAim;
+  }
+  if (Math.abs(delta.x) === Math.abs(delta.y)) {
+    return lastAim;
+  }
+  if (Math.abs(delta.x) > Math.abs(delta.y)) {
+    return { x: Math.sign(delta.x), y: 0 };
+  }
   return { x: 0, y: Math.sign(delta.y) };
 }
 
-export function resolveAimDirection(mouseCell: Cell, origin: Cell, lastAim: Cell = INITIAL_AIM): Cell {
-  return dominantDirection(
-    { x: mouseCell.x - origin.x, y: mouseCell.y - origin.y },
-    lastAim,
-  );
+export function resolveAimDirection(
+  mouseCell: Cell,
+  origin: Cell,
+  lastAim: Cell = INITIAL_AIM,
+): Cell {
+  return dominantDirection({ x: mouseCell.x - origin.x, y: mouseCell.y - origin.y }, lastAim);
 }
 
 export function resolveAimDistance(mouseCell: Cell, origin: Cell, maxRange = 3): number {

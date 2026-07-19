@@ -22,12 +22,12 @@ The shared scenario continues to own deterministic fixtures. This plan develops 
 
 Enemy state is data, not a Node, signal, or autonomous frame loop. The persistent activity values are:
 
-| Activity | Meaning |
-| --- | --- |
-| `ready` | The enemy may face its attack or movement direction and move, commit an attack, or wait once this Tick. |
-| `telegraphing` | A committed attack holds immutable cells, damage, and warning ticks. |
-| `recovering` | The enemy cannot decide or act until its recovery countdown ends; when it reaches zero, it may act once in that same Tick. |
-| `staggered` | Guard break prevents movement and attack commitment until the Stagger countdown ends. |
+| Activity       | Meaning                                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `ready`        | The enemy may face its attack or movement direction and move, commit an attack, or wait once this Tick.                    |
+| `telegraphing` | A committed attack holds immutable cells, damage, and warning ticks.                                                       |
+| `recovering`   | The enemy cannot decide or act until its recovery countdown ends; when it reaches zero, it may act once in that same Tick. |
+| `staggered`    | Guard break prevents movement and attack commitment until the Stagger countdown ends.                                      |
 
 Movement, attack commitment, attack resolution, Guard break, and death are semantic actions or events rather than extra persistent states. Facing is updated as part of movement or attack selection; there is no separate turn action. Terminal entity lifecycle remains separate from enemy activity, so a dead entity cannot retain a valid Telegraph or recovery state.
 
@@ -46,13 +46,13 @@ Directional Guard resolves from the attacker cell relative to the target's cardi
 
 ### Child Sketches
 
-| Child | Focus | Current document |
-| --- | --- | --- |
-| 04.1 | Base enemy HP, player damage, and shared hit result | [Implemented Spec](port_04_01_base_enemy_hit_resolution.implementation_spec.md) |
-| 04.2 | Data-owned enemy activity, simple movement, and locked attacks | [Implemented Spec](port_04_02_basic_enemy_tick_actions.implementation_spec.md) |
-| 04.3 | Directional Guard, Stagger, and Protection | [Implemented Spec](port_04_03_directional_guard_stagger.implementation_spec.md) |
-| 04.4 | Shared presentation and browser acceptance | [Implemented Spec](port_04_04_enemy_combat_presentation_acceptance.implementation_spec.md) |
-| 04.5 | One ordered combat event stream across core, runtime, snapshots, and presentation | [Implemented Spec](port_04_05_combat_event_stream_consolidation.implementation_spec.md) |
+| Child | Focus                                                                             | Current document                                                                           |
+| ----- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 04.1  | Base enemy HP, player damage, and shared hit result                               | [Implemented Spec](port_04_01_base_enemy_hit_resolution.implementation_spec.md)            |
+| 04.2  | Data-owned enemy activity, simple movement, and locked attacks                    | [Implemented Spec](port_04_02_basic_enemy_tick_actions.implementation_spec.md)             |
+| 04.3  | Directional Guard, Stagger, and Protection                                        | [Implemented Spec](port_04_03_directional_guard_stagger.implementation_spec.md)            |
+| 04.4  | Shared presentation and browser acceptance                                        | [Implemented Spec](port_04_04_enemy_combat_presentation_acceptance.implementation_spec.md) |
+| 04.5  | One ordered combat event stream across core, runtime, snapshots, and presentation | [Implemented Spec](port_04_05_combat_event_stream_consolidation.implementation_spec.md)    |
 
 All children have landed in numeric order. Their implementation specs are retained as verified implementation records; no child remains an executable handoff.
 

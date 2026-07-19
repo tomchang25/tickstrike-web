@@ -1,13 +1,20 @@
 import { expect, test } from "@playwright/test";
 
-test("Dash uses directional Guard results and ignores a committed enemy hit during release", async ({ page }) => {
+test("Dash uses directional Guard results and ignores a committed enemy hit during release", async ({
+  page,
+}) => {
   await page.goto("/?scenario=mobility-combat");
 
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
+    "data-player-profile",
+    "character.ninja",
+  );
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
   const canvas = page.getByTestId("game-canvas");
   const box = await canvas.boundingBox();
-  if (!box) throw new Error("Game canvas has no layout box.");
+  if (!box) {
+    throw new Error("Game canvas has no layout box.");
+  }
   await page.mouse.move(box.x + (2.5 / 12) * box.width, box.y + (3.5 / 12) * box.height);
   await expect(canvas).toHaveAttribute("data-player-facing", "1,0");
   await page.mouse.move(box.x + (1.5 / 12) * box.width, box.y + (1.5 / 12) * box.height);
@@ -19,7 +26,9 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
-    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
     await api.execute({
       type: "dash",
       actorId: "player",
@@ -46,6 +55,9 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
   await page.getByRole("button", { name: "Reset scenario" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-mobility-cooldown", "0");
-  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-mobility-invulnerable", "false");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute(
+    "data-mobility-invulnerable",
+    "false",
+  );
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });

@@ -22,7 +22,9 @@ describe("character sprite profiles", () => {
 
   it("projects cardinal facing and a transient dash pose without a core state", () => {
     const sprite = createPlayerSprite("character.ninja");
-    if (!sprite) throw new Error("Ninja profile is missing.");
+    if (!sprite) {
+      throw new Error("Ninja profile is missing.");
+    }
 
     sprite.setFacing({ x: 0, y: -1 });
     const idleTexture = sprite.body.texture;
@@ -39,7 +41,9 @@ describe("character sprite profiles", () => {
 
   it("uses the authored movement rows for repeated move poses", () => {
     const sprite = createPlayerSprite("character.ninja");
-    if (!sprite) throw new Error("Ninja profile is missing.");
+    if (!sprite) {
+      throw new Error("Ninja profile is missing.");
+    }
 
     sprite.setPose("move");
     const firstMoveTexture = sprite.body.texture;
@@ -51,7 +55,9 @@ describe("character sprite profiles", () => {
 
   it("keeps the movement row when facing changes during movement", () => {
     const sprite = createPlayerSprite("character.ninja");
-    if (!sprite) throw new Error("Ninja profile is missing.");
+    if (!sprite) {
+      throw new Error("Ninja profile is missing.");
+    }
 
     sprite.setPose("move");
     sprite.setFacing({ x: 0, y: -1 });

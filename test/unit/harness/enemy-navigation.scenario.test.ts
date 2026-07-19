@@ -32,6 +32,9 @@ describe("enemy navigation testbed scenario", () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(world.requireEntity("player").mobility).toMatchObject({ cooldown: 0, remainingCooldown: 0 });
+    expect(world.requireEntity("player").mobility).toMatchObject({
+      cooldown: 0,
+      remainingCooldown: 0,
+    });
   });
 });

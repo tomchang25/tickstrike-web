@@ -39,18 +39,18 @@ The resulting catalog retains Thrust, Slash, Ranged, Charge, and Bomb. Removing 
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/content/enemies/enemy-definitions.ts` | Medium | Remove Mode-only guards, attacks, and enemy definitions. |
-| `src/core/content/actor-schema.ts` | Small | Remove the unused Mode role and retaliation tuning validation. |
-| `src/core/content/content-schema.ts` | Small | Reduce strict inventory counts and ordered IDs. |
-| `src/content/waves/wave-definitions.ts` | Small | Remove the Boss group and `demo-10`. |
-| `src/harness/content-inspection.ts` | Medium | Remove Mode Boss and Boss-wave inspection fields and dependencies. |
-| `src/ui/TestbedPanel.tsx` | Small | Remove the corresponding inspection UI. |
-| `test/unit/content/actor-catalog.test.ts` | Medium | Assert the reduced guard, attack, and enemy inventory. |
-| `test/unit/content/wave-catalog.test.ts` | Medium | Assert the reduced group and demo-wave inventory. |
-| `test/unit/harness/content-catalog-inspection.scenario.test.ts` | Small | Remove obsolete inspection assertions. |
-| `test/e2e/content-catalog-inspection.spec.ts` | Small | Remove obsolete browser-visible Mode and Boss-wave assertions. |
+| File                                                            | Change Size | Purpose                                                            |
+| --------------------------------------------------------------- | ----------- | ------------------------------------------------------------------ |
+| `src/content/enemies/enemy-definitions.ts`                      | Medium      | Remove Mode-only guards, attacks, and enemy definitions.           |
+| `src/core/content/actor-schema.ts`                              | Small       | Remove the unused Mode role and retaliation tuning validation.     |
+| `src/core/content/content-schema.ts`                            | Small       | Reduce strict inventory counts and ordered IDs.                    |
+| `src/content/waves/wave-definitions.ts`                         | Small       | Remove the Boss group and `demo-10`.                               |
+| `src/harness/content-inspection.ts`                             | Medium      | Remove Mode Boss and Boss-wave inspection fields and dependencies. |
+| `src/ui/TestbedPanel.tsx`                                       | Small       | Remove the corresponding inspection UI.                            |
+| `test/unit/content/actor-catalog.test.ts`                       | Medium      | Assert the reduced guard, attack, and enemy inventory.             |
+| `test/unit/content/wave-catalog.test.ts`                        | Medium      | Assert the reduced group and demo-wave inventory.                  |
+| `test/unit/harness/content-catalog-inspection.scenario.test.ts` | Small       | Remove obsolete inspection assertions.                             |
+| `test/e2e/content-catalog-inspection.spec.ts`                   | Small       | Remove obsolete browser-visible Mode and Boss-wave assertions.     |
 
 ## Execution Outline
 
@@ -67,11 +67,11 @@ The resulting catalog retains Thrust, Slash, Ranged, Charge, and Bomb. Removing 
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| A remaining catalog entry references a removed Mode ID | Content validation fails; no dangling reference is permitted. |
-| A test still requests a Mode Boss inspection field | Update the consumer to supported inspection data; do not keep a hidden Mode definition. |
-| A future Boss is added | It defines its own enemy, guard, attacks, wave usage, and tests through a new approved implementation spec. |
+| Case                                                   | Expected Handling                                                                                           |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| A remaining catalog entry references a removed Mode ID | Content validation fails; no dangling reference is permitted.                                               |
+| A test still requests a Mode Boss inspection field     | Update the consumer to supported inspection data; do not keep a hidden Mode definition.                     |
+| A future Boss is added                                 | It defines its own enemy, guard, attacks, wave usage, and tests through a new approved implementation spec. |
 
 ## Acceptance Criteria
 

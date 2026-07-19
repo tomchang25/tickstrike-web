@@ -40,13 +40,13 @@ This child keeps the existing event types and ordering, but makes `ActionResolut
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/actions/action-resolver.ts` | Small | Expose one complete `ActionResolution.events` stream and remove the duplicate field. |
-| `src/runtime/GameRuntime.ts` | Small | Present the single resolver stream without an optional fallback. |
-| `test/unit/core/actions/action-resolver.test.ts` | Medium | Update command-result and snapshot assertions to the unified event contract. |
-| `test/unit/core/enemies/basic-enemy-actions.test.ts` | Small | Preserve enemy-phase order assertions against the complete command stream. |
-| `test/e2e/testbed.spec.ts` | Small | Assert the browser event log and debug snapshot expose the same complete ordered result. |
+| File                                                 | Change Size | Purpose                                                                                  |
+| ---------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| `src/core/actions/action-resolver.ts`                | Small       | Expose one complete `ActionResolution.events` stream and remove the duplicate field.     |
+| `src/runtime/GameRuntime.ts`                         | Small       | Present the single resolver stream without an optional fallback.                         |
+| `test/unit/core/actions/action-resolver.test.ts`     | Medium      | Update command-result and snapshot assertions to the unified event contract.             |
+| `test/unit/core/enemies/basic-enemy-actions.test.ts` | Small       | Preserve enemy-phase order assertions against the complete command stream.               |
+| `test/e2e/testbed.spec.ts`                           | Small       | Assert the browser event log and debug snapshot expose the same complete ordered result. |
 
 ## Execution Outline
 
@@ -65,12 +65,12 @@ This child keeps the existing event types and ordering, but makes `ActionResolut
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Accepted command with no direct target | Return command boundary, whiff/player outcome, any existing enemy-phase outcomes, and Tick advance in one stream. |
-| Accepted command that kills an enemy or resolves a Telegraph | Preserve all existing damage, terminal, Telegraph, recovery, and enemy-decision events between the two boundary events. |
-| Rejected command after a prior accepted command | Return an empty stream and preserve the World snapshot's prior complete `lastEvents` record. |
-| Scenario replacement during presentation | Continue cancelling presentation by generation; the already-resolved unified stream must not create a second event path or stale callback. |
+| Case                                                         | Expected Handling                                                                                                                          |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Accepted command with no direct target                       | Return command boundary, whiff/player outcome, any existing enemy-phase outcomes, and Tick advance in one stream.                          |
+| Accepted command that kills an enemy or resolves a Telegraph | Preserve all existing damage, terminal, Telegraph, recovery, and enemy-decision events between the two boundary events.                    |
+| Rejected command after a prior accepted command              | Return an empty stream and preserve the World snapshot's prior complete `lastEvents` record.                                               |
+| Scenario replacement during presentation                     | Continue cancelling presentation by generation; the already-resolved unified stream must not create a second event path or stale callback. |
 
 ## Acceptance Criteria
 

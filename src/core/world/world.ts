@@ -143,7 +143,9 @@ function cloneEntity(entity: EntityState): EntityState {
     ...(entity.enemyAction ? { enemyAction: cloneEnemyAction(entity.enemyAction) } : {}),
     ...(entity.mobility ? { mobility: { ...entity.mobility } } : {}),
     ...(entity.facing ? { facing: cloneCell(entity.facing) } : {}),
-    ...(entity.committedAttack ? { committedAttack: cloneCommittedAttack(entity.committedAttack) } : {}),
+    ...(entity.committedAttack
+      ? { committedAttack: cloneCommittedAttack(entity.committedAttack) }
+      : {}),
   };
 }
 
@@ -153,8 +155,12 @@ function hasDuplicateCells(cells: readonly Cell[]): boolean {
 }
 
 function purposePriority(purpose: ReservationPurpose, activeStep: boolean): number {
-  if (activeStep && (purpose === "movement" || purpose === "movement_step")) return 0;
-  if (purpose === "attack" || purpose === "attack_intent") return 1;
+  if (activeStep && (purpose === "movement" || purpose === "movement_step")) {
+    return 0;
+  }
+  if (purpose === "attack" || purpose === "attack_intent") {
+    return 1;
+  }
   return 2;
 }
 
@@ -188,7 +194,11 @@ export class World {
     const isArena = arenaOrWidth instanceof Arena;
     this.geometry = isArena
       ? arenaOrWidth
-      : Arena.fromTiles(arenaOrWidth, typeof heightOrSeed === "number" ? heightOrSeed : 0, tiles ?? []);
+      : Arena.fromTiles(
+          arenaOrWidth,
+          typeof heightOrSeed === "number" ? heightOrSeed : 0,
+          tiles ?? [],
+        );
     const rootSeed = isArena ? heightOrSeed : seed;
     this.seed = new RandomStreams(rootSeed ?? 0).rootSeed;
     this.rootSeed = this.seed;
@@ -198,7 +208,9 @@ export class World {
   }
 
   spawn(input: SpawnEntityInput): EntityState {
-    if (this.entities.has(input.id)) throw new Error(`Entity already exists: ${input.id}`);
+    if (this.entities.has(input.id)) {
+      throw new Error(`Entity already exists: ${input.id}`);
+    }
     if (input.kind === "player" && this.currentPlayerCell) {
       throw new Error("Only one player can exist in the world.");
     }
@@ -207,8 +219,12 @@ export class World {
     this.validateNewFootprint(input.id, input.cell, footprint);
     for (const cell of footprint) {
       const occupant = this.occupancy.get(cellKey(cell));
-      if (occupant) throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
-      if (this.reservationAt(cell)) throw new Error(`Cell ${cellKey(cell)} is reserved.`);
+      if (occupant) {
+        throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
+      }
+      if (this.reservationAt(cell)) {
+        throw new Error(`Cell ${cellKey(cell)} is reserved.`);
+      }
     }
 
     const entity: EntityState = {
@@ -257,7 +273,9 @@ export class World {
     };
     this.entities.set(entity.id, entity);
     this.claimFootprint(entity.id, entity.footprint);
-    if (entity.kind === "player") this.currentPlayerCell = cloneCell(entity.cell);
+    if (entity.kind === "player") {
+      this.currentPlayerCell = cloneCell(entity.cell);
+    }
     return cloneEntity(entity);
   }
 
@@ -268,7 +286,9 @@ export class World {
 
   requireEntity(id: EntityId): EntityState {
     const entity = this.getEntity(id);
-    if (!entity) throw new Error(`Unknown entity: ${id}`);
+    if (!entity) {
+      throw new Error(`Unknown entity: ${id}`);
+    }
     return entity;
   }
 
@@ -295,7 +315,9 @@ export class World {
   }
 
   updateEncounterOutcome(): EncounterOutcome | undefined {
-    if (this.currentOutcome !== "running") return undefined;
+    if (this.currentOutcome !== "running") {
+      return undefined;
+    }
 
     const player = [...this.entities.values()].find((entity) => entity.kind === "player");
     if (player && player.phase !== "alive") {
@@ -306,7 +328,10 @@ export class World {
     const enabledEnemies = [...this.entities.values()].filter(
       (entity) => entity.kind === "enemy" && entity.enemyAction !== undefined,
     );
-    if (enabledEnemies.length > 0 && enabledEnemies.every((enemy) => isTerminalPhase(enemy.phase))) {
+    if (
+      enabledEnemies.length > 0 &&
+      enabledEnemies.every((enemy) => isTerminalPhase(enemy.phase))
+    ) {
       this.currentOutcome = "victory";
       return this.currentOutcome;
     }
@@ -319,7 +344,9 @@ export class World {
   }
 
   armSmash(target: Cell): void {
-    if (this.currentArmedSmashTarget) throw new Error("Smash is already armed.");
+    if (this.currentArmedSmashTarget) {
+      throw new Error("Smash is already armed.");
+    }
     this.currentArmedSmashTarget = cloneCell(target);
   }
 
@@ -338,8 +365,11 @@ export class World {
 
   findAliveAt(cell: Cell, kind?: EntityState["kind"]): EntityState | undefined {
     const entity = this.getOccupantAt(cell);
-    if (!entity || (kind && entity.kind !== kind)) return undefined;
-    return sameCell(entity.cell, cell) || entity.footprint.some((occupied) => sameCell(occupied, cell))
+    if (!entity || (kind && entity.kind !== kind)) {
+      return undefined;
+    }
+    return sameCell(entity.cell, cell) ||
+      entity.footprint.some((occupied) => sameCell(occupied, cell))
       ? entity
       : undefined;
   }
@@ -347,7 +377,9 @@ export class World {
   listAliveEnemiesAround(center: Cell, radius: number): readonly EntityState[] {
     return [...this.entities.values()]
       .filter((entity) => {
-        if (entity.kind !== "enemy" || entity.phase !== "alive") return false;
+        if (entity.kind !== "enemy" || entity.phase !== "alive") {
+          return false;
+        }
         const dx = Math.abs(entity.cell.x - center.x);
         const dy = Math.abs(entity.cell.y - center.y);
         return dx <= radius && dy <= radius;
@@ -357,8 +389,12 @@ export class World {
 
   moveEntity(id: EntityId, to: Cell): void {
     const entity = this.entities.get(id);
-    if (!entity) throw new Error(`Unknown entity: ${id}`);
-    if (isTerminalPhase(entity.phase)) throw new Error(`Cannot move terminal entity: ${id}`);
+    if (!entity) {
+      throw new Error(`Unknown entity: ${id}`);
+    }
+    if (isTerminalPhase(entity.phase)) {
+      throw new Error(`Cannot move terminal entity: ${id}`);
+    }
 
     const footprint = this.translateFootprint(entity, to);
     this.validateActiveFootprint(id, footprint);
@@ -367,14 +403,20 @@ export class World {
 
   setPhase(id: EntityId, phase: EntityState["phase"]): void {
     const entity = this.entities.get(id);
-    if (!entity) throw new Error(`Unknown entity: ${id}`);
-    if (entity.phase === phase) return;
+    if (!entity) {
+      throw new Error(`Unknown entity: ${id}`);
+    }
+    if (entity.phase === phase) {
+      return;
+    }
 
     if (isTerminalPhase(phase)) {
       this.releaseFootprint(entity.id, entity.footprint);
       this.releaseReservation(entity.id);
       this.clearTelegraph(entity.id);
-      if (entity.kind === "player") this.clearArmedSmash();
+      if (entity.kind === "player") {
+        this.clearArmedSmash();
+      }
       this.entities.set(id, {
         ...entity,
         phase,
@@ -399,16 +441,26 @@ export class World {
   }
 
   applyDamage(targetId: EntityId, damage: number): DamageResult | undefined {
-    if (!Number.isFinite(damage) || damage <= 0) throw new Error("Damage must be a positive finite number.");
+    if (!Number.isFinite(damage) || damage <= 0) {
+      throw new Error("Damage must be a positive finite number.");
+    }
 
     const entity = this.entities.get(targetId);
-    if (!entity || isTerminalPhase(entity.phase)) return undefined;
-    if (entity.kind === "player" && entity.mobility?.invulnerable) return undefined;
-    if (entity.damageImmune) return undefined;
+    if (!entity || isTerminalPhase(entity.phase)) {
+      return undefined;
+    }
+    if (entity.kind === "player" && entity.mobility?.invulnerable) {
+      return undefined;
+    }
+    if (entity.damageImmune) {
+      return undefined;
+    }
 
     const hpAfter = Math.max(0, entity.hp - damage);
     const killed = hpAfter === 0;
-    if (killed) this.setPhase(targetId, "dead");
+    if (killed) {
+      this.setPhase(targetId, "dead");
+    }
 
     this.entities.set(targetId, { ...this.entities.get(targetId)!, hp: hpAfter });
     return {
@@ -422,13 +474,17 @@ export class World {
 
   applyBasicHit(hit: BasicHitResult): BasicHitResult | undefined {
     const damage = this.applyDamage(hit.targetId, hit.damage);
-    if (!damage) return undefined;
+    if (!damage) {
+      return undefined;
+    }
     return { ...damage, attackerId: hit.attackerId };
   }
 
   applyDirectionalHit(hit: DirectionalHitResult): DirectionalHitResult | undefined {
     const entity = this.entities.get(hit.targetId);
-    if (!entity || isTerminalPhase(entity.phase)) return undefined;
+    if (!entity || isTerminalPhase(entity.phase)) {
+      return undefined;
+    }
 
     this.entities.set(hit.targetId, {
       ...entity,
@@ -452,15 +508,25 @@ export class World {
       });
     }
 
-    if (hit.killed) this.setPhase(hit.targetId, "dead");
+    if (hit.killed) {
+      this.setPhase(hit.targetId, "dead");
+    }
     return { ...hit };
   }
 
   setEnemyFacing(id: EntityId, facing: Cell): void {
     const entity = this.entities.get(id);
-    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
-    if (entity.phase !== "alive") throw new Error(`Cannot turn terminal entity: ${id}`);
-    if (!Number.isInteger(facing.x) || !Number.isInteger(facing.y) || Math.abs(facing.x) + Math.abs(facing.y) !== 1) {
+    if (!entity?.enemyAction) {
+      throw new Error(`Entity is not an enabled enemy: ${id}`);
+    }
+    if (entity.phase !== "alive") {
+      throw new Error(`Cannot turn terminal entity: ${id}`);
+    }
+    if (
+      !Number.isInteger(facing.x) ||
+      !Number.isInteger(facing.y) ||
+      Math.abs(facing.x) + Math.abs(facing.y) !== 1
+    ) {
       throw new Error("Enemy facing must be cardinal.");
     }
     this.entities.set(id, { ...entity, facing: cloneCell(facing) });
@@ -468,14 +534,20 @@ export class World {
 
   setEnemyDecision(id: EntityId, decision: EnemyDecisionKind): void {
     const entity = this.entities.get(id);
-    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
+    if (!entity?.enemyAction) {
+      throw new Error(`Entity is not an enabled enemy: ${id}`);
+    }
     this.entities.set(id, { ...entity, lastDecision: decision });
   }
 
   setEnemyActivity(id: EntityId, activity: EntityState["activity"], recoveryTicks?: number): void {
     const entity = this.entities.get(id);
-    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
-    if (entity.phase !== "alive") return;
+    if (!entity?.enemyAction) {
+      throw new Error(`Entity is not an enabled enemy: ${id}`);
+    }
+    if (entity.phase !== "alive") {
+      return;
+    }
     this.entities.set(id, {
       ...entity,
       activity,
@@ -490,8 +562,12 @@ export class World {
       throw new Error("Enemy rest must be a positive integer.");
     }
     const entity = this.entities.get(id);
-    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
-    if (entity.phase !== "alive") return;
+    if (!entity?.enemyAction) {
+      throw new Error(`Entity is not an enabled enemy: ${id}`);
+    }
+    if (entity.phase !== "alive") {
+      return;
+    }
     this.entities.set(id, {
       ...entity,
       activity: "resting",
@@ -503,7 +579,9 @@ export class World {
 
   resetEnemyCombatState(id: EntityId): void {
     const entity = this.entities.get(id);
-    if (!entity?.enemyAction || entity.phase !== "alive") return;
+    if (!entity?.enemyAction || entity.phase !== "alive") {
+      return;
+    }
     this.releaseReservation(id);
     this.clearTelegraph(id);
     this.entities.set(id, {
@@ -522,7 +600,9 @@ export class World {
   advanceEnemyStatuses(): readonly CombatEvent[] {
     const events: CombatEvent[] = [];
     for (const entity of this.entities.values()) {
-      if (entity.phase !== "alive" || !entity.enemyAction || !entity.guard) continue;
+      if (entity.phase !== "alive" || !entity.enemyAction || !entity.guard) {
+        continue;
+      }
       if (entity.activity === "staggered") {
         const ticks = entity.staggerTicks ?? 0;
         if (ticks > 1) {
@@ -553,7 +633,9 @@ export class World {
       }
 
       const protectionTicks = entity.protectionTicks ?? 0;
-      if (protectionTicks <= 0) continue;
+      if (protectionTicks <= 0) {
+        continue;
+      }
       if (protectionTicks === 1) {
         this.entities.set(entity.id, { ...entity, protectionTicks: undefined });
         events.push({ type: "enemy_protection_ended", enemyId: entity.id });
@@ -573,7 +655,9 @@ export class World {
       ...attack,
       ...(attack.role ? {} : { role: entity.enemyAction.role }),
       ...(attack.kind || !entity.enemyAction.kind ? {} : { kind: entity.enemyAction.kind }),
-      ...(attack.metadata || !entity.enemyAction.metadata ? {} : { metadata: entity.enemyAction.metadata }),
+      ...(attack.metadata || !entity.enemyAction.metadata
+        ? {}
+        : { metadata: entity.enemyAction.metadata }),
     });
     this.setTelegraph({ sourceId: id, phase: "warning", cells: committed.cells });
     this.entities.set(id, {
@@ -589,7 +673,9 @@ export class World {
   decrementEnemyAttackWarning(id: EntityId): CommittedAttack | undefined {
     const entity = this.entities.get(id);
     const attack = entity?.committedAttack;
-    if (!entity || !attack || entity.activity !== "telegraphing") return undefined;
+    if (!entity || !attack || entity.activity !== "telegraphing") {
+      return undefined;
+    }
     const next = { ...attack, warningTicks: Math.max(0, attack.warningTicks - 1) };
     this.entities.set(id, { ...entity, committedAttack: next });
     return cloneCommittedAttack(next);
@@ -598,7 +684,9 @@ export class World {
   resolveCommittedEnemyAttack(id: EntityId): EnemyAttackResolution | undefined {
     const entity = this.entities.get(id);
     const attack = entity?.committedAttack;
-    if (!entity || !attack || entity.activity !== "telegraphing") return undefined;
+    if (!entity || !attack || entity.activity !== "telegraphing") {
+      return undefined;
+    }
     const playerCell = this.playerCell;
     const target = playerCell ?? attack.cells[0] ?? { x: 0, y: 0 };
     this.clearTelegraph(id);
@@ -609,9 +697,10 @@ export class World {
       restTicks: undefined,
       committedAttack: undefined,
     });
-    const damage = playerCell && attack.cells.some((cell) => sameCell(cell, playerCell))
-      ? this.applyDamage("player", attack.damage)
-      : undefined;
+    const damage =
+      playerCell && attack.cells.some((cell) => sameCell(cell, playerCell))
+        ? this.applyDamage("player", attack.damage)
+        : undefined;
     return { attack: cloneCommittedAttack(attack), target: cloneCell(target), damage };
   }
 
@@ -623,8 +712,12 @@ export class World {
   retargetChargeAttack(id: EntityId, path: readonly Cell[], facing: Cell): ChargeRetargetResult {
     const entity = this.entities.get(id);
     const attack = entity?.committedAttack;
-    if (!entity || !attack || entity.activity !== "telegraphing") return { changed: false };
-    if (sameCells(attack.cells, path)) return { changed: false };
+    if (!entity || !attack || entity.activity !== "telegraphing") {
+      return { changed: false };
+    }
+    if (sameCells(attack.cells, path)) {
+      return { changed: false };
+    }
 
     const next: CommittedAttack = { ...attack, cells: path.map(cloneCell) };
     this.entities.set(id, { ...entity, committedAttack: next, facing: cloneCell(facing) });
@@ -641,11 +734,15 @@ export class World {
   resolveChargeAttack(id: EntityId): ChargeAttackResolution | undefined {
     const entity = this.entities.get(id);
     const attack = entity?.committedAttack;
-    if (!entity || !attack || entity.activity !== "telegraphing") return undefined;
+    if (!entity || !attack || entity.activity !== "telegraphing") {
+      return undefined;
+    }
 
     const origin = cloneCell(entity.cell);
     const path = attack.cells;
-    if (path.length === 0) return undefined;
+    if (path.length === 0) {
+      return undefined;
+    }
     const targetCell = path[path.length - 1]!;
     const sidePath = path.slice(0, -1);
     const direction = entity.facing ?? { x: 1, y: 0 };
@@ -654,7 +751,9 @@ export class World {
 
     const workingOccupancy = new Map(this.occupancy);
     const isFree = (cell: Cell): boolean =>
-      this.geometry.isLegalCell(cell) && !workingOccupancy.has(cellKey(cell)) && !this.reservationAt(cell);
+      this.geometry.isLegalCell(cell) &&
+      !workingOccupancy.has(cellKey(cell)) &&
+      !this.reservationAt(cell);
 
     const displacements: ChargeDisplacementResult[] = [];
     const moves: { readonly id: EntityId; readonly to: Cell }[] = [];
@@ -663,9 +762,13 @@ export class World {
     for (let index = 0; index < sidePath.length; index += 1) {
       const cell = sidePath[index]!;
       const occupantId = workingOccupancy.get(cellKey(cell));
-      if (!occupantId) continue;
+      if (!occupantId) {
+        continue;
+      }
       const occupant = this.entities.get(occupantId);
-      if (!occupant || isTerminalPhase(occupant.phase)) continue;
+      if (!occupant || isTerminalPhase(occupant.phase)) {
+        continue;
+      }
 
       const rightFirst = index % 2 === 0;
       const primary = rightFirst ? right : left;
@@ -732,22 +835,30 @@ export class World {
       }
     }
 
-    for (const move of moves) this.releaseFootprint(move.id, this.entities.get(move.id)!.footprint);
+    for (const move of moves) {
+      this.releaseFootprint(move.id, this.entities.get(move.id)!.footprint);
+    }
     for (const move of moves) {
       const mover = this.entities.get(move.id)!;
       const footprint = this.translateFootprint(mover, move.to);
       this.claimFootprint(move.id, footprint);
       this.entities.set(move.id, { ...mover, cell: cloneCell(move.to), footprint });
-      if (mover.kind === "player") this.currentPlayerCell = cloneCell(move.to);
+      if (mover.kind === "player") {
+        this.currentPlayerCell = cloneCell(move.to);
+      }
     }
 
     const damageResults = new Map<EntityId, DamageResult>();
     for (const damage of damages) {
       const result = this.applyDamage(damage.targetId, damage.amount);
-      if (result) damageResults.set(damage.targetId, result);
+      if (result) {
+        damageResults.set(damage.targetId, result);
+      }
     }
     const resolvedDisplacements = displacements.map((displacement) =>
-      displacement.blocked ? { ...displacement, damage: damageResults.get(displacement.entityId) } : displacement,
+      displacement.blocked
+        ? { ...displacement, damage: damageResults.get(displacement.entityId) }
+        : displacement,
     );
     const resolvedImpact: ChargeImpactResult = impact.targetId
       ? { ...impact, damage: damageResults.get(impact.targetId) }
@@ -780,7 +891,9 @@ export class World {
 
   advanceEnemyRecovery(id: EntityId): boolean {
     const entity = this.entities.get(id);
-    if (!entity || entity.activity !== "recovering") return false;
+    if (!entity || entity.activity !== "recovering") {
+      return false;
+    }
     const ticks = entity.recoveryTicks ?? 0;
     if (ticks > 1) {
       this.entities.set(id, { ...entity, recoveryTicks: ticks - 1 });
@@ -792,7 +905,9 @@ export class World {
 
   advanceEnemyRest(id: EntityId): boolean {
     const entity = this.entities.get(id);
-    if (!entity || entity.activity !== "resting") return false;
+    if (!entity || entity.activity !== "resting") {
+      return false;
+    }
     const ticks = entity.restTicks ?? 0;
     if (ticks > 1) {
       this.entities.set(id, { ...entity, restTicks: ticks - 1 });
@@ -804,7 +919,9 @@ export class World {
 
   moveEntityToPhase(id: EntityId, to: Cell, phase: EntityState["phase"]): void {
     const entity = this.entities.get(id);
-    if (!entity) throw new Error(`Unknown entity: ${id}`);
+    if (!entity) {
+      throw new Error(`Unknown entity: ${id}`);
+    }
     if (!isTerminalPhase(phase)) {
       this.moveEntity(id, to);
       this.setPhase(id, phase);
@@ -837,7 +954,9 @@ export class World {
 
   removeEntity(id: EntityId): void {
     const entity = this.entities.get(id);
-    if (!entity) return;
+    if (!entity) {
+      return;
+    }
     this.releaseFootprint(entity.id, entity.footprint);
     this.releaseReservation(id);
     this.clearTelegraph(id);
@@ -872,10 +991,20 @@ export class World {
   previewReservation(request: ReservationRequest): ReservationDecision {
     const cells = request.cells.map(cloneCell);
     if (cells.length === 0 || hasDuplicateCells(cells)) {
-      return { accepted: false, granted: false, lostOwners: [], reason: "Reservation cells must be unique and non-empty." };
+      return {
+        accepted: false,
+        granted: false,
+        lostOwners: [],
+        reason: "Reservation cells must be unique and non-empty.",
+      };
     }
     if (!cells.every((cell) => this.geometry.isLegalCell(cell))) {
-      return { accepted: false, granted: false, lostOwners: [], reason: "Reservation cells must be legal land cells." };
+      return {
+        accepted: false,
+        granted: false,
+        lostOwners: [],
+        reason: "Reservation cells must be legal land cells.",
+      };
     }
 
     const current = this.reservations.get(request.ownerId);
@@ -892,7 +1021,9 @@ export class World {
       activeStep: request.activeStep ?? false,
       registrationIndex,
     };
-    const defeated = conflicts.filter((reservation) => this.compareReservations(candidate, reservation) > 0);
+    const defeated = conflicts.filter(
+      (reservation) => this.compareReservations(candidate, reservation) > 0,
+    );
     if (defeated.length > 0) {
       return {
         accepted: true,
@@ -911,18 +1042,23 @@ export class World {
 
   requestReservation(request: ReservationRequest): ReservationDecision {
     const decision = this.previewReservation(request);
-    if (!decision.granted || !decision.reservation) return decision;
+    if (!decision.granted || !decision.reservation) {
+      return decision;
+    }
 
     this.releaseReservation(request.ownerId);
-    for (const ownerId of decision.lostOwners) this.releaseReservation(ownerId);
+    for (const ownerId of decision.lostOwners) {
+      this.releaseReservation(ownerId);
+    }
     if (this.reservations.get(request.ownerId)) {
       throw new Error(`Reservation owner remained after replacement: ${request.ownerId}`);
     }
     const reservation = {
       ...decision.reservation,
-      registrationIndex: decision.reservation.registrationIndex === this.nextRegistrationIndex
-        ? this.nextRegistrationIndex++
-        : decision.reservation.registrationIndex,
+      registrationIndex:
+        decision.reservation.registrationIndex === this.nextRegistrationIndex
+          ? this.nextRegistrationIndex++
+          : decision.reservation.registrationIndex,
     };
     this.reservations.set(request.ownerId, reservation);
     return { ...decision, reservation: cloneReservation(reservation) };
@@ -937,7 +1073,9 @@ export class World {
   ): readonly ReservationDecision[] {
     const ownerIds = new Set<string>();
     const invalidReason = (request: MovementReservationRequest): string | undefined => {
-      if (ownerIds.has(request.ownerId)) return "Reservation owners must be unique.";
+      if (ownerIds.has(request.ownerId)) {
+        return "Reservation owners must be unique.";
+      }
       ownerIds.add(request.ownerId);
       if (request.cells.length === 0 || hasDuplicateCells(request.cells)) {
         return "Reservation cells must be unique and non-empty.";
@@ -956,7 +1094,9 @@ export class World {
         accepted: false,
         granted: false,
         lostOwners: [],
-        ...(reasons[index] ? { reason: reasons[index] } : { reason: "Movement claims were rejected atomically." }),
+        ...(reasons[index]
+          ? { reason: reasons[index] }
+          : { reason: "Movement claims were rejected atomically." }),
       }));
     }
 
@@ -969,29 +1109,38 @@ export class World {
       purpose: "movement",
       cells: request.cells.map(cloneCell),
       activeStep: true,
-      registrationIndex: this.reservations.get(request.ownerId)?.registrationIndex
-        ?? this.nextRegistrationIndex + index,
+      registrationIndex:
+        this.reservations.get(request.ownerId)?.registrationIndex ??
+        this.nextRegistrationIndex + index,
     }));
     const allCandidates = [...existing, ...candidates];
     const overlaps = (a: Reservation, b: Reservation): boolean =>
       a.cells.some((cell) => b.cells.some((other) => sameCell(cell, other)));
     const granted = new Set(
       candidates
-        .filter((candidate) => allCandidates.every((other) =>
-          other.ownerId === candidate.ownerId
-          || !overlaps(candidate, other)
-          || this.compareReservations(candidate, other) <= 0,
-        ))
+        .filter((candidate) =>
+          allCandidates.every(
+            (other) =>
+              other.ownerId === candidate.ownerId ||
+              !overlaps(candidate, other) ||
+              this.compareReservations(candidate, other) <= 0,
+          ),
+        )
         .map((candidate) => candidate.ownerId),
     );
 
-    for (const ownerId of requestedOwners) this.releaseReservation(ownerId);
+    for (const ownerId of requestedOwners) {
+      this.releaseReservation(ownerId);
+    }
     for (const reservation of existing) {
-      if (candidates.some((candidate) =>
-        granted.has(candidate.ownerId)
-        && overlaps(candidate, reservation)
-        && this.compareReservations(candidate, reservation) < 0,
-      )) {
+      if (
+        candidates.some(
+          (candidate) =>
+            granted.has(candidate.ownerId) &&
+            overlaps(candidate, reservation) &&
+            this.compareReservations(candidate, reservation) < 0,
+        )
+      ) {
         this.releaseReservation(reservation.ownerId);
       }
     }
@@ -999,7 +1148,9 @@ export class World {
       (candidate) => !this.reservations.has(candidate.ownerId),
     ).length;
     for (const candidate of candidates) {
-      if (granted.has(candidate.ownerId)) this.reservations.set(candidate.ownerId, candidate);
+      if (granted.has(candidate.ownerId)) {
+        this.reservations.set(candidate.ownerId, candidate);
+      }
     }
 
     return requests.map((request, index) => {
@@ -1093,8 +1244,12 @@ export class World {
 
   preparePlayerAction(id: EntityId): void {
     const entity = this.entities.get(id);
-    if (!entity || entity.phase !== "alive") return;
-    if (!entity.mobility) return;
+    if (!entity || entity.phase !== "alive") {
+      return;
+    }
+    if (!entity.mobility) {
+      return;
+    }
     this.entities.set(id, {
       ...entity,
       mobility: {
@@ -1107,7 +1262,9 @@ export class World {
 
   beginMobilityInvulnerability(id: EntityId): void {
     const entity = this.entities.get(id);
-    if (!entity?.mobility || entity.phase !== "alive") return;
+    if (!entity?.mobility || entity.phase !== "alive") {
+      return;
+    }
     this.entities.set(id, {
       ...entity,
       mobility: { ...entity.mobility, invulnerable: true },
@@ -1116,7 +1273,9 @@ export class World {
 
   clearMobilityInvulnerability(id: EntityId): void {
     const entity = this.entities.get(id);
-    if (!entity?.mobility || entity.phase !== "alive" || !entity.mobility.invulnerable) return;
+    if (!entity?.mobility || entity.phase !== "alive" || !entity.mobility.invulnerable) {
+      return;
+    }
     this.entities.set(id, {
       ...entity,
       mobility: { ...entity.mobility, invulnerable: false },
@@ -1124,9 +1283,13 @@ export class World {
   }
 
   setMobilityCooldown(id: EntityId, cooldown: number): void {
-    if (!Number.isInteger(cooldown) || cooldown < 0) throw new Error("Mobility cooldown must be a non-negative integer.");
+    if (!Number.isInteger(cooldown) || cooldown < 0) {
+      throw new Error("Mobility cooldown must be a non-negative integer.");
+    }
     const entity = this.entities.get(id);
-    if (!entity?.mobility || entity.phase !== "alive") return;
+    if (!entity?.mobility || entity.phase !== "alive") {
+      return;
+    }
     this.entities.set(id, {
       ...entity,
       mobility: { ...entity.mobility, remainingCooldown: cooldown },
@@ -1163,7 +1326,9 @@ export class World {
   private compareReservations(a: Reservation, b: Reservation): number {
     const priorityA = purposePriority(a.purpose, a.activeStep);
     const priorityB = purposePriority(b.purpose, b.activeStep);
-    if (priorityA !== priorityB) return priorityA - priorityB;
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
 
     const player = this.currentPlayerCell;
     if (player) {
@@ -1171,39 +1336,59 @@ export class World {
       const entityB = this.entities.get(b.ownerId);
       const distanceA = manhattanDistance(entityA?.cell ?? a.cells[0]!, player);
       const distanceB = manhattanDistance(entityB?.cell ?? b.cells[0]!, player);
-      if (distanceA !== distanceB) return distanceA - distanceB;
+      if (distanceA !== distanceB) {
+        return distanceA - distanceB;
+      }
     }
     return a.registrationIndex - b.registrationIndex;
   }
 
   private validateNewFootprint(id: EntityId, anchor: Cell, footprint: readonly Cell[]): void {
-    if (!this.isInside(anchor)) throw new Error(`Cannot spawn ${id} outside the arena.`);
-    if (footprint.length === 0) throw new Error(`Cannot spawn ${id} with an empty footprint.`);
-    if (hasDuplicateCells(footprint)) throw new Error(`Cannot spawn ${id} with duplicate footprint cells.`);
+    if (!this.isInside(anchor)) {
+      throw new Error(`Cannot spawn ${id} outside the arena.`);
+    }
+    if (footprint.length === 0) {
+      throw new Error(`Cannot spawn ${id} with an empty footprint.`);
+    }
+    if (hasDuplicateCells(footprint)) {
+      throw new Error(`Cannot spawn ${id} with duplicate footprint cells.`);
+    }
     if (!footprint.every((cell) => this.geometry.isLegalCell(cell))) {
       throw new Error(`Cannot spawn ${id} on a non-walkable footprint.`);
     }
   }
 
   private validateActiveFootprint(id: EntityId, footprint: readonly Cell[]): void {
-    if (hasDuplicateCells(footprint)) throw new Error(`Cannot place ${id} with duplicate footprint cells.`);
+    if (hasDuplicateCells(footprint)) {
+      throw new Error(`Cannot place ${id} with duplicate footprint cells.`);
+    }
     if (!footprint.every((cell) => this.geometry.isLegalCell(cell))) {
       throw new Error(`Cannot place ${id} on a non-walkable footprint.`);
     }
     for (const cell of footprint) {
       const occupant = this.occupancy.get(cellKey(cell));
-      if (occupant && occupant !== id) throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
+      if (occupant && occupant !== id) {
+        throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
+      }
       const reservation = this.reservationAt(cell);
-      if (reservation && reservation.ownerId !== id) throw new Error(`Cell ${cellKey(cell)} is reserved.`);
+      if (reservation && reservation.ownerId !== id) {
+        throw new Error(`Cell ${cellKey(cell)} is reserved.`);
+      }
     }
   }
 
   private validateTerminalFootprint(id: EntityId, footprint: readonly Cell[]): void {
-    if (hasDuplicateCells(footprint)) throw new Error(`Cannot place ${id} with duplicate footprint cells.`);
-    if (footprint.some((cell) => !this.isInside(cell))) throw new Error(`Cannot move ${id} outside the arena.`);
+    if (hasDuplicateCells(footprint)) {
+      throw new Error(`Cannot place ${id} with duplicate footprint cells.`);
+    }
+    if (footprint.some((cell) => !this.isInside(cell))) {
+      throw new Error(`Cannot move ${id} outside the arena.`);
+    }
     for (const cell of footprint) {
       const occupant = this.occupancy.get(cellKey(cell));
-      if (occupant && occupant !== id) throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
+      if (occupant && occupant !== id) {
+        throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
+      }
     }
   }
 
@@ -1214,13 +1399,17 @@ export class World {
   }
 
   private claimFootprint(id: EntityId, footprint: readonly Cell[]): void {
-    for (const cell of footprint) this.occupancy.set(cellKey(cell), id);
+    for (const cell of footprint) {
+      this.occupancy.set(cellKey(cell), id);
+    }
   }
 
   private releaseFootprint(id: EntityId, footprint: readonly Cell[]): void {
     for (const cell of footprint) {
       const key = cellKey(cell);
-      if (this.occupancy.get(key) === id) this.occupancy.delete(key);
+      if (this.occupancy.get(key) === id) {
+        this.occupancy.delete(key);
+      }
     }
   }
 
@@ -1228,6 +1417,8 @@ export class World {
     this.releaseFootprint(entity.id, entity.footprint);
     this.claimFootprint(next.id, next.footprint);
     this.entities.set(entity.id, next);
-    if (entity.kind === "player") this.currentPlayerCell = cloneCell(next.cell);
+    if (entity.kind === "player") {
+      this.currentPlayerCell = cloneCell(next.cell);
+    }
   }
 }

@@ -44,20 +44,20 @@ Victory occurs when every enabled basic enemy is terminal after an accepted comm
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/core/model/types.ts` | Small | Define encounter outcome and expose it in `WorldSnapshot`. |
-| `src/core/events/combat-events.ts` | Small | Add player-death and encounter-ended semantic events. |
-| `src/core/world/world.ts` | Medium | Own outcome state and provide deterministic terminal-state evaluation. |
-| `src/core/actions/action-resolver.ts` | Medium | Reject post-terminal commands, emit player death, and append terminal outcome events. |
-| `src/presentation/timelines/PresentationDirector.ts` | Small | Present player terminal feedback and preserve cleanup/idle behavior. |
-| `src/ui/SemanticMirror.tsx` | Small | Expose outcome and terminal data to browser assertions. |
-| `src/ui/TestbedPanel.tsx` | Small | Show encounter status and a terminal restart affordance. |
-| `src/app/App.tsx` | Small | Render the browser-visible terminal result over the existing game surface. |
-| `src/app/styles.css` | Small | Style the terminal result without removing responsive behavior. |
-| `test/unit/core/actions/action-resolver.test.ts` | Medium | Assert deterministic victory, defeat, Telegraph avoidance, and terminal rejection. |
-| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Small | Assert player terminal presentation and cleanup. |
-| `test/e2e/testbed.spec.ts` | Medium | Assert browser-visible victory, defeat, reset, and idle cleanup in `tick-arena`. |
+| File                                                            | Change Size | Purpose                                                                               |
+| --------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------- |
+| `src/core/model/types.ts`                                       | Small       | Define encounter outcome and expose it in `WorldSnapshot`.                            |
+| `src/core/events/combat-events.ts`                              | Small       | Add player-death and encounter-ended semantic events.                                 |
+| `src/core/world/world.ts`                                       | Medium      | Own outcome state and provide deterministic terminal-state evaluation.                |
+| `src/core/actions/action-resolver.ts`                           | Medium      | Reject post-terminal commands, emit player death, and append terminal outcome events. |
+| `src/presentation/timelines/PresentationDirector.ts`            | Small       | Present player terminal feedback and preserve cleanup/idle behavior.                  |
+| `src/ui/SemanticMirror.tsx`                                     | Small       | Expose outcome and terminal data to browser assertions.                               |
+| `src/ui/TestbedPanel.tsx`                                       | Small       | Show encounter status and a terminal restart affordance.                              |
+| `src/app/App.tsx`                                               | Small       | Render the browser-visible terminal result over the existing game surface.            |
+| `src/app/styles.css`                                            | Small       | Style the terminal result without removing responsive behavior.                       |
+| `test/unit/core/actions/action-resolver.test.ts`                | Medium      | Assert deterministic victory, defeat, Telegraph avoidance, and terminal rejection.    |
+| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Small       | Assert player terminal presentation and cleanup.                                      |
+| `test/e2e/testbed.spec.ts`                                      | Medium      | Assert browser-visible victory, defeat, reset, and idle cleanup in `tick-arena`.      |
 
 ## Execution Outline
 
@@ -78,13 +78,13 @@ Victory occurs when every enabled basic enemy is terminal after an accepted comm
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Player moves off a locked Telegraph before detonation | The attack resolves once with no damage; the encounter remains running unless another terminal condition is met. |
-| Player dies while the final enabled enemy also becomes terminal | Defeat wins the tie because the player did not survive the encounter. |
-| Command is submitted after victory or defeat | Reject it without Tick advancement, state mutation, or new events. |
-| Reset during terminal animation | Cancel the old generation, clear timelines/transients, load the deterministic initial snapshot, and leave the new scenario idle. |
-| Scenario has no enabled basic enemies | It remains a static/non-playable inspection scenario and does not accidentally report victory during initialization. |
+| Case                                                            | Expected Handling                                                                                                                |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Player moves off a locked Telegraph before detonation           | The attack resolves once with no damage; the encounter remains running unless another terminal condition is met.                 |
+| Player dies while the final enabled enemy also becomes terminal | Defeat wins the tie because the player did not survive the encounter.                                                            |
+| Command is submitted after victory or defeat                    | Reject it without Tick advancement, state mutation, or new events.                                                               |
+| Reset during terminal animation                                 | Cancel the old generation, clear timelines/transients, load the deterministic initial snapshot, and leave the new scenario idle. |
+| Scenario has no enabled basic enemies                           | It remains a static/non-playable inspection scenario and does not accidentally report victory during initialization.             |
 
 ## Acceptance Criteria
 

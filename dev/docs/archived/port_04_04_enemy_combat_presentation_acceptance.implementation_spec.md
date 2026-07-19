@@ -44,16 +44,16 @@ The browser proof should use a deterministic command sequence against Thrust and
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Large | Project enemy activity, facing, status, Telegraph, and persistent combat visuals. |
-| `src/presentation/timelines/PresentationDirector.ts` | Large | Present new semantic combat events through generation-scoped GSAP timelines and cleanup. |
-| `src/ui/SemanticMirror.tsx` | Medium | Expose stable enemy combat attributes from the canonical snapshot. |
-| `src/ui/TestbedPanel.tsx` | Medium | Show compact HP/status information and preserve command/reset/event controls. |
-| `src/harness/fixtures/shipped-arena.ts` | Small | Keep deterministic Thrust/Slash positions and provide a browser-observable combat sequence. |
-| `test/unit/presentation/pixi/PixiGameRenderer.test.ts` | Medium | Assert persistent state projection and cleanup metadata. |
-| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Large | Assert event-to-timeline cleanup and generation cancellation. |
-| `test/e2e/testbed.spec.ts` | Large | Assert browser-visible enemy activity, Telegraph, Guard, damage, death, reset, and idle state. |
+| File                                                            | Change Size | Purpose                                                                                        |
+| --------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `src/presentation/pixi/PixiGameRenderer.ts`                     | Large       | Project enemy activity, facing, status, Telegraph, and persistent combat visuals.              |
+| `src/presentation/timelines/PresentationDirector.ts`            | Large       | Present new semantic combat events through generation-scoped GSAP timelines and cleanup.       |
+| `src/ui/SemanticMirror.tsx`                                     | Medium      | Expose stable enemy combat attributes from the canonical snapshot.                             |
+| `src/ui/TestbedPanel.tsx`                                       | Medium      | Show compact HP/status information and preserve command/reset/event controls.                  |
+| `src/harness/fixtures/shipped-arena.ts`                         | Small       | Keep deterministic Thrust/Slash positions and provide a browser-observable combat sequence.    |
+| `test/unit/presentation/pixi/PixiGameRenderer.test.ts`          | Medium      | Assert persistent state projection and cleanup metadata.                                       |
+| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Large       | Assert event-to-timeline cleanup and generation cancellation.                                  |
+| `test/e2e/testbed.spec.ts`                                      | Large       | Assert browser-visible enemy activity, Telegraph, Guard, damage, death, reset, and idle state. |
 
 ## Execution Outline
 
@@ -72,14 +72,14 @@ The browser proof should use a deterministic command sequence against Thrust and
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Snapshot arrives without a prior event | Project the complete current state, including HP, activity, facing, Guard, and Telegraphs. |
-| Guard break clears a Telegraph during its visual timeline | Core snapshot removes it; renderer clears the marker and timeline feedback without resolving another attack. |
-| Enemy dies while a movement or attack timeline is active | Keep logical death authoritative, cancel conflicting visual work, then finish only the matching death presentation. |
-| Reset or scenario replacement during a timeline | Cancel old timelines and transient effects; stale completion cannot remove or mutate replacement views. |
-| Passive Ranged fixture remains in the arena | Keep it visible as a normal passive entity and exclude it from P4 behavior assertions. |
-| Runtime destroy | Remove listeners, timelines, transient effects, and Pixi views without callbacks touching the disposed runtime. |
+| Case                                                      | Expected Handling                                                                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Snapshot arrives without a prior event                    | Project the complete current state, including HP, activity, facing, Guard, and Telegraphs.                          |
+| Guard break clears a Telegraph during its visual timeline | Core snapshot removes it; renderer clears the marker and timeline feedback without resolving another attack.        |
+| Enemy dies while a movement or attack timeline is active  | Keep logical death authoritative, cancel conflicting visual work, then finish only the matching death presentation. |
+| Reset or scenario replacement during a timeline           | Cancel old timelines and transient effects; stale completion cannot remove or mutate replacement views.             |
+| Passive Ranged fixture remains in the arena               | Keep it visible as a normal passive entity and exclude it from P4 behavior assertions.                              |
+| Runtime destroy                                           | Remove listeners, timelines, transient effects, and Pixi views without callbacks touching the disposed runtime.     |
 
 ## Acceptance Criteria
 

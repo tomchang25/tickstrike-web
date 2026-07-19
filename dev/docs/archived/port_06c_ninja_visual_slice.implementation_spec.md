@@ -45,26 +45,26 @@ The browser-visible contract will expose the active player profile, facing, and 
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| --- | --- | --- |
-| `dev/docs/plans/port_06_character_classes_and_mobility.md` | Small | Link the 6c implementation child in the Port 06 sequence. |
-| `src/content/characters/assets/ninja/body-sprite-sheet.png` | Small | Package the reference-aligned Ninja body spritesheet for the Web runtime. |
-| `src/presentation/pixi/character-sprites.ts` | Medium | Define the Ninja profile, spritesheet frame selection, facing, and pose projection. |
-| `src/presentation/pixi/PixiGameRenderer.ts` | Medium | Replace the player placeholder with the profile and expose visual metadata. |
-| `src/presentation/timelines/PresentationDirector.ts` | Small | Animate the player dash pose and restore idle on completion or cancellation. |
-| `src/core/events/combat-events.ts` | Small | Carry the committed attack direction in the player attack event. |
-| `src/core/actions/player-actions.ts` | Small | Emit the attack direction with the existing attack result. |
-| `src/runtime/GameRuntime.ts` | Medium | Keep queued command processing behind the previous command's presentation settlement. |
-| `src/app/App.tsx` | Medium | Repeat held movement input and clean up repeat timers. |
-| `src/harness/fixtures/shipped-arena.ts` | Small | Project the default deterministic player as the authored Ninja archetype. |
-| `src/harness/scenarios/empty-arena.scenario.ts` | Small | Keep the static visual scenario on the authored Ninja archetype. |
-| `src/harness/scenarios/smash-water.scenario.ts` | Small | Keep the deterministic Smash player on the authored Viking archetype fallback. |
-| `test/unit/presentation/pixi/character-sprites.test.ts` | Medium | Assert profile construction and facing/pose projection. |
-| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Small | Assert dash presentation calls and idle cleanup through the renderer seam. |
-| `test/unit/core/actions/action-resolver.test.ts` | Small | Assert the committed attack direction remains observable. |
-| `test/unit/runtime/GameRuntime.test.ts` | Medium | Assert command resolution remains immediate while presentation ordering is serialized. |
-| `test/e2e/testbed.spec.ts` | Small | Assert Ninja profile, dash animation cleanup, and reset metadata. |
-| `test/e2e/mobility-combat.spec.ts` | Small | Assert the deterministic Ninja mobility scenario exposes the profile and settles dash presentation. |
+| File                                                            | Change Size | Purpose                                                                                             |
+| --------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
+| `dev/docs/plans/port_06_character_classes_and_mobility.md`      | Small       | Link the 6c implementation child in the Port 06 sequence.                                           |
+| `src/content/characters/assets/ninja/body-sprite-sheet.png`     | Small       | Package the reference-aligned Ninja body spritesheet for the Web runtime.                           |
+| `src/presentation/pixi/character-sprites.ts`                    | Medium      | Define the Ninja profile, spritesheet frame selection, facing, and pose projection.                 |
+| `src/presentation/pixi/PixiGameRenderer.ts`                     | Medium      | Replace the player placeholder with the profile and expose visual metadata.                         |
+| `src/presentation/timelines/PresentationDirector.ts`            | Small       | Animate the player dash pose and restore idle on completion or cancellation.                        |
+| `src/core/events/combat-events.ts`                              | Small       | Carry the committed attack direction in the player attack event.                                    |
+| `src/core/actions/player-actions.ts`                            | Small       | Emit the attack direction with the existing attack result.                                          |
+| `src/runtime/GameRuntime.ts`                                    | Medium      | Keep queued command processing behind the previous command's presentation settlement.               |
+| `src/app/App.tsx`                                               | Medium      | Repeat held movement input and clean up repeat timers.                                              |
+| `src/harness/fixtures/shipped-arena.ts`                         | Small       | Project the default deterministic player as the authored Ninja archetype.                           |
+| `src/harness/scenarios/empty-arena.scenario.ts`                 | Small       | Keep the static visual scenario on the authored Ninja archetype.                                    |
+| `src/harness/scenarios/smash-water.scenario.ts`                 | Small       | Keep the deterministic Smash player on the authored Viking archetype fallback.                      |
+| `test/unit/presentation/pixi/character-sprites.test.ts`         | Medium      | Assert profile construction and facing/pose projection.                                             |
+| `test/unit/presentation/timelines/PresentationDirector.test.ts` | Small       | Assert dash presentation calls and idle cleanup through the renderer seam.                          |
+| `test/unit/core/actions/action-resolver.test.ts`                | Small       | Assert the committed attack direction remains observable.                                           |
+| `test/unit/runtime/GameRuntime.test.ts`                         | Medium      | Assert command resolution remains immediate while presentation ordering is serialized.              |
+| `test/e2e/testbed.spec.ts`                                      | Small       | Assert Ninja profile, dash animation cleanup, and reset metadata.                                   |
+| `test/e2e/mobility-combat.spec.ts`                              | Small       | Assert the deterministic Ninja mobility scenario exposes the profile and settles dash presentation. |
 
 ## Execution Outline
 
@@ -91,13 +91,13 @@ The browser-visible contract will expose the active player profile, facing, and 
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| --- | --- |
-| Initial snapshot has no player movement event | Show the Ninja idle pose with the stable default facing. |
-| Player moves or dashes in a cardinal direction | Update the visual facing to that direction without changing logical player state. |
-| Dash presentation is cancelled by reset or scenario replacement | Kill the timeline through the existing generation boundary, restore idle metadata, and let the new snapshot rebuild the view. |
-| A scenario has a player with no matching visual profile | Use the existing generic entity presentation rather than failing world creation or command execution. |
-| Player reaches a terminal outcome during a visual timeline | Complete or cancel through the existing terminal/generation path and leave no active player sprite view after the terminal timeline. |
+| Case                                                            | Expected Handling                                                                                                                    |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Initial snapshot has no player movement event                   | Show the Ninja idle pose with the stable default facing.                                                                             |
+| Player moves or dashes in a cardinal direction                  | Update the visual facing to that direction without changing logical player state.                                                    |
+| Dash presentation is cancelled by reset or scenario replacement | Kill the timeline through the existing generation boundary, restore idle metadata, and let the new snapshot rebuild the view.        |
+| A scenario has a player with no matching visual profile         | Use the existing generic entity presentation rather than failing world creation or command execution.                                |
+| Player reaches a terminal outcome during a visual timeline      | Complete or cancel through the existing terminal/generation path and leave no active player sprite view after the terminal timeline. |
 
 ## Acceptance Criteria
 

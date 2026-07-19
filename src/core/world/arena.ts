@@ -45,7 +45,9 @@ export class Arena {
   constructor(input: ArenaInput) {
     validateDimensions(input.width, input.height);
     if (input.terrain.length !== input.width * input.height) {
-      throw new Error(`Expected ${input.width * input.height} terrain cells, received ${input.terrain.length}.`);
+      throw new Error(
+        `Expected ${input.width * input.height} terrain cells, received ${input.terrain.length}.`,
+      );
     }
     if (input.terrain.some((terrain) => terrain !== "land" && terrain !== "sea")) {
       throw new Error("Arena terrain must contain only land or sea values.");
@@ -77,12 +79,16 @@ export class Arena {
   }
 
   terrainAt(cell: Cell): TerrainKind | undefined {
-    if (!this.isInBounds(cell)) return undefined;
+    if (!this.isInBounds(cell)) {
+      return undefined;
+    }
     return this.terrain[cell.y * this.width + cell.x];
   }
 
   tileAt(cell: Cell): TileKind {
-    if (!this.isInBounds(cell)) return "wall";
+    if (!this.isInBounds(cell)) {
+      return "wall";
+    }
     return this.tiles[cell.y * this.width + cell.x] ?? "wall";
   }
 
@@ -100,7 +106,9 @@ export class Arena {
     for (const cell of cells) {
       validateCell(cell);
       const key = cellKey(cell);
-      if (seen.has(key)) continue;
+      if (seen.has(key)) {
+        continue;
+      }
       seen.add(key);
       normalized.push(cloneCell(cell));
     }
