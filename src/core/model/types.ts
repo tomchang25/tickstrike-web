@@ -14,6 +14,8 @@ export type TerminalEntityPhase = Exclude<EntityPhase, "alive">;
 export type EncounterOutcome = "running" | "victory" | "defeat";
 export type EnemyActivity = "ready" | "telegraphing" | "recovering" | "staggered";
 export type EnemyDecision = "move" | "attack" | "wait";
+export type EnemyActionRole = string;
+export type EnemyAttackKind = string;
 export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
 export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | string;
 export type HitAngle = "front" | "side" | "back";
@@ -31,22 +33,32 @@ export interface PlayerMobilityState {
   readonly invulnerable: boolean;
 }
 
-export interface BasicEnemyActionDefinition {
-  readonly role: "thrust" | "slash";
+export interface EnemyActionDefinition {
+  readonly role: EnemyActionRole;
   readonly attackId: string;
+  readonly kind?: EnemyAttackKind;
   readonly damage: number;
   readonly warningTicks: number;
   readonly recoveryTicks: number;
   /** Local attack coordinates where x is forward and y is lateral. */
   readonly offsets: readonly Cell[];
+  /** Locked role data, such as an attack center or a landing direction. */
+  readonly metadata?: Readonly<Record<string, unknown>>;
 }
+
+/** @deprecated Use EnemyActionDefinition for all authored enemy roles. */
+export type BasicEnemyActionDefinition = EnemyActionDefinition;
 
 export interface CommittedAttack {
   readonly attackId: string;
+  readonly role?: EnemyActionRole;
+  readonly kind?: EnemyAttackKind;
   readonly cells: readonly Cell[];
   readonly damage: number;
   readonly warningTicks: number;
   readonly recoveryTicks: number;
+  /** Locked role data copied at commitment and never recomputed during warning. */
+  readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
 export interface GuardRuntime {
@@ -77,8 +89,8 @@ export interface EntityState {
   readonly mobilityAttackDamage?: number;
   /** Authored and runtime Mobility state, when this entity is the player. */
   readonly mobility?: PlayerMobilityState;
-  /** Immutable authored runtime data for an enabled basic enemy. */
-  readonly enemyAction?: BasicEnemyActionDefinition;
+  /** Immutable authored runtime data for an enabled enemy action. */
+  readonly enemyAction?: EnemyActionDefinition;
   readonly activity?: EnemyActivity;
   readonly lastDecision?: EnemyDecision;
   readonly facing?: Cell;

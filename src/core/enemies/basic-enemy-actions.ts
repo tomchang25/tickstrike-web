@@ -3,22 +3,22 @@ import {
   cardinalDirection,
   directionBetween,
   sameCell,
-  type BasicEnemyActionDefinition,
+  type EnemyActionDefinition,
   type Cell,
   type EntityState,
 } from "../model/types";
 
-export type BasicEnemyDecision =
+export type EnemyDecision =
   | { readonly type: "move"; readonly destination: Cell; readonly facing: Cell }
   | {
       readonly type: "attack";
-      readonly attack: BasicEnemyActionDefinition;
+      readonly attack: EnemyActionDefinition;
       readonly cells: readonly Cell[];
       readonly facing: Cell;
     }
   | { readonly type: "wait" };
 
-export interface BasicEnemyDecisionContext {
+export interface EnemyDecisionContext {
   readonly enemy: EntityState;
   readonly playerCell?: Cell;
   canMove(destination: Cell): boolean;
@@ -90,7 +90,7 @@ const CARDINAL_DIRECTIONS: readonly Cell[] = [
 function attackFacing(
   enemy: EntityState,
   playerCell: Cell,
-  action: BasicEnemyActionDefinition,
+  action: EnemyActionDefinition,
   preferred: Cell,
 ): Cell | undefined {
   const candidates = [enemy.facing ?? preferred, preferred, ...CARDINAL_DIRECTIONS];
@@ -100,7 +100,7 @@ function attackFacing(
   });
 }
 
-export function decideBasicEnemyAction(context: BasicEnemyDecisionContext): BasicEnemyDecision {
+export function decideEnemyAction(context: EnemyDecisionContext): EnemyDecision {
   const { enemy, playerCell } = context;
   const action = enemy.enemyAction;
   if (!action || enemy.phase !== "alive" || enemy.activity !== "ready" || !playerCell) {
@@ -128,23 +128,38 @@ export function decideBasicEnemyAction(context: BasicEnemyDecisionContext): Basi
 }
 
 export function committedAttackFromDecision(
-  decision: Extract<BasicEnemyDecision, { type: "attack" }>,
+  decision: Extract<EnemyDecision, { type: "attack" }>,
 ): {
   readonly attackId: string;
+  readonly role: string;
+  readonly kind?: string;
   readonly cells: readonly Cell[];
   readonly damage: number;
   readonly warningTicks: number;
   readonly recoveryTicks: number;
+  readonly metadata?: Readonly<Record<string, unknown>>;
 } {
   return {
     attackId: decision.attack.attackId,
+    role: decision.attack.role,
+    ...(decision.attack.kind ? { kind: decision.attack.kind } : {}),
     cells: decision.cells,
     damage: decision.attack.damage,
     warningTicks: decision.attack.warningTicks,
     recoveryTicks: decision.attack.recoveryTicks,
+    ...(decision.attack.metadata ? { metadata: decision.attack.metadata } : {}),
   };
 }
 
 export function directionToPlayer(enemy: EntityState, playerCell?: Cell): Cell | undefined {
   return playerCell ? directionBetween(enemy.cell, playerCell) : undefined;
 }
+
+/** @deprecated Use EnemyDecision for the role-neutral decision union. */
+export type BasicEnemyDecision = EnemyDecision;
+
+/** @deprecated Use EnemyDecisionContext for the role-neutral decision context. */
+export type BasicEnemyDecisionContext = EnemyDecisionContext;
+
+/** @deprecated Use decideEnemyAction for all enabled enemy roles. */
+export const decideBasicEnemyAction = decideEnemyAction;

@@ -1,6 +1,6 @@
 import { createShippedArena as createShippedArenaGeometry } from "../../core/world/arena";
 import { World } from "../../core/world/world";
-import type { BasicEnemyActionDefinition, Seed } from "../../core/model/types";
+import type { EnemyActionDefinition, Seed } from "../../core/model/types";
 import { actorCatalog } from "../../content/actor-catalog";
 
 export const SHIPPED_SCENARIO_SEED = "tick-arena-foundation";
@@ -17,9 +17,9 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
   const ranged = actorCatalog.enemies.find((enemy) => enemy.id === "ranged_enemy");
   const smallGuard = actorCatalog.guards.find((guard) => guard.id === "small");
   if (!player || !thrust || !slash || !ranged || !smallGuard) throw new Error("Shipped combat content is incomplete.");
-  const actionFor = (enemy: typeof thrust | typeof slash): BasicEnemyActionDefinition => {
+  const actionFor = (enemy: typeof thrust | typeof slash): EnemyActionDefinition => {
     if (enemy.role !== "thrust" && enemy.role !== "slash") {
-      throw new Error(`Unsupported basic enemy role: ${enemy.role}`);
+      throw new Error(`Unsupported enemy action role: ${enemy.role}`);
     }
     const attackId = enemy.attackIds[0];
     const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
@@ -29,6 +29,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     return {
       role: enemy.role,
       attackId: attack.id,
+      kind: attack.kind,
       damage: attack.damage,
       warningTicks: attack.warningTicks,
       recoveryTicks: attack.recoveryTicks,

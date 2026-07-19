@@ -5,7 +5,7 @@ import {
   manhattanDistance,
   sameCell,
   type ArenaState,
-  type BasicEnemyActionDefinition,
+  type EnemyActionDefinition,
   type BasicHitResult,
   type Cell,
   type CommittedAttack,
@@ -40,7 +40,7 @@ export interface SpawnEntityInput {
   readonly normalAttackDamage?: number;
   readonly mobilityAttackDamage?: number;
   readonly mobility?: Omit<PlayerMobilityState, "remainingCooldown" | "invulnerable">;
-  readonly enemyAction?: BasicEnemyActionDefinition;
+  readonly enemyAction?: EnemyActionDefinition;
   readonly facing?: Cell;
 }
 
@@ -49,6 +49,11 @@ export interface ReservationRequest {
   readonly purpose: ReservationPurpose;
   readonly cells: readonly Cell[];
   readonly activeStep?: boolean;
+}
+
+export interface MovementReservationRequest extends ReservationRequest {
+  readonly purpose: "movement";
+  readonly activeStep?: true;
 }
 
 export interface ReservationDecision {
@@ -83,12 +88,20 @@ function cloneTelegraph(telegraph: Telegraph): Telegraph {
   return { ...telegraph, cells: telegraph.cells.map(cloneCell) };
 }
 
-function cloneEnemyAction(action: BasicEnemyActionDefinition): BasicEnemyActionDefinition {
-  return { ...action, offsets: action.offsets.map(cloneCell) };
+function cloneEnemyAction(action: EnemyActionDefinition): EnemyActionDefinition {
+  return {
+    ...action,
+    offsets: action.offsets.map(cloneCell),
+    ...(action.metadata ? { metadata: structuredClone(action.metadata) } : {}),
+  };
 }
 
 function cloneCommittedAttack(attack: CommittedAttack): CommittedAttack {
-  return { ...attack, cells: attack.cells.map(cloneCell) };
+  return {
+    ...attack,
+    cells: attack.cells.map(cloneCell),
+    ...(attack.metadata ? { metadata: structuredClone(attack.metadata) } : {}),
+  };
 }
 
 function cloneGuard(guard: GuardRuntime): GuardRuntime {
@@ -414,7 +427,7 @@ export class World {
 
   setEnemyFacing(id: EntityId, facing: Cell): void {
     const entity = this.entities.get(id);
-    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled basic enemy: ${id}`);
+    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
     if (entity.phase !== "alive") throw new Error(`Cannot turn terminal entity: ${id}`);
     if (!Number.isInteger(facing.x) || !Number.isInteger(facing.y) || Math.abs(facing.x) + Math.abs(facing.y) !== 1) {
       throw new Error("Enemy facing must be cardinal.");
@@ -424,13 +437,13 @@ export class World {
 
   setEnemyDecision(id: EntityId, decision: EnemyDecision): void {
     const entity = this.entities.get(id);
-    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled basic enemy: ${id}`);
+    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
     this.entities.set(id, { ...entity, lastDecision: decision });
   }
 
   setEnemyActivity(id: EntityId, activity: EntityState["activity"], recoveryTicks?: number): void {
     const entity = this.entities.get(id);
-    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled basic enemy: ${id}`);
+    if (!entity?.enemyAction) throw new Error(`Entity is not an enabled enemy: ${id}`);
     if (entity.phase !== "alive") return;
     this.entities.set(id, {
       ...entity,
@@ -507,7 +520,12 @@ export class World {
     if (!entity?.enemyAction || entity.phase !== "alive" || entity.activity !== "ready") {
       throw new Error(`Enemy cannot commit an attack: ${id}`);
     }
-    const committed = cloneCommittedAttack(attack);
+    const committed = cloneCommittedAttack({
+      ...attack,
+      ...(attack.role ? {} : { role: entity.enemyAction.role }),
+      ...(attack.kind || !entity.enemyAction.kind ? {} : { kind: entity.enemyAction.kind }),
+      ...(attack.metadata || !entity.enemyAction.metadata ? {} : { metadata: entity.enemyAction.metadata }),
+    });
     this.setTelegraph({ sourceId: id, phase: "warning", cells: committed.cells });
     this.entities.set(id, {
       ...entity,
@@ -681,6 +699,92 @@ export class World {
     };
     this.reservations.set(request.ownerId, reservation);
     return { ...decision, reservation: cloneReservation(reservation) };
+  }
+
+  /**
+   * Claims all one-cell movement intents as one arbitration step. The claims
+   * remain installed until the enemy phase applies every granted movement.
+   */
+  requestMovementReservations(
+    requests: readonly MovementReservationRequest[],
+  ): readonly ReservationDecision[] {
+    const ownerIds = new Set<string>();
+    const invalidReason = (request: MovementReservationRequest): string | undefined => {
+      if (ownerIds.has(request.ownerId)) return "Reservation owners must be unique.";
+      ownerIds.add(request.ownerId);
+      if (request.cells.length === 0 || hasDuplicateCells(request.cells)) {
+        return "Reservation cells must be unique and non-empty.";
+      }
+      if (!request.cells.every((cell) => this.geometry.isLegalCell(cell))) {
+        return "Reservation cells must be legal land cells.";
+      }
+      if (request.cells.some((cell) => this.isOccupied(cell))) {
+        return "Movement reservation cells must be unoccupied.";
+      }
+      return undefined;
+    };
+    const reasons = requests.map(invalidReason);
+    if (reasons.some((reason) => reason !== undefined)) {
+      return requests.map((request, index) => ({
+        accepted: false,
+        granted: false,
+        lostOwners: [],
+        ...(reasons[index] ? { reason: reasons[index] } : { reason: "Movement claims were rejected atomically." }),
+      }));
+    }
+
+    const requestedOwners = new Set(requests.map((request) => request.ownerId));
+    const existing = [...this.reservations.values()].filter(
+      (reservation) => !requestedOwners.has(reservation.ownerId),
+    );
+    const candidates = requests.map((request, index): Reservation => ({
+      ownerId: request.ownerId,
+      purpose: "movement",
+      cells: request.cells.map(cloneCell),
+      activeStep: true,
+      registrationIndex: this.reservations.get(request.ownerId)?.registrationIndex
+        ?? this.nextRegistrationIndex + index,
+    }));
+    const allCandidates = [...existing, ...candidates];
+    const overlaps = (a: Reservation, b: Reservation): boolean =>
+      a.cells.some((cell) => b.cells.some((other) => sameCell(cell, other)));
+    const granted = new Set(
+      candidates
+        .filter((candidate) => allCandidates.every((other) =>
+          other.ownerId === candidate.ownerId
+          || !overlaps(candidate, other)
+          || this.compareReservations(candidate, other) <= 0,
+        ))
+        .map((candidate) => candidate.ownerId),
+    );
+
+    for (const ownerId of requestedOwners) this.releaseReservation(ownerId);
+    for (const reservation of existing) {
+      if (candidates.some((candidate) =>
+        granted.has(candidate.ownerId)
+        && overlaps(candidate, reservation)
+        && this.compareReservations(candidate, reservation) < 0,
+      )) {
+        this.releaseReservation(reservation.ownerId);
+      }
+    }
+    this.nextRegistrationIndex += candidates.filter(
+      (candidate) => !this.reservations.has(candidate.ownerId),
+    ).length;
+    for (const candidate of candidates) {
+      if (granted.has(candidate.ownerId)) this.reservations.set(candidate.ownerId, candidate);
+    }
+
+    return requests.map((request, index) => {
+      const reservation = candidates[index]!;
+      return {
+        accepted: true,
+        granted: granted.has(request.ownerId),
+        ...(granted.has(request.ownerId) ? { reservation: cloneReservation(reservation) } : {}),
+        lostOwners: [],
+        ...(granted.has(request.ownerId) ? {} : { reason: "Reservation lost arbitration." }),
+      };
+    });
   }
 
   getReservation(ownerId: string): Reservation | undefined {

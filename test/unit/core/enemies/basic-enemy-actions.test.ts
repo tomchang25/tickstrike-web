@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
-  decideBasicEnemyAction,
+  decideEnemyAction,
   rotatedAttackCells,
   rotateLocalOffset,
 } from "../../../../src/core/enemies/basic-enemy-actions";
-import type { BasicEnemyActionDefinition, EntityState } from "../../../../src/core/model/types";
+import type { EnemyActionDefinition, EntityState } from "../../../../src/core/model/types";
 import { resolveCommand } from "../../../../src/core/actions/action-resolver";
 import { createShippedArena } from "../../../../src/harness/fixtures/shipped-arena";
 
-const thrust: BasicEnemyActionDefinition = {
+const thrust: EnemyActionDefinition = {
   role: "thrust",
   attackId: "thrust",
+  kind: "tile",
   damage: 10,
   warningTicks: 1,
   recoveryTicks: 1,
@@ -48,33 +49,52 @@ describe("basic enemy action decisions", () => {
   });
 
   it("uses exactly one move, attack, or wait decision", () => {
-    expect(decideBasicEnemyAction({ enemy: enemy(), playerCell: { x: 3, y: 1 }, canMove: () => true })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 3, y: 1 }, canMove: () => true })).toEqual({
       type: "attack",
       attack: thrust,
       cells: [{ x: 3, y: 2 }, { x: 3, y: 1 }, { x: 3, y: 0 }],
       facing: { x: 0, y: -1 },
     });
-    expect(decideBasicEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, canMove: () => true })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, canMove: () => true })).toEqual({
       type: "move",
       destination: { x: 3, y: 2 },
       facing: { x: 0, y: -1 },
     });
-    expect(decideBasicEnemyAction({ enemy: enemy(), playerCell: { x: 6, y: 4 }, canMove: (destination) => destination.y === 2 })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 6, y: 4 }, canMove: (destination) => destination.y === 2 })).toEqual({
       type: "move",
       destination: { x: 3, y: 2 },
       facing: { x: 0, y: -1 },
     });
-    expect(decideBasicEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 6, y: 4 }, canMove: (destination) => destination.y === 2 })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 6, y: 4 }, canMove: (destination) => destination.y === 2 })).toEqual({
       type: "move",
       destination: { x: 3, y: 2 },
       facing: { x: 0, y: -1 },
     });
-    expect(decideBasicEnemyAction({ enemy: enemy(), playerCell: { x: 4, y: 3 }, canMove: () => true })).toMatchObject({
+    expect(decideEnemyAction({ enemy: enemy(), playerCell: { x: 4, y: 3 }, canMove: () => true })).toMatchObject({
       type: "attack",
       cells: [{ x: 4, y: 3 }, { x: 5, y: 3 }, { x: 6, y: 3 }],
     });
-    expect(decideBasicEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, canMove: () => false })).toEqual({
+    expect(decideEnemyAction({ enemy: enemy({ facing: { x: 0, y: -1 } }), playerCell: { x: 3, y: -1 }, canMove: () => false })).toEqual({
       type: "wait",
+    });
+  });
+
+  it("uses the shared decision boundary for an authored role-neutral action", () => {
+    const action: EnemyActionDefinition = {
+      ...thrust,
+      role: "future-role",
+      attackId: "future-attack",
+      metadata: { center: { x: 3, y: 1 } },
+    };
+    const decision = decideEnemyAction({
+      enemy: enemy({ enemyAction: action }),
+      playerCell: { x: 3, y: 1 },
+      canMove: () => true,
+    });
+
+    expect(decision).toMatchObject({
+      type: "attack",
+      attack: { role: "future-role", attackId: "future-attack", kind: "tile" },
     });
   });
 });
@@ -134,6 +154,42 @@ describe("basic enemy tick lifecycle", () => {
       "world_advanced",
     ]);
     expect(world.requireEntity("enemy")).toMatchObject({ activity: "telegraphing", lastDecision: "attack" });
+  });
+
+  it("keeps the role-neutral committed snapshot intact through warning", () => {
+    const world = createWorld();
+    world.removeEntity("enemy");
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "future-role",
+      cell: { x: 5, y: 6 },
+      hp: 100,
+      enemyAction: {
+        ...thrust,
+        role: "future-role",
+        metadata: { center: { x: 6, y: 6 } },
+        warningTicks: 2,
+      },
+      facing: { x: 1, y: 0 },
+    });
+
+    resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    expect(world.requireEntity("enemy").committedAttack).toMatchObject({
+      role: "future-role",
+      kind: "tile",
+      cells: [{ x: 6, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }],
+      metadata: { center: { x: 6, y: 6 } },
+      warningTicks: 2,
+    });
+
+    resolveCommand(world, { type: "move", actorId: "player", direction: { x: 0, y: -1 } });
+    expect(world.requireEntity("enemy").committedAttack).toMatchObject({
+      cells: [{ x: 6, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }],
+      metadata: { center: { x: 6, y: 6 } },
+      warningTicks: 1,
+      damage: 10,
+    });
   });
 
   it("uses the committed damage when the player remains in the telegraph", () => {
