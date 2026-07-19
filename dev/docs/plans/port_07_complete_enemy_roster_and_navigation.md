@@ -32,6 +32,7 @@ The ordered children use implementation specs without exploratory sketches becau
 | A2 | Shared Thrust/Slash Kappa sprites, palette parity, and state-driven presentation feedback | [Implementation Spec](port_07_a2_small_enemy_sprite_and_state_animation.implementation_spec.md) |
 | B | Ranged distance-band movement and target-centered Cross pressure | [Implementation Spec](port_07_b_ranged_enemy.implementation_spec.md) |
 | C | Charge live targeting, impact displacement, and landing | [Implementation Spec](port_07_c_charge_enemy.implementation_spec.md) |
+| C1 | Presentation motion ownership and sequential displacement | [Implementation Spec](port_07_c1_presentation_motion_ownership.implementation_spec.md) |
 | D | Bomb adjacent commitment, locked area detonation, and self-destruction | [Implementation Spec](port_07_d_bomb_enemy.implementation_spec.md) |
 | E | Remove deprecated Mode and Mode Boss catalog content | [Implementation Spec](port_07_e_remove_deprecated_mode_enemies.implementation_spec.md) |
 

@@ -3,6 +3,7 @@ import { gsap } from "gsap";
 import type { CombatEvent } from "../../../../src/core/events/combat-events";
 import type { PixiGameRenderer } from "../../../../src/presentation/pixi/PixiGameRenderer";
 import { PresentationDirector } from "../../../../src/presentation/timelines/PresentationDirector";
+import { normalizeMotionEvents } from "../../../../src/presentation/timelines/PresentationDirector";
 
 function createRenderer() {
   const view = {
@@ -24,6 +25,9 @@ function createRenderer() {
     }),
     releaseTransient: vi.fn((effect: object) => effects.delete(effect)),
     clearTransient: vi.fn(() => effects.clear()),
+    reservePosition: vi.fn(),
+    releasePosition: vi.fn(),
+    clearPositionReservations: vi.fn(),
     removeEntityView: vi.fn(),
     setPlayerAnimation: vi.fn(),
     setPlayerFacing: vi.fn(),
@@ -36,6 +40,39 @@ function createRenderer() {
 }
 
 describe("PresentationDirector combat feedback", () => {
+  it("normalizes every board-motion source in event order and omits no-op landing", () => {
+    expect(normalizeMotionEvents([
+      { type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
+      { type: "entity_displaced", entityId: "player", from: { x: 2, y: 1 }, to: { x: 3, y: 1 }, cause: "charge_target_knockback" },
+      { type: "charge_landed", enemyId: "enemy", from: { x: 4, y: 1 }, to: { x: 4, y: 1 } },
+      { type: "enemy_entered_water", enemyId: "enemy", from: { x: 2, y: 2 }, waterCell: { x: 2, y: 3 } },
+    ])).toEqual([
+      expect.objectContaining({ entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 }, kind: "move" }),
+      expect.objectContaining({ entityId: "player", from: { x: 2, y: 1 }, to: { x: 3, y: 1 }, kind: "displacement" }),
+      expect.objectContaining({ entityId: "enemy", from: { x: 2, y: 2 }, to: { x: 2, y: 3 }, kind: "water" }),
+    ]);
+  });
+
+  it("reserves each moving entity once and releases it after its ordered track", async () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+    const events: CombatEvent[] = [
+      { type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
+      { type: "entity_displaced", entityId: "player", from: { x: 2, y: 1 }, to: { x: 3, y: 1 }, cause: "charge_target_knockback" },
+      { type: "enemy_moved", enemyId: "enemy", from: { x: 4, y: 1 }, to: { x: 3, y: 1 } },
+    ];
+
+    director.reserveMotionOwners(events);
+    await director.play(events);
+
+    expect(renderer.reservePosition).toHaveBeenCalledTimes(2);
+    expect(renderer.reservePosition).toHaveBeenNthCalledWith(1, "player");
+    expect(renderer.reservePosition).toHaveBeenNthCalledWith(2, "enemy");
+    expect(renderer.releasePosition).toHaveBeenCalledWith("player");
+    expect(renderer.releasePosition).toHaveBeenCalledWith("enemy");
+    expect(director.isIdle).toBe(true);
+  });
+
   it("tracks combat effects and removes a terminal view after the matching timeline", async () => {
     const { renderer } = createRenderer();
     const director = new PresentationDirector(renderer);
@@ -87,6 +124,7 @@ describe("PresentationDirector combat feedback", () => {
 
     expect(renderer.removeEntityView).not.toHaveBeenCalled();
     expect(renderer.clearTransient).toHaveBeenCalledOnce();
+    expect(renderer.clearPositionReservations).toHaveBeenCalledOnce();
     expect(director.isIdle).toBe(true);
   });
 

@@ -104,6 +104,7 @@ export class GameRuntime {
         this.activeCommand = job;
         try {
           const resolution = resolveCommand(this.requireWorld(), job.command);
+          if (resolution.accepted) this.presentation.reserveMotionOwners(resolution.events, job.generation);
           this.emit();
           let presentationDone: Promise<void> | undefined;
           if (resolution.accepted) {

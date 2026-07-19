@@ -26,11 +26,10 @@ function chargeAction(): EnemyActionDefinition {
 }
 
 /**
- * Charge origin (8,3) and Player (3,3) share row y=3, five cells apart. Leaving the Player in
- * place resolves a blocked impact against `enemy-forward-block`; moving the Player two cells
- * east during warning retargets Charge to a free forward cell and resolves a normal impact.
- * `enemy-side-blocker` at (7,3) is always the first non-target path cell, so both runs also
- * exercise the alternating side-displacement rule.
+ * Charge origin (9,3) and Player (7,3) share a leftward path. Three left moves make the final
+ * command contain Player movement from (5,3) to (4,3), target knockback from (4,3) to (3,3),
+ * and Charge landing from (9,3) to (4,3). `enemy-side-blocker` at (8,3) also exercises the
+ * first alternating side displacement.
  */
 export function createChargeArena(seed?: Seed): World {
   const tiles: readonly TileKind[] = Array.from({ length: WIDTH * HEIGHT }, () => "floor");
@@ -44,7 +43,7 @@ export function createChargeArena(seed?: Seed): World {
     id: "player",
     kind: "player",
     archetype: "ninja",
-    cell: { x: 3, y: 3 },
+    cell: { x: 7, y: 3 },
     hp: player.hp,
     normalAttackDamage: player.normalAttack.damage,
     mobility: {
@@ -60,7 +59,7 @@ export function createChargeArena(seed?: Seed): World {
     kind: "enemy",
     archetype: "charge",
     presentationId: charge.presentation.id,
-    cell: { x: 8, y: 3 },
+    cell: { x: 9, y: 3 },
     hp: charge.hp,
     defense: charge.defense,
     guardDefinition: heavyGuard,
@@ -71,17 +70,9 @@ export function createChargeArena(seed?: Seed): World {
     id: "enemy-side-blocker",
     kind: "enemy",
     archetype: "training-grunt",
-    cell: { x: 7, y: 3 },
+    cell: { x: 8, y: 3 },
     hp: 100,
   });
-  world.spawn({
-    id: "enemy-forward-block",
-    kind: "enemy",
-    archetype: "training-grunt",
-    cell: { x: 2, y: 3 },
-    hp: 100,
-  });
-
   return world;
 }
 
@@ -89,7 +80,7 @@ export const scenarios: readonly TestScenario[] = [
   {
     id: "charge-enemy",
     title: "Charge Enemy / Live Targeting and Impact",
-    description: "A fixed Charge telegraphs a five-cell line at the Player: staying put resolves a blocked double-damage impact against a forward blocker, while stepping toward Charge during warning retargets to a free cell and resolves a normal knockback impact. A side blocker always demonstrates the alternating displacement rule.",
+    description: "Three deterministic left moves end with same-direction Player movement and Charge knockback, while a side blocker and Charge landing move concurrently from their declared origins.",
     seed: "charge-enemy-foundation",
     createWorld(seed) {
       return createChargeArena(seed ?? "charge-enemy-foundation");

@@ -5,6 +5,86 @@ import type { PixiGameRenderer } from "../pixi/PixiGameRenderer";
 
 const MOVE_DURATION = 0.26;
 
+export interface BoardMotionStep {
+  readonly entityId: EntityId;
+  readonly from: { readonly x: number; readonly y: number };
+  readonly to: { readonly x: number; readonly y: number };
+  readonly duration: number;
+  readonly ease: string;
+  readonly kind: "move" | "dash" | "knockback" | "water" | "displacement" | "landing";
+}
+
+export function normalizeMotionEvents(events: readonly CombatEvent[]): readonly BoardMotionStep[] {
+  const steps: BoardMotionStep[] = [];
+  for (const event of events) {
+    let entityId: EntityId | undefined;
+    let from: BoardMotionStep["from"] | undefined;
+    let to: BoardMotionStep["to"] | undefined;
+    let duration = MOVE_DURATION;
+    let ease = "power2.out";
+    let kind: BoardMotionStep["kind"] = "move";
+
+    switch (event.type) {
+      case "actor_moved":
+        entityId = event.entityId;
+        from = event.from;
+        to = event.to;
+        break;
+      case "player_dashed":
+        entityId = event.actorId;
+        from = event.from;
+        to = event.to;
+        duration = 0.12;
+        ease = "power3.out";
+        kind = "dash";
+        break;
+      case "enemy_moved":
+        entityId = event.enemyId;
+        from = event.from;
+        to = event.to;
+        break;
+      case "enemy_knocked":
+        entityId = event.enemyId;
+        from = event.from;
+        to = event.to;
+        duration = 0.2;
+        ease = "power3.out";
+        kind = "knockback";
+        break;
+      case "enemy_entered_water":
+        entityId = event.enemyId;
+        from = event.from;
+        to = event.waterCell;
+        duration = 0.22;
+        ease = "power3.out";
+        kind = "water";
+        break;
+      case "entity_displaced":
+        entityId = event.entityId;
+        from = event.from;
+        to = event.to;
+        duration = 0.18;
+        kind = "displacement";
+        break;
+      case "charge_landed":
+        entityId = event.enemyId;
+        from = event.from;
+        to = event.to;
+        duration = 0.22;
+        ease = "power3.out";
+        kind = "landing";
+        break;
+      default:
+        break;
+    }
+
+    if (entityId && from && to && (from.x !== to.x || from.y !== to.y)) {
+      steps.push({ entityId, from, to, duration, ease, kind });
+    }
+  }
+  return steps;
+}
+
 interface ActiveTimeline {
   readonly timeline: gsap.core.Timeline;
   readonly resolve: () => void;
@@ -30,44 +110,40 @@ export class PresentationDirector {
     return this.playNow(events, generation);
   }
 
+  reserveMotionOwners(events: readonly CombatEvent[], generation = this.generation): void {
+    if (generation !== this.generation) return;
+    for (const entityId of new Set(normalizeMotionEvents(events).map((step) => step.entityId))) {
+      this.renderer.reservePosition(entityId);
+    }
+  }
+
   private async playNow(events: readonly CombatEvent[], generation: number): Promise<void> {
     const terminalIds = new Set<EntityId>();
     const animations: Promise<void>[] = [];
+    const stepsByEntity = new Map<EntityId, BoardMotionStep[]>();
+    for (const step of normalizeMotionEvents(events)) {
+      const steps = stepsByEntity.get(step.entityId) ?? [];
+      steps.push(step);
+      stepsByEntity.set(step.entityId, steps);
+    }
+
+    for (const [entityId, steps] of stepsByEntity) {
+      if (generation !== this.generation) return;
+      const track = this.createMotionTrack(entityId, steps);
+      if (track) animations.push(this.timelineDone(track, () => this.renderer.releasePosition(entityId)));
+      else this.renderer.releasePosition(entityId);
+    }
 
     for (const event of events) {
       if (generation !== this.generation) return;
       switch (event.type) {
-        case "actor_moved": {
-          const view = this.renderer.getEntityView(event.entityId);
-          if (!view) break;
-          const to = this.renderer.cellToPixels(event.to);
-          if (event.entityId === "player") this.renderer.setPlayerAnimation("move");
-          animations.push(this.timelineDone(
-            gsap.timeline().fromTo(
-              view,
-              { x: this.renderer.cellToPixels(event.from).x, y: this.renderer.cellToPixels(event.from).y },
-              { x: to.x, y: to.y, duration: MOVE_DURATION, ease: "power2.out" },
-            ),
-            event.entityId === "player" ? () => this.renderer.setPlayerAnimation("idle") : undefined,
-          ));
+        case "actor_moved":
+        case "enemy_moved":
+        case "player_dashed":
+        case "enemy_knocked":
+        case "entity_displaced":
+        case "charge_landed":
           break;
-        }
-        case "enemy_moved": {
-          const view = this.renderer.getEntityView(event.enemyId);
-          if (!view) break;
-          const from = this.renderer.cellToPixels(event.from);
-          const to = this.renderer.cellToPixels(event.to);
-          animations.push(this.timelineDone(
-            gsap.timeline().fromTo(
-              view,
-              { x: from.x, y: from.y },
-              { x: to.x, y: to.y, duration: MOVE_DURATION, ease: "power2.out" },
-            ),
-          ));
-          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
-          if (presentation) animations.push(this.timelineDone(presentation.playMove()));
-          break;
-        }
         case "player_attacked": {
           this.renderer.setPlayerFacing(event.direction, true);
           const effect = this.renderer.createImpact(event.target);
@@ -130,9 +206,9 @@ export class PresentationDirector {
           if (!view) break;
           animations.push(this.timelineDone(
             gsap.timeline()
-              .to(view, { x: "+=4", duration: 0.04, ease: "power1.out" })
-              .to(view, { x: "-=8", duration: 0.05, ease: "power1.inOut" })
-              .to(view, { x: "+=4", duration: 0.04, ease: "power1.in" }),
+              .to(view, { rotation: 0.06, duration: 0.04, ease: "power1.out" })
+              .to(view, { rotation: -0.12, duration: 0.05, ease: "power1.inOut" })
+              .to(view, { rotation: 0, duration: 0.04, ease: "power1.in" }),
           ));
           break;
         }
@@ -215,19 +291,6 @@ export class PresentationDirector {
           ));
           break;
         }
-        case "player_dashed": {
-          const view = this.renderer.getEntityView(event.actorId);
-          if (!view) break;
-          const from = this.renderer.cellToPixels(event.from);
-          const to = this.renderer.cellToPixels(event.to);
-          view.position.set(from.x, from.y);
-          this.renderer.setPlayerAnimation("dash");
-          animations.push(this.timelineDone(
-            gsap.timeline().to(view, { x: to.x, y: to.y, duration: 0.12, ease: "power3.out" }),
-            () => this.renderer.setPlayerAnimation("idle"),
-          ));
-          break;
-        }
         case "smash_armed": {
           const view = this.renderer.getEntityView(event.actorId);
           if (!view) break;
@@ -261,48 +324,9 @@ export class PresentationDirector {
           ));
           break;
         }
-        case "enemy_knocked": {
-          const view = this.renderer.getEntityView(event.enemyId);
-          if (!view) break;
-          const to = this.renderer.cellToPixels(event.to);
-          animations.push(this.timelineDone(
-            gsap
-              .timeline()
-              .to(view, { x: to.x, y: to.y, rotation: 0.18, duration: 0.2, ease: "power3.out" })
-              .to(view, { rotation: 0, duration: 0.08 }),
-          ));
-          break;
-        }
-        case "enemy_entered_water": {
-          const view = this.renderer.getEntityView(event.enemyId);
+        case "enemy_entered_water":
           terminalIds.add(event.enemyId);
-          if (!view) break;
-          const to = this.renderer.cellToPixels(event.waterCell);
-          animations.push(this.timelineDone(
-            gsap
-              .timeline()
-              .to(view, { x: to.x, y: to.y, duration: 0.22, ease: "power3.out" })
-              .to(view, { rotation: -0.18, duration: 0.08 })
-              .to(view, { rotation: 0.18, duration: 0.08, repeat: 3, yoyo: true })
-              .to(view.scale, { x: 0.75, y: 0.3, duration: 0.18 })
-              .to(view, { alpha: 0, y: to.y + 18, duration: 0.2 }),
-          ));
           break;
-        }
-        case "entity_displaced": {
-          const view = this.renderer.getEntityView(event.entityId);
-          if (!view) break;
-          const from = this.renderer.cellToPixels(event.from);
-          const to = this.renderer.cellToPixels(event.to);
-          animations.push(this.timelineDone(
-            gsap.timeline().fromTo(
-              view,
-              { x: from.x, y: from.y },
-              { x: to.x, y: to.y, duration: 0.18, ease: "power2.out" },
-            ),
-          ));
-          break;
-        }
         case "charge_impact": {
           const isBlocked = event.outcome === "blocked";
           if (event.outcome === "empty") break;
@@ -318,20 +342,6 @@ export class PresentationDirector {
               })
               .to(effect, { alpha: 0, duration: 0.12 }, "<0.06"),
             () => this.renderer.releaseTransient(effect),
-          ));
-          break;
-        }
-        case "charge_landed": {
-          const view = this.renderer.getEntityView(event.enemyId);
-          if (!view) break;
-          const from = this.renderer.cellToPixels(event.from);
-          const to = this.renderer.cellToPixels(event.to);
-          animations.push(this.timelineDone(
-            gsap.timeline().fromTo(
-              view,
-              { x: from.x, y: from.y },
-              { x: to.x, y: to.y, duration: 0.22, ease: "power3.out" },
-            ),
           ));
           break;
         }
@@ -365,6 +375,49 @@ export class PresentationDirector {
     for (const id of terminalIds) this.renderer.removeEntityView(id);
   }
 
+  private createMotionTrack(entityId: EntityId, steps: readonly BoardMotionStep[]): gsap.core.Timeline | undefined {
+    const view = this.renderer.getEntityView(entityId);
+    if (!view) return undefined;
+
+    const track = gsap.timeline();
+    const playerStep = entityId === "player" ? steps[0] : undefined;
+    if (playerStep) this.renderer.setPlayerAnimation(playerStep.kind === "dash" ? "dash" : "move");
+
+    let cursor = 0;
+    for (const step of steps) {
+      const from = this.renderer.cellToPixels(step.from);
+      const to = this.renderer.cellToPixels(step.to);
+      track.fromTo(
+        view,
+        { x: from.x, y: from.y },
+        { x: to.x, y: to.y, duration: step.duration, ease: step.ease },
+        cursor,
+      );
+
+      if (step.kind === "knockback") {
+        track.to(view, { rotation: 0.18, duration: 0.06 }, cursor);
+        track.to(view, { rotation: 0, duration: 0.08 }, cursor + step.duration - 0.08);
+      } else if (step.kind === "water") {
+        track.to(view, { rotation: -0.18, duration: 0.08 }, cursor + step.duration);
+        track.to(view, { rotation: 0.18, duration: 0.08, repeat: 3, yoyo: true }, cursor + step.duration + 0.08);
+        track.to(view.scale, { x: 0.75, y: 0.3, duration: 0.18 }, cursor + step.duration + 0.4);
+        track.to(view, { alpha: 0, duration: 0.2 }, cursor + step.duration + 0.58);
+      }
+
+      if (step.kind === "move" && entityId !== "player") {
+        const presentation = this.renderer.getEnemyPresentation?.(entityId);
+        if (presentation) track.add(presentation.playMove(), cursor);
+      }
+      if (playerStep && step.kind === "dash") {
+        track.call(() => this.renderer.setPlayerAnimation("dash"), [], cursor);
+      }
+      cursor += step.duration;
+    }
+
+    if (playerStep) track.call(() => this.renderer.setPlayerAnimation("idle"), [], cursor);
+    return track;
+  }
+
   cancel(): void {
     for (const active of [...this.activeTimelines]) {
       active.timeline.kill();
@@ -372,6 +425,7 @@ export class PresentationDirector {
     }
     this.activeTimelines.clear();
     this.renderer.clearTransient();
+    this.renderer.clearPositionReservations();
     this.renderer.resetEnemyPresentations?.();
     this.renderer.setPlayerAnimation("idle");
   }

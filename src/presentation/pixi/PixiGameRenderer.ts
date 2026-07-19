@@ -153,6 +153,7 @@ export class PixiGameRenderer {
 
   private readonly entityViews = new Map<EntityId, EntityView>();
   private readonly transientEffects = new Set<Graphics>();
+  private readonly positionOwners = new Set<EntityId>();
   private host: HTMLElement | undefined;
   private snapshot: WorldSnapshot | undefined;
   private pointerMode: PointerMode = "attack";
@@ -178,6 +179,10 @@ export class PixiGameRenderer {
 
   get transientCount(): number {
     return this.transientEffects.size;
+  }
+
+  get positionOwnerCount(): number {
+    return this.positionOwners.size;
   }
 
   async mount(host: HTMLElement): Promise<void> {
@@ -225,6 +230,7 @@ export class PixiGameRenderer {
     this.pointerCleanup = undefined;
     this.clearPointerPreview();
     this.entityViews.clear();
+    this.clearPositionReservations();
     this.clearTransient();
     this.enemySpriteSheets = {};
     this.app.destroy(true, { children: true });
@@ -296,6 +302,7 @@ export class PixiGameRenderer {
       if (!liveIds.has(id)) {
         view.root.destroy({ children: true });
         this.entityViews.delete(id);
+        this.positionOwners.delete(id);
       }
     }
 
@@ -307,7 +314,7 @@ export class PixiGameRenderer {
         this.actorLayer.addChild(view.root);
       }
 
-      if (!this.isAnimatedByLastEvents(snapshot, entity.id)) {
+      if (!this.positionOwners.has(entity.id)) {
         const pixels = cellToPixels(entity.cell);
         view.root.position.set(pixels.x, pixels.y);
       }
@@ -381,23 +388,6 @@ export class PixiGameRenderer {
     if (Math.abs(direction.x) + Math.abs(direction.y) === 1) {
       this.playerFacing = direction;
     }
-  }
-
-  private isAnimatedByLastEvents(snapshot: WorldSnapshot, entityId: EntityId): boolean {
-    return snapshot.lastEvents.some((event) => {
-      switch (event.type) {
-        case "actor_moved":
-          return event.entityId === entityId;
-        case "player_dashed":
-          return event.actorId === entityId;
-        case "enemy_moved":
-        case "enemy_knocked":
-        case "enemy_entered_water":
-          return event.enemyId === entityId;
-        default:
-          return false;
-      }
-    });
   }
 
   setPointerMode(mode: PointerMode): void {
@@ -482,7 +472,25 @@ export class PixiGameRenderer {
     return this.entityViews.get(id)?.root;
   }
 
+  reservePosition(id: EntityId): void {
+    this.positionOwners.add(id);
+  }
+
+  releasePosition(id: EntityId): void {
+    if (!this.positionOwners.delete(id)) return;
+    const entity = this.snapshot?.entities.find((candidate) => candidate.id === id);
+    const view = this.entityViews.get(id);
+    if (!entity || !view) return;
+    const pixels = cellToPixels(entity.cell);
+    view.root.position.set(pixels.x, pixels.y);
+  }
+
+  clearPositionReservations(): void {
+    this.positionOwners.clear();
+  }
+
   removeEntityView(id: EntityId): void {
+    this.positionOwners.delete(id);
     const view = this.entityViews.get(id);
     if (!view) return;
     view.root.destroy({ children: true });

@@ -79,6 +79,73 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
+test("Charge owns sequential Player motion before reconciling the final cell", async ({ page }) => {
+  await page.goto("/?scenario=charge-enemy");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
+
+  const executeLeft = () => page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "move", actorId: "player", direction: { x: -1, y: 0 } });
+  });
+  await executeLeft();
+  await executeLeft();
+  await executeLeft();
+
+  const canvas = page.getByTestId("game-canvas");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "3");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
+  await expect(page.getByTestId("entity-enemy-side-blocker")).toHaveAttribute("data-cell-x", "8");
+  await expect(page.getByTestId("entity-enemy-side-blocker")).toHaveAttribute("data-cell-y", "2");
+  await expect(page.getByTestId("event-log")).toContainText("entity_displaced");
+  await expect(page.getByTestId("event-log")).toContainText("charge_landed");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(false);
+
+  const inMotion = await page.evaluate(() => {
+    const api = window.__TICKSTRIKE__;
+    const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=game-canvas]");
+    const bounds = api?.getEntityBounds("player");
+    if (!api || !canvas || !bounds) throw new Error("Charge motion bounds are unavailable.");
+    const rect = canvas.getBoundingClientRect();
+    const state = api.getState();
+    return {
+      logicalCell: state.entities.find((entity) => entity.id === "player")?.cell,
+      visualCenterX: bounds.x + bounds.width / 2,
+      finalCellCenterX: rect.left + ((3.5) / 12) * rect.width,
+    };
+  });
+  expect(inMotion.logicalCell).toEqual({ x: 3, y: 3 });
+  expect(inMotion.visualCenterX).toBeGreaterThan(inMotion.finalCellCenterX);
+
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  const settled = await page.evaluate(() => {
+    const api = window.__TICKSTRIKE__;
+    const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=game-canvas]");
+    const bounds = api?.getEntityBounds("player");
+    if (!api || !canvas || !bounds) throw new Error("Settled Charge bounds are unavailable.");
+    const rect = canvas.getBoundingClientRect();
+    return Math.round((bounds.x + bounds.width / 2) - (rect.left + (3.5 / 12) * rect.width));
+  });
+  expect(settled).toBe(0);
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "move", actorId: "player", direction: { x: 0, y: -1 } });
+  });
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "3");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "2");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+
+  await page.getByRole("button", { name: "Reset scenario" }).click();
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  await expect(canvas).toHaveAttribute("data-player-animation", "idle");
+});
+
 test("Enemy navigation testbed exposes blocked and reserved grid cells", async ({ page }) => {
   await page.goto("/?scenario=enemy-navigation");
 
