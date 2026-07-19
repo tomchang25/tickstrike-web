@@ -108,6 +108,15 @@ export function TestbedPanel(props: TestbedPanelProps) {
         <span>Debug mode</span>
       </label>
 
+      {props.debugMode ? (
+        <section className="grid-debug" data-testid="grid-debug-legend" aria-labelledby="grid-debug-title">
+          <h2 id="grid-debug-title">Grid Debug</h2>
+          <p data-testid="grid-debug-reservations">Reservations: {props.snapshot.reservations.length}</p>
+          <div className="grid-debug-key"><span className="grid-debug-swatch grid-debug-blocked" />Blocked / occupied</div>
+          <div className="grid-debug-key"><span className="grid-debug-swatch grid-debug-reserved" />Reservation</div>
+        </section>
+      ) : null}
+
       <section>
         <h2>Commands</h2>
         {!props.commandsEnabled ? <p data-testid="commands-disabled">Commands disabled for static inspection.</p> : null}

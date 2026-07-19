@@ -39,8 +39,9 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
           data-committed-attack={entity.committedAttack?.attackId}
           data-attack-warning-ticks={entity.committedAttack?.warningTicks}
           data-telegraph={telegraphSources.has(entity.id)}
-          data-hp={entity.hp}
-          data-max-hp={entity.maxHp}
+           data-hp={entity.hp}
+           data-max-hp={entity.maxHp}
+           data-damage-immune={entity.damageImmune}
           data-defense={entity.defense}
           data-guard={entity.guard?.current}
           data-max-guard={entity.guard?.max}

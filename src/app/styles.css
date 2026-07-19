@@ -333,6 +333,48 @@ header > p {
   accent-color: #72d4ff;
 }
 
+.grid-debug {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #293142;
+  border-radius: 8px;
+  background: #0f1218;
+  color: #aeb8c8;
+  font-size: 0.75rem;
+}
+
+.grid-debug h2 {
+  margin: 0;
+  color: #e8eef7;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.grid-debug p {
+  margin: 0;
+}
+
+.grid-debug-key {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.grid-debug-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.grid-debug-blocked {
+  background: #ff5c7a;
+}
+
+.grid-debug-reserved {
+  background: #9a7cff;
+}
+
 .primary-command {
   border-color: #3b91b8;
   background: #1b6688;

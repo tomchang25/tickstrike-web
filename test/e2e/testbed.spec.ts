@@ -79,6 +79,37 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
+test("Enemy navigation testbed exposes blocked and reserved grid cells", async ({ page }) => {
+  await page.goto("/?scenario=enemy-navigation");
+
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect(page.getByTestId("enemy-count")).toHaveText("20");
+  await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Dash");
+  await expect(page.getByTestId("mobility-status")).toHaveText("Ready");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-damage-immune", "true");
+  await expect(page.locator("[data-testid^=entity-enemy-thrust]")).toHaveCount(10);
+  await expect(page.locator("[data-testid^=entity-enemy-slash]")).toHaveCount(10);
+
+  const canvas = page.getByTestId("game-canvas");
+  await page.getByTestId("debug-mode").check();
+  await expect(page.getByTestId("grid-debug-legend")).toBeVisible();
+  await expect(page.getByTestId("grid-debug-reservations")).toHaveText("Reservations: 7");
+  await expect(canvas).toHaveAttribute("data-debug-reservation-count", "7");
+  await expect(canvas).toHaveAttribute("data-debug-blocked-count", /[1-9]/);
+  await expect(canvas).toHaveAttribute("data-debug-reservation-cells", /2,4/);
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) throw new Error("Tickstrike debug API is unavailable.");
+    await api.execute({ type: "move", actorId: "player", direction: { x: 0, y: -1 } });
+  });
+
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-hp", "100");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-mobility-cooldown", "0");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+});
+
 test("Empty arena presents the shipped board and deterministic start", async ({ page }) => {
   await page.goto("/?scenario=empty-arena");
 

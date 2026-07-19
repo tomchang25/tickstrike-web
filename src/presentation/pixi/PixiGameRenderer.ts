@@ -14,6 +14,7 @@ import {
 } from "../../core/actions/action-preview";
 import {
   cardinalDirection,
+  cellKey,
   sameCell,
   type Cell,
   type EntityId,
@@ -241,6 +242,7 @@ export class PixiGameRenderer {
 
   updateSnapshot(snapshot: WorldSnapshot): void {
     this.snapshot = snapshot;
+    if (this.debugMode) this.drawArena(snapshot);
     this.projectSnapshot(snapshot);
     this.refreshPointerPreview();
   }
@@ -248,7 +250,10 @@ export class PixiGameRenderer {
   setDebugMode(enabled: boolean): void {
     this.debugMode = enabled;
     this.app.canvas.dataset.debugMode = String(enabled);
-    if (this.snapshot) this.projectSnapshot(this.snapshot);
+    if (this.snapshot) {
+      this.drawArena(this.snapshot);
+      this.projectSnapshot(this.snapshot);
+    }
   }
 
   private projectSnapshot(snapshot: WorldSnapshot): void {
@@ -780,6 +785,67 @@ export class PixiGameRenderer {
         this.gridLayer.addChild(tileView);
       }
     }
+    if (this.debugMode) {
+      this.drawDebugGridState(snapshot);
+    } else if (this.host) {
+      delete this.app.canvas.dataset.debugBlockedCount;
+      delete this.app.canvas.dataset.debugBlockedCells;
+      delete this.app.canvas.dataset.debugReservationCount;
+      delete this.app.canvas.dataset.debugReservationCells;
+    }
+  }
+
+  private drawDebugGridState(snapshot: WorldSnapshot): void {
+    const blockedCells = new Set<string>();
+    const occupiedCells = new Set<string>();
+    const reservedCells = new Set<string>();
+
+    for (let y = 0; y < snapshot.arena.height; y += 1) {
+      for (let x = 0; x < snapshot.arena.width; x += 1) {
+        const cell = { x, y };
+        const tile = snapshot.arena.tiles[y * snapshot.arena.width + x];
+        if (tile !== "floor") blockedCells.add(cellKey(cell));
+      }
+    }
+
+    for (const entity of snapshot.entities) {
+      if (entity.phase !== "alive") continue;
+      for (const cell of [entity.cell, ...entity.footprint]) {
+        const key = cellKey(cell);
+        blockedCells.add(key);
+        occupiedCells.add(key);
+      }
+    }
+
+    for (const reservation of snapshot.reservations) {
+      for (const cell of reservation.cells) {
+        const key = cellKey(cell);
+        reservedCells.add(key);
+        blockedCells.add(key);
+      }
+    }
+
+    for (const key of blockedCells) {
+      const coordinates = key.split(",");
+      const x = Number(coordinates[0]!);
+      const y = Number(coordinates[1]!);
+      const isReserved = reservedCells.has(key);
+      const isOccupied = occupiedCells.has(key);
+      const color = isReserved ? 0x9a7cff : isOccupied ? 0xff5c7a : 0xf2d06b;
+      const alpha = isReserved && isOccupied ? 0.4 : 0.24;
+      this.gridLayer.addChild(
+        new Graphics()
+          .rect(x * CELL_SIZE + 3, y * CELL_SIZE + 3, CELL_SIZE - 6, CELL_SIZE - 6)
+          .fill({ color, alpha })
+          .stroke({ color, width: 2, alpha: 0.8 }),
+      );
+    }
+
+    if (!this.host) return;
+    this.app.canvas.dataset.debugBlockedCount = String(blockedCells.size);
+    this.app.canvas.dataset.debugBlockedCells = [...blockedCells].sort().join(";");
+    this.app.canvas.dataset.debugReservationCount = String(reservedCells.size);
+    this.app.canvas.dataset.debugReservationCells = [...reservedCells].sort().join(";");
   }
 
   private drawReservations(snapshot: WorldSnapshot): void {

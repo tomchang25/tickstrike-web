@@ -35,6 +35,7 @@ export interface SpawnEntityInput {
   readonly cell: Cell;
   readonly footprint?: readonly Cell[];
   readonly hp: number;
+  readonly damageImmune?: boolean;
   readonly defense?: number;
   readonly guardDefinition?: import("../content/actor-schema").GuardDefinition;
   readonly normalAttackDamage?: number;
@@ -193,6 +194,7 @@ export class World {
       footprint,
       hp: input.hp,
       maxHp: input.hp,
+      ...(input.damageImmune ? { damageImmune: true } : {}),
       defense: input.defense ?? 0,
       ...(input.guardDefinition
         ? {
@@ -375,6 +377,7 @@ export class World {
     const entity = this.entities.get(targetId);
     if (!entity || isTerminalPhase(entity.phase)) return undefined;
     if (entity.kind === "player" && entity.mobility?.invulnerable) return undefined;
+    if (entity.damageImmune) return undefined;
 
     const hpAfter = Math.max(0, entity.hp - damage);
     const killed = hpAfter === 0;

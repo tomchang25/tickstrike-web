@@ -87,6 +87,8 @@ export interface EntityState {
   readonly footprint: readonly Cell[];
   readonly hp: number;
   readonly maxHp: number;
+  /** Harness-only damage immunity for deterministic presentation scenarios. */
+  readonly damageImmune?: boolean;
   readonly defense?: number;
   readonly guard?: GuardRuntime;
   readonly staggerTicks?: number;
