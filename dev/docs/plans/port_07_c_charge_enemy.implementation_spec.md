@@ -4,7 +4,7 @@ Parent Plan: `port_07_complete_enemy_roster_and_navigation.md`
 
 ## Goal
 
-Activate Charge on the existing A/A1 locked-attack lifecycle as a Heavy enemy. Charge must commit a legal five-cell forward line, detonate only that locked line, and perform an authoritative one-resolution landing before recovery.
+Activate Charge on the existing A/A1 locked-attack lifecycle as a Heavy enemy. Charge is an attack kind within that shared lifecycle, not a separate enemy runtime or state machine. It must commit a legal five-cell forward line, detonate only that locked line, and perform an authoritative one-resolution landing before recovery.
 
 ## Summary
 
@@ -17,6 +17,7 @@ At detonation, damage is evaluated against the post-action player cell using the
 ## Relational Context
 
 - A and A1 own the one-action Tick, shape-derived candidate planning, reservation arbitration, committed snapshots, telegraph cleanup, event ordering, and terminal invariants. Charge only supplies line eligibility and a deterministic resolution follow-up.
+- Charge decision code declares an ordinary move, attack, or wait decision; it does not mutate World or own an independent `charging` activity. The shared phase resolves and commits the decision alongside every other enemy.
 - The content/harness boundary expands the authored `line` shape into local forward offsets `{ x: 1..5, y: 0 }` and passes the Heavy Guard definition into `World.spawn()`.
 - `enemy-actions.ts` must reject a line with an illegal, out-of-bounds, occupied, or blocking cell when selecting a commit or valid origin. It must not use generic shape-origin behavior that allows Charge to attack through blockers.
 - `World` remains the sole owner of occupancy and landing validation. Landing must use the same atomic placement validation as `moveEntity()` and must not partially update the entity or occupancy map.
@@ -70,6 +71,7 @@ At detonation, damage is evaluated against the post-action player cell using the
 - Candidate facings use a fixed deduplicated order: current facing, cardinal direction toward the player when available, then the existing cardinal order. Choose the first valid line deterministically.
 - If no facing at the current origin contains the player, derive valid origins from the line shape and let A1's one-cell candidate planner rank them. A failed candidate remains a movement failure, not an automatic attack or a second action.
 - Store the committed line direction and origin in `CommittedAttack.metadata`, for example `{ landingOrigin, landingDirection, landingLength: 5 }`. The resolver must use this locked data and must not inspect the player's live cell to redirect landing.
+- `enemy-phase.ts` may recognize the committed Charge kind only to order its landing follow-up after shared detonation and before shared recovery. It must not become a Charge-specific phase loop or direct destination authority.
 - After damage is applied, test landing cells from farthest to nearest. Stop at the first illegal or occupied blocker; select the farthest legal cell before it. If no cell is legal, leave Charge at its origin.
 - Emit `enemy_landed` only when Charge changes cell; preserve the shared `enemy_attack_detonated`, player damage/death, cleared-telegraph, and `enemy_recovering` order when no landing occurs.
 - Landing must call an atomic World operation. A rejected landing leaves the original cell, footprint, occupancy, reservations, and phase unchanged.

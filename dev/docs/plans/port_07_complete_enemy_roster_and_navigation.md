@@ -9,7 +9,7 @@ Expand the Thrust/Slash foundation into Ranged and the remaining authored roles 
 
 ## Requirements
 
-1. Add Ranged, Charge, Bomb, Mode, and Boss data one role at a time to the shared enemy decision contract.
+1. Add Ranged, Charge, and Bomb data one role at a time to the shared enemy decision contract.
 2. Add deterministic navigation and reservations only where multiple enemies can actually compete for a cell.
 3. Preserve each role's target lock, attack shape, warning, movement, recovery, and terminal behavior as content data plus small explicit rules.
 4. Keep all enemies in the same arena scenario and process them in stable order.
@@ -33,7 +33,7 @@ The ordered children use implementation specs without exploratory sketches becau
 | B | Ranged distance-band movement and target-centered Cross pressure | [Implementation Spec](port_07_b_ranged_enemy.implementation_spec.md) |
 | C | Charge line commitment, detonation, and landing movement | [Implementation Spec](port_07_c_charge_enemy.implementation_spec.md) |
 | D | Bomb adjacent commitment, locked area detonation, and self-destruction | [Implementation Spec](port_07_d_bomb_enemy.implementation_spec.md) |
-| E | Mode attack selection, retaliation, and the Boss policy seam | [Implementation Spec](port_07_e_mode_enemy_and_boss_policy.implementation_spec.md) |
+| E | Remove deprecated Mode and Mode Boss catalog content | [Implementation Spec](port_07_e_remove_deprecated_mode_enemies.implementation_spec.md) |
 
 Child A establishes the shared contract before any role-specific behavior lands. Child A2 establishes the shared Thrust/Slash presentation seam after the action and navigation children; later role children extend that same `tick-arena` scenario and do not create another runtime, route, or presentation boundary.
 
