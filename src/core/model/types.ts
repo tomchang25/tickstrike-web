@@ -27,6 +27,12 @@ export interface ChargeEnemyTuning {
   readonly maxRange: number;
   readonly preferredMinRange: number;
 }
+
+/** Locked committed-attack metadata for a guardless Bomb self-destruct. */
+export interface BombAttackMetadata {
+  readonly center: Cell;
+  readonly selfDestruct: true;
+}
 export type ReservationPurpose = "movement" | "attack" | "spawn" | string;
 export type TelegraphPhase = "warning" | "active" | "resolved" | "cancelled" | string;
 export type HitAngle = "front" | "side" | "back";

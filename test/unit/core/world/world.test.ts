@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
+import { calculateDirectionalHit } from "../../../../src/core/combat/directional-hit";
+import type { GuardDefinition } from "../../../../src/core/content/actor-schema";
 import type { EnemyActionDefinition } from "../../../../src/core/model/types";
 import { World } from "../../../../src/core/world/world";
 
@@ -466,5 +468,214 @@ describe("Charge attack resolution", () => {
     });
     expect(world.getTelegraph("enemy-charge")).toBeUndefined();
     expect(world.resolveChargeAttack("enemy-charge")).toBeUndefined();
+  });
+});
+
+const bombAction: EnemyActionDefinition = {
+  role: "bomb",
+  attackId: "bomb_area",
+  kind: "area",
+  damage: 50,
+  warningTicks: 3,
+  recoveryTicks: 1,
+  offsets: [],
+};
+
+function bombWorld(): World {
+  return new World(
+    12,
+    12,
+    Array.from({ length: 144 }, () => "floor" as const),
+    "bomb-world-test",
+  );
+}
+
+function spawnBomb(world: World, cell: { x: number; y: number } = { x: 6, y: 5 }): void {
+  world.spawn({
+    id: "enemy-bomb",
+    kind: "enemy",
+    archetype: "bomb",
+    cell,
+    hp: 50,
+    enemyAction: bombAction,
+    facing: { x: -1, y: 0 },
+  });
+}
+
+function commitBomb(
+  world: World,
+  center: { x: number; y: number },
+  cells: readonly { x: number; y: number }[],
+): void {
+  world.commitEnemyAttack("enemy-bomb", {
+    attackId: "bomb_area",
+    cells,
+    damage: 50,
+    warningTicks: 3,
+    recoveryTicks: 1,
+    metadata: { center, selfDestruct: true },
+  });
+}
+
+describe("Bomb self-destruct resolution", () => {
+  it("resolves atomically to terminal instead of recovering, releasing occupancy, reservation, and telegraph", () => {
+    const world = bombWorld();
+    spawnBomb(world);
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 5, y: 5 },
+      hp: 100,
+    });
+    commitBomb(world, { x: 6, y: 5 }, [
+      { x: 5, y: 5 },
+      { x: 6, y: 5 },
+    ]);
+    world.requestReservation({ ownerId: "enemy-bomb", purpose: "attack", cells: [{ x: 6, y: 5 }] });
+
+    const resolution = world.resolveCommittedEnemyAttack("enemy-bomb");
+    expect(resolution).toBeDefined();
+    expect(resolution?.damage).toMatchObject({
+      targetId: "player",
+      damage: 50,
+      hpBefore: 100,
+      hpAfter: 50,
+      killed: false,
+    });
+
+    const bombEntity = world.requireEntity("enemy-bomb");
+    expect(bombEntity.phase).toBe("dead");
+    expect(bombEntity.hp).toBe(0);
+    expect(bombEntity.activity).toBeUndefined();
+    expect(bombEntity.recoveryTicks).toBeUndefined();
+    expect(bombEntity.committedAttack).toBeUndefined();
+    expect(world.getTelegraph("enemy-bomb")).toBeUndefined();
+    expect(world.getReservation("enemy-bomb")).toBeUndefined();
+    expect(world.getOccupantAt({ x: 6, y: 5 })).toBeUndefined();
+
+    expect(world.resolveCommittedEnemyAttack("enemy-bomb")).toBeUndefined();
+  });
+
+  it("deals no damage and still self-destructs exactly once when the Player is outside the locked cells", () => {
+    const world = bombWorld();
+    spawnBomb(world);
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 0, y: 0 },
+      hp: 100,
+    });
+    commitBomb(world, { x: 6, y: 5 }, [
+      { x: 5, y: 5 },
+      { x: 6, y: 5 },
+    ]);
+
+    const resolution = world.resolveCommittedEnemyAttack("enemy-bomb");
+    expect(resolution?.damage).toBeUndefined();
+    expect(world.requireEntity("enemy-bomb").phase).toBe("dead");
+    expect(world.requireEntity("player").hp).toBe(100);
+  });
+
+  it("disarms via the ordinary terminal path when killed before the fuse resolves, skipping the committed loop", () => {
+    const world = bombWorld();
+    spawnBomb(world);
+    commitBomb(world, { x: 6, y: 5 }, [{ x: 6, y: 5 }]);
+
+    world.setPhase("enemy-bomb", "dead");
+
+    expect(world.requireEntity("enemy-bomb")).toMatchObject({
+      phase: "dead",
+      activity: undefined,
+      committedAttack: undefined,
+    });
+    expect(world.getTelegraph("enemy-bomb")).toBeUndefined();
+    expect(world.resolveCommittedEnemyAttack("enemy-bomb")).toBeUndefined();
+  });
+});
+
+describe("Guardless enabled enemies do not block generic status processing", () => {
+  it("advances stagger and protection for a guarded enemy while a guardless Bomb coexists", () => {
+    const world = bombWorld();
+    const smallGuard: GuardDefinition = {
+      id: "small",
+      name: "Small",
+      base: 32,
+      lethalTierGain: 8,
+      stagger: 2,
+      protection: 2,
+      protectionMultiplier: 0.5,
+    };
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 0, y: 0 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "guarded",
+      kind: "enemy",
+      archetype: "thrust",
+      cell: { x: 5, y: 5 },
+      hp: 100,
+      guardDefinition: smallGuard,
+      enemyAction: {
+        role: "thrust",
+        attackId: "thrust",
+        damage: 10,
+        warningTicks: 2,
+        recoveryTicks: 2,
+        offsets: [{ x: 1, y: 0 }],
+      },
+      facing: { x: -1, y: 0 },
+    });
+    spawnBomb(world, { x: 9, y: 9 });
+
+    const target = world.requireEntity("guarded");
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: target.cell.x + 1, y: target.cell.y },
+      target,
+      damage: 40,
+    });
+    if (!hit) {
+      throw new Error("Expected a guard-break hit.");
+    }
+    world.applyDirectionalHit(hit);
+    expect(world.requireEntity("guarded")).toMatchObject({
+      activity: "staggered",
+      staggerTicks: 2,
+    });
+
+    let events = world.advanceEnemyStatuses();
+    expect(events).toEqual([]);
+    expect(world.requireEntity("guarded").staggerTicks).toBe(1);
+
+    events = world.advanceEnemyStatuses();
+    expect(events).toEqual([
+      { type: "enemy_stagger_ended", enemyId: "guarded", guard: 32, maxGuard: 32 },
+      { type: "enemy_protection_started", enemyId: "guarded", ticks: 2 },
+    ]);
+    expect(world.requireEntity("guarded")).toMatchObject({
+      activity: "ready",
+      staggerTicks: undefined,
+      protectionTicks: 2,
+    });
+
+    events = world.advanceEnemyStatuses();
+    expect(events).toEqual([]);
+    expect(world.requireEntity("guarded").protectionTicks).toBe(1);
+
+    events = world.advanceEnemyStatuses();
+    expect(events).toEqual([{ type: "enemy_protection_ended", enemyId: "guarded" }]);
+    expect(world.requireEntity("guarded").protectionTicks).toBeUndefined();
+
+    const bombEntity = world.requireEntity("enemy-bomb");
+    expect(bombEntity.guard).toBeUndefined();
+    expect(bombEntity.activity).toBe("ready");
+    expect(bombEntity.staggerTicks).toBeUndefined();
+    expect(bombEntity.protectionTicks).toBeUndefined();
   });
 });

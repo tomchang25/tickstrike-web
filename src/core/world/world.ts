@@ -690,13 +690,18 @@ export class World {
     const playerCell = this.playerCell;
     const target = playerCell ?? attack.cells[0] ?? { x: 0, y: 0 };
     this.clearTelegraph(id);
-    this.entities.set(id, {
-      ...entity,
-      activity: "recovering",
-      recoveryTicks: attack.recoveryTicks,
-      restTicks: undefined,
-      committedAttack: undefined,
-    });
+    if (attack.metadata?.selfDestruct) {
+      this.entities.set(id, { ...entity, hp: 0 });
+      this.setPhase(id, "dead");
+    } else {
+      this.entities.set(id, {
+        ...entity,
+        activity: "recovering",
+        recoveryTicks: attack.recoveryTicks,
+        restTicks: undefined,
+        committedAttack: undefined,
+      });
+    }
     const damage =
       playerCell && attack.cells.some((cell) => sameCell(cell, playerCell))
         ? this.applyDamage("player", attack.damage)

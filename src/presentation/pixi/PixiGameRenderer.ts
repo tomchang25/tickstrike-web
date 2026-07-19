@@ -50,6 +50,7 @@ import greenEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-green-s
 import purpleEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-purple-sprite-sheet.png";
 import rangedEnemySpriteSheetUrl from "../../content/enemies/assets/eye-sprite-sheet.png";
 import skullEnemySpriteSheetUrl from "../../content/enemies/assets/skull-sprite-sheet.png";
+import lanternEnemySpriteSheetUrl from "../../content/enemies/assets/lantern-red-sprite-sheet.png";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =
@@ -212,6 +213,7 @@ export class PixiGameRenderer {
     purple?: Texture;
     eye?: Texture;
     skull?: Texture;
+    lantern?: Texture;
   } = {};
 
   get transientCount(): number {
@@ -238,17 +240,20 @@ export class PixiGameRenderer {
       purpleEnemySpriteSheet,
       rangedEnemySpriteSheet,
       skullEnemySpriteSheet,
+      lanternEnemySpriteSheet,
     ] = await Promise.all([
       Assets.load<Texture>(greenEnemySpriteSheetUrl),
       Assets.load<Texture>(purpleEnemySpriteSheetUrl),
       Assets.load<Texture>(rangedEnemySpriteSheetUrl),
       Assets.load<Texture>(skullEnemySpriteSheetUrl),
+      Assets.load<Texture>(lanternEnemySpriteSheetUrl),
     ]);
     this.enemySpriteSheets = {
       green: greenEnemySpriteSheet,
       purple: purpleEnemySpriteSheet,
       eye: rangedEnemySpriteSheet,
       skull: skullEnemySpriteSheet,
+      lantern: lanternEnemySpriteSheet,
     };
 
     this.app.canvas.dataset.testid = "game-canvas";

@@ -174,6 +174,7 @@ describe("player verbs", () => {
       "enemy_moved",
       "enemy_attack_committed",
       "telegraph_changed",
+      "enemy_moved",
       "world_advanced",
     ]);
     expect(occupied.events.map((event) => event.type)).toEqual([
@@ -188,6 +189,7 @@ describe("player verbs", () => {
       "enemy_moved",
       "enemy_attack_committed",
       "telegraph_changed",
+      "enemy_moved",
       "world_advanced",
     ]);
     expect(world.requireEntity("enemy-thrust")).toMatchObject({
@@ -210,6 +212,7 @@ describe("player verbs", () => {
       "player_attacked",
       "enemy_attack_committed",
       "telegraph_changed",
+      "enemy_moved",
       "world_advanced",
     ]);
     expect(world.snapshot().tick).toBe(2);
@@ -238,6 +241,7 @@ describe("player verbs", () => {
       "enemy_moved",
       "enemy_attack_committed",
       "telegraph_changed",
+      "enemy_moved",
       "world_advanced",
     ]);
     expect(world.requireEntity("enemy-thrust")).toMatchObject({
@@ -290,6 +294,7 @@ describe("player verbs", () => {
       "telegraph_changed",
       "enemy_attack_committed",
       "telegraph_changed",
+      "enemy_moved",
       "enemy_moved",
       "world_advanced",
     ]);
@@ -596,6 +601,7 @@ describe("playable encounter outcomes", () => {
     world.applyDamage("enemy-slash", 100);
     world.applyDamage("enemy-ranged", 100);
     world.applyDamage("enemy-charge", 150);
+    world.applyDamage("enemy-bomb", 50);
 
     const result = resolveCommand(world, {
       type: "move",

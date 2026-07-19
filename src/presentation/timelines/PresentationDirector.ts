@@ -4,6 +4,10 @@ import type { EntityId } from "../../core/model/types";
 import type { PixiGameRenderer } from "../pixi/PixiGameRenderer";
 
 const MOVE_DURATION = 0.26;
+const FUSE_BLINK_INTERVAL = 0.22;
+const FUSE_BLINK_FAST_INTERVAL = 0.09;
+const FUSE_BLINK_MIN_ALPHA = 0.35;
+const EXPLOSION_SCALE = 9;
 
 export interface BoardMotionStep {
   readonly entityId: EntityId;
@@ -173,6 +177,9 @@ export class PresentationDirector {
           const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
           if (presentation) {
             animations.push(this.timelineDone(presentation.playPrepareAttack()));
+            if (event.attack.metadata?.selfDestruct) {
+              presentation.playFuseBlink(FUSE_BLINK_INTERVAL, FUSE_BLINK_MIN_ALPHA);
+            }
             break;
           }
           const view = this.renderer.getEntityView(event.enemyId);
@@ -193,6 +200,9 @@ export class PresentationDirector {
           const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
           if (presentation) {
             animations.push(this.timelineDone(presentation.playAttackCommit()));
+            if (event.attack.metadata?.selfDestruct) {
+              presentation.playFuseBlink(FUSE_BLINK_FAST_INTERVAL, FUSE_BLINK_MIN_ALPHA);
+            }
           }
           if (!event.hit) {
             break;
@@ -323,9 +333,28 @@ export class PresentationDirector {
           );
           break;
         }
+        case "enemy_self_destructed": {
+          this.renderer.getEnemyPresentation?.(event.enemyId)?.stopBlink();
+          const effect = this.renderer.createImpact(event.cell, 0xff5a33);
+          animations.push(
+            this.timelineDone(
+              gsap
+                .timeline()
+                .fromTo(
+                  effect.scale,
+                  { x: 0.3, y: 0.3 },
+                  { x: EXPLOSION_SCALE, y: EXPLOSION_SCALE, duration: 0.22, ease: "power2.out" },
+                )
+                .to(effect, { alpha: 0, duration: 0.16 }, "<0.1"),
+              () => this.renderer.releaseTransient(effect),
+            ),
+          );
+          break;
+        }
         case "enemy_died": {
           const view = this.renderer.getEntityView(event.enemyId);
           terminalIds.add(event.enemyId);
+          this.renderer.getEnemyPresentation?.(event.enemyId)?.stopBlink();
           if (!view) {
             break;
           }

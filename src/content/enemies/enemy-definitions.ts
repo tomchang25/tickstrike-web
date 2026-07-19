@@ -110,7 +110,7 @@ export const attackDefinitions: readonly AttackDefinition[] = [
     damage: 50,
     warningTicks: 3,
     recoveryTicks: 1,
-    shape: { shape: "manhattan", radius: 4 },
+    shape: { shape: "manhattan", radius: 3 },
   },
   {
     id: "mode_tile_wide",

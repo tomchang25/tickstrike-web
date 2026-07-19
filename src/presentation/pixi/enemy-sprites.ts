@@ -3,8 +3,8 @@ import { gsap } from "gsap";
 import type { Cell, EntityState } from "../../core/model/types";
 
 export type EnemySpritePose = "idle" | "move" | "prepareAttack" | "commitCue";
-export type EnemySpritePalette = "green" | "purple" | "eye" | "skull";
-export type EnemySpriteSheetKey = "green" | "purple" | "eye" | "skull";
+export type EnemySpritePalette = "green" | "purple" | "eye" | "skull" | "lantern";
+export type EnemySpriteSheetKey = "green" | "purple" | "eye" | "skull" | "lantern";
 
 export interface EnemyPresentationProfile {
   readonly id: string;
@@ -28,6 +28,9 @@ export interface EnemyPresentation {
   playDamage(): gsap.core.Timeline;
   playStaggered(): gsap.core.Timeline | undefined;
   playStaggerEnded(): gsap.core.Timeline | undefined;
+  /** Starts (or replaces) an independent alpha blink loop, separate from the damage tint channel. */
+  playFuseBlink(intervalSeconds: number, minAlpha: number): gsap.core.Timeline;
+  stopBlink(): void;
   clearAction(): void;
   reset(): void;
 }
@@ -46,6 +49,7 @@ const ENEMY_PRESENTATION_PROFILES: Readonly<Record<string, EnemyPresentationProf
   "enemy.slash": { id: "enemy.slash", sheet: "purple", palette: "purple", scale: SPRITE_SCALE },
   "enemy.ranged": { id: "enemy.ranged", sheet: "eye", palette: "eye", scale: 5 },
   "enemy.charge": { id: "enemy.charge", sheet: "skull", palette: "skull", scale: SPRITE_SCALE },
+  "enemy.bomb": { id: "enemy.bomb", sheet: "lantern", palette: "lantern", scale: SPRITE_SCALE },
 };
 
 export function getEnemyPresentationProfile(
@@ -118,6 +122,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
   private isStaggered = false;
   private actionTimeline: gsap.core.Timeline | undefined;
   private tintTimeline: gsap.core.Timeline | undefined;
+  private blinkTimeline: gsap.core.Timeline | undefined;
 
   constructor(
     readonly profileId: string,
@@ -311,9 +316,24 @@ class SmallEnemyPresentation implements EnemyPresentation {
     return timeline;
   }
 
+  playFuseBlink(intervalSeconds: number, minAlpha: number): gsap.core.Timeline {
+    this.blinkTimeline?.kill();
+    const timeline = gsap.timeline({ repeat: -1, yoyo: true });
+    this.blinkTimeline = timeline;
+    timeline.to(this.body, { alpha: minAlpha, duration: intervalSeconds, ease: "sine.inOut" });
+    return timeline;
+  }
+
+  stopBlink(): void {
+    this.blinkTimeline?.kill();
+    this.blinkTimeline = undefined;
+    this.body.alpha = 1;
+  }
+
   clearAction(): void {
     this.actionTimeline?.kill();
     this.actionTimeline = undefined;
+    this.stopBlink();
     this.root.position.set(0, 0);
     this.root.rotation = 0;
     this.root.scale.set(1, 1);

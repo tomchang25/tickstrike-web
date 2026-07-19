@@ -2,6 +2,7 @@ import {
   addCells,
   cardinalDirection,
   cardinalLineDirection,
+  chebyshevDistance,
   directionBetween,
   manhattanDistance,
   sameCell,
@@ -305,6 +306,64 @@ function chargeMovementCandidates(
   });
 }
 
+function bombOriginCells(playerCell: Cell): Cell[] {
+  const origins: Cell[] = [];
+  for (let dx = -1; dx <= 1; dx += 1) {
+    for (let dy = -1; dy <= 1; dy += 1) {
+      if (dx === 0 && dy === 0) {
+        continue;
+      }
+      origins.push({ x: playerCell.x + dx, y: playerCell.y + dy });
+    }
+  }
+  return origins;
+}
+
+function bombMovementCandidates(
+  enemy: EntityState,
+  playerCell: Cell,
+  context: EnemyDecisionContext,
+): readonly EnemyMovementCandidate[] {
+  const origins = bombOriginCells(playerCell).filter(context.canEndAt);
+  const paths = findEnemyPaths({
+    start: enemy.cell,
+    goals: origins,
+    canPathThrough: (cell) => context.isInside(cell) && context.canPathThrough(cell),
+    canEndAt: context.canEndAt,
+  });
+  return paths.map((path) => {
+    const destination = path[0]!;
+    const goal = path[path.length - 1]!;
+    return {
+      destination,
+      path,
+      goal,
+      facing: { x: destination.x - enemy.cell.x, y: destination.y - enemy.cell.y },
+    };
+  });
+}
+
+/** Bomb's radius-four Manhattan footprint, self-centered on its own commit cell. */
+export function bombAreaCells(
+  center: Cell,
+  action: EnemyActionDefinition,
+  isInside: (cell: Cell) => boolean,
+): readonly Cell[] {
+  const cells = action.offsets.map((offset) => addCells(center, offset));
+  const seen = new Set<string>();
+  return cells.filter((cell) => {
+    if (!isInside(cell)) {
+      return false;
+    }
+    const key = `${cell.x},${cell.y}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
 export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDecision {
   const { enemy, playerCell } = context;
   const action = enemy.enemyAction;
@@ -357,6 +416,27 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDec
 
     const candidates = chargeMovementCandidates(enemy, playerCell, tuning, context).filter(
       (candidate) => context.canMove(candidate.destination),
+    );
+    return candidates.length > 0 ? { type: "move", candidates } : { type: "wait" };
+  }
+
+  if (action.role === "bomb") {
+    if (chebyshevDistance(enemy.cell, playerCell) === 1) {
+      return {
+        type: "attack",
+        attack: action,
+        cells: bombAreaCells(enemy.cell, action, context.isInside),
+        facing: enemy.facing ?? CARDINAL_DIRECTIONS[0]!,
+        metadata: {
+          ...action.metadata,
+          center: { x: enemy.cell.x, y: enemy.cell.y },
+          selfDestruct: true,
+        },
+      };
+    }
+
+    const candidates = bombMovementCandidates(enemy, playerCell, context).filter((candidate) =>
+      context.canMove(candidate.destination),
     );
     return candidates.length > 0 ? { type: "move", candidates } : { type: "wait" };
   }

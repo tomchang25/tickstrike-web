@@ -224,12 +224,22 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
         events.push({ type: "player_died", playerId: player.id, cell: player.cell });
       }
     }
-    events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: true });
-    events.push({
-      type: "enemy_recovering",
-      enemyId: enemy.id,
-      recoveryTicks: resolution.attack.recoveryTicks,
-    });
+    if (resolution.attack.metadata?.selfDestruct) {
+      events.push({ type: "enemy_self_destructed", enemyId: enemy.id, cell: current.cell });
+      events.push({
+        type: "enemy_died",
+        enemyId: enemy.id,
+        attackerId: enemy.id,
+        cell: current.cell,
+      });
+    } else {
+      events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: true });
+      events.push({
+        type: "enemy_recovering",
+        enemyId: enemy.id,
+        recoveryTicks: resolution.attack.recoveryTicks,
+      });
+    }
   }
 
   events.push(...world.advanceEnemyStatuses());
