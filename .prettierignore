@@ -1,0 +1,9 @@
+build/
+.opencode/
+dev/docs/reports/
+dev/foundation/
+node_modules/
+playwright-report/
+port-ref/
+src-tauri/target/
+test-results/

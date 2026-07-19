@@ -42,6 +42,15 @@ Install the Playwright Chromium binary once:
 
     npx playwright install chromium
 
+Apply the canonical formatting:
+
+    npm run format
+
+Verify formatting and linting:
+
+    npm run format:check
+    npm run lint
+
 Run logical tests:
 
     npm test
@@ -50,7 +59,7 @@ Run browser acceptance:
 
     npm run test:e2e
 
-Run compile, unit tests, and production build:
+Run formatting, linting, unit tests, and production build:
 
     npm run check
 
@@ -89,6 +98,7 @@ The starter sets `bundle.active` to `false`, so it focuses on producing and test
 Every asset consumed by the game must be copied or exported into `src/content/<feature>/assets/` and imported by source code. Use `src/shared/assets/` only for demonstrated cross-feature ownership; the root `assets/` directory is for general references or editable source material.
 
 The canonical repository layout and placement rules live in `dev/standards/project_structure.md`.
+The formatting and control-flow conventions live in `dev/standards/code-style-standard.md`.
 
 The shared Web development governance is pinned as a Git submodule at `dev/foundation/`. After cloning this repository, initialize it with:
 
