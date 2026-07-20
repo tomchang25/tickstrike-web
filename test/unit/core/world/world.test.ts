@@ -3,6 +3,7 @@ import { createTrainingArena } from "../../../../src/harness/fixtures/training-a
 import { calculateDirectionalHit } from "../../../../src/core/combat/directional-hit";
 import type { GuardDefinition } from "../../../../src/core/content/actor-schema";
 import type { EnemyActionDefinition } from "../../../../src/core/model/types";
+import type { AdmittedBatch, SlotState } from "../../../../src/core/waves/wave-scheduler";
 import { World } from "../../../../src/core/world/world";
 
 describe("canonical world occupancy", () => {
@@ -213,6 +214,121 @@ describe("canonical world occupancy", () => {
       ],
     });
     expect(world.getOccupantAt({ x: 4, y: 2 })?.id).toBe("enemy");
+  });
+});
+
+describe("telegraph remainingTicks", () => {
+  it("round-trips through set/get/list/snapshot and is absent for attack telegraphs", () => {
+    const world = createTrainingArena();
+
+    const spawning = world.setTelegraph({
+      sourceId: "spawn:1",
+      phase: "spawning",
+      cells: [{ x: 2, y: 2 }],
+      remainingTicks: 3,
+    });
+    expect(spawning.remainingTicks).toBe(3);
+    expect(world.getTelegraph("spawn:1")?.remainingTicks).toBe(3);
+    expect(
+      world.listTelegraphs().find((telegraph) => telegraph.sourceId === "spawn:1")
+        ?.remainingTicks,
+    ).toBe(3);
+    expect(
+      world.snapshot().telegraphs.find((telegraph) => telegraph.sourceId === "spawn:1")
+        ?.remainingTicks,
+    ).toBe(3);
+
+    const attack = world.setTelegraph({
+      sourceId: "attack:1",
+      phase: "warning",
+      cells: [{ x: 5, y: 5 }],
+    });
+    expect(attack.remainingTicks).toBeUndefined();
+    expect(world.getTelegraph("attack:1")?.remainingTicks).toBeUndefined();
+  });
+});
+
+describe("wave runtime state", () => {
+  it("defaults to undefined on a fresh instance", () => {
+    const world = createTrainingArena();
+    expect(world.waveRuntime).toBeUndefined();
+    expect(world.snapshot().waveRuntime).toBeUndefined();
+  });
+
+  it("clones on read and supports pending-batch install/decrement/clear", () => {
+    const world = createTrainingArena();
+    const slots: readonly SlotState[] = [
+      {
+        remainingQueue: [{ enemyId: "grunt", level: 1 }],
+        eligible: true,
+        hasEverSpawned: false,
+        livingCount: 0,
+      },
+    ];
+    world.setWave(1, slots);
+
+    const runtime = world.waveRuntime;
+    expect(runtime).toMatchObject({ waveNumber: 1 });
+    expect(runtime?.slots[0]?.eligible).toBe(true);
+
+    (runtime!.slots[0] as { eligible: boolean }).eligible = false;
+    (runtime!.slots[0]!.remainingQueue[0] as { enemyId: string }).enemyId = "mutated";
+    expect(world.waveRuntime?.slots[0]?.eligible).toBe(true);
+    expect(world.waveRuntime?.slots[0]?.remainingQueue[0]?.enemyId).toBe("grunt");
+
+    const batch: AdmittedBatch = {
+      slotIndex: 0,
+      members: [{ enemyId: "grunt", level: 1 }],
+      warningTicks: 2,
+      placementStrategy: "scatter",
+    };
+    const pending = world.installPendingSpawnBatch(batch, [{ x: 3, y: 3 }]);
+    expect(pending).toMatchObject({ remainingTicks: 2, cells: [{ x: 3, y: 3 }] });
+    expect(world.waveRuntime?.pendingBatch?.remainingTicks).toBe(2);
+
+    (pending.cells[0] as { x: number }).x = 9;
+    expect(world.waveRuntime?.pendingBatch?.cells[0]).toEqual({ x: 3, y: 3 });
+
+    expect(world.decrementPendingSpawnBatchWarning()?.remainingTicks).toBe(1);
+    expect(world.decrementPendingSpawnBatchWarning()?.remainingTicks).toBe(0);
+    expect(world.decrementPendingSpawnBatchWarning()?.remainingTicks).toBe(0);
+
+    const snapshot = world.snapshot();
+    expect(snapshot.waveRuntime?.pendingBatch?.remainingTicks).toBe(0);
+    (snapshot.waveRuntime!.slots[0] as { eligible: boolean }).eligible = false;
+    expect(world.waveRuntime?.slots[0]?.eligible).toBe(true);
+
+    world.clearPendingSpawnBatch();
+    expect(world.waveRuntime?.pendingBatch).toBeUndefined();
+    world.clearPendingSpawnBatch();
+    expect(world.waveRuntime?.pendingBatch).toBeUndefined();
+  });
+
+  it("guards pending-batch installation against a missing wave and a double install", () => {
+    const world = createTrainingArena();
+    const batch: AdmittedBatch = {
+      slotIndex: 0,
+      members: [{ enemyId: "grunt", level: 1 }],
+      warningTicks: 1,
+      placementStrategy: "scatter",
+    };
+
+    expect(() => world.installPendingSpawnBatch(batch, [{ x: 2, y: 2 }])).toThrow(
+      "without an active wave",
+    );
+
+    world.setWave(1, []);
+    world.installPendingSpawnBatch(batch, [{ x: 2, y: 2 }]);
+    expect(() => world.installPendingSpawnBatch(batch, [{ x: 3, y: 3 }])).toThrow(
+      "already installed",
+    );
+  });
+
+  it("decrementPendingSpawnBatchWarning is a no-op with no pending batch", () => {
+    const world = createTrainingArena();
+    expect(world.decrementPendingSpawnBatchWarning()).toBeUndefined();
+    world.setWave(1, []);
+    expect(world.decrementPendingSpawnBatchWarning()).toBeUndefined();
   });
 });
 

@@ -1,3 +1,5 @@
+import type { AdmittedBatch, SlotState } from "../waves/wave-scheduler";
+
 export type EntityId = string;
 export type Seed = number | string;
 
@@ -180,6 +182,21 @@ export interface Telegraph {
   readonly sourceId: string;
   readonly phase: TelegraphPhase;
   readonly cells: readonly Cell[];
+  /** Decrementing countdown for phases with no backing entity (e.g. `"spawning"`). */
+  readonly remainingTicks?: number;
+}
+
+/** An admitted wave batch once its target cells are placed, counting down to spawn. */
+export interface PendingSpawnBatch extends AdmittedBatch {
+  readonly cells: readonly Cell[];
+  readonly remainingTicks: number;
+}
+
+/** World-owned wave scheduling state: current wave, latched per-slot state, and any pending batch. */
+export interface WaveRuntimeState {
+  readonly waveNumber: number;
+  readonly slots: readonly SlotState[];
+  readonly pendingBatch?: PendingSpawnBatch;
 }
 
 export interface ArenaState {
@@ -200,6 +217,7 @@ export interface WorldSnapshot {
   readonly entities: readonly EntityState[];
   readonly reservations: readonly Reservation[];
   readonly telegraphs: readonly Telegraph[];
+  readonly waveRuntime: WaveRuntimeState | undefined;
   readonly seed: number;
   readonly lastEvents: readonly import("../events/combat-events").CombatEvent[];
 }

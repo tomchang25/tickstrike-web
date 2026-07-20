@@ -104,6 +104,34 @@ describe("world reservations and telegraphs", () => {
     expect(world.listReservations()).toEqual([]);
   });
 
+  it("blocks movement into a held spawn reservation and is not displaced by a movement claim", () => {
+    const world = createShippedArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "player",
+      cell: { x: 6, y: 6 },
+      hp: 10,
+    });
+
+    const spawnClaim = world.requestReservation({
+      ownerId: "spawn:1",
+      purpose: "spawn",
+      cells: [{ x: 3, y: 3 }],
+    });
+    expect(spawnClaim.granted).toBe(true);
+    expect(world.isWalkable({ x: 3, y: 3 })).toBe(false);
+
+    const decisions = world.requestMovementReservations([
+      { ownerId: "enemy", purpose: "movement", activeStep: true, cells: [{ x: 3, y: 3 }] },
+    ]);
+
+    expect(decisions[0]).toMatchObject({ accepted: true, granted: false });
+    expect(world.getReservation("spawn:1")).toBeDefined();
+    expect(world.getReservation("enemy")).toBeUndefined();
+    expect(world.isWalkable({ x: 3, y: 3 })).toBe(false);
+  });
+
   it("allows a losing movement intent to retry a different candidate", () => {
     const world = createShippedArena();
     world.spawn({

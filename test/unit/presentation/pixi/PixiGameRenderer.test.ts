@@ -31,6 +31,7 @@ function snapshot(
     ],
     reservations: [],
     telegraphs: [],
+    waveRuntime: undefined,
     seed: 1,
     lastEvents: [],
   };

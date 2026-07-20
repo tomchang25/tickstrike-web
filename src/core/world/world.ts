@@ -19,14 +19,17 @@ import {
   type EncounterOutcome,
   type GuardRuntime,
   isTerminalPhase,
+  type PendingSpawnBatch,
   type Reservation,
   type ReservationPurpose,
   type Seed,
   type Telegraph,
   type TelegraphPhase,
   type TileKind,
+  type WaveRuntimeState,
   type WorldSnapshot,
 } from "../model/types";
+import type { AdmittedBatch, QueueMember, SlotState } from "../waves/wave-scheduler";
 import { Arena } from "./arena";
 
 export interface SpawnEntityInput extends EntitySpawnData {
@@ -58,6 +61,7 @@ export interface TelegraphInput {
   readonly sourceId: string;
   readonly phase: TelegraphPhase;
   readonly cells: readonly Cell[];
+  readonly remainingTicks?: number;
 }
 
 export interface EnemyAttackResolution {
@@ -134,6 +138,30 @@ function cloneGuard(guard: GuardRuntime): GuardRuntime {
   return { ...guard };
 }
 
+function cloneQueueMember(member: QueueMember): QueueMember {
+  return { ...member };
+}
+
+function cloneSlotState(slot: SlotState): SlotState {
+  return { ...slot, remainingQueue: slot.remainingQueue.map(cloneQueueMember) };
+}
+
+function clonePendingBatch(batch: PendingSpawnBatch): PendingSpawnBatch {
+  return {
+    ...batch,
+    members: batch.members.map(cloneQueueMember),
+    cells: batch.cells.map(cloneCell),
+  };
+}
+
+function cloneWaveRuntime(state: WaveRuntimeState): WaveRuntimeState {
+  return {
+    ...state,
+    slots: state.slots.map(cloneSlotState),
+    ...(state.pendingBatch ? { pendingBatch: clonePendingBatch(state.pendingBatch) } : {}),
+  };
+}
+
 function cloneEntity(entity: EntityState): EntityState {
   return {
     ...entity,
@@ -155,6 +183,9 @@ function hasDuplicateCells(cells: readonly Cell[]): boolean {
 }
 
 function purposePriority(purpose: ReservationPurpose, activeStep: boolean): number {
+  if (purpose === "spawn") {
+    return -1;
+  }
   if (activeStep && (purpose === "movement" || purpose === "movement_step")) {
     return 0;
   }
@@ -178,6 +209,7 @@ export class World {
   private readonly telegraphs = new Map<string, Telegraph>();
   private currentPlayerCell: Cell | undefined;
   private currentArmedSmashTarget: Cell | undefined;
+  private currentWaveRuntime: WaveRuntimeState | undefined;
   private currentTick = 0;
   private currentOutcome: EncounterOutcome = "running";
   private nextRegistrationIndex = 0;
@@ -352,6 +384,61 @@ export class World {
 
   clearArmedSmash(): void {
     this.currentArmedSmashTarget = undefined;
+  }
+
+  get waveRuntime(): WaveRuntimeState | undefined {
+    return this.currentWaveRuntime ? cloneWaveRuntime(this.currentWaveRuntime) : undefined;
+  }
+
+  /** Sets the current wave number and its latched per-slot state, preserving any pending batch. */
+  setWave(waveNumber: number, slots: readonly SlotState[]): void {
+    this.currentWaveRuntime = {
+      waveNumber,
+      slots: slots.map(cloneSlotState),
+      ...(this.currentWaveRuntime?.pendingBatch
+        ? { pendingBatch: clonePendingBatch(this.currentWaveRuntime.pendingBatch) }
+        : {}),
+    };
+  }
+
+  /** Installs an admitted batch's placed target cells with a fresh countdown from its warning ticks. */
+  installPendingSpawnBatch(batch: AdmittedBatch, cells: readonly Cell[]): PendingSpawnBatch {
+    if (!this.currentWaveRuntime) {
+      throw new Error("Cannot install a pending spawn batch without an active wave.");
+    }
+    if (this.currentWaveRuntime.pendingBatch) {
+      throw new Error("A pending spawn batch is already installed.");
+    }
+    const pendingBatch: PendingSpawnBatch = {
+      ...batch,
+      members: batch.members.map(cloneQueueMember),
+      cells: cells.map(cloneCell),
+      remainingTicks: batch.warningTicks,
+    };
+    this.currentWaveRuntime = { ...this.currentWaveRuntime, pendingBatch };
+    return clonePendingBatch(pendingBatch);
+  }
+
+  /** Decrements the pending batch's countdown by one, floored at zero. No-op if none is installed. */
+  decrementPendingSpawnBatchWarning(): PendingSpawnBatch | undefined {
+    const pendingBatch = this.currentWaveRuntime?.pendingBatch;
+    if (!pendingBatch) {
+      return undefined;
+    }
+    const next: PendingSpawnBatch = {
+      ...pendingBatch,
+      remainingTicks: Math.max(0, pendingBatch.remainingTicks - 1),
+    };
+    this.currentWaveRuntime = { ...this.currentWaveRuntime!, pendingBatch: next };
+    return clonePendingBatch(next);
+  }
+
+  /** Clears the pending batch once it has resolved (spawned or requeued). No-op if none is installed. */
+  clearPendingSpawnBatch(): void {
+    if (!this.currentWaveRuntime?.pendingBatch) {
+      return;
+    }
+    this.currentWaveRuntime = { ...this.currentWaveRuntime, pendingBatch: undefined };
   }
 
   getOccupantAt(cell: Cell): EntityState | undefined {
@@ -1206,6 +1293,7 @@ export class World {
       sourceId: input.sourceId,
       phase: input.phase,
       cells: input.cells.map(cloneCell),
+      ...(input.remainingTicks !== undefined ? { remainingTicks: input.remainingTicks } : {}),
     };
     this.telegraphs.set(input.sourceId, telegraph);
     return cloneTelegraph(telegraph);
@@ -1323,6 +1411,7 @@ export class World {
       entities: this.listEntities(),
       reservations: this.listReservations(),
       telegraphs: this.listTelegraphs(),
+      waveRuntime: this.waveRuntime,
       seed: this.seed,
       lastEvents: this.lastEvents.map((event) => structuredClone(event)),
     };
