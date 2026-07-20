@@ -7,12 +7,9 @@ import {
   type DetachedEntityView,
   type PixiGameRenderer,
 } from "../pixi/PixiGameRenderer";
+import { getEnemyPresenter, type EnemyPresenterContext } from "./enemy-presenters";
 
 const MOVE_DURATION = 0.26;
-const FUSE_BLINK_INTERVAL = 0.22;
-const FUSE_BLINK_FAST_INTERVAL = 0.09;
-const FUSE_BLINK_MIN_ALPHA = 0.35;
-const EXPLOSION_SCALE = 9;
 
 export interface BoardMotionStep {
   readonly entityId: EntityId;
@@ -170,13 +167,6 @@ export class PresentationDirector {
         return;
       }
       switch (event.type) {
-        case "actor_moved":
-        case "enemy_moved":
-        case "player_dashed":
-        case "enemy_knocked":
-        case "entity_displaced":
-        case "charge_landed":
-          break;
         case "player_attacked": {
           this.renderer.setPlayerFacing(event.direction, true);
           const effect = this.renderer.createImpact(event.target);
@@ -187,151 +177,6 @@ export class PresentationDirector {
                 .fromTo(effect.scale, { x: 0.35, y: 0.35 }, { x: 1.8, y: 1.8, duration: 0.14 })
                 .to(effect, { alpha: 0, duration: 0.1 }, "<0.06"),
               () => this.renderer.releaseTransient(effect),
-            ),
-          );
-          break;
-        }
-        case "enemy_attack_committed": {
-          const presentation = this.getEnemyPresentation(event.enemyId);
-          if (presentation) {
-            animations.push(this.timelineDone(presentation.playPrepareAttack()));
-            if (event.attack.metadata?.selfDestruct) {
-              presentation.playFuseBlink(FUSE_BLINK_INTERVAL, FUSE_BLINK_MIN_ALPHA);
-            }
-            break;
-          }
-          const view = this.getEntityView(event.enemyId);
-          if (!view) {
-            break;
-          }
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .to(view.scale, { x: 1.1, y: 1.1, duration: 0.09, ease: "power2.out" })
-                .to(view.scale, { x: 1, y: 1, duration: 0.13, ease: "power2.in" }),
-            ),
-          );
-          break;
-        }
-        case "enemy_attack_detonated": {
-          const presentation = this.getEnemyPresentation(event.enemyId);
-          if (presentation) {
-            animations.push(this.timelineDone(presentation.playAttackCommit()));
-            if (event.attack.metadata?.selfDestruct) {
-              presentation.playFuseBlink(FUSE_BLINK_FAST_INTERVAL, FUSE_BLINK_MIN_ALPHA);
-            }
-          }
-          if (!event.hit) {
-            break;
-          }
-          const effect = this.renderer.createImpact(event.target);
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .fromTo(
-                  effect.scale,
-                  { x: 0.25, y: 0.25 },
-                  { x: 2, y: 2, duration: 0.16, ease: "power2.out" },
-                )
-                .to(effect, { alpha: 0, duration: 0.12 }, "<0.06"),
-              () => this.renderer.releaseTransient(effect),
-            ),
-          );
-          break;
-        }
-        case "enemy_damaged": {
-          if (event.hit.killed) {
-            break;
-          }
-          const presentation = this.getEnemyPresentation(event.enemyId);
-          if (presentation) {
-            animations.push(this.timelineDone(presentation.playDamage()));
-            break;
-          }
-          const view = this.getEntityView(event.enemyId);
-          if (!view) {
-            break;
-          }
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .to(view.scale, { x: 1.2, y: 1.2, duration: 0.06, ease: "power2.out" })
-                .to(view.scale, { x: 1, y: 1, duration: 0.1, ease: "power2.in" }),
-            ),
-          );
-          break;
-        }
-        case "enemy_guard_damaged": {
-          const view = this.getEntityView(event.enemyId);
-          if (!view) {
-            break;
-          }
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .to(view, { rotation: 0.06, duration: 0.04, ease: "power1.out" })
-                .to(view, { rotation: -0.12, duration: 0.05, ease: "power1.inOut" })
-                .to(view, { rotation: 0, duration: 0.04, ease: "power1.in" }),
-            ),
-          );
-          break;
-        }
-        case "enemy_guard_broken": {
-          const view = this.getEntityView(event.enemyId);
-          if (!view) {
-            break;
-          }
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .to(view.scale, { x: 1.22, y: 1.22, duration: 0.08, ease: "power3.out" })
-                .to(view, { rotation: 0.14, duration: 0.06 })
-                .to(view, { rotation: -0.14, duration: 0.06, repeat: 2, yoyo: true })
-                .to(view.scale, { x: 1, y: 1, duration: 0.1, ease: "power3.in" })
-                .to(view, { rotation: 0, duration: 0.05 }),
-            ),
-          );
-          break;
-        }
-        case "enemy_staggered": {
-          const presentation = this.getEnemyPresentation(event.enemyId);
-          if (presentation) {
-            const timeline = presentation.playStaggered();
-            if (timeline) {
-              animations.push(this.timelineDone(timeline));
-            }
-            break;
-          }
-          const view = this.getEntityView(event.enemyId);
-          if (!view) {
-            break;
-          }
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .to(view, { alpha: 0.55, duration: 0.06 })
-                .to(view, { alpha: 1, duration: 0.08, repeat: 2, yoyo: true }),
-            ),
-          );
-          break;
-        }
-        case "enemy_protection_started": {
-          const view = this.getEntityView(event.enemyId);
-          if (!view) {
-            break;
-          }
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .to(view, { alpha: 0.7, duration: 0.08 })
-                .to(view, { alpha: 1, duration: 0.12 }),
             ),
           );
           break;
@@ -349,51 +194,6 @@ export class PresentationDirector {
                 .to(view, { alpha: 1, duration: 0.12, repeat: 2, yoyo: true }),
             ),
           );
-          break;
-        }
-        case "enemy_self_destructed": {
-          this.getEnemyPresentation(event.enemyId)?.stopBlink();
-          const effect = this.renderer.createImpact(event.cell, 0xff5a33);
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .fromTo(
-                  effect.scale,
-                  { x: 0.3, y: 0.3 },
-                  { x: EXPLOSION_SCALE, y: EXPLOSION_SCALE, duration: 0.22, ease: "power2.out" },
-                )
-                .to(effect, { alpha: 0, duration: 0.16 }, "<0.1"),
-              () => this.renderer.releaseTransient(effect),
-            ),
-          );
-          break;
-        }
-        case "enemy_died": {
-          const view = this.getEntityView(event.enemyId);
-          this.getEnemyPresentation(event.enemyId)?.stopBlink();
-          if (!view) {
-            break;
-          }
-          if (this.getEnemyPresentation(event.enemyId)) {
-            animations.push(
-              this.timelineDone(
-                gsap
-                  .timeline()
-                  .to(view.scale, { x: 0, y: 0, duration: 0.5, ease: "power2.in" })
-                  .to(view, { rotation: `+=${Math.PI * 2}`, alpha: 0, duration: 0.5 }, "<"),
-              ),
-            );
-          } else {
-            animations.push(
-              this.timelineDone(
-                gsap
-                  .timeline()
-                  .to(view.scale, { x: 1.3, y: 0.25, duration: 0.09, ease: "power3.in" })
-                  .to(view, { alpha: 0, duration: 0.16, delay: 0.06 }),
-              ),
-            );
-          }
           break;
         }
         case "player_died": {
@@ -439,75 +239,17 @@ export class PresentationDirector {
           );
           break;
         }
-        case "enemy_crushed": {
-          const view = this.getEntityView(event.enemyId);
-          if (!view) {
-            break;
-          }
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .to(view.scale, { x: 1.35, y: 0.18, duration: 0.09, ease: "power3.in" })
-                .to(view, { alpha: 0, duration: 0.18, delay: 0.08 }),
-            ),
-          );
-          break;
-        }
-        case "enemy_entered_water":
-          break;
-        case "charge_impact": {
-          const isBlocked = event.outcome === "blocked";
-          if (event.outcome === "empty") {
-            break;
-          }
-          const effect = this.renderer.createImpact(event.cell, isBlocked ? 0xff4444 : 0xffffff);
-          animations.push(
-            this.timelineDone(
-              gsap
-                .timeline()
-                .fromTo(
-                  effect.scale,
-                  { x: 0.3, y: 0.3 },
-                  {
-                    x: isBlocked ? 2.4 : 2,
-                    y: isBlocked ? 2.4 : 2,
-                    duration: isBlocked ? 0.2 : 0.16,
-                    ease: "power2.out",
-                  },
-                )
-                .to(effect, { alpha: 0, duration: 0.12 }, "<0.06"),
-              () => this.renderer.releaseTransient(effect),
-            ),
-          );
-          break;
-        }
-        case "enemy_attack_interrupted": {
-          this.getEnemyPresentation(event.enemyId)?.clearAction();
-          break;
-        }
-        case "enemy_stagger_ended": {
-          const presentation = this.getEnemyPresentation(event.enemyId);
-          if (!presentation) {
-            break;
-          }
-          const timeline = presentation.playStaggerEnded();
-          if (timeline) {
-            animations.push(this.timelineDone(timeline));
+        default: {
+          // Every enemy-scoped event routes to the presenter registered for the
+          // enemy's presentation profile; the coordinator holds no per-role cases.
+          if ("enemyId" in event) {
+            const presenter = getEnemyPresenter(
+              this.getEnemyPresentation(event.enemyId)?.profileId,
+            );
+            presenter.presentEvent(this.presenterContext(event.enemyId, animations), event);
           }
           break;
         }
-        case "command_resolved":
-        case "world_advanced":
-        case "directional_hit":
-        case "enemy_protection_ended":
-        case "enemy_recovering":
-        case "enemy_recovered":
-        case "encounter_ended":
-        case "enemy_waited":
-        case "reservation_changed":
-        case "telegraph_changed":
-          break;
       }
     }
 
@@ -534,6 +276,19 @@ export class PresentationDirector {
 
   private getEntityView(id: EntityId) {
     return this.terminalViews.get(id)?.root ?? this.renderer.getEntityView(id);
+  }
+
+  private presenterContext(enemyId: EntityId, animations: Promise<void>[]): EnemyPresenterContext {
+    return {
+      enemyId,
+      getView: () => this.getEntityView(enemyId),
+      getPresentation: () => this.getEnemyPresentation(enemyId),
+      createImpact: (cell, color) => this.renderer.createImpact(cell, color),
+      releaseTransient: (effect) => this.renderer.releaseTransient(effect),
+      addTimeline: (timeline, afterComplete) => {
+        animations.push(this.timelineDone(timeline, afterComplete));
+      },
+    };
   }
 
   private getEnemyPresentation(id: EntityId) {
