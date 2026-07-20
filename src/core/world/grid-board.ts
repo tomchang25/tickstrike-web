@@ -6,9 +6,18 @@ import {
   type EntityId,
   type Reservation,
   type ReservationPurpose,
+  type Telegraph,
+  type TelegraphPhase,
   type TileKind,
 } from "../model/types";
 import type { Arena } from "./arena";
+
+export interface TelegraphInput {
+  readonly sourceId: string;
+  readonly phase: TelegraphPhase;
+  readonly cells: readonly Cell[];
+  readonly remainingTicks?: number;
+}
 
 export interface ReservationRequest {
   readonly ownerId: string;
@@ -63,6 +72,10 @@ function cloneReservation(reservation: Reservation): Reservation {
   return { ...reservation, cells: reservation.cells.map(cloneCell) };
 }
 
+function cloneTelegraph(telegraph: Telegraph): Telegraph {
+  return { ...telegraph, cells: telegraph.cells.map(cloneCell) };
+}
+
 function hasDuplicateCells(cells: readonly Cell[]): boolean {
   const keys = new Set(cells.map(cellKey));
   return keys.size !== cells.length;
@@ -90,6 +103,7 @@ function purposePriority(purpose: ReservationPurpose, activeStep: boolean): numb
 export class GridBoard {
   private readonly occupancy = new Map<string, EntityId>();
   private readonly reservations = new Map<string, Reservation>();
+  private readonly telegraphs = new Map<string, Telegraph>();
   private nextRegistrationIndex = 0;
 
   constructor(
@@ -396,6 +410,46 @@ export class GridBoard {
 
   releaseReservation(ownerId: string): boolean {
     return this.reservations.delete(ownerId);
+  }
+
+  setTelegraph(input: TelegraphInput): Telegraph {
+    if (input.cells.length === 0 || hasDuplicateCells(input.cells)) {
+      throw new Error("Telegraph cells must be unique and non-empty.");
+    }
+    if (!input.cells.every((cell) => this.geometry.isInBounds(cell))) {
+      throw new Error("Telegraph cells must be inside the arena.");
+    }
+    const telegraph: Telegraph = {
+      sourceId: input.sourceId,
+      phase: input.phase,
+      cells: input.cells.map(cloneCell),
+      ...(input.remainingTicks !== undefined ? { remainingTicks: input.remainingTicks } : {}),
+    };
+    this.telegraphs.set(input.sourceId, telegraph);
+    return cloneTelegraph(telegraph);
+  }
+
+  getTelegraph(sourceId: string): Telegraph | undefined {
+    const telegraph = this.telegraphs.get(sourceId);
+    return telegraph ? cloneTelegraph(telegraph) : undefined;
+  }
+
+  listTelegraphs(): readonly Telegraph[] {
+    return [...this.telegraphs.values()].map(cloneTelegraph);
+  }
+
+  getTelegraphsAt(cell: Cell): readonly Telegraph[] {
+    return [...this.telegraphs.values()]
+      .filter((telegraph) => telegraph.cells.some((candidate) => sameCell(candidate, cell)))
+      .map(cloneTelegraph);
+  }
+
+  clearTelegraph(sourceId: string): boolean {
+    return this.telegraphs.delete(sourceId);
+  }
+
+  clearTelegraphs(): void {
+    this.telegraphs.clear();
   }
 
   beginDisplacementTransaction(): DisplacementTransaction {

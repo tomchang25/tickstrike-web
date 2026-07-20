@@ -25,7 +25,6 @@ import {
   type RunBuildState,
   type Seed,
   type Telegraph,
-  type TelegraphPhase,
   type TileKind,
   type WaveRuntimeState,
   type WorldSnapshot,
@@ -52,17 +51,11 @@ export type {
   MovementReservationRequest,
   ReservationDecision,
   ReservationRequest,
+  TelegraphInput,
 } from "./grid-board";
 export { GridBoard } from "./grid-board";
 export { RunBuild } from "./run-build";
 export { WaveRuntime } from "./wave-runtime";
-
-export interface TelegraphInput {
-  readonly sourceId: string;
-  readonly phase: TelegraphPhase;
-  readonly cells: readonly Cell[];
-  readonly remainingTicks?: number;
-}
 
 export interface EnemyAttackResolution {
   readonly attack: CommittedAttack;
@@ -108,10 +101,6 @@ export interface AttackResolutionTransaction {
 
 function cloneCell(cell: Cell): Cell {
   return { x: cell.x, y: cell.y };
-}
-
-function cloneTelegraph(telegraph: Telegraph): Telegraph {
-  return { ...telegraph, cells: telegraph.cells.map(cloneCell) };
 }
 
 function cloneEnemyAction(action: EnemyActionDefinition): EnemyActionDefinition {
@@ -172,7 +161,6 @@ export class World {
   private readonly waves = new WaveRuntime();
   private readonly run = new RunBuild();
   private readonly entities = new Map<EntityId, EntityState>();
-  private readonly telegraphs = new Map<string, Telegraph>();
   private currentPlayerCell: Cell | undefined;
   private currentArmedSmashTarget: Cell | undefined;
   private currentTick = 0;
@@ -1082,47 +1070,31 @@ export class World {
   }
 
   setTelegraph(input: TelegraphInput): Telegraph {
-    if (input.cells.length === 0 || hasDuplicateCells(input.cells)) {
-      throw new Error("Telegraph cells must be unique and non-empty.");
-    }
-    if (!input.cells.every((cell) => this.geometry.isInBounds(cell))) {
-      throw new Error("Telegraph cells must be inside the arena.");
-    }
-    const telegraph: Telegraph = {
-      sourceId: input.sourceId,
-      phase: input.phase,
-      cells: input.cells.map(cloneCell),
-      ...(input.remainingTicks !== undefined ? { remainingTicks: input.remainingTicks } : {}),
-    };
-    this.telegraphs.set(input.sourceId, telegraph);
-    return cloneTelegraph(telegraph);
+    return this.board.setTelegraph(input);
   }
 
   addTelegraph(input: TelegraphInput): Telegraph {
-    return this.setTelegraph(input);
+    return this.board.setTelegraph(input);
   }
 
   getTelegraph(sourceId: string): Telegraph | undefined {
-    const telegraph = this.telegraphs.get(sourceId);
-    return telegraph ? cloneTelegraph(telegraph) : undefined;
+    return this.board.getTelegraph(sourceId);
   }
 
   listTelegraphs(): readonly Telegraph[] {
-    return [...this.telegraphs.values()].map(cloneTelegraph);
+    return this.board.listTelegraphs();
   }
 
   getTelegraphsAt(cell: Cell): readonly Telegraph[] {
-    return [...this.telegraphs.values()]
-      .filter((telegraph) => telegraph.cells.some((candidate) => sameCell(candidate, cell)))
-      .map(cloneTelegraph);
+    return this.board.getTelegraphsAt(cell);
   }
 
   clearTelegraph(sourceId: string): boolean {
-    return this.telegraphs.delete(sourceId);
+    return this.board.clearTelegraph(sourceId);
   }
 
   clearTelegraphs(): void {
-    this.telegraphs.clear();
+    this.board.clearTelegraphs();
   }
 
   advancePlayerAction(): CombatEvent {
