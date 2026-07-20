@@ -334,6 +334,8 @@ export class PixiGameRenderer {
 
   sync(snapshot: WorldSnapshot): void {
     this.snapshot = snapshot;
+    // A full sync starts a new scenario lifetime, so terminal views from its predecessor may return.
+    this.despawnedPresentationIds.clear();
     if (snapshot.tick === 0) {
       this.lastAim = INITIAL_AIM;
       this.playerFacing = INITIAL_AIM;

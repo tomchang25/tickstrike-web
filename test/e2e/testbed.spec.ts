@@ -85,6 +85,15 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(canvas).toHaveAttribute("data-preview-terminal", "");
   await expect(canvas).toHaveAttribute("data-preview-blocked", "");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+
+  await page.getByRole("button", { name: "Reset scenario" }).click();
+  await expect(page.getByTestId("tick-value")).toHaveText("0");
+  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "alive");
+  await expect
+    .poll(async () =>
+      page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-center"))),
+    )
+    .toBe(true);
 });
 
 for (const [scenario, profile] of [

@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { EntityState, WorldSnapshot } from "../../../../src/core/model/types";
 import { PixiGameRenderer } from "../../../../src/presentation/pixi/PixiGameRenderer";
 
-function snapshot(cell: { x: number; y: number }, entities?: readonly EntityState[]): WorldSnapshot {
+function snapshot(
+  cell: { x: number; y: number },
+  entities?: readonly EntityState[],
+): WorldSnapshot {
   return {
     tick: 1,
     outcome: "running",
@@ -111,6 +114,17 @@ describe("PixiGameRenderer terminal view lifecycle", () => {
     expect(renderer.getEntityView("enemy-water")).toBeUndefined();
 
     renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.bomb")]));
+    expect(renderer.getEntityView("enemy-water")).toBeDefined();
+  });
+
+  it("recreates a despawned view when a scenario sync restores the same presentation", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    renderer.removeEntityView("enemy-water");
+
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+
     expect(renderer.getEntityView("enemy-water")).toBeDefined();
   });
 });
