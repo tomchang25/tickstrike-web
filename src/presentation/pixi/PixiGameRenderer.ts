@@ -48,11 +48,7 @@ import {
 } from "./enemy-sprites";
 import { enemyWaterAnimationAssets } from "../../content/enemies/enemy-water-animation-assets";
 import ninjaSpriteSheetUrl from "../../content/characters/assets/ninja/body-sprite-sheet.png";
-import greenEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-green-sprite-sheet.png";
-import purpleEnemySpriteSheetUrl from "../../content/enemies/assets/kappa-purple-sprite-sheet.png";
-import rangedEnemySpriteSheetUrl from "../../content/enemies/assets/eye-sprite-sheet.png";
-import skullEnemySpriteSheetUrl from "../../content/enemies/assets/skull-sprite-sheet.png";
-import lanternEnemySpriteSheetUrl from "../../content/enemies/assets/lantern-red-sprite-sheet.png";
+import { enemySpriteSheetUrls } from "../../content/enemies/features";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =
@@ -216,13 +212,7 @@ export class PixiGameRenderer {
   private smashPreview: SmashPreview | undefined;
   private victimPreviewMarkers: readonly PreviewVictimMarker[] = [];
   private pointerCleanup: (() => void) | undefined;
-  private enemySpriteSheets: {
-    green?: Texture;
-    purple?: Texture;
-    eye?: Texture;
-    skull?: Texture;
-    lantern?: Texture;
-  } = {};
+  private enemySpriteSheets: Readonly<Record<string, Texture>> = {};
   private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
 
   get transientCount(): number {
@@ -244,26 +234,13 @@ export class PixiGameRenderer {
       autoDensity: true,
     });
     setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
-    const [
-      greenEnemySpriteSheet,
-      purpleEnemySpriteSheet,
-      rangedEnemySpriteSheet,
-      skullEnemySpriteSheet,
-      lanternEnemySpriteSheet,
-    ] = await Promise.all([
-      Assets.load<Texture>(greenEnemySpriteSheetUrl),
-      Assets.load<Texture>(purpleEnemySpriteSheetUrl),
-      Assets.load<Texture>(rangedEnemySpriteSheetUrl),
-      Assets.load<Texture>(skullEnemySpriteSheetUrl),
-      Assets.load<Texture>(lanternEnemySpriteSheetUrl),
-    ]);
-    this.enemySpriteSheets = {
-      green: greenEnemySpriteSheet,
-      purple: purpleEnemySpriteSheet,
-      eye: rangedEnemySpriteSheet,
-      skull: skullEnemySpriteSheet,
-      lantern: lanternEnemySpriteSheet,
-    };
+    const loadedEnemySpriteSheets = await Promise.all(
+      Object.entries(enemySpriteSheetUrls).map(async ([sheetKey, url]) => [
+        sheetKey,
+        await Assets.load<Texture>(url),
+      ]),
+    );
+    this.enemySpriteSheets = Object.fromEntries(loadedEnemySpriteSheets);
     const loadedWaterAnimations = await Promise.all(
       Object.entries(enemyWaterAnimationAssets).map(async ([profileId, asset]) => [
         profileId,
@@ -1263,7 +1240,7 @@ export class PixiGameRenderer {
     const enemySpriteSheet = enemyProfile ? this.enemySpriteSheets[enemyProfile.sheet] : undefined;
     const waterAnimation = enemyProfile ? this.enemyWaterAnimations[enemyProfile.id] : undefined;
     const enemyPresentation =
-      enemySpriteSheet && enemyProfile && waterAnimation
+      enemySpriteSheet && enemyProfile
         ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, waterAnimation, () =>
             this.refreshEnemyPresentationDataset(),
           )

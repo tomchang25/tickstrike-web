@@ -1,17 +1,16 @@
 import { Container, Rectangle, Sprite, Texture } from "pixi.js";
 import { gsap } from "gsap";
 import type { Cell, EntityState } from "../../core/model/types";
+import {
+  enemyPresentationProfiles,
+  type EnemyPresentationProfile,
+} from "../../content/enemies/features";
 
 export type EnemySpritePose = "idle" | "move" | "prepareAttack" | "commitCue";
-export type EnemySpritePalette = "green" | "purple" | "eye" | "skull" | "lantern";
-export type EnemySpriteSheetKey = "green" | "purple" | "eye" | "skull" | "lantern";
+export type EnemySpritePalette = string;
+export type EnemySpriteSheetKey = string;
 
-export interface EnemyPresentationProfile {
-  readonly id: string;
-  readonly sheet: EnemySpriteSheetKey;
-  readonly palette: EnemySpritePalette;
-  readonly scale: number;
-}
+export type { EnemyPresentationProfile } from "../../content/enemies/features";
 
 export interface EnemyWaterAnimation {
   readonly sheet: Texture;
@@ -53,18 +52,10 @@ const STAGGER_TINT = 0x4d80ff;
 const PREPARE_SCALE = { x: 1.12, y: 0.84 };
 const COMMIT_SCALE = { x: 1.2, y: 0.78 };
 
-const ENEMY_PRESENTATION_PROFILES: Readonly<Record<string, EnemyPresentationProfile>> = {
-  "enemy.thrust": { id: "enemy.thrust", sheet: "green", palette: "green", scale: SPRITE_SCALE },
-  "enemy.slash": { id: "enemy.slash", sheet: "purple", palette: "purple", scale: SPRITE_SCALE },
-  "enemy.ranged": { id: "enemy.ranged", sheet: "eye", palette: "eye", scale: 5 },
-  "enemy.charge": { id: "enemy.charge", sheet: "skull", palette: "skull", scale: SPRITE_SCALE },
-  "enemy.bomb": { id: "enemy.bomb", sheet: "lantern", palette: "lantern", scale: SPRITE_SCALE },
-};
-
 export function getEnemyPresentationProfile(
   profileId: string,
 ): EnemyPresentationProfile | undefined {
-  return ENEMY_PRESENTATION_PROFILES[profileId];
+  return enemyPresentationProfiles.get(profileId);
 }
 
 const DIRECTION_COLUMNS = {
@@ -138,14 +129,16 @@ class SmallEnemyPresentation implements EnemyPresentation {
     readonly profileId: string,
     readonly palette: EnemySpritePalette,
     sheet: Texture,
-    private readonly waterAnimation: EnemyWaterAnimation,
+    private readonly waterAnimation: EnemyWaterAnimation | undefined,
     private readonly onChange?: () => void,
     private readonly spriteScale = SPRITE_SCALE,
   ) {
     sheet.source.scaleMode = "nearest";
-    waterAnimation.sheet.source.scaleMode = "nearest";
     const frameAt = this.createFrameSelector(sheet);
-    const waterFrameAt = this.createFrameSelector(waterAnimation.sheet);
+    if (waterAnimation) {
+      waterAnimation.sheet.source.scaleMode = "nearest";
+      this.waterFrameAt = this.createFrameSelector(waterAnimation.sheet);
+    }
 
     this.body = new Sprite(frameAt(directionColumn(DEFAULT_FACING), POSE_ROWS.idle));
     this.body.anchor.set(0.5);
@@ -155,11 +148,10 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.root.addChild(this.body);
 
     this.frameAt = frameAt;
-    this.waterFrameAt = waterFrameAt;
   }
 
   private readonly frameAt: (column: number, row: number) => Texture;
-  private readonly waterFrameAt: (column: number, row: number) => Texture;
+  private readonly waterFrameAt: ((column: number, row: number) => Texture) | undefined;
 
   get pose(): EnemySpritePose {
     return this.currentPose;
@@ -174,7 +166,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
   }
 
   get waterFrameDurationsMs(): readonly number[] {
-    return this.waterAnimation.frameDurationsMs;
+    return this.waterAnimation?.frameDurationsMs ?? [];
   }
 
   setFacing(facing: Cell): void {
@@ -386,12 +378,15 @@ class SmallEnemyPresentation implements EnemyPresentation {
   private applyFrame(): void {
     const column = directionColumn(this.currentFacing);
     this.body.texture =
-      this.currentWaterFrame === undefined
+      this.currentWaterFrame === undefined || !this.waterFrameAt
         ? this.frameAt(column, POSE_ROWS[this.currentPose])
         : this.waterFrameAt(column, this.currentWaterFrame);
   }
 
   setEnteredWaterFrame(frame: number): void {
+    if (!this.waterAnimation) {
+      throw new Error(`No water animation authored for profile ${this.profileId}.`);
+    }
     if (frame < 0 || frame >= this.waterAnimation.frameDurationsMs.length) {
       throw new Error(`Water animation frame ${frame} is outside the authored sheet.`);
     }
@@ -418,7 +413,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
 export function createEnemyPresentation(
   profileId: string,
   sheet: Texture,
-  waterAnimation: EnemyWaterAnimation,
+  waterAnimation: EnemyWaterAnimation | undefined,
   onChange?: () => void,
 ): EnemyPresentation | undefined {
   const profile = getEnemyPresentationProfile(profileId);
