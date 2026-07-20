@@ -34,6 +34,18 @@ Use Node.js 22.12 or newer with the npm lockfile. Run `npm install` when depende
 
 Use the default command timeout for unit and build checks. Browser checks may use Playwright's configured test and server timeouts; do not replace readiness with arbitrary sleeps.
 
+## Determining A Result
+
+A layer passes or fails according to the exit status of its command, never according to a filtered view of its output. Piping a verification command into `grep`, `tail`, or `head` replaces its exit status with the filter's, so the failure signal is discarded and a summary line such as `25 passed` can be read while the `3 failed` line above it is not. When a summary is wanted, let the command complete and establish its exit status first, then read the output separately.
+
+For a suite, report the executed, passed, failed, and skipped counts, and reconcile them against the total the suite declares — `npx playwright test --list` for browser acceptance, the file and test counts Vitest prints for unit. A passed count on its own is not evidence that a suite passed.
+
+Counts that differ between runs of unchanged source are a defect to investigate, not noise to average over. They mean either a flaky assertion or interference between concurrent runs.
+
 ## Result Reporting
 
 Report every layer actually run, the source state tested, the pass/fail result, any expected noise that affected interpretation, and every verification gap or manual-only boundary.
+
+`npm run check` excludes browser acceptance. Its passing says nothing about `npm run test:e2e`; report the two separately and never let one stand in for the other.
+
+Never run two browser acceptance suites at once. Both drive the same development server on the port `vite.config.ts` pins with `strictPort`, so concurrent runs fight over it and produce counts that describe neither run.
