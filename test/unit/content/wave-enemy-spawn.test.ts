@@ -17,11 +17,12 @@ describe("resolveEnemyActionDefinition", () => {
     expect(action.offsets.length).toBeGreaterThan(0);
   });
 
-  it("resolves a charge enemy's line shape into chargeTuning with empty offsets", () => {
+  it("resolves a charge-role enemy into chargeTuning with empty offsets", () => {
     const charge = actorCatalog.enemies.find((enemy) => enemy.id === "charge_enemy")!;
     const action = resolveEnemyActionDefinition(charge);
+    expect(action.role).toBe("charge");
     expect(action.offsets).toEqual([]);
-    expect(action.chargeTuning).toMatchObject({ minRange: 1, preferredMinRange: 2 });
+    expect(action.chargeTuning).toEqual({ maxRange: 5 });
   });
 });
 

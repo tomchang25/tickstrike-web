@@ -1,4 +1,5 @@
 import { actorCatalog } from "../../content/actor-catalog";
+import { resolveEnemyActionDefinition } from "../../content/enemy-action-resolution";
 import type { EnemyActionDefinition, Seed, TileKind } from "../../core/model/types";
 import { World } from "../../core/world/world";
 
@@ -43,20 +44,10 @@ const DEBUG_RESERVATION_CELLS = [
 
 function actionFor(enemyId: "thrust_enemy" | "slash_enemy"): EnemyActionDefinition {
   const enemy = actorCatalog.enemies.find((candidate) => candidate.id === enemyId);
-  const attackId = enemy?.attackIds[0];
-  const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
-  if (!enemy || !attack || attack.shape.shape !== "custom-offsets") {
+  if (!enemy) {
     throw new Error(`Navigation content is incomplete for ${enemyId}.`);
   }
-  return {
-    role: enemy.role,
-    attackId: attack.id,
-    kind: attack.kind,
-    damage: attack.damage,
-    warningTicks: attack.warningTicks,
-    recoveryTicks: attack.recoveryTicks,
-    offsets: attack.shape.offsets,
-  };
+  return resolveEnemyActionDefinition(enemy);
 }
 
 export function createEnemyNavigationArena(seed?: Seed): World {

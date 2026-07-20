@@ -1,32 +1,18 @@
 import { actorCatalog } from "../../content/actor-catalog";
+import { resolveEnemyActionDefinition } from "../../content/enemy-action-resolution";
 import type { EnemyActionDefinition, Seed, TileKind } from "../../core/model/types";
 import { World } from "../../core/world/world";
 import type { TestScenario } from "../types";
 
 const WIDTH = 12;
 const HEIGHT = 7;
-const CHARGE_PREFERRED_MIN_RANGE = 2;
 
 function chargeAction(): EnemyActionDefinition {
   const enemy = actorCatalog.enemies.find((candidate) => candidate.id === "charge_enemy");
-  const attack = actorCatalog.attacks.find((candidate) => candidate.id === enemy?.attackIds[0]);
-  if (!enemy || !attack || attack.shape.shape !== "line") {
+  if (!enemy) {
     throw new Error("Charge enemy content is incomplete.");
   }
-  return {
-    role: enemy.role,
-    attackId: attack.id,
-    kind: attack.kind,
-    damage: attack.damage,
-    warningTicks: attack.warningTicks,
-    recoveryTicks: attack.recoveryTicks,
-    offsets: [],
-    chargeTuning: {
-      minRange: 1,
-      maxRange: attack.shape.length,
-      preferredMinRange: CHARGE_PREFERRED_MIN_RANGE,
-    },
-  };
+  return resolveEnemyActionDefinition(enemy);
 }
 
 /**

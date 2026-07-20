@@ -1,72 +1,12 @@
 import type { WaveEnemySpawnRequest } from "../core/actions/wave-phase";
-import { resolveAreaOffsets } from "../core/enemies/area-shapes";
 import type { EnemyDefinition, GuardDefinition } from "../core/content/actor-schema";
 import { projectEnemyLevel } from "../core/waves/enemy-level-progression";
-import type { EnemyActionDefinition } from "../core/model/types";
 import type { SpawnEntityInput } from "../core/world/world";
 import { actorCatalog } from "./actor-catalog";
+import { resolveEnemyActionDefinition } from "./enemy-action-resolution";
 
 export type { WaveEnemySpawnRequest };
-
-const CHARGE_PREFERRED_MIN_RANGE = 2;
-
-/**
- * Resolves an authored `EnemyDefinition`'s enabled action into the runtime
- * `EnemyActionDefinition` the world spawns with — the same resolution
- * `createFoundationArena` inlines for the fixed fixture, factored out so the
- * wave spawn path and the fixed fixture cannot drift.
- */
-export function resolveEnemyActionDefinition(enemy: EnemyDefinition): EnemyActionDefinition {
-  const attackId = enemy.attackIds[0];
-  const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
-  if (!attack) {
-    throw new Error(`Enemy attack content is incomplete: ${enemy.id}`);
-  }
-
-  if (attack.shape.shape === "line") {
-    return {
-      role: enemy.role,
-      attackId: attack.id,
-      kind: attack.kind,
-      damage: attack.damage,
-      warningTicks: attack.warningTicks,
-      recoveryTicks: attack.recoveryTicks,
-      offsets: [],
-      chargeTuning: {
-        minRange: 1,
-        maxRange: attack.shape.length,
-        preferredMinRange: CHARGE_PREFERRED_MIN_RANGE,
-      },
-    };
-  }
-
-  const offsets =
-    attack.shape.shape === "custom-offsets"
-      ? attack.shape.offsets
-      : attack.shape.shape === "manhattan"
-        ? resolveAreaOffsets(attack.shape)
-        : undefined;
-  if (!offsets) {
-    throw new Error(`Unsupported enemy attack shape: ${enemy.id}`);
-  }
-  return {
-    role: enemy.role,
-    attackId: attack.id,
-    kind: attack.kind,
-    damage: attack.damage,
-    warningTicks: attack.warningTicks,
-    recoveryTicks: attack.recoveryTicks,
-    offsets,
-    ...(enemy.roleTuning?.type === "ranged"
-      ? {
-          rangedTuning: {
-            minDistance: enemy.roleTuning.minDistance,
-            maxDistance: enemy.roleTuning.maxDistance,
-          },
-        }
-      : {}),
-  };
-}
+export { resolveEnemyActionDefinition };
 
 function findEnemyDefinition(enemyId: string): EnemyDefinition {
   const enemy = actorCatalog.enemies.find((candidate) => candidate.id === enemyId);

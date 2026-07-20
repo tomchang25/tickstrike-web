@@ -1,17 +1,14 @@
 import { createShippedArena as createShippedArenaGeometry } from "../../core/world/arena";
 import { World } from "../../core/world/world";
-import { resolveAreaOffsets } from "../../core/enemies/area-shapes";
-import type { EnemyActionDefinition, Seed } from "../../core/model/types";
-import type { EnemyDefinition } from "../../core/content/actor-schema";
+import type { Seed } from "../../core/model/types";
 import { actorCatalog } from "../../content/actor-catalog";
+import { resolveEnemyActionDefinition } from "../../content/enemy-action-resolution";
 
 export const SHIPPED_SCENARIO_SEED = "tick-arena-foundation";
 
 export function createShippedArena(seed: Seed = SHIPPED_SCENARIO_SEED): World {
   return new World(createShippedArenaGeometry(), seed);
 }
-
-const CHARGE_PREFERRED_MIN_RANGE = 2;
 
 export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World {
   const world = createShippedArena(seed);
@@ -26,60 +23,6 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
   if (!player || !thrust || !slash || !ranged || !charge || !bomb || !smallGuard || !heavyGuard) {
     throw new Error("Shipped combat content is incomplete.");
   }
-  const actionFor = (enemy: EnemyDefinition): EnemyActionDefinition => {
-    const attackId = enemy.attackIds[0];
-    const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
-    if (!attack) {
-      throw new Error(`Enemy attack content is incomplete: ${enemy.id}`);
-    }
-    const offsets =
-      attack.shape.shape === "custom-offsets"
-        ? attack.shape.offsets
-        : attack.shape.shape === "manhattan"
-          ? resolveAreaOffsets(attack.shape)
-          : undefined;
-    if (!offsets) {
-      throw new Error(`Unsupported enemy attack shape: ${enemy.id}`);
-    }
-    return {
-      role: enemy.role,
-      attackId: attack.id,
-      kind: attack.kind,
-      damage: attack.damage,
-      warningTicks: attack.warningTicks,
-      recoveryTicks: attack.recoveryTicks,
-      offsets,
-      ...(enemy.roleTuning?.type === "ranged"
-        ? {
-            rangedTuning: {
-              minDistance: enemy.roleTuning.minDistance,
-              maxDistance: enemy.roleTuning.maxDistance,
-            },
-          }
-        : {}),
-    };
-  };
-  const chargeAction = ((): EnemyActionDefinition => {
-    const attackId = charge.attackIds[0];
-    const attack = actorCatalog.attacks.find((candidate) => candidate.id === attackId);
-    if (!attack || attack.shape.shape !== "line") {
-      throw new Error(`Charge enemy attack content is incomplete: ${charge.id}`);
-    }
-    return {
-      role: charge.role,
-      attackId: attack.id,
-      kind: attack.kind,
-      damage: attack.damage,
-      warningTicks: attack.warningTicks,
-      recoveryTicks: attack.recoveryTicks,
-      offsets: [],
-      chargeTuning: {
-        minRange: 1,
-        maxRange: attack.shape.length,
-        preferredMinRange: CHARGE_PREFERRED_MIN_RANGE,
-      },
-    };
-  })();
   world.spawn({
     id: "player",
     kind: "player",
@@ -104,7 +47,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     hp: thrust.hp,
     defense: thrust.defense,
     guardDefinition: smallGuard,
-    enemyAction: actionFor(thrust),
+    enemyAction: resolveEnemyActionDefinition(thrust),
     facing: { x: 1, y: 0 },
   });
   world.spawn({
@@ -116,7 +59,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     hp: slash.hp,
     defense: slash.defense,
     guardDefinition: smallGuard,
-    enemyAction: actionFor(slash),
+    enemyAction: resolveEnemyActionDefinition(slash),
     facing: { x: -1, y: 0 },
   });
   world.spawn({
@@ -128,7 +71,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     hp: ranged.hp,
     defense: ranged.defense,
     guardDefinition: smallGuard,
-    enemyAction: actionFor(ranged),
+    enemyAction: resolveEnemyActionDefinition(ranged),
     facing: { x: 0, y: 1 },
   });
   world.spawn({
@@ -140,7 +83,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     hp: charge.hp,
     defense: charge.defense,
     guardDefinition: heavyGuard,
-    enemyAction: chargeAction,
+    enemyAction: resolveEnemyActionDefinition(charge),
     facing: { x: 0, y: -1 },
   });
   const bombGuard = bomb.guardId
@@ -155,7 +98,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     hp: bomb.hp,
     defense: bomb.defense,
     ...(bombGuard ? { guardDefinition: bombGuard } : {}),
-    enemyAction: actionFor(bomb),
+    enemyAction: resolveEnemyActionDefinition(bomb),
     facing: { x: -1, y: 0 },
   });
   return world;

@@ -26,9 +26,7 @@ export interface RangedEnemyTuning {
 }
 
 export interface ChargeEnemyTuning {
-  readonly minRange: number;
   readonly maxRange: number;
-  readonly preferredMinRange: number;
 }
 
 /** Locked committed-attack metadata for a guardless Bomb self-destruct. */

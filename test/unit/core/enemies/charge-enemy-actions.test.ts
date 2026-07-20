@@ -16,7 +16,7 @@ const charge: EnemyActionDefinition = {
   warningTicks: 2,
   recoveryTicks: 2,
   offsets: [],
-  chargeTuning: { minRange: 1, maxRange: 5, preferredMinRange: 2 },
+  chargeTuning: { maxRange: 5 },
 };
 
 function enemy(overrides: Partial<EntityState> = {}): EntityState {
