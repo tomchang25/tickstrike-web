@@ -27,7 +27,7 @@ dependency: `expandSlotQueue`, `createInitialSlotStates`, `evaluateSlotEligibili
 `selectAtomicBatch`, `planGroupCells`, `projectEnemyLevel`, `projectGuardValue`. B is the world's
 state and claim vocabulary: a cloned-on-read `waveRuntime` record, `"spawn"` reservations that win
 arbitration against active-step movement, `"spawning"` telegraphs carrying `remainingTicks`, and a
-snapshot projection of all three. Neither side decides *when*. This child is that glue and nothing
+snapshot projection of all three. Neither side decides _when_. This child is that glue and nothing
 more — no new scheduling, placement, or level rules.
 
 A new `resolveWavePhase(world, context)` in `src/core/actions/wave-phase.ts` sits beside
@@ -41,7 +41,7 @@ next batch, advance the wave — and returns `CombatEvent[]` plus a `victoryRead
 `SpawnEntityInput` requires the actor catalog (enemy definition, guard definition, attack shape
 resolution) and the wave catalog (progression profile, wave definitions, spawn groups). `World`
 must not hold them — B pinned `World` as a state store, and `src/core` imports `src/core/content`
-schema *types* but never the `src/content` catalog *values*. So this child adds a `WavePhaseContext`
+schema _types_ but never the `src/content` catalog _values_. So this child adds a `WavePhaseContext`
 parameter threaded `TestScenario -> GameRuntime -> resolveCommand -> resolveWavePhase`. Every
 existing scenario omits it, so the wave phase is a no-op and every existing fixture is untouched.
 The context's `buildEnemySpawnInput` implementation lives under `src/content/`, where catalog
@@ -228,10 +228,10 @@ reserved footprint cell regardless of owner.
 
 ### Identifiers
 
-| Thing                                | Format                                              |
-| ------------------------------------ | ----------------------------------------------------- |
-| Spawn reservation owner and telegraph `sourceId` | `spawn:w<waveNumber>:s<slotIndex>:t<tick>` |
-| Wave-spawned enemy id                | `wave-<waveNumber>-slot-<slotIndex>-t<tick>-<index>` |
+| Thing                                            | Format                                               |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| Spawn reservation owner and telegraph `sourceId` | `spawn:w<waveNumber>:s<slotIndex>:t<tick>`           |
+| Wave-spawned enemy id                            | `wave-<waveNumber>-slot-<slotIndex>-t<tick>-<index>` |
 
 Both are unique without new state because a slot cannot admit twice in one tick, and the world tick
 is monotonic. The reservation and its telegraph share one id so release and clear target the same
@@ -244,14 +244,14 @@ slot.
 Appended to `src/core/events/combat-events.ts` in the existing discriminated-union style, spliced
 into `completeEvents` after `enemyEvents` and before `encounter_ended`.
 
-| Event                  | Payload                                                              | When                                                    |
-| ---------------------- | -------------------------------------------------------------------- | ------------------------------------------------------- |
-| `wave_started`         | `waveNumber`                                                          | A wave's slot states are installed, including wave 1.   |
-| `wave_group_warned`    | `waveNumber`, `slotIndex`, `sourceId`, `cells`, `warningTicks`        | A batch is admitted with a nonzero warning.             |
-| `wave_group_spawned`   | `waveNumber`, `slotIndex`, `spawns: { entityId, cell, level }[]`      | Members spawn, at expiry or immediately at zero warning.|
-| `wave_group_requeued`  | `waveNumber`, `slotIndex`, `memberCount`                              | Repair failed for one or more members at expiry.        |
-| `wave_group_deferred`  | `waveNumber`, `slotIndex`, `reason: "population-headroom" \| "placement-failed"` | Admission was blocked this tick.        |
-| `wave_cleared`         | `waveNumber`                                                          | A wave is exhausted, before the next `wave_started`.    |
+| Event                 | Payload                                                                          | When                                                     |
+| --------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `wave_started`        | `waveNumber`                                                                     | A wave's slot states are installed, including wave 1.    |
+| `wave_group_warned`   | `waveNumber`, `slotIndex`, `sourceId`, `cells`, `warningTicks`                   | A batch is admitted with a nonzero warning.              |
+| `wave_group_spawned`  | `waveNumber`, `slotIndex`, `spawns: { entityId, cell, level }[]`                 | Members spawn, at expiry or immediately at zero warning. |
+| `wave_group_requeued` | `waveNumber`, `slotIndex`, `memberCount`                                         | Repair failed for one or more members at expiry.         |
+| `wave_group_deferred` | `waveNumber`, `slotIndex`, `reason: "population-headroom" \| "placement-failed"` | Admission was blocked this tick.                         |
+| `wave_cleared`        | `waveNumber`                                                                     | A wave is exhausted, before the next `wave_started`.     |
 
 `selectAtomicBatch` returns `undefined` for both "nothing schedulable" and "headroom too small", so
 `wave_group_deferred` derives its reason: find the earliest eligible slot with remaining members
@@ -304,23 +304,23 @@ pending, and no enemy is alive. Endless never satisfies it, because Child D's `w
 
 ## Edge Cases
 
-| Case                                                                | Expected Handling                                                                                                             |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Accepted command in a world with no wave runtime                    | Phase returns no events, no gate is passed, and `updateEncounterOutcome` behaves exactly as today.                            |
-| Wave runtime installed but no context supplied                      | Throw at resolve time; a silently frozen schedule is worse than a loud construction error.                                    |
-| Rejected command                                                    | Never reaches `finishAccepted`, so no warning ticks and no admission.                                                         |
-| `warningTicks` of zero                                              | Spawns in the admission step with no telegraph and no reservation; still emits `wave_group_spawned`, never `wave_group_warned`. |
-| Player steps onto a warned cell before expiry                       | Impossible — the `"spawn"` reservation makes the cell unwalkable at priority `-1`. Revalidation still checks, defensively.    |
-| A warned cell is occupied at expiry by a knocked-back enemy         | That member gets one strategy-consistent replacement cell; the rest of the batch spawns normally.                             |
-| No replacement cell exists for a warned member                      | Only that member requeues to the front of its slot; `wave_group_requeued` fires and the batch's other members still spawn.    |
-| Every member of a batch is unrepairable                             | The whole batch requeues, `hasEverSpawned` stays false, no `wave_group_spawned` fires, and the slot re-admits on a later tick. |
-| Population cap leaves no headroom                                   | `wave_group_deferred` with `"population-headroom"`; no later slot bypasses the blocked one.                                   |
-| Board empties between a cleared group and the next warning          | `victoryReady` is false (queues remain), so no victory. This is the sketch's headline risk and the reason for the gate.       |
-| Final authored wave exhausted with no living enemies                | `wave_cleared`, `victoryReady` true, `encounter_ended` with `victory` in the same event batch.                                |
-| Player dies while a batch is pending                                | Defeat is decided first; the phase returns early, leaving the reservation and telegraph in place on a world that has ended.   |
-| Scenario reset mid-warning                                          | `loadScenario` builds a fresh `World`, so runtime, reservation, and telegraph are all absent; no teardown code needed.        |
-| Mixed world with fixture enemies and wave enemies                   | Fixture ids fail the wave-id parse and count toward arena headroom but never toward a slot's `livingCount`.                   |
-| Child C1 removes terminal entities                                  | Living counts and `victoryReady` read only non-terminal entities, so both are unaffected.                                     |
+| Case                                                        | Expected Handling                                                                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Accepted command in a world with no wave runtime            | Phase returns no events, no gate is passed, and `updateEncounterOutcome` behaves exactly as today.                              |
+| Wave runtime installed but no context supplied              | Throw at resolve time; a silently frozen schedule is worse than a loud construction error.                                      |
+| Rejected command                                            | Never reaches `finishAccepted`, so no warning ticks and no admission.                                                           |
+| `warningTicks` of zero                                      | Spawns in the admission step with no telegraph and no reservation; still emits `wave_group_spawned`, never `wave_group_warned`. |
+| Player steps onto a warned cell before expiry               | Impossible — the `"spawn"` reservation makes the cell unwalkable at priority `-1`. Revalidation still checks, defensively.      |
+| A warned cell is occupied at expiry by a knocked-back enemy | That member gets one strategy-consistent replacement cell; the rest of the batch spawns normally.                               |
+| No replacement cell exists for a warned member              | Only that member requeues to the front of its slot; `wave_group_requeued` fires and the batch's other members still spawn.      |
+| Every member of a batch is unrepairable                     | The whole batch requeues, `hasEverSpawned` stays false, no `wave_group_spawned` fires, and the slot re-admits on a later tick.  |
+| Population cap leaves no headroom                           | `wave_group_deferred` with `"population-headroom"`; no later slot bypasses the blocked one.                                     |
+| Board empties between a cleared group and the next warning  | `victoryReady` is false (queues remain), so no victory. This is the sketch's headline risk and the reason for the gate.         |
+| Final authored wave exhausted with no living enemies        | `wave_cleared`, `victoryReady` true, `encounter_ended` with `victory` in the same event batch.                                  |
+| Player dies while a batch is pending                        | Defeat is decided first; the phase returns early, leaving the reservation and telegraph in place on a world that has ended.     |
+| Scenario reset mid-warning                                  | `loadScenario` builds a fresh `World`, so runtime, reservation, and telegraph are all absent; no teardown code needed.          |
+| Mixed world with fixture enemies and wave enemies           | Fixture ids fail the wave-id parse and count toward arena headroom but never toward a slot's `livingCount`.                     |
+| Child C1 removes terminal entities                          | Living counts and `victoryReady` read only non-terminal entities, so both are unaffected.                                       |
 
 ## Acceptance Criteria
 

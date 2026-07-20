@@ -45,15 +45,15 @@ Success is: `waveCatalog` can be expanded into slot queues, a batch can be selec
 
 ## Files to Change
 
-| File                                              | Change Size | Purpose                                                                                                       |
-| ------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------ |
-| `src/core/waves/wave-scheduler.ts`                | Large       | Expand slots into queues, evaluate latched eligibility, and select the atomic batch under population headroom. |
-| `src/core/waves/enemy-spawn-planner.ts`           | Medium      | Deterministic per-strategy cell selection returning exactly N legal cells or a typed failure.                 |
-| `src/core/waves/enemy-level-progression.ts`       | Medium      | Pure two-segment growth curve plus HP/damage/defense/guard projection.                                        |
-| `src/core/waves/wave-inputs.ts`                   | Small       | Readonly input types describing the world-view and seeded number source the core consumes.                    |
-| `test/unit/core/waves/wave-scheduler.test.ts`     | Large       | Cover expansion, weighted determinism, latching, survivor thresholds, and atomic headroom rejection.          |
-| `test/unit/core/waves/enemy-spawn-planner.test.ts`| Large       | Cover each strategy's legality, exact-count success, and failure when N cells are unavailable.                |
-| `test/unit/core/waves/enemy-level-progression.test.ts` | Medium | Cover Level-1 identity, standard growth, lethal-tier onset, and guard base-wave tiers.                        |
+| File                                                   | Change Size | Purpose                                                                                                        |
+| ------------------------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------- |
+| `src/core/waves/wave-scheduler.ts`                     | Large       | Expand slots into queues, evaluate latched eligibility, and select the atomic batch under population headroom. |
+| `src/core/waves/enemy-spawn-planner.ts`                | Medium      | Deterministic per-strategy cell selection returning exactly N legal cells or a typed failure.                  |
+| `src/core/waves/enemy-level-progression.ts`            | Medium      | Pure two-segment growth curve plus HP/damage/defense/guard projection.                                         |
+| `src/core/waves/wave-inputs.ts`                        | Small       | Readonly input types describing the world-view and seeded number source the core consumes.                     |
+| `test/unit/core/waves/wave-scheduler.test.ts`          | Large       | Cover expansion, weighted determinism, latching, survivor thresholds, and atomic headroom rejection.           |
+| `test/unit/core/waves/enemy-spawn-planner.test.ts`     | Large       | Cover each strategy's legality, exact-count success, and failure when N cells are unavailable.                 |
+| `test/unit/core/waves/enemy-level-progression.test.ts` | Medium      | Cover Level-1 identity, standard growth, lethal-tier onset, and guard base-wave tiers.                         |
 
 ## Execution Outline
 
@@ -75,15 +75,15 @@ Success is: `waveCatalog` can be expanded into slot queues, a batch can be selec
 
 ## Edge Cases
 
-| Case                                                     | Expected Handling                                                                                         |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Weighted group with one entry                            | Every drawn member is that entry; still consumes the source deterministically.                           |
-| Population cap smaller than a group's expanded size      | Batch is rejected every tick; queue stays intact. (Catalog validation already forbids this for authored waves, but the scheduler must not assume it.) |
-| Predecessor slot never spawned yet, board is empty        | `cleared`/`survivors-at-most` slots remain ineligible until the predecessor's `hasEverSpawned` is true.  |
-| Level 1 enemy                                            | Projection returns authored base HP, damage, and defense unchanged; guard equals base at wave 1.         |
-| Level below lethal start                                 | Lethal growth term is exactly zero; only the standard term applies.                                      |
-| Fewer than N legal cells for a strategy                  | Planner returns an explicit failure; it never returns fewer than N cells.                                 |
-| Scatter on a board where only the player cell is free    | Failure; the player cell is never a legal spawn cell.                                                     |
+| Case                                                  | Expected Handling                                                                                                                                     |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Weighted group with one entry                         | Every drawn member is that entry; still consumes the source deterministically.                                                                        |
+| Population cap smaller than a group's expanded size   | Batch is rejected every tick; queue stays intact. (Catalog validation already forbids this for authored waves, but the scheduler must not assume it.) |
+| Predecessor slot never spawned yet, board is empty    | `cleared`/`survivors-at-most` slots remain ineligible until the predecessor's `hasEverSpawned` is true.                                               |
+| Level 1 enemy                                         | Projection returns authored base HP, damage, and defense unchanged; guard equals base at wave 1.                                                      |
+| Level below lethal start                              | Lethal growth term is exactly zero; only the standard term applies.                                                                                   |
+| Fewer than N legal cells for a strategy               | Planner returns an explicit failure; it never returns fewer than N cells.                                                                             |
+| Scatter on a board where only the player cell is free | Failure; the player cell is never a legal spawn cell.                                                                                                 |
 
 ## Acceptance Criteria
 

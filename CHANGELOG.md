@@ -69,3 +69,7 @@ Rules:
 - 2026-07-20 - [port_07] Ranged, Charge, and Bomb enemies now join Thrust and Slash in the same Tick Arena through one shared deterministic navigation, reservation, and locked-attack contract, with distance-band pressure, live-target impact displacement, and locked-area self-destruction respectively
 - 2026-07-20 - [port_07] Small enemies now use authored Kappa sprite presentation with palette parity and state-driven animation feedback
 - 2026-07-20 - [port_07] Deprecated Mode and Mode Boss enemy content is removed from the catalog
+
+### Waves and Spawning in the Same Tick Arena
+
+- 2026-07-20 - [port_08] Authored waves now schedule deterministic atomic spawn warnings and levelled enemies through the Tick Arena, with visible countdowns, terminal cleanup, and browser acceptance coverage
