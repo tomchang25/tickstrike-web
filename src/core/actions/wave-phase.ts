@@ -6,7 +6,7 @@ import type {
 } from "../content/wave-schema";
 import type { CombatEvent } from "../events/combat-events";
 import { sameCell, type Cell, type EntityId } from "../model/types";
-import { classifyArtifactEffect, generateSingleCardOffer } from "../rewards/run-build";
+import { classifyArtifactEffect, generateSingleCardOffer } from "../rewards/reward-offers";
 import type { WaveWorldView } from "../waves/wave-inputs";
 import { planGroupCells } from "../waves/enemy-spawn-planner";
 import {

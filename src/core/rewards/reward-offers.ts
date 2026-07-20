@@ -2,6 +2,12 @@ import type { MobilityKind } from "../content/actor-schema";
 import type { ArtifactDefinition, ArtifactTrigger } from "../content/artifact-schema";
 import type { PendingRewardOffer, RewardOfferCard, RunBuildState } from "../model/types";
 
+/**
+ * Pure reward-offer policy: artifact effect classification, eligibility, and the
+ * seeded draw that produces an offer. The run's mutable build state lives in
+ * `core/world/run-build.ts`; nothing here mutates.
+ */
+
 export function createEmptyRunBuild(): RunBuildState {
   return { stacks: {}, triggers: [] };
 }

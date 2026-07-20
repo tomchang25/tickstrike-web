@@ -12,7 +12,7 @@ import {
   isArtifactSupported,
   withAcquiredTrigger,
   withArtifactStackCount,
-} from "../../../../src/core/rewards/run-build";
+} from "../../../../src/core/rewards/reward-offers";
 
 function artifact(overrides: Partial<ArtifactDefinition> = {}): ArtifactDefinition {
   return {
