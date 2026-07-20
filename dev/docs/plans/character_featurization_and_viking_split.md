@@ -76,7 +76,7 @@ Which character a run uses is decided at run start; the choice is owned by the r
 
 ## Acceptance criteria
 
-1. Adding a character touches only `src/content/characters/features/` plus registry entries (content-only characters: 2–3 files), consistent with the AGENTS.md file-budget rule extended to characters.
+1. Adding a character touches only `src/content/characters/features/` plus registry entries (content-only characters: 2–3 files), consistent with the file-budget rule in `dev/standards/gameplay_feature_architecture.md` extended to characters.
 2. A Viking run is playable end-to-end in the harness: spawn as Viking, smash loop verified by a deterministic scenario, mobility-gated rewards offer smash uniques and never dash uniques.
 3. Schema validation fails content where any shipped mobility lacks major artifacts, and no longer requires majors to be dash.
 4. No file outside `src/content/characters/` (and tests/scenarios that explicitly target a character) contains the string `"ninja"` or `"viking"`.
