@@ -1,4 +1,6 @@
 import type { CombatEvent } from "../events/combat-events";
+import { collectTerminalEntityIds } from "../events/terminal-entities";
+import { isTerminalPhase } from "../model/types";
 import type { World } from "../world/world";
 import type { WavePhaseContext } from "./wave-phase";
 import { resolveWavePhase } from "./wave-phase";
@@ -11,6 +13,22 @@ export interface ActionResolution {
   readonly consumedTime?: boolean;
   readonly reason?: string;
   readonly events: readonly CombatEvent[];
+}
+
+/**
+ * Finalizes an accepted command by removing every entity its own event batch resolved terminally.
+ * This runs after the outcome decision so the legacy all-enemies-terminal victory scan still sees
+ * them, and after `recordEvents` so the emitted batch still describes what was removed. Entities
+ * made terminal outside a command (direct `setPhase`/`applyDamage` in focused tests or fixtures)
+ * have no terminal event here and are deliberately left in place.
+ */
+function purgeTerminalEntities(world: World, events: readonly CombatEvent[]): void {
+  for (const id of collectTerminalEntityIds(events)) {
+    const entity = world.getEntity(id);
+    if (entity && isTerminalPhase(entity.phase)) {
+      world.removeEntity(id);
+    }
+  }
 }
 
 function finishAccepted(
@@ -40,6 +58,7 @@ function finishAccepted(
     advanced,
   ];
   world.recordEvents(completeEvents);
+  purgeTerminalEntities(world, completeEvents);
   return {
     accepted: true,
     consumedTime: true,

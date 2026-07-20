@@ -124,6 +124,9 @@ export class GameRuntime {
 
           if (resolution.accepted) {
             this.presentation.reserveMotionOwners(resolution.events, job.generation);
+            // The resolver already removed these entities, so capture must precede the
+            // projection that would otherwise reconcile their views away.
+            this.presentation.captureTerminalViews(resolution.events, job.generation);
           }
 
           this.emit();

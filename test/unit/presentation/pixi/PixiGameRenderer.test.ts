@@ -76,21 +76,59 @@ describe("PixiGameRenderer position ownership", () => {
   });
 });
 
-describe("PixiGameRenderer terminal view lifecycle", () => {
-  it("does not recreate a despawned view on later projections of the same presentation", () => {
+describe("PixiGameRenderer terminal view detachment", () => {
+  it("hands a view to presentation without retaining it during a terminal-free projection", () => {
     const renderer = new PixiGameRenderer();
     const cell = { x: 0, y: 0 };
     renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    const view = renderer.getEntityView("enemy-water");
+    expect(view).toBeDefined();
+
+    const detached = renderer.detachEntityView("enemy-water");
+    renderer.updateSnapshot(snapshot(cell, []));
+
+    expect(detached?.root).toBe(view);
+    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
+    expect(view?.destroyed).toBe(false);
+    detached?.root.destroy({ children: true });
+  });
+
+  it("detaches an entity view only once", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    const view = renderer.getEntityView("enemy-water");
+
+    expect(renderer.detachEntityView("enemy-water")?.root).toBe(view);
+    expect(renderer.detachEntityView("enemy-water")).toBeUndefined();
+
+    view?.destroy({ children: true });
+  });
+
+  it("does not own a detached view when the same id reappears in a later snapshot", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    const detached = renderer.detachEntityView("enemy-water");
+
+    renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+
+    expect(detached?.root.destroyed).toBe(false);
     expect(renderer.getEntityView("enemy-water")).toBeDefined();
+    detached?.root.destroy({ children: true });
+  });
 
-    renderer.removeEntityView("enemy-water");
-    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
+  it("leaves detached view cleanup to presentation across a scenario sync", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
+    const detached = renderer.detachEntityView("enemy-water");
 
-    renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.ranged")]));
-    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
+    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
 
-    renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.ranged")]));
-    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
+    expect(detached?.root.destroyed).toBe(false);
+    expect(renderer.getEntityView("enemy-water")).toBeDefined();
+    detached?.root.destroy({ children: true });
   });
 
   it("recreates the view when the same entity id reports a new presentationId", () => {
@@ -105,27 +143,5 @@ describe("PixiGameRenderer terminal view lifecycle", () => {
     expect(recreatedView).toBeDefined();
     expect(recreatedView).not.toBe(originalView);
     expect(originalView?.destroyed).toBe(true);
-  });
-
-  it("recreates a despawned view once its id reappears with a different presentationId", () => {
-    const renderer = new PixiGameRenderer();
-    const cell = { x: 0, y: 0 };
-    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
-    renderer.removeEntityView("enemy-water");
-    expect(renderer.getEntityView("enemy-water")).toBeUndefined();
-
-    renderer.updateSnapshot(snapshot(cell, [drowningEnemy("enemy.bomb")]));
-    expect(renderer.getEntityView("enemy-water")).toBeDefined();
-  });
-
-  it("recreates a despawned view when a scenario sync restores the same presentation", () => {
-    const renderer = new PixiGameRenderer();
-    const cell = { x: 0, y: 0 };
-    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
-    renderer.removeEntityView("enemy-water");
-
-    renderer.sync(snapshot(cell, [drowningEnemy("enemy.ranged")]));
-
-    expect(renderer.getEntityView("enemy-water")).toBeDefined();
   });
 });

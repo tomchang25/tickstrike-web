@@ -8,11 +8,15 @@ import { normalizeMotionEvents } from "../../../../src/presentation/timelines/Pr
 function createRenderer() {
   const view = {
     alpha: 1,
+    destroyed: false,
     rotation: 0,
     scale: { x: 1, y: 1 },
     position: { set: vi.fn() },
     x: 0,
     y: 0,
+    destroy: vi.fn(() => {
+      view.destroyed = true;
+    }),
   };
   const effects = new Set<object>();
   const renderer = {
@@ -31,7 +35,8 @@ function createRenderer() {
     reservePosition: vi.fn(),
     releasePosition: vi.fn(),
     clearPositionReservations: vi.fn(),
-    removeEntityView: vi.fn(),
+    detachEntityView: vi.fn(() => ({ root: view })),
+    setTerminalPresentationLabels: vi.fn(),
     setPlayerAnimation: vi.fn(),
     setPlayerFacing: vi.fn(),
     getEnemyPresentation: vi.fn(() => undefined),
@@ -111,8 +116,8 @@ describe("PresentationDirector combat feedback", () => {
     expect(director.isIdle).toBe(true);
   });
 
-  it("tracks combat effects and removes a terminal view after the matching timeline", async () => {
-    const { renderer } = createRenderer();
+  it("tracks combat effects and destroys a director-owned ghost after the matching timeline", async () => {
+    const { renderer, view } = createRenderer();
     const director = new PresentationDirector(renderer);
     const events: CombatEvent[] = [
       {
@@ -152,16 +157,18 @@ describe("PresentationDirector combat feedback", () => {
       { type: "enemy_died", enemyId: "enemy", attackerId: "player", cell: { x: 5, y: 6 } },
     ];
 
+    director.captureTerminalViews(events);
     await director.play(events);
 
     expect(renderer.createImpact).toHaveBeenCalledOnce();
     expect(renderer.releaseTransient).toHaveBeenCalledOnce();
-    expect(renderer.removeEntityView).toHaveBeenCalledWith("enemy");
+    expect(renderer.detachEntityView).toHaveBeenCalledWith("enemy");
+    expect(view.destroy).toHaveBeenCalledOnce();
     expect(director.isIdle).toBe(true);
   });
 
   it("plays an authored water sheet in the motion direction before removing the terminal view", async () => {
-    const { renderer } = createRenderer();
+    const { renderer, view } = createRenderer();
     const presentation = {
       beginEnteredWater: vi.fn(),
       setEnteredWaterFrame: vi.fn(),
@@ -170,35 +177,80 @@ describe("PresentationDirector combat feedback", () => {
     vi.mocked(renderer.getEnemyPresentation).mockReturnValue(presentation as never);
     const director = new PresentationDirector(renderer);
 
-    await director.play([
+    const events: CombatEvent[] = [
       {
         type: "enemy_entered_water",
         enemyId: "enemy",
         from: { x: 4, y: 4 },
         waterCell: { x: 4, y: 6 },
       },
-    ]);
+    ];
+    director.captureTerminalViews(events);
+    await director.play(events);
 
     expect(presentation.beginEnteredWater).toHaveBeenCalledWith({ x: 0, y: 1 });
     expect(presentation.setEnteredWaterFrame).toHaveBeenLastCalledWith(7);
-    expect(renderer.removeEntityView).toHaveBeenCalledWith("enemy");
+    expect(view.destroy).toHaveBeenCalledOnce();
   });
 
   it("cancels stale terminal presentation when the generation changes", async () => {
-    const { renderer } = createRenderer();
+    const { renderer, view } = createRenderer();
     const director = new PresentationDirector(renderer);
-    const playing = director.play(
-      [{ type: "enemy_died", enemyId: "enemy", attackerId: "player", cell: { x: 5, y: 6 } }],
-      0,
-    );
+    const events: CombatEvent[] = [
+      { type: "enemy_died", enemyId: "enemy", attackerId: "player", cell: { x: 5, y: 6 } },
+    ];
+    director.captureTerminalViews(events, 0);
+    const playing = director.play(events, 0);
 
     director.setGeneration(1);
     await playing;
 
-    expect(renderer.removeEntityView).not.toHaveBeenCalled();
+    expect(view.destroy).toHaveBeenCalledOnce();
     expect(renderer.clearTransient).toHaveBeenCalledOnce();
     expect(renderer.clearPositionReservations).toHaveBeenCalledOnce();
     expect(director.isIdle).toBe(true);
+  });
+
+  it("captures one ghost per terminal id even when a bomb reports two terminal events", () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+
+    director.captureTerminalViews([
+      { type: "enemy_self_destructed", enemyId: "bomb", cell: { x: 2, y: 2 } },
+      { type: "enemy_died", enemyId: "bomb", attackerId: "bomb", cell: { x: 2, y: 2 } },
+    ]);
+
+    expect(renderer.detachEntityView).toHaveBeenCalledOnce();
+    expect(renderer.detachEntityView).toHaveBeenCalledWith("bomb");
+    expect(director.terminalViewCount).toBe(1);
+  });
+
+  it("destroys one ghost after a self-destruct explosion completes", async () => {
+    const { renderer, view } = createRenderer();
+    const director = new PresentationDirector(renderer);
+    const events: CombatEvent[] = [
+      { type: "enemy_self_destructed", enemyId: "bomb", cell: { x: 2, y: 2 } },
+      { type: "enemy_died", enemyId: "bomb", attackerId: "bomb", cell: { x: 2, y: 2 } },
+    ];
+
+    director.captureTerminalViews(events);
+    await director.play(events);
+
+    expect(renderer.createImpact).toHaveBeenCalledOnce();
+    expect(view.destroy).toHaveBeenCalledOnce();
+  });
+
+  it("ignores capture requests from a stale generation", () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+    director.setGeneration(1);
+
+    director.captureTerminalViews(
+      [{ type: "enemy_died", enemyId: "enemy", attackerId: "player", cell: { x: 1, y: 1 } }],
+      0,
+    );
+
+    expect(renderer.detachEntityView).not.toHaveBeenCalled();
   });
 
   it("starts presentation batches immediately without merging their cleanup", async () => {
@@ -266,15 +318,18 @@ describe("PresentationDirector combat feedback", () => {
     expect(director.isIdle).toBe(true);
   });
 
-  it("removes the player view after a terminal defeat timeline", async () => {
-    const { renderer } = createRenderer();
-
-    await new PresentationDirector(renderer).play([
+  it("destroys the player ghost after a terminal defeat timeline", async () => {
+    const { renderer, view } = createRenderer();
+    const director = new PresentationDirector(renderer);
+    const events: CombatEvent[] = [
       { type: "player_died", playerId: "player", cell: { x: 6, y: 6 } },
       { type: "encounter_ended", outcome: "defeat" },
-    ]);
+    ];
 
-    expect(renderer.removeEntityView).toHaveBeenCalledWith("player");
+    director.captureTerminalViews(events);
+    await director.play(events);
+
+    expect(view.destroy).toHaveBeenCalledOnce();
   });
 
   it("presents a dash pose and restores idle when the dash settles", async () => {

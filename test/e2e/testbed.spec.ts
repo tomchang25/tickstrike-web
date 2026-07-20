@@ -60,19 +60,16 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
 
   await page.mouse.click(smashTarget.x, smashTarget.y);
   await expect(page.getByTestId("tick-value")).toHaveText("2");
-  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "dead");
-  await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "70");
+  // Both terminal victims leave the semantic snapshot with the command that resolved them.
+  await expect(page.getByTestId("entity-enemy-center")).toHaveCount(0);
+  await expect(page.getByTestId("entity-enemy-water")).toHaveCount(0);
+  await expect(page.getByTestId("enemy-count")).toHaveText("2");
   await expect(page.getByTestId("entity-enemy-blocked")).toHaveAttribute("data-cell-x", "4");
   await expect(page.getByTestId("entity-enemy-blocked")).toHaveAttribute("data-cell-y", "2");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-hp", "70");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-guard", "0");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-cell-y", "3");
-  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
-  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-cell-x", "4");
-  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-cell-y", "6");
-  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-hp", "94");
-  await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-guard", "0");
   await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
   await expect(page.getByTestId("event-log")).toContainText("enemy_crushed");
   await expect(page.getByTestId("event-log")).toContainText("enemy_knocked");
@@ -86,9 +83,22 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(canvas).toHaveAttribute("data-preview-blocked", "");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
+  // Once the terminal timelines settle, neither ghost is addressable on the canvas any more.
+  await expect
+    .poll(async () =>
+      page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-water"))),
+    )
+    .toBe(false);
+  await expect
+    .poll(async () =>
+      page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-center"))),
+    )
+    .toBe(false);
+
   await page.getByRole("button", { name: "Reset scenario" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "alive");
+  await expect(page.getByTestId("enemy-count")).toHaveText("4");
   await expect
     .poll(async () =>
       page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-center"))),
@@ -123,19 +133,24 @@ for (const [scenario, profile] of [
     await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
     await page.mouse.click(target.x, target.y);
-    await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
+    // The drowning victim is already gone from the snapshot; only its retained ghost animates.
+    await expect(page.getByTestId("entity-enemy-water")).toHaveCount(0);
     await expect(canvas).toHaveAttribute(
-      "data-enemy-presentations",
+      "data-retained-presentations",
       new RegExp(`enemy-water:${profile.replace(".", "\\.")}:[^:]+:idle:water:[0-7]`),
     );
+    await expect(canvas).not.toHaveAttribute("data-enemy-presentations", /enemy-water:/);
     await expect
-      .poll(async () => canvas.getAttribute("data-enemy-presentations"))
+      .poll(async () => canvas.getAttribute("data-retained-presentations"))
       .toContain(":water:7");
     await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-    await expect(page.getByTestId("entity-enemy-water")).toHaveAttribute("data-state", "drowning");
+    await expect(page.getByTestId("entity-enemy-water")).toHaveCount(0);
+    await expect(canvas).not.toHaveAttribute("data-retained-presentations", /enemy-water:/);
     await expect
-      .poll(async () => canvas.getAttribute("data-enemy-presentations"))
-      .not.toContain("enemy-water:");
+      .poll(async () =>
+        page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-water"))),
+      )
+      .toBe(false);
   });
 }
 
@@ -1065,7 +1080,7 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
   });
 
-  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-state", "dead");
+  await expect(page.getByTestId("entity-enemy-bomb")).toHaveCount(0);
   await expect(page.getByTestId("event-log")).toContainText("enemy_self_destructed");
   await expect(page.getByTestId("event-log")).toContainText("enemy_died");
   const finalState = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
@@ -1167,11 +1182,11 @@ test("Bomb disarms when killed before its fuse resolves", async ({ page }) => {
     await api.execute({ type: "attack", actorId: "player", direction: aimAtBomb() });
     await api.execute({ type: "attack", actorId: "player", direction: aimAtBomb() });
     const bomb = api.getState().entities.find((entity) => entity.id === "enemy-bomb");
-    return { disarmed: bomb?.phase === "dead" };
+    return { disarmed: bomb === undefined };
   });
 
   expect(result.disarmed).toBe(true);
-  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-state", "dead");
+  await expect(page.getByTestId("entity-enemy-bomb")).toHaveCount(0);
   await expect(page.getByTestId("event-log")).not.toContainText("enemy_self_destructed");
   const finalState = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   expect(finalState?.telegraphs.some((telegraph) => telegraph.sourceId === "enemy-bomb")).toBe(

@@ -1,7 +1,12 @@
 import { gsap } from "gsap";
 import type { CombatEvent } from "../../core/events/combat-events";
+import { collectTerminalEntityIds } from "../../core/events/terminal-entities";
 import type { EntityId } from "../../core/model/types";
-import type { PixiGameRenderer } from "../pixi/PixiGameRenderer";
+import {
+  enemyPresentationLabel,
+  type DetachedEntityView,
+  type PixiGameRenderer,
+} from "../pixi/PixiGameRenderer";
 
 const MOVE_DURATION = 0.26;
 const FUSE_BLINK_INTERVAL = 0.22;
@@ -96,12 +101,21 @@ interface ActiveTimeline {
 
 export class PresentationDirector {
   private readonly activeTimelines = new Set<ActiveTimeline>();
+  private readonly terminalViews = new Map<EntityId, DetachedEntityView>();
   private generation = 0;
 
   constructor(private readonly renderer: PixiGameRenderer) {}
 
   get isIdle(): boolean {
-    return this.activeTimelines.size === 0 && this.renderer.transientCount === 0;
+    return (
+      this.activeTimelines.size === 0 &&
+      this.terminalViews.size === 0 &&
+      this.renderer.transientCount === 0
+    );
+  }
+
+  get terminalViewCount(): number {
+    return this.terminalViews.size;
   }
 
   setGeneration(generation: number): void {
@@ -116,6 +130,22 @@ export class PresentationDirector {
     return this.playNow(events, generation);
   }
 
+  captureTerminalViews(events: readonly CombatEvent[], generation = this.generation): void {
+    if (generation !== this.generation) {
+      return;
+    }
+    for (const id of collectTerminalEntityIds(events)) {
+      if (this.terminalViews.has(id)) {
+        continue;
+      }
+      const view = this.renderer.detachEntityView(id);
+      if (view) {
+        this.terminalViews.set(id, view);
+      }
+    }
+    this.refreshTerminalPresentationLabels();
+  }
+
   reserveMotionOwners(events: readonly CombatEvent[], generation = this.generation): void {
     if (generation !== this.generation) {
       return;
@@ -126,7 +156,7 @@ export class PresentationDirector {
   }
 
   private async playNow(events: readonly CombatEvent[], generation: number): Promise<void> {
-    const terminalIds = new Set<EntityId>();
+    const terminalIds = collectTerminalEntityIds(events);
     const animations: Promise<void>[] = [];
     const stepsByEntity = new Map<EntityId, BoardMotionStep[]>();
     for (const step of normalizeMotionEvents(events)) {
@@ -162,7 +192,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_attack_committed": {
-          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          const presentation = this.getEnemyPresentation(event.enemyId);
           if (presentation) {
             animations.push(this.timelineDone(presentation.playPrepareAttack()));
             if (event.attack.metadata?.selfDestruct) {
@@ -170,7 +200,7 @@ export class PresentationDirector {
             }
             break;
           }
-          const view = this.renderer.getEntityView(event.enemyId);
+          const view = this.getEntityView(event.enemyId);
           if (!view) {
             break;
           }
@@ -185,7 +215,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_attack_detonated": {
-          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          const presentation = this.getEnemyPresentation(event.enemyId);
           if (presentation) {
             animations.push(this.timelineDone(presentation.playAttackCommit()));
             if (event.attack.metadata?.selfDestruct) {
@@ -215,12 +245,12 @@ export class PresentationDirector {
           if (event.hit.killed) {
             break;
           }
-          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          const presentation = this.getEnemyPresentation(event.enemyId);
           if (presentation) {
             animations.push(this.timelineDone(presentation.playDamage()));
             break;
           }
-          const view = this.renderer.getEntityView(event.enemyId);
+          const view = this.getEntityView(event.enemyId);
           if (!view) {
             break;
           }
@@ -235,7 +265,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_guard_damaged": {
-          const view = this.renderer.getEntityView(event.enemyId);
+          const view = this.getEntityView(event.enemyId);
           if (!view) {
             break;
           }
@@ -251,7 +281,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_guard_broken": {
-          const view = this.renderer.getEntityView(event.enemyId);
+          const view = this.getEntityView(event.enemyId);
           if (!view) {
             break;
           }
@@ -269,7 +299,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_staggered": {
-          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          const presentation = this.getEnemyPresentation(event.enemyId);
           if (presentation) {
             const timeline = presentation.playStaggered();
             if (timeline) {
@@ -277,7 +307,7 @@ export class PresentationDirector {
             }
             break;
           }
-          const view = this.renderer.getEntityView(event.enemyId);
+          const view = this.getEntityView(event.enemyId);
           if (!view) {
             break;
           }
@@ -292,7 +322,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_protection_started": {
-          const view = this.renderer.getEntityView(event.enemyId);
+          const view = this.getEntityView(event.enemyId);
           if (!view) {
             break;
           }
@@ -307,7 +337,7 @@ export class PresentationDirector {
           break;
         }
         case "player_damaged": {
-          const view = this.renderer.getEntityView(event.playerId);
+          const view = this.getEntityView(event.playerId);
           if (!view) {
             break;
           }
@@ -322,7 +352,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_self_destructed": {
-          this.renderer.getEnemyPresentation?.(event.enemyId)?.stopBlink();
+          this.getEnemyPresentation(event.enemyId)?.stopBlink();
           const effect = this.renderer.createImpact(event.cell, 0xff5a33);
           animations.push(
             this.timelineDone(
@@ -340,13 +370,12 @@ export class PresentationDirector {
           break;
         }
         case "enemy_died": {
-          const view = this.renderer.getEntityView(event.enemyId);
-          terminalIds.add(event.enemyId);
-          this.renderer.getEnemyPresentation?.(event.enemyId)?.stopBlink();
+          const view = this.getEntityView(event.enemyId);
+          this.getEnemyPresentation(event.enemyId)?.stopBlink();
           if (!view) {
             break;
           }
-          if (this.renderer.getEnemyPresentation?.(event.enemyId)) {
+          if (this.getEnemyPresentation(event.enemyId)) {
             animations.push(
               this.timelineDone(
                 gsap
@@ -368,8 +397,7 @@ export class PresentationDirector {
           break;
         }
         case "player_died": {
-          const view = this.renderer.getEntityView(event.playerId);
-          terminalIds.add(event.playerId);
+          const view = this.getEntityView(event.playerId);
           if (!view) {
             break;
           }
@@ -384,7 +412,7 @@ export class PresentationDirector {
           break;
         }
         case "smash_armed": {
-          const view = this.renderer.getEntityView(event.actorId);
+          const view = this.getEntityView(event.actorId);
           if (!view) {
             break;
           }
@@ -412,8 +440,7 @@ export class PresentationDirector {
           break;
         }
         case "enemy_crushed": {
-          const view = this.renderer.getEntityView(event.enemyId);
-          terminalIds.add(event.enemyId);
+          const view = this.getEntityView(event.enemyId);
           if (!view) {
             break;
           }
@@ -428,7 +455,6 @@ export class PresentationDirector {
           break;
         }
         case "enemy_entered_water":
-          terminalIds.add(event.enemyId);
           break;
         case "charge_impact": {
           const isBlocked = event.outcome === "blocked";
@@ -457,11 +483,11 @@ export class PresentationDirector {
           break;
         }
         case "enemy_attack_interrupted": {
-          this.renderer.getEnemyPresentation?.(event.enemyId)?.clearAction();
+          this.getEnemyPresentation(event.enemyId)?.clearAction();
           break;
         }
         case "enemy_stagger_ended": {
-          const presentation = this.renderer.getEnemyPresentation?.(event.enemyId);
+          const presentation = this.getEnemyPresentation(event.enemyId);
           if (!presentation) {
             break;
           }
@@ -502,15 +528,54 @@ export class PresentationDirector {
       return;
     }
     for (const id of terminalIds) {
-      this.renderer.removeEntityView(id);
+      this.releaseTerminalView(id);
     }
+  }
+
+  private getEntityView(id: EntityId) {
+    return this.terminalViews.get(id)?.root ?? this.renderer.getEntityView(id);
+  }
+
+  private getEnemyPresentation(id: EntityId) {
+    return this.terminalViews.get(id)?.enemyPresentation ?? this.renderer.getEnemyPresentation(id);
+  }
+
+  private releaseTerminalView(id: EntityId): void {
+    this.renderer.releasePosition(id);
+    const view = this.terminalViews.get(id);
+    if (!view) {
+      return;
+    }
+    this.terminalViews.delete(id);
+    if (!view.root.destroyed) {
+      view.root.destroy({ children: true });
+    }
+    this.refreshTerminalPresentationLabels();
+  }
+
+  private releaseTerminalViews(): void {
+    for (const id of [...this.terminalViews.keys()]) {
+      this.releaseTerminalView(id);
+    }
+    this.refreshTerminalPresentationLabels();
+  }
+
+  private refreshTerminalPresentationLabels(): void {
+    this.renderer.setTerminalPresentationLabels(
+      [...this.terminalViews.entries()]
+        .map(([id, view]) =>
+          view.enemyPresentation ? enemyPresentationLabel(id, view.enemyPresentation) : undefined,
+        )
+        .filter((label): label is string => label !== undefined)
+        .join("|"),
+    );
   }
 
   private createMotionTrack(
     entityId: EntityId,
     steps: readonly BoardMotionStep[],
   ): gsap.core.Timeline | undefined {
-    const view = this.renderer.getEntityView(entityId);
+    const view = this.getEntityView(entityId);
     if (!view) {
       return undefined;
     }
@@ -536,7 +601,7 @@ export class PresentationDirector {
         track.to(view, { rotation: 0.18, duration: 0.06 }, cursor);
         track.to(view, { rotation: 0, duration: 0.08 }, cursor + step.duration - 0.08);
       } else if (step.kind === "water") {
-        const presentation = this.renderer.getEnemyPresentation?.(entityId);
+        const presentation = this.getEnemyPresentation(entityId);
         if (presentation) {
           const direction = {
             x: Math.sign(step.to.x - step.from.x),
@@ -544,7 +609,14 @@ export class PresentationDirector {
           };
           const waterClock = { progress: 0 };
           let waterCursor = cursor + step.duration;
-          track.call(() => presentation.beginEnteredWater(direction), [], waterCursor);
+          track.call(
+            () => {
+              presentation.beginEnteredWater(direction);
+              this.refreshTerminalPresentationLabels();
+            },
+            [],
+            waterCursor,
+          );
           for (let frame = 1; frame < presentation.waterFrameDurationsMs.length; frame += 1) {
             track.to(
               waterClock,
@@ -556,7 +628,14 @@ export class PresentationDirector {
               waterCursor,
             );
             waterCursor += (presentation.waterFrameDurationsMs[frame - 1] ?? 0) / 1000;
-            track.call(() => presentation.setEnteredWaterFrame(frame), [], waterCursor);
+            track.call(
+              () => {
+                presentation.setEnteredWaterFrame(frame);
+                this.refreshTerminalPresentationLabels();
+              },
+              [],
+              waterCursor,
+            );
           }
           track.to(
             waterClock,
@@ -583,7 +662,7 @@ export class PresentationDirector {
       }
 
       if (step.kind === "move" && entityId !== "player") {
-        const presentation = this.renderer.getEnemyPresentation?.(entityId);
+        const presentation = this.getEnemyPresentation(entityId);
         if (presentation) {
           track.add(presentation.playMove(), cursor);
         }
@@ -606,6 +685,7 @@ export class PresentationDirector {
       active.resolve();
     }
     this.activeTimelines.clear();
+    this.releaseTerminalViews();
     this.renderer.clearTransient();
     this.renderer.clearPositionReservations();
     this.renderer.resetEnemyPresentations?.();

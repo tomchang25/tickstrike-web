@@ -204,11 +204,8 @@ describe("Bomb committed lifecycle", () => {
     const deathEvent = resolved.events.find((event) => event.type === "enemy_died");
     expect(deathEvent).toMatchObject({ enemyId: "enemy-bomb", attackerId: "enemy-bomb" });
 
-    const bombEntity = world.requireEntity("enemy-bomb");
-    expect(bombEntity.phase).toBe("dead");
-    expect(bombEntity.hp).toBe(0);
-    expect(bombEntity.activity).toBeUndefined();
-    expect(bombEntity.committedAttack).toBeUndefined();
+    // Both terminal events name one id, so the command finalization removes exactly one entity.
+    expect(world.getEntity("enemy-bomb")).toBeUndefined();
     expect(world.getTelegraph("enemy-bomb")).toBeUndefined();
     expect(world.getOccupantAt({ x: 6, y: 5 })).toBeUndefined();
     expect(world.requireEntity("player").hp).toBeLessThan(100);
@@ -228,7 +225,7 @@ describe("Bomb committed lifecycle", () => {
     expect(types).not.toContain("player_damaged");
     expect(types.filter((type) => type === "enemy_self_destructed")).toHaveLength(1);
     expect(world.requireEntity("player").hp).toBe(100);
-    expect(world.requireEntity("enemy-bomb").phase).toBe("dead");
+    expect(world.getEntity("enemy-bomb")).toBeUndefined();
   });
 
   it("disarms immediately when killed before the fuse resolves", () => {

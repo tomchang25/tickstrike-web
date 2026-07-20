@@ -83,14 +83,17 @@ describe("Smash action", () => {
     expect(world.requireEntity("enemy-center").cell).toEqual({ x: 3, y: 1 });
     expect(world.requireEntity("enemy-right").hp).toBe(70);
     expect(world.requireEntity("enemy-right").cell).toEqual({ x: 7, y: 3 });
-    expect(world.requireEntity("enemy-water")).toMatchObject({
-      cell: { x: 4, y: 6 },
-      hp: 70,
-      phase: "drowning",
+    // The drowning victim resolved terminally in this command, so it leaves the world with it.
+    expect(result.events).toContainEqual({
+      type: "enemy_entered_water",
+      enemyId: "enemy-water",
+      from: { x: 4, y: 4 },
+      waterCell: { x: 4, y: 6 },
     });
+    expect(world.getEntity("enemy-water")).toBeUndefined();
     expect(world.playerCell).toEqual({ x: 4, y: 3 });
     expect(world.getOccupantAt({ x: 4, y: 6 })).toBeUndefined();
-    expect(world.listEntities()).toHaveLength(4);
+    expect(world.listEntities()).toHaveLength(3);
     expect(world.snapshot().armedSmashTarget).toBeUndefined();
     expect(world.snapshot().tick).toBe(2);
   });
@@ -370,7 +373,8 @@ describe("player verbs", () => {
 
     expect(release.accepted).toBe(true);
     expect(release.events.map((event) => event.type)).toContain("enemy_crushed");
-    expect(world.requireEntity("smash-blocker")).toMatchObject({ phase: "dead", hp: 70 });
+    expect(world.getEntity("smash-blocker")).toBeUndefined();
+    expect(world.getOccupantAt({ x: 5, y: 5 })?.id).toBe("player");
     expect(world.playerCell).toEqual({ x: 5, y: 5 });
     expect(world.snapshot().tick).toBe(beforeRelease.tick + 1);
   });
@@ -692,9 +696,61 @@ describe("playable encounter outcomes", () => {
 
     const lastEvents = defeated.snapshot().lastEvents;
     expect(defeated.snapshot()).toMatchObject({ outcome: "defeat", telegraphs: [] });
-    expect(defeated.requireEntity("player")).toMatchObject({ hp: 0, phase: "dead" });
+    expect(defeated.getEntity("player")).toBeUndefined();
+    expect(defeated.snapshot().playerCell).toBeUndefined();
     expect(lastEvents.map((event) => event.type)).toContain("player_died");
     expect(lastEvents).toContainEqual({ type: "encounter_ended", outcome: "defeat" });
+  });
+});
+
+describe("terminal entity finalization", () => {
+  it("removes the entity its own command killed and frees the cell", () => {
+    const world = createFoundationArena();
+    world.applyDamage("enemy-thrust", 98);
+
+    const result = resolveCommand(world, {
+      type: "attack",
+      actorId: "player",
+      direction: { x: -1, y: 0 },
+    });
+
+    expect(result.events.map((event) => event.type)).toContain("enemy_died");
+    expect(world.getEntity("enemy-thrust")).toBeUndefined();
+    expect(world.snapshot().entities.map((entity) => entity.id)).not.toContain("enemy-thrust");
+    expect(world.getOccupantAt({ x: 5, y: 6 })).toBeUndefined();
+  });
+
+  it("leaves a terminal entity that produced no terminal event in this command", () => {
+    const world = createFoundationArena();
+    world.setPhase("enemy-ranged", "dead");
+
+    const result = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(world.requireEntity("enemy-ranged").phase).toBe("dead");
+  });
+
+  it("still declares legacy victory in the very command that kills the last enemy", () => {
+    const world = createFoundationArena();
+    world.applyDamage("enemy-slash", 100);
+    world.applyDamage("enemy-ranged", 100);
+    world.applyDamage("enemy-charge", 150);
+    world.applyDamage("enemy-bomb", 50);
+    world.applyDamage("enemy-thrust", 98);
+
+    const result = resolveCommand(world, {
+      type: "attack",
+      actorId: "player",
+      direction: { x: -1, y: 0 },
+    });
+
+    expect(result.events).toContainEqual({ type: "encounter_ended", outcome: "victory" });
+    expect(world.outcome).toBe("victory");
+    expect(world.getEntity("enemy-thrust")).toBeUndefined();
   });
 });
 
@@ -773,9 +829,7 @@ describe("wave phase wiring in the accepted-command path", () => {
     const advancedIndex = types.indexOf("world_advanced");
     expect(commandIndex).toBeLessThan(waveIndex);
     expect(waveIndex).toBeLessThan(advancedIndex);
-    expect(
-      world.listEntities().filter((entity) => entity.id.startsWith("wave-")),
-    ).toHaveLength(1);
+    expect(world.listEntities().filter((entity) => entity.id.startsWith("wave-"))).toHaveLength(1);
   });
 
   it("leaves a scenario with no wave context byte-for-byte unchanged (legacy no-op)", () => {
@@ -814,9 +868,7 @@ describe("wave phase wiring in the accepted-command path", () => {
     );
     expect(world.outcome).toBe("running");
 
-    const spawnedId = world
-      .listEntities()
-      .find((entity) => entity.id.startsWith("wave-"))!.id;
+    const spawnedId = world.listEntities().find((entity) => entity.id.startsWith("wave-"))!.id;
     world.setPhase(spawnedId, "dead");
 
     const clearResult = resolveCommand(

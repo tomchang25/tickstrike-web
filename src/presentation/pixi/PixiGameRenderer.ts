@@ -79,6 +79,11 @@ interface EntityView {
   readonly guardBar: Graphics;
 }
 
+export interface DetachedEntityView {
+  readonly root: Container;
+  readonly enemyPresentation?: EnemyPresentation;
+}
+
 export interface ScreenBounds {
   readonly x: number;
   readonly y: number;
@@ -193,7 +198,6 @@ export class PixiGameRenderer {
   readonly effectsLayer = new Container();
 
   private readonly entityViews = new Map<EntityId, EntityView>();
-  private readonly despawnedPresentationIds = new Map<EntityId, string | undefined>();
   private readonly transientEffects = new Set<Graphics>();
   private readonly positionOwners = new Set<EntityId>();
   private host: HTMLElement | undefined;
@@ -292,7 +296,6 @@ export class PixiGameRenderer {
     this.pointerCleanup = undefined;
     this.clearPointerPreview();
     this.entityViews.clear();
-    this.despawnedPresentationIds.clear();
     this.clearPositionReservations();
     this.clearTransient();
     this.enemySpriteSheets = {};
@@ -334,8 +337,6 @@ export class PixiGameRenderer {
 
   sync(snapshot: WorldSnapshot): void {
     this.snapshot = snapshot;
-    // A full sync starts a new scenario lifetime, so terminal views from its predecessor may return.
-    this.despawnedPresentationIds.clear();
     if (snapshot.tick === 0) {
       this.lastAim = INITIAL_AIM;
       this.playerFacing = INITIAL_AIM;
@@ -383,11 +384,6 @@ export class PixiGameRenderer {
         this.positionOwners.delete(id);
       }
     }
-    for (const id of this.despawnedPresentationIds.keys()) {
-      if (!liveIds.has(id)) {
-        this.despawnedPresentationIds.delete(id);
-      }
-    }
 
     for (const entity of snapshot.entities) {
       let view = this.entityViews.get(entity.id);
@@ -395,17 +391,9 @@ export class PixiGameRenderer {
         view.root.destroy({ children: true });
         this.entityViews.delete(entity.id);
         this.positionOwners.delete(entity.id);
-        this.despawnedPresentationIds.delete(entity.id);
         view = undefined;
       }
       if (!view) {
-        if (
-          this.despawnedPresentationIds.has(entity.id) &&
-          this.despawnedPresentationIds.get(entity.id) === entity.presentationId
-        ) {
-          continue;
-        }
-        this.despawnedPresentationIds.delete(entity.id);
         view = this.createEntityView(entity);
         this.entityViews.set(entity.id, view);
         this.actorLayer.addChild(view.root);
@@ -471,7 +459,7 @@ export class PixiGameRenderer {
           if (entity.kind !== "enemy" || !presentation) {
             return undefined;
           }
-          return this.enemyPresentationLabel(entity.id, presentation);
+          return enemyPresentationLabel(entity.id, presentation);
         })
         .filter((value): value is string => value !== undefined)
         .join("|");
@@ -631,14 +619,11 @@ export class PixiGameRenderer {
     this.positionOwners.clear();
   }
 
-  removeEntityView(id: EntityId): void {
-    this.positionOwners.delete(id);
+  detachEntityView(id: EntityId): DetachedEntityView | undefined {
     const view = this.entityViews.get(id);
     if (!view) {
-      return;
+      return undefined;
     }
-    this.despawnedPresentationIds.set(id, view.presentationId);
-    view.root.destroy({ children: true });
     this.entityViews.delete(id);
     if (view.enemyPresentation) {
       this.refreshEnemyPresentationDataset();
@@ -648,10 +633,22 @@ export class PixiGameRenderer {
       delete this.app.canvas.dataset.playerFacing;
       this.app.canvas.dataset.playerAnimation = "idle";
     }
+    return view;
   }
 
   getEnemyPresentation(id: EntityId): EnemyPresentation | undefined {
     return this.entityViews.get(id)?.enemyPresentation;
+  }
+
+  setTerminalPresentationLabels(labels: string): void {
+    if (!this.host) {
+      return;
+    }
+    if (labels) {
+      this.app.canvas.dataset.retainedPresentations = labels;
+    } else {
+      delete this.app.canvas.dataset.retainedPresentations;
+    }
   }
 
   resetEnemyPresentations(): void {
@@ -665,13 +662,17 @@ export class PixiGameRenderer {
     if (!this.host) {
       return;
     }
-    this.app.canvas.dataset.enemyPresentations = [...this.entityViews.entries()]
+    this.app.canvas.dataset.enemyPresentations = this.presentationLabels(this.entityViews);
+  }
+
+  private presentationLabels(views: ReadonlyMap<EntityId, EntityView>): string {
+    return [...views.entries()]
       .map(([id, view]) => {
         const presentation = view.enemyPresentation;
         if (!presentation) {
           return undefined;
         }
-        return this.enemyPresentationLabel(id, presentation);
+        return enemyPresentationLabel(id, presentation);
       })
       .filter((value): value is string => value !== undefined)
       .join("|");
@@ -818,6 +819,10 @@ export class PixiGameRenderer {
 
   private drawPointerPreview(): void {
     this.pointerPreviewLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    if (!this.host) {
+      // An unmounted renderer has no canvas to draw on or tag, matching clearPointerPreview.
+      return;
+    }
     const canvas = this.app.canvas;
     delete canvas.dataset.attackPreviewCell;
     delete canvas.dataset.attackTarget;
@@ -1348,9 +1353,9 @@ export class PixiGameRenderer {
       guardBar,
     };
   }
+}
 
-  private enemyPresentationLabel(id: EntityId, presentation: EnemyPresentation): string {
-    const water = presentation.waterFrame === undefined ? "" : `:water:${presentation.waterFrame}`;
-    return `${id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}${water}`;
-  }
+export function enemyPresentationLabel(id: EntityId, presentation: EnemyPresentation): string {
+  const water = presentation.waterFrame === undefined ? "" : `:water:${presentation.waterFrame}`;
+  return `${id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}${water}`;
 }
