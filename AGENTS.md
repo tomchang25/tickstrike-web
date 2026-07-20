@@ -13,18 +13,3 @@ Read `dev/standards/project_structure.md` before adding, moving, or reorganizing
 ## Human-only reports
 
 `dev/docs/reports/` is human-facing historical/report material and may be stale. Agents must not read, search, cite, summarize, or use files in this directory as a source of truth. Use current source, tests, standards, and agent rules instead.
-
-## Feature completion contract
-
-A feature is complete only when it has:
-
-1. Core rule or content definition.
-2. Deterministic scenario setup.
-3. Unit assertions for logical results.
-4. Pixi/GSAP presentation where applicable.
-5. Playwright assertion for the browser-visible result.
-6. No pending animation or orphan visual after scenario completion.
-
-## Porting rule
-
-Port behavior and content. Do not preserve Godot lifecycle patterns such as `_ready`, signals as universal plumbing, NodePath lookups, `queue_free`, Autoload ownership, or scene inheritance unless a Web-native equivalent is independently justified.
