@@ -2,6 +2,7 @@ import { createShippedArena as createShippedArenaGeometry } from "../../core/wor
 import { World } from "../../core/world/world";
 import type { Seed } from "../../core/model/types";
 import type { WavePhaseContext } from "../../core/actions/wave-phase";
+import type { ArtifactDefinition } from "../../core/content/artifact-schema";
 import type {
   GrowthCurve,
   GuardGrowthInput,
@@ -47,52 +48,80 @@ const REWARD_GROUP: SpawnGroupDefinition = {
   entries: [{ enemyId: "reward-grunt", count: 1 }],
 };
 
-const WAVE_ONE: WaveDefinition = {
-  id: "reward-w1",
-  populationCap: 1,
-  slots: [
-    {
-      spawnGroupId: REWARD_GROUP.id,
-      startCondition: "immediate-overlap",
-      survivorThreshold: 0,
-      warningTicks: 0,
-      levelOffset: 0,
-      isBoss: false,
-    },
-  ],
-};
+/** One supported artifact per wave, in the order Wave 1..N unlocks them. */
+const REWARD_ARTIFACT_ORDER = [
+  "attack_up",
+  "dash_attack_up",
+  "mobility_cooldown_down",
+  "mobility_range_up",
+  "max_health_up",
+  "guard_shredder",
+  "execution",
+] as const;
 
-const WAVE_TWO: WaveDefinition = {
-  id: "reward-w2",
-  populationCap: 1,
-  slots: [
-    {
-      spawnGroupId: REWARD_GROUP.id,
-      startCondition: "immediate-overlap",
-      survivorThreshold: 0,
-      warningTicks: 1,
-      levelOffset: 0,
-      isBoss: false,
-    },
-  ],
-};
-
-const attackUpArtifact = artifactCatalog.artifacts.find((artifact) => artifact.id === "attack_up");
-if (!attackUpArtifact) {
-  throw new Error("Shipped artifact content is incomplete.");
+function requireShippedArtifact(id: string): ArtifactDefinition {
+  const artifact = artifactCatalog.artifacts.find((candidate) => candidate.id === id);
+  if (!artifact) {
+    throw new Error(`Shipped artifact content is missing ${id}.`);
+  }
+  return artifact;
 }
 
 /**
- * A minimal two-wave, one-passive-enemy-per-wave context so the reward pause boundary can be
- * exercised deterministically without depending on the full shipped wave catalog. The enemy has
- * no `enemyAction`, so it never attacks and dies to a single Normal Attack.
+ * Overrides each real shipped artifact's minimum wave to match its position in
+ * `REWARD_ARTIFACT_ORDER` and caps every stack at one. Each successive wave clear's eligible pool
+ * then always contains exactly one candidate — the one just unlocked, since every earlier one is
+ * already capped — so the browser walkthrough is deterministic without depending on the exact
+ * "rewards" stream draw. Authored name, description, magnitude, and effect are left untouched.
+ */
+const offerableArtifacts: readonly ArtifactDefinition[] = REWARD_ARTIFACT_ORDER.map(
+  (id, index) => ({
+    ...requireShippedArtifact(id),
+    minWave: index + 1,
+    maxStacks: 1,
+  }),
+);
+
+function buildRewardWave(waveNumber: number): WaveDefinition {
+  return {
+    id: `reward-w${waveNumber}`,
+    populationCap: 1,
+    slots: [
+      {
+        spawnGroupId: REWARD_GROUP.id,
+        startCondition: "immediate-overlap",
+        survivorThreshold: 0,
+        // Wave 1 spawns immediately on the first accepted command; every later wave warns first,
+        // matching the original two-wave Child A fixture's lifecycle coverage.
+        warningTicks: waveNumber === 1 ? 0 : 1,
+        levelOffset: 0,
+        isBoss: false,
+      },
+    ],
+  };
+}
+
+// One trailing wave beyond the last supported artifact: a reward offer is only generated once a
+// next wave exists to resume into (an exhausted run otherwise declares victory immediately,
+// skipping the offer), so the final artifact needs this wave to pause on its own reward.
+const REWARD_WAVE_COUNT = REWARD_ARTIFACT_ORDER.length + 1;
+
+const REWARD_WAVES: readonly WaveDefinition[] = Array.from(
+  { length: REWARD_WAVE_COUNT },
+  (_, index) => buildRewardWave(index + 1),
+);
+
+/**
+ * A minimal per-wave, one-passive-enemy arena so the reward pause boundary and every supported
+ * effect can be exercised deterministically without depending on the full shipped wave catalog.
+ * The enemy has no `enemyAction`, so it never attacks and dies to a single Normal Attack.
  */
 export const rewardScenarioContext: WavePhaseContext = {
   groups: [REWARD_GROUP],
   progressionProfile: PROGRESSION_PROFILE,
-  offerableArtifacts: [attackUpArtifact],
+  offerableArtifacts,
   waveFor(waveNumber) {
-    return waveNumber === 1 ? WAVE_ONE : waveNumber === 2 ? WAVE_TWO : undefined;
+    return REWARD_WAVES[waveNumber - 1];
   },
   buildEnemySpawnInput(request) {
     return {

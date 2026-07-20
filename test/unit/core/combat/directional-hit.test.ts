@@ -154,6 +154,202 @@ describe("directional Guard hit resolution", () => {
   });
 });
 
+describe("Dash trigger effects: Guard Shredder", () => {
+  it("guarantees an immediate guard break on a back hit that ordinary damage would not break", () => {
+    const target = {
+      ...targetAt({ x: 4, y: 4 }, { x: 1, y: 0 }),
+      guard: {
+        id: "heavy",
+        current: 100,
+        max: 100,
+        staggerDuration: 2,
+        protectionDuration: 5,
+        protectionMultiplier: 0.5,
+      },
+    };
+
+    const ordinary = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 3, y: 4 },
+      target,
+      damage: 20,
+    });
+    expect(ordinary).toMatchObject({ guardDamage: 32, guardAfter: 68, guardBroken: false });
+
+    const shredded = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 3, y: 4 },
+      target,
+      damage: 20,
+      guardShredderTrigger: true,
+    });
+    expect(shredded).toMatchObject({ guardDamage: 100, guardAfter: 0, guardBroken: true });
+  });
+
+  it("uses ordinary guard calculation on a front or side hit", () => {
+    const target = targetAt({ x: 4, y: 4 }, { x: 1, y: 0 });
+
+    const front = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 5, y: 4 },
+      target,
+      damage: 20,
+      guardShredderTrigger: true,
+    });
+    const side = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 4, y: 5 },
+      target,
+      damage: 20,
+      guardShredderTrigger: true,
+    });
+
+    expect(front).toMatchObject({ angle: "front", guardDamage: 4, guardBroken: false });
+    expect(side).toMatchObject({ angle: "side", guardDamage: 16, guardBroken: false });
+  });
+
+  it("is inert without the trigger flag, on the same back-angle hit", () => {
+    const target = {
+      ...targetAt({ x: 4, y: 4 }, { x: 1, y: 0 }),
+      guard: {
+        id: "heavy",
+        current: 100,
+        max: 100,
+        staggerDuration: 2,
+        protectionDuration: 5,
+        protectionMultiplier: 0.5,
+      },
+    };
+
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 3, y: 4 },
+      target,
+      damage: 20,
+    });
+
+    expect(hit).toMatchObject({ guardDamage: 32, guardAfter: 68, guardBroken: false });
+  });
+
+  it("does not apply to an already-staggered target (no guard left to shred)", () => {
+    const target = {
+      ...targetAt({ x: 4, y: 4 }, { x: 1, y: 0 }),
+      guard: undefined,
+      activity: "staggered" as const,
+    };
+
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 3, y: 4 },
+      target,
+      damage: 20,
+      guardShredderTrigger: true,
+    });
+
+    expect(hit).toMatchObject({ guardBroken: false, staggerBurst: true, feedback: "staggered" });
+  });
+});
+
+describe("Dash trigger effects: Execution", () => {
+  it("kills a staggered target outright, replacing the ordinary stagger-burst damage", () => {
+    const target = {
+      ...targetAt({ x: 4, y: 4 }, { x: 1, y: 0 }),
+      guard: undefined,
+      activity: "staggered" as const,
+      hp: 45,
+    };
+
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 4, y: 5 },
+      target,
+      damage: 30,
+      staggerMultiplier: 2,
+      executionTrigger: true,
+    });
+
+    expect(hit).toMatchObject({
+      hpBefore: 45,
+      hpAfter: 0,
+      killed: true,
+      hpDamage: 45,
+      staggerBurst: true,
+    });
+  });
+
+  it("ignores Defense on its instant kill", () => {
+    const target = {
+      ...targetAt({ x: 4, y: 4 }, { x: 1, y: 0 }),
+      guard: undefined,
+      activity: "staggered" as const,
+      hp: 45,
+      defense: 50,
+    };
+
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 4, y: 5 },
+      target,
+      damage: 30,
+      executionTrigger: true,
+    });
+
+    expect(hit).toMatchObject({ hpAfter: 0, killed: true, defenseAdjustedDamage: 45 });
+  });
+
+  it("uses ordinary Dash damage and terminal rules on a non-staggered target", () => {
+    const target = targetAt({ x: 4, y: 4 }, { x: 1, y: 0 });
+
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 3, y: 4 },
+      target,
+      damage: 20,
+      executionTrigger: true,
+    });
+
+    expect(hit).toMatchObject({ angle: "back", killed: false, hpDamage: 20, guardBroken: true });
+  });
+
+  it("is inert without the trigger flag, on the same staggered target", () => {
+    const target = {
+      ...targetAt({ x: 4, y: 4 }, { x: 1, y: 0 }),
+      guard: undefined,
+      activity: "staggered" as const,
+      hp: 45,
+    };
+
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 4, y: 5 },
+      target,
+      damage: 30,
+    });
+
+    expect(hit).toMatchObject({ hpAfter: 15, killed: false, hpDamage: 30 });
+  });
+
+  it("takes priority over a simultaneous Guard Shredder trigger", () => {
+    const target = {
+      ...targetAt({ x: 4, y: 4 }, { x: 1, y: 0 }),
+      guard: undefined,
+      activity: "staggered" as const,
+      hp: 45,
+    };
+
+    const hit = calculateDirectionalHit({
+      attackerId: "player",
+      attackerCell: { x: 3, y: 4 },
+      target,
+      damage: 20,
+      guardShredderTrigger: true,
+      executionTrigger: true,
+    });
+
+    expect(hit).toMatchObject({ killed: true, hpAfter: 0 });
+  });
+});
+
 describe("Guard break status lifecycle", () => {
   it("cancels an attack, blocks three status ticks, then restores Guard into Protection", () => {
     const world = createTrainingArena();

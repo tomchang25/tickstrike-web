@@ -1,3 +1,4 @@
+import type { ArtifactTrigger } from "../content/artifact-schema";
 import type { AdmittedBatch, SlotState } from "../waves/wave-scheduler";
 
 export type EntityId = string;
@@ -199,9 +200,10 @@ export interface WaveRuntimeState {
   readonly pendingBatch?: PendingSpawnBatch;
 }
 
-/** Run-scoped acquired artifact stacks, keyed by artifact ID. The sole source of reward contributions. */
+/** Run-scoped acquired artifact stacks and enabled Dash triggers. The sole source of reward contributions. */
 export interface RunBuildState {
   readonly stacks: Readonly<Record<string, number>>;
+  readonly triggers: readonly ArtifactTrigger[];
 }
 
 /** One offerable artifact and the stack count the player would reach by selecting it. */

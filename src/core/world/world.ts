@@ -1,4 +1,5 @@
 import type { GuardDefinition } from "../content/actor-schema";
+import type { ArtifactTrigger } from "../content/artifact-schema";
 import type { CombatEvent } from "../events/combat-events";
 import { RandomStreams } from "../random/random-streams";
 import {
@@ -165,7 +166,7 @@ function cloneWaveRuntime(state: WaveRuntimeState): WaveRuntimeState {
 }
 
 function cloneRunBuild(build: RunBuildState): RunBuildState {
-  return { stacks: { ...build.stacks } };
+  return { stacks: { ...build.stacks }, triggers: [...build.triggers] };
 }
 
 function clonePendingRewardOffer(offer: PendingRewardOffer): PendingRewardOffer {
@@ -220,7 +221,7 @@ export class World {
   private currentPlayerCell: Cell | undefined;
   private currentArmedSmashTarget: Cell | undefined;
   private currentWaveRuntime: WaveRuntimeState | undefined;
-  private currentRunBuild: RunBuildState = { stacks: {} };
+  private currentRunBuild: RunBuildState = { stacks: {}, triggers: [] };
   private currentPendingReward: PendingRewardOffer | undefined;
   private currentTick = 0;
   private currentOutcome: EncounterOutcome = "running";
@@ -492,10 +493,23 @@ export class World {
     this.currentPendingReward = undefined;
   }
 
-  /** Records the selected artifact's resulting stack count in the run build. */
-  applyRewardSelection(artifactId: string, resultingStackCount: number): RunBuildState {
+  /**
+   * Records the selected artifact's resulting stack count in the run build and, for a Major
+   * trigger artifact, adds its acquired trigger (deduplicated; enforced by the trigger's own
+   * one-stack cap upstream, not re-validated here).
+   */
+  applyRewardSelection(
+    artifactId: string,
+    resultingStackCount: number,
+    trigger?: ArtifactTrigger,
+  ): RunBuildState {
+    const triggers =
+      trigger && !this.currentRunBuild.triggers.includes(trigger)
+        ? [...this.currentRunBuild.triggers, trigger]
+        : this.currentRunBuild.triggers;
     this.currentRunBuild = {
       stacks: { ...this.currentRunBuild.stacks, [artifactId]: resultingStackCount },
+      triggers,
     };
     return this.runBuild;
   }
@@ -510,6 +524,59 @@ export class World {
       throw new Error(`Unknown entity: ${id}`);
     }
     this.entities.set(id, { ...entity, normalAttackDamage: damage });
+  }
+
+  /** Updates the player entity's configured Mobility attack damage; read by preview and resolution. */
+  setMobilityDamage(id: EntityId, damage: number): void {
+    if (!Number.isFinite(damage) || damage < 0) {
+      throw new Error("Mobility damage must be a non-negative finite number.");
+    }
+    const entity = this.entities.get(id);
+    if (!entity?.mobility) {
+      throw new Error(`Entity has no Mobility to update: ${id}`);
+    }
+    this.entities.set(id, { ...entity, mobility: { ...entity.mobility, damage } });
+  }
+
+  /**
+   * Updates the configured Mobility cooldown applied after release. Distinct from
+   * `setMobilityCooldown`, which sets the counting-down remainder for the current cooldown.
+   */
+  setMobilityCooldownConfig(id: EntityId, cooldown: number): void {
+    if (!Number.isInteger(cooldown) || cooldown < 0) {
+      throw new Error("Mobility cooldown must be a non-negative integer.");
+    }
+    const entity = this.entities.get(id);
+    if (!entity?.mobility) {
+      throw new Error(`Entity has no Mobility to update: ${id}`);
+    }
+    this.entities.set(id, { ...entity, mobility: { ...entity.mobility, cooldown } });
+  }
+
+  /** Updates the player entity's configured Mobility range. */
+  setMobilityRange(id: EntityId, range: number): void {
+    if (!Number.isInteger(range) || range <= 0) {
+      throw new Error("Mobility range must be a positive integer.");
+    }
+    const entity = this.entities.get(id);
+    if (!entity?.mobility) {
+      throw new Error(`Entity has no Mobility to update: ${id}`);
+    }
+    this.entities.set(id, { ...entity, mobility: { ...entity.mobility, range } });
+  }
+
+  /** Raises maximum HP by `amount` and current HP by the same amount, capped at the new maximum. */
+  raiseMaxHealth(id: EntityId, amount: number): void {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error("Max health gain must be a positive finite number.");
+    }
+    const entity = this.entities.get(id);
+    if (!entity) {
+      throw new Error(`Unknown entity: ${id}`);
+    }
+    const maxHp = entity.maxHp + amount;
+    const hp = Math.min(maxHp, entity.hp + amount);
+    this.entities.set(id, { ...entity, maxHp, hp });
   }
 
   getOccupantAt(cell: Cell): EntityState | undefined {

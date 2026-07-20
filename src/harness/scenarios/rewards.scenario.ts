@@ -8,9 +8,10 @@ import type { TestScenario } from "../types";
 export const scenarios: readonly TestScenario[] = [
   {
     id: "rewards",
-    title: "Rewards / First Attack Up Offer",
+    title: "Rewards / Supported Effect Walkthrough",
     description:
-      "A minimal two-wave arena that pauses with a single attack_up reward offer once Wave 1 clears.",
+      "A minimal arena that pauses on one deterministic reward offer per wave clear, walking " +
+      "through every supported artifact effect in one continuous run.",
     seed: REWARD_SCENARIO_SEED,
     waveContext: rewardScenarioContext,
     createWorld(seed) {

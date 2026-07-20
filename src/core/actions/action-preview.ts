@@ -137,12 +137,19 @@ function activeMobility(actor: EntityState):
   };
 }
 
+/** Only an actual Dash hit passes these; Smash and Normal Attack never consume either trigger. */
+export interface DashHitTriggers {
+  readonly guardShredder: boolean;
+  readonly execution: boolean;
+}
+
 function previewMobilityHit(
   actor: EntityState,
   target: EntityState,
   origin: Cell,
   damage: number,
   staggerMultiplier: number,
+  triggers?: DashHitTriggers,
 ): MobilityHitPreview {
   const directional = target.facing
     ? calculateDirectionalHit({
@@ -151,6 +158,8 @@ function previewMobilityHit(
         target,
         damage,
         staggerMultiplier,
+        guardShredderTrigger: triggers?.guardShredder,
+        executionTrigger: triggers?.execution,
       })
     : undefined;
   return {
@@ -469,6 +478,13 @@ export function previewDash(
     };
   }
 
+  // Acquired build triggers apply only to this actual Dash's hits; Smash's shared preview helper
+  // never receives them.
+  const triggers: DashHitTriggers = {
+    guardShredder: snapshot.runBuild.triggers.includes("guard-shredder"),
+    execution: snapshot.runBuild.triggers.includes("execution"),
+  };
+
   const path: Cell[] = [];
   const victims: Array<{ readonly step: number; readonly preview: MobilityHitPreview }> = [];
   let landing: Cell | undefined;
@@ -490,6 +506,7 @@ export function previewDash(
             add(enemy.cell, multiply(direction, -1)),
             mobility.damage,
             mobility.staggerMultiplier,
+            triggers,
           ),
         });
       }

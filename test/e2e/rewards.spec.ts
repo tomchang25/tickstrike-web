@@ -1,5 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import type { TickstrikeDebugApi } from "../../src/harness/debug-api";
+import type { EntityState, WorldSnapshot } from "../../src/core/model/types";
 
 declare global {
   interface Window {
@@ -7,35 +8,20 @@ declare global {
   }
 }
 
-test("Clearing Wave 1 pauses on an attack_up offer, selection resumes Wave 2, and reset clears it", async ({
-  page,
-}) => {
-  test.setTimeout(45_000);
-  await page.goto("/?scenario=rewards");
-  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
-  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+function requirePlayer(state: WorldSnapshot | undefined): EntityState {
+  const player = state?.entities.find((entity) => entity.id === "player");
+  if (!player) {
+    throw new Error("Expected a player entity in the snapshot.");
+  }
+  return player;
+}
 
-  const initial = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(initial?.tick).toBe(0);
-  expect(initial?.pendingReward).toBeUndefined();
-  expect(initial?.runBuild).toEqual({ stacks: {} });
-  expect(initial?.waveRuntime).toMatchObject({ waveNumber: 1 });
-  const baseDamage = initial?.entities.find((entity) => entity.id === "player")?.normalAttackDamage;
-  expect(baseDamage).toBeGreaterThan(0);
-
-  // The first accepted command admits Wave 1's single passive enemy.
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    if (!api) {
-      throw new Error("Tickstrike debug API is unavailable.");
-    }
-    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
-  });
-  const spawned = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(spawned?.entities.filter((entity) => entity.kind === "enemy")).toHaveLength(1);
-
-  // Chase the single passive (no enemyAction) enemy down with a bounded, deterministic loop
-  // driven only by accepted commands, then kill it with one Normal Attack.
+/**
+ * Drives accepted commands until the current wave's single passive (no `enemyAction`) enemy is
+ * dead and its reward offer is pending — nudging with a harmless whiff while the wave is still
+ * warning or between clear and the next admission, then chasing and killing once it spawns.
+ */
+async function clearWaveForReward(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
     if (!api) {
@@ -52,14 +38,22 @@ test("Clearing Wave 1 pauses on an attack_up offer, selection resumes Wave 2, an
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
-    for (let step = 0; step < 60; step += 1) {
+    for (let step = 0; step < 200; step += 1) {
       const state = api.getState();
+      if (state.pendingReward) {
+        return;
+      }
       const player = state.entities.find((entity) => entity.id === "player");
+      if (!player) {
+        return;
+      }
       const enemy = state.entities.find(
         (entity) => entity.kind === "enemy" && entity.phase === "alive",
       );
-      if (!player || !enemy) {
-        break;
+      if (!enemy) {
+        // The next wave hasn't warned or spawned yet: a harmless whiff advances the wave phase.
+        await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+        continue;
       }
       if (distance(player.cell, enemy.cell) === 1) {
         await api.execute({
@@ -94,76 +88,145 @@ test("Clearing Wave 1 pauses on an attack_up offer, selection resumes Wave 2, an
         return distance(nextA, enemy.cell) - distance(nextB, enemy.cell);
       })[0];
       if (!toward) {
-        break;
+        return;
       }
       await api.execute({ type: "move", actorId: "player", direction: toward });
     }
   });
+}
 
-  const paused = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(
-    paused?.entities.filter((entity) => entity.kind === "enemy" && entity.phase === "alive"),
-  ).toHaveLength(0);
-  expect(paused?.pendingReward).toEqual({
-    waveNumber: 1,
-    cards: [{ artifactId: "attack_up", resultingStackCount: 1 }],
-  });
-  expect(paused?.waveRuntime).toMatchObject({ waveNumber: 1 });
+interface EffectCase {
+  readonly artifactId: string;
+  readonly assert: (before: WorldSnapshot, after: WorldSnapshot) => void;
+}
 
-  // The overlay is visible with a real, labeled button for the sole card.
+const EFFECT_CASES: readonly EffectCase[] = [
+  {
+    artifactId: "attack_up",
+    assert: (before, after) => {
+      expect(requirePlayer(after).normalAttackDamage).toBe(
+        (requirePlayer(before).normalAttackDamage ?? 0) + 10,
+      );
+    },
+  },
+  {
+    artifactId: "dash_attack_up",
+    assert: (before, after) => {
+      expect(requirePlayer(after).mobility?.damage).toBe(
+        (requirePlayer(before).mobility?.damage ?? 0) + 20,
+      );
+    },
+  },
+  {
+    artifactId: "mobility_cooldown_down",
+    assert: (before, after) => {
+      expect(requirePlayer(after).mobility?.cooldown).toBe(
+        (requirePlayer(before).mobility?.cooldown ?? 0) - 1,
+      );
+    },
+  },
+  {
+    artifactId: "mobility_range_up",
+    assert: (before, after) => {
+      expect(requirePlayer(after).mobility?.range).toBe(
+        (requirePlayer(before).mobility?.range ?? 0) + 1,
+      );
+    },
+  },
+  {
+    artifactId: "max_health_up",
+    assert: (before, after) => {
+      expect(requirePlayer(after).maxHp).toBe(requirePlayer(before).maxHp + 20);
+      expect(requirePlayer(after).hp).toBe(requirePlayer(before).hp + 20);
+    },
+  },
+  {
+    artifactId: "guard_shredder",
+    assert: (_before, after) => {
+      expect(after.runBuild.triggers).toContain("guard-shredder");
+    },
+  },
+  {
+    artifactId: "execution",
+    assert: (_before, after) => {
+      expect(after.runBuild.triggers).toContain("execution");
+    },
+  },
+];
+
+test("Every supported reward effect applies once through the same overlay, and reset clears them all", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await page.goto("/?scenario=rewards");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+
+  const initial = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
+  expect(initial?.tick).toBe(0);
+  expect(initial?.pendingReward).toBeUndefined();
+  expect(initial?.runBuild).toEqual({ stacks: {}, triggers: [] });
+  expect(initial?.waveRuntime).toMatchObject({ waveNumber: 1 });
+  const basePlayer = requirePlayer(initial);
+  expect(basePlayer.normalAttackDamage).toBeGreaterThan(0);
+
   const overlay = page.getByTestId("reward-overlay");
-  await expect(overlay).toBeVisible();
-  const card = page.getByTestId("reward-card-attack_up");
-  await expect(card).toBeVisible();
-  await expect(card).toContainText("Sharpened Edge");
 
-  // A command submitted while paused changes nothing: no tick, no wave change.
-  const tickBeforeReject = paused?.tick;
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    await api?.execute({ type: "move", actorId: "player", direction: { x: 0, y: 1 } });
-  });
-  const afterRejectedCommand = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(afterRejectedCommand?.tick).toBe(tickBeforeReject);
-  expect(afterRejectedCommand?.pendingReward).toBeDefined();
+  for (const [index, effectCase] of EFFECT_CASES.entries()) {
+    await clearWaveForReward(page);
+    const paused = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
 
-  // A keyboard move is also inert while the overlay owns focus: supplementary React-level guard.
-  await page.keyboard.press("d");
-  const afterKeyboard = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(afterKeyboard?.tick).toBe(tickBeforeReject);
+    expect(paused?.pendingReward).toEqual({
+      waveNumber: index + 1,
+      cards: [{ artifactId: effectCase.artifactId, resultingStackCount: 1 }],
+    });
 
-  // Selecting the reward via the real button raises damage and resumes into Wave 2, unspawned.
-  await card.click();
-  await expect(overlay).toHaveCount(0);
-  const selected = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(selected?.pendingReward).toBeUndefined();
-  expect(selected?.runBuild).toEqual({ stacks: { attack_up: 1 } });
-  expect(selected?.entities.find((entity) => entity.id === "player")?.normalAttackDamage).toBe(
-    (baseDamage ?? 0) + 10,
-  );
-  expect(selected?.waveRuntime).toMatchObject({ waveNumber: 2 });
-  expect(selected?.entities.filter((entity) => entity.kind === "enemy")).toHaveLength(0);
-  expect(selected?.telegraphs).toHaveLength(0);
-  expect(selected?.tick).toBe(tickBeforeReject);
+    await expect(overlay).toBeVisible();
+    const card = page.getByTestId(`reward-card-${effectCase.artifactId}`);
+    await expect(card).toBeVisible();
 
-  // Wave 2 only warns on the next accepted command, following the existing spawn-warning path.
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    await api?.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
-  });
-  const wave2Warned = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(wave2Warned?.telegraphs).toHaveLength(1);
-  expect(wave2Warned?.telegraphs[0]).toMatchObject({ phase: "spawning" });
+    if (index === 0) {
+      // Depth-check the pause guarantees once: a command and keyboard input are both inert.
+      const tickBeforeReject = paused?.tick;
+      await page.evaluate(async () => {
+        await window.__TICKSTRIKE__?.execute({
+          type: "move",
+          actorId: "player",
+          direction: { x: 0, y: 1 },
+        });
+      });
+      const afterRejected = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
+      expect(afterRejected?.tick).toBe(tickBeforeReject);
+      expect(afterRejected?.pendingReward).toBeDefined();
 
-  // Reset restores initial player damage with no stale offer, stacks, or UI.
+      await page.keyboard.press("d");
+      const afterKeyboard = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
+      expect(afterKeyboard?.tick).toBe(tickBeforeReject);
+    }
+
+    await card.click();
+    await expect(overlay).toHaveCount(0);
+
+    const after = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
+    expect(after?.pendingReward).toBeUndefined();
+    expect(after?.runBuild.stacks[effectCase.artifactId]).toBe(1);
+    if (!paused || !after) {
+      throw new Error("Expected snapshots before and after selection.");
+    }
+    effectCase.assert(paused, after);
+  }
+
+  // Reset restores every acquired stack, trigger, and player field with no stale UI.
   await page.getByRole("button", { name: "Reset scenario" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
   const reset = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   expect(reset?.pendingReward).toBeUndefined();
-  expect(reset?.runBuild).toEqual({ stacks: {} });
-  expect(reset?.entities.find((entity) => entity.id === "player")?.normalAttackDamage).toBe(
-    baseDamage,
-  );
+  expect(reset?.runBuild).toEqual({ stacks: {}, triggers: [] });
+  const resetPlayer = requirePlayer(reset);
+  expect(resetPlayer.normalAttackDamage).toBe(basePlayer.normalAttackDamage);
+  expect(resetPlayer.mobility).toEqual(basePlayer.mobility);
+  expect(resetPlayer.maxHp).toBe(basePlayer.maxHp);
+  expect(resetPlayer.hp).toBe(basePlayer.hp);
   expect(reset?.waveRuntime).toMatchObject({ waveNumber: 1 });
   await expect(page.getByTestId("reward-overlay")).toHaveCount(0);
 });

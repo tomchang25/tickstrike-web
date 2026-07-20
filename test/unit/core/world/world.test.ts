@@ -891,7 +891,7 @@ describe("Guardless enabled enemies do not block generic status processing", () 
 describe("run build and pending reward ownership", () => {
   it("starts with an empty build and no pending offer", () => {
     const world = createTrainingArena();
-    expect(world.runBuild).toEqual({ stacks: {} });
+    expect(world.runBuild).toEqual({ stacks: {}, triggers: [] });
     expect(world.pendingRewardOffer).toBeUndefined();
     expect(world.snapshot()).toMatchObject({ runBuild: { stacks: {} }, pendingReward: undefined });
   });
@@ -936,7 +936,7 @@ describe("run build and pending reward ownership", () => {
     expect(world.pendingRewardOffer).toBeUndefined();
 
     world.applyRewardSelection("attack_up", 1);
-    expect(world.runBuild).toEqual({ stacks: { attack_up: 1 } });
+    expect(world.runBuild).toEqual({ stacks: { attack_up: 1 }, triggers: [] });
   });
 
   it("updates only the targeted entity's normal-attack damage", () => {
@@ -965,5 +965,129 @@ describe("run build and pending reward ownership", () => {
     });
     expect(() => world.setNormalAttackDamage("player", -1)).toThrow();
     expect(() => world.setNormalAttackDamage("player", Number.NaN)).toThrow();
+  });
+
+  it("records an acquired trigger alongside the resulting stack count, deduplicated", () => {
+    const world = createTrainingArena();
+    world.applyRewardSelection("guard_shredder", 1, "guard-shredder");
+    expect(world.runBuild).toEqual({
+      stacks: { guard_shredder: 1 },
+      triggers: ["guard-shredder"],
+    });
+
+    world.applyRewardSelection("guard_shredder", 1, "guard-shredder");
+    expect(world.runBuild.triggers).toEqual(["guard-shredder"]);
+
+    world.applyRewardSelection("execution", 1, "execution");
+    expect(world.runBuild).toEqual({
+      stacks: { guard_shredder: 1, execution: 1 },
+      triggers: ["guard-shredder", "execution"],
+    });
+  });
+
+  it("does not record a trigger for a plain channel selection", () => {
+    const world = createTrainingArena();
+    world.applyRewardSelection("attack_up", 1);
+    expect(world.runBuild).toEqual({ stacks: { attack_up: 1 }, triggers: [] });
+  });
+});
+
+describe("narrow effective-stat mutations for reward channels", () => {
+  function spawnDashPlayer(world: World): void {
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 80,
+      mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 2 },
+    });
+  }
+
+  it("updates Mobility damage without disturbing other Mobility fields", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.setMobilityDamage("player", 50);
+    expect(world.requireEntity("player").mobility).toMatchObject({
+      kind: "dash",
+      damage: 50,
+      range: 3,
+      cooldown: 4,
+      staggerMultiplier: 2,
+    });
+  });
+
+  it("rejects a negative or non-finite Mobility damage, and requires Mobility to exist", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    expect(() => world.setMobilityDamage("player", -1)).toThrow();
+    expect(() => world.setMobilityDamage("player", Number.NaN)).toThrow();
+
+    world.spawn({
+      id: "no-mobility",
+      kind: "enemy",
+      archetype: "grunt",
+      cell: { x: 4, y: 4 },
+      hp: 10,
+    });
+    expect(() => world.setMobilityDamage("no-mobility", 10)).toThrow("no Mobility");
+  });
+
+  it("changes the configured Mobility cooldown without touching a counting-down remainder", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.setMobilityCooldown("player", 3);
+    world.setMobilityCooldownConfig("player", 2);
+    expect(world.requireEntity("player").mobility).toMatchObject({
+      cooldown: 2,
+      remainingCooldown: 3,
+    });
+  });
+
+  it("rejects a negative or non-integer configured Mobility cooldown", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    expect(() => world.setMobilityCooldownConfig("player", -1)).toThrow();
+    expect(() => world.setMobilityCooldownConfig("player", 1.5)).toThrow();
+  });
+
+  it("updates Mobility range", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.setMobilityRange("player", 4);
+    expect(world.requireEntity("player").mobility).toMatchObject({ range: 4 });
+  });
+
+  it("rejects a non-positive or non-integer Mobility range", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    expect(() => world.setMobilityRange("player", 0)).toThrow();
+    expect(() => world.setMobilityRange("player", 1.5)).toThrow();
+  });
+
+  it("raises max HP and current HP by the same amount when at full health", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.raiseMaxHealth("player", 20);
+    expect(world.requireEntity("player")).toMatchObject({ maxHp: 100, hp: 100 });
+  });
+
+  it("raises current HP by the gained amount while injured, capped at the new maximum", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.applyDamage("player", 50);
+    expect(world.requireEntity("player")).toMatchObject({ hp: 30, maxHp: 80 });
+
+    world.raiseMaxHealth("player", 20);
+    // Gained 20 max and 20 current: 30 + 20 = 50, well under the new 100 cap.
+    expect(world.requireEntity("player")).toMatchObject({ hp: 50, maxHp: 100 });
+  });
+
+  it("rejects a non-positive or non-finite max-health gain", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    expect(() => world.raiseMaxHealth("player", 0)).toThrow();
+    expect(() => world.raiseMaxHealth("player", -5)).toThrow();
+    expect(() => world.raiseMaxHealth("player", Number.NaN)).toThrow();
   });
 });

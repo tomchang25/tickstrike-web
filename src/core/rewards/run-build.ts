@@ -1,8 +1,9 @@
-import type { ArtifactDefinition } from "../content/artifact-schema";
+import type { MobilityKind } from "../content/actor-schema";
+import type { ArtifactDefinition, ArtifactTrigger } from "../content/artifact-schema";
 import type { PendingRewardOffer, RewardOfferCard, RunBuildState } from "../model/types";
 
 export function createEmptyRunBuild(): RunBuildState {
-  return { stacks: {} };
+  return { stacks: {}, triggers: [] };
 }
 
 export function getArtifactStackCount(build: RunBuildState, artifactId: string): number {
@@ -14,26 +15,80 @@ export function withArtifactStackCount(
   artifactId: string,
   count: number,
 ): RunBuildState {
-  return { stacks: { ...build.stacks, [artifactId]: count } };
+  return { ...build, stacks: { ...build.stacks, [artifactId]: count } };
+}
+
+export function hasAcquiredTrigger(build: RunBuildState, trigger: ArtifactTrigger): boolean {
+  return build.triggers.includes(trigger);
+}
+
+export function withAcquiredTrigger(build: RunBuildState, trigger: ArtifactTrigger): RunBuildState {
+  return hasAcquiredTrigger(build, trigger)
+    ? build
+    : { ...build, triggers: [...build.triggers, trigger] };
+}
+
+/** The two Dash triggers this child supports; Chain Dash awaits its replacement route design. */
+const SUPPORTED_TRIGGERS: readonly ArtifactTrigger[] = ["guard-shredder", "execution"];
+
+export type ClassifiedArtifactEffect =
+  | { readonly kind: "normal-attack-damage"; readonly amount: number }
+  | { readonly kind: "mobility-attack-damage"; readonly amount: number }
+  | { readonly kind: "mobility-cooldown"; readonly amount: number }
+  | { readonly kind: "mobility-range"; readonly amount: number }
+  | { readonly kind: "max-health"; readonly amount: number }
+  | { readonly kind: "trigger"; readonly trigger: ArtifactTrigger }
+  | { readonly kind: "unsupported" };
+
+/**
+ * Maps an artifact's single authored effect onto the channel or trigger this build path
+ * supports. `speed_up`'s `"speed"` channel and Chain Dash classify as unsupported until their
+ * dependent systems land — callers must never offer or apply an unsupported classification.
+ */
+export function classifyArtifactEffect(artifact: ArtifactDefinition): ClassifiedArtifactEffect {
+  const effect = artifact.effects[0];
+  if (!effect) {
+    return { kind: "unsupported" };
+  }
+  if (effect.kind === "trigger") {
+    return SUPPORTED_TRIGGERS.includes(effect.trigger)
+      ? { kind: "trigger", trigger: effect.trigger }
+      : { kind: "unsupported" };
+  }
+  switch (effect.channel) {
+    case "normal-attack-damage":
+    case "mobility-attack-damage":
+    case "mobility-cooldown":
+    case "mobility-range":
+    case "max-health":
+      return { kind: effect.channel, amount: effect.amount };
+    default:
+      return { kind: "unsupported" };
+  }
+}
+
+export function isArtifactSupported(artifact: ArtifactDefinition): boolean {
+  return classifyArtifactEffect(artifact).kind !== "unsupported";
+}
+
+export function isArtifactMobilityCompatible(
+  artifact: ArtifactDefinition,
+  playerMobilityKind: MobilityKind | null,
+): boolean {
+  return artifact.requiredMobility === null || artifact.requiredMobility === playerMobilityKind;
 }
 
 export function isArtifactEligible(
   artifact: ArtifactDefinition,
   currentStacks: number,
   waveNumber: number,
+  playerMobilityKind: MobilityKind | null,
 ): boolean {
-  return waveNumber >= artifact.minWave && currentStacks < artifact.maxStacks;
-}
-
-/** The single shipped channel effect's amount, or undefined when the artifact targets another channel. */
-export function channelEffectAmount(
-  artifact: ArtifactDefinition,
-  channel: string,
-): number | undefined {
-  const effect = artifact.effects[0];
-  return effect && effect.kind === "channel" && effect.channel === channel
-    ? effect.amount
-    : undefined;
+  return (
+    isArtifactMobilityCompatible(artifact, playerMobilityKind) &&
+    waveNumber >= artifact.minWave &&
+    currentStacks < artifact.maxStacks
+  );
 }
 
 export interface GenerateSingleCardOfferInput {
@@ -41,20 +96,29 @@ export interface GenerateSingleCardOfferInput {
   readonly artifacts: readonly ArtifactDefinition[];
   readonly build: RunBuildState;
   readonly waveNumber: number;
+  /** The active character's Mobility kind, or `null` when the player has none. */
+  readonly playerMobilityKind: MobilityKind | null;
   /** A draw from the caller's `"rewards"` random stream, never `"waves"`. */
   readonly draw: () => number;
 }
 
 /**
- * Filters to eligible candidates by minimum wave and stack cap, then draws one. Returns
- * `undefined` when nothing is eligible so the caller can advance the next wave directly instead
- * of installing an inert offer.
+ * Filters to supported, Mobility-compatible candidates eligible by minimum wave and stack cap,
+ * then draws one. Returns `undefined` when nothing is eligible so the caller can advance the next
+ * wave directly instead of installing an inert offer.
  */
 export function generateSingleCardOffer(
   input: GenerateSingleCardOfferInput,
 ): PendingRewardOffer | undefined {
-  const eligible = input.artifacts.filter((artifact) =>
-    isArtifactEligible(artifact, getArtifactStackCount(input.build, artifact.id), input.waveNumber),
+  const eligible = input.artifacts.filter(
+    (artifact) =>
+      isArtifactSupported(artifact) &&
+      isArtifactEligible(
+        artifact,
+        getArtifactStackCount(input.build, artifact.id),
+        input.waveNumber,
+        input.playerMobilityKind,
+      ),
   );
   if (eligible.length === 0) {
     return undefined;

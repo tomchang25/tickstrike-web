@@ -15,6 +15,10 @@ export interface DirectionalHitInput {
   readonly target: EntityState;
   readonly damage: number;
   readonly staggerMultiplier?: number;
+  /** True only for an actual Dash hit while the acquired Guard Shredder trigger is active. */
+  readonly guardShredderTrigger?: boolean;
+  /** True only for an actual Dash hit while the acquired Execution trigger is active. */
+  readonly executionTrigger?: boolean;
 }
 
 export function classifyHitAngle(
@@ -68,24 +72,54 @@ export function calculateDirectionalHit(
 
   const guard = input.target.guard;
   const guardBefore = guard?.current ?? 0;
+  const alreadyStaggered = input.target.activity === "staggered";
+
+  // Execution takes priority over Guard Shredder: an already-staggered target has no guard left
+  // to shred, and its Dash hit becomes an instant kill through the ordinary terminal-event path.
+  if (input.executionTrigger && alreadyStaggered) {
+    return {
+      attackerId: input.attackerId,
+      targetId: input.target.id,
+      damage: input.target.hp,
+      hpBefore: input.target.hp,
+      hpAfter: 0,
+      killed: true,
+      angle,
+      baseDamage: input.damage,
+      guardDamage: 0,
+      guardBefore,
+      guardAfter: guardBefore,
+      hpDamage: input.target.hp,
+      defenseAdjustedDamage: input.target.hp,
+      guardBroken: false,
+      staggerBurst: true,
+      feedback: "staggered",
+    };
+  }
+
   const protectionTicks = input.target.protectionTicks ?? 0;
   const rawGuardDamage = guard && guardBefore > 0 ? directionalGuardDamage(angle) : 0;
-  const guardDamage =
-    protectionTicks > 0 && rawGuardDamage > 0
+  // A qualifying back-angle Dash hit zeroes Guard directly, bypassing ordinary Protection scaling,
+  // guaranteeing the break before the downstream stagger handling below reacts to it.
+  const guardShredderHit =
+    Boolean(input.guardShredderTrigger) &&
+    Boolean(guard) &&
+    !alreadyStaggered &&
+    guardBefore > 0 &&
+    angle === "back";
+  const guardDamage = guardShredderHit
+    ? guardBefore
+    : protectionTicks > 0 && rawGuardDamage > 0
       ? rawGuardDamage * (guard?.protectionMultiplier ?? 1)
       : rawGuardDamage;
   const guardAfter = Math.max(0, guardBefore - guardDamage);
   const guardBroken = guardBefore > 0 && guardAfter === 0;
-  const staggerBurst =
-    input.target.activity === "staggered" || (guardBroken && input.target.phase === "alive");
+  const staggerBurst = alreadyStaggered || (guardBroken && input.target.phase === "alive");
   const guardedHpDamage =
-    guardBefore > 0 && !guardBroken && input.target.activity !== "staggered"
-      ? input.damage * 0.2
-      : input.damage;
-  const hpDamage =
-    input.target.activity === "staggered"
-      ? guardedHpDamage * (input.staggerMultiplier ?? 1)
-      : guardedHpDamage;
+    guardBefore > 0 && !guardBroken && !alreadyStaggered ? input.damage * 0.2 : input.damage;
+  const hpDamage = alreadyStaggered
+    ? guardedHpDamage * (input.staggerMultiplier ?? 1)
+    : guardedHpDamage;
   const defenseAdjustedDamage = applyDefense(hpDamage, input.target.defense ?? 0);
   const hpAfter = Math.max(0, input.target.hp - defenseAdjustedDamage);
 
@@ -105,14 +139,13 @@ export function calculateDirectionalHit(
     defenseAdjustedDamage,
     guardBroken,
     staggerBurst,
-    feedback:
-      input.target.activity === "staggered"
-        ? "staggered"
-        : guardBroken
-          ? "guard_break"
-          : guardBefore > 0
-            ? "guarded"
-            : "unblocked",
+    feedback: alreadyStaggered
+      ? "staggered"
+      : guardBroken
+        ? "guard_break"
+        : guardBefore > 0
+          ? "guarded"
+          : "unblocked",
   };
 }
 

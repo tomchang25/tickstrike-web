@@ -735,7 +735,7 @@ describe("resolveRewardSelection", () => {
     expect(result.accepted).toBe(true);
     expect(result.events.map((event) => event.type)).toEqual(["reward_selected", "wave_started"]);
     expect(world.pendingRewardOffer).toBeUndefined();
-    expect(world.runBuild).toEqual({ stacks: { attack_up: 1 } });
+    expect(world.runBuild).toEqual({ stacks: { attack_up: 1 }, triggers: [] });
     expect(world.requireEntity("player").normalAttackDamage).toBe(30);
     expect(world.waveRuntime?.waveNumber).toBe(2);
     // Selection installs the next wave's slot state without consuming a tick or spawning anything.
@@ -761,7 +761,194 @@ describe("resolveRewardSelection", () => {
     const result = resolveRewardSelection(world, "attack_up", context);
 
     expect(result.accepted).toBe(true);
-    expect(world.runBuild).toEqual({ stacks: { attack_up: 2 } });
+    expect(world.runBuild).toEqual({ stacks: { attack_up: 2 }, triggers: [] });
     expect(world.requireEntity("player").normalAttackDamage).toBe(40);
+  });
+});
+
+function otherArtifact(overrides: Partial<ArtifactDefinition>): ArtifactDefinition {
+  return { ...ATTACK_UP, ...overrides };
+}
+
+const DASH_ATTACK_UP = otherArtifact({
+  id: "dash_attack_up",
+  effects: [{ kind: "channel", channel: "mobility-attack-damage", amount: 20 }],
+});
+const MOBILITY_COOLDOWN_DOWN = otherArtifact({
+  id: "mobility_cooldown_down",
+  effects: [{ kind: "channel", channel: "mobility-cooldown", amount: 1 }],
+});
+const MOBILITY_RANGE_UP = otherArtifact({
+  id: "mobility_range_up",
+  effects: [{ kind: "channel", channel: "mobility-range", amount: 1 }],
+});
+const MAX_HEALTH_UP = otherArtifact({
+  id: "max_health_up",
+  maxStacks: 2,
+  effects: [{ kind: "channel", channel: "max-health", amount: 20 }],
+});
+const SPEED_UP = otherArtifact({
+  id: "speed_up",
+  maxStacks: 5,
+  effects: [{ kind: "channel", channel: "speed", amount: 1 }],
+});
+const GUARD_SHREDDER = otherArtifact({
+  id: "guard_shredder",
+  category: "major",
+  maxStacks: 1,
+  minWave: 2,
+  requiredMobility: "dash",
+  effects: [{ kind: "trigger", trigger: "guard-shredder" }],
+});
+const EXECUTION = otherArtifact({
+  id: "execution",
+  category: "major",
+  maxStacks: 1,
+  minWave: 2,
+  requiredMobility: "dash",
+  effects: [{ kind: "trigger", trigger: "execution" }],
+});
+
+describe("resolveRewardSelection: every supported effect applies exactly once", () => {
+  function setUpWorldWithOffer(
+    artifact: ArtifactDefinition,
+    resultingStackCount = 1,
+  ): { world: World; context: WavePhaseContext } {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 80,
+      normalAttackDamage: 20,
+      mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 2 },
+    });
+    world.installPendingRewardOffer({
+      waveNumber: 1,
+      cards: [{ artifactId: artifact.id, resultingStackCount }],
+    });
+    const context = makeContext([groupWithCount(1)], [], [artifact]);
+    return { world, context };
+  }
+
+  it("raises Mobility attack damage for dash_attack_up", () => {
+    const { world, context } = setUpWorldWithOffer(DASH_ATTACK_UP);
+    const result = resolveRewardSelection(world, "dash_attack_up", context);
+    expect(result.accepted).toBe(true);
+    expect(world.requireEntity("player").mobility).toMatchObject({ damage: 50 });
+    expect(world.runBuild).toEqual({ stacks: { dash_attack_up: 1 }, triggers: [] });
+  });
+
+  it("lowers configured Mobility cooldown for mobility_cooldown_down", () => {
+    const { world, context } = setUpWorldWithOffer(MOBILITY_COOLDOWN_DOWN);
+    const result = resolveRewardSelection(world, "mobility_cooldown_down", context);
+    expect(result.accepted).toBe(true);
+    expect(world.requireEntity("player").mobility).toMatchObject({ cooldown: 3 });
+  });
+
+  it("preserves an active countdown: cooldown reward changes only the configured value", () => {
+    const { world, context } = setUpWorldWithOffer(MOBILITY_COOLDOWN_DOWN);
+    world.setMobilityCooldown("player", 4);
+
+    resolveRewardSelection(world, "mobility_cooldown_down", context);
+
+    expect(world.requireEntity("player").mobility).toMatchObject({
+      cooldown: 3,
+      remainingCooldown: 4,
+    });
+  });
+
+  it("raises Mobility range for mobility_range_up", () => {
+    const { world, context } = setUpWorldWithOffer(MOBILITY_RANGE_UP);
+    const result = resolveRewardSelection(world, "mobility_range_up", context);
+    expect(result.accepted).toBe(true);
+    expect(world.requireEntity("player").mobility).toMatchObject({ range: 4 });
+  });
+
+  it("raises current HP by the gained amount while injured, for max_health_up", () => {
+    const { world, context } = setUpWorldWithOffer(MAX_HEALTH_UP);
+    world.applyDamage("player", 30);
+    expect(world.requireEntity("player")).toMatchObject({ hp: 50, maxHp: 80 });
+
+    const result = resolveRewardSelection(world, "max_health_up", context);
+
+    expect(result.accepted).toBe(true);
+    expect(world.requireEntity("player")).toMatchObject({ hp: 70, maxHp: 100 });
+  });
+
+  it("records the Guard Shredder trigger with no numeric field changes", () => {
+    const { world, context } = setUpWorldWithOffer(GUARD_SHREDDER);
+    const before = world.requireEntity("player");
+
+    const result = resolveRewardSelection(world, "guard_shredder", context);
+
+    expect(result.accepted).toBe(true);
+    expect(world.runBuild).toEqual({ stacks: { guard_shredder: 1 }, triggers: ["guard-shredder"] });
+    expect(world.requireEntity("player")).toMatchObject({
+      normalAttackDamage: before.normalAttackDamage,
+      mobility: before.mobility,
+      hp: before.hp,
+      maxHp: before.maxHp,
+    });
+  });
+
+  it("records the Execution trigger with no numeric field changes", () => {
+    const { world, context } = setUpWorldWithOffer(EXECUTION);
+    const result = resolveRewardSelection(world, "execution", context);
+    expect(result.accepted).toBe(true);
+    expect(world.runBuild).toEqual({ stacks: { execution: 1 }, triggers: ["execution"] });
+  });
+
+  it("rejects an unsupported effect even if somehow offered, leaving state unchanged", () => {
+    const { world, context } = setUpWorldWithOffer(SPEED_UP);
+    const before = world.snapshot();
+
+    const result = resolveRewardSelection(world, "speed_up", context);
+
+    expect(result).toEqual({ accepted: false, reason: "Unsupported artifact effect.", events: [] });
+    expect(world.snapshot()).toEqual(before);
+  });
+});
+
+describe("generateSingleCardOffer wiring: Mobility eligibility at the wave boundary", () => {
+  it("excludes a Dash-only major from a Smash player's offer", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      mobility: { kind: "smash", damage: 30, range: 3, cooldown: 6, staggerMultiplier: 2 },
+    });
+    world.advanceTick();
+
+    const groups = [groupWithCount(1)];
+    const wave1: WaveDefinition = {
+      id: "w1",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    const wave2: WaveDefinition = {
+      id: "w2",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    installWave(world, wave1, groups);
+    const context = makeContext(groups, [wave1, wave2], [GUARD_SHREDDER]);
+
+    const spawnResult = resolveWavePhase(world, context);
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
+      .spawns[0]!.entityId;
+    world.setPhase(spawnedId, "dead");
+    world.advanceTick();
+
+    const clearResult = resolveWavePhase(world, context);
+
+    // Guard Shredder requires Dash; a Smash run's Wave 1 clear finds nothing eligible and
+    // advances directly rather than pausing on an unreachable card.
+    expect(clearResult.events.map((event) => event.type)).toEqual(["wave_cleared", "wave_started"]);
+    expect(world.pendingRewardOffer).toBeUndefined();
   });
 });

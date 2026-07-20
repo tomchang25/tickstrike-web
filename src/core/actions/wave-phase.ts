@@ -1,4 +1,4 @@
-import type { ArtifactDefinition } from "../content/artifact-schema";
+import type { ArtifactDefinition, ArtifactTrigger } from "../content/artifact-schema";
 import type {
   SpawnGroupDefinition,
   WaveDefinition,
@@ -6,7 +6,7 @@ import type {
 } from "../content/wave-schema";
 import type { CombatEvent } from "../events/combat-events";
 import { sameCell, type Cell, type EntityId } from "../model/types";
-import { channelEffectAmount, generateSingleCardOffer } from "../rewards/run-build";
+import { classifyArtifactEffect, generateSingleCardOffer } from "../rewards/run-build";
 import type { WaveWorldView } from "../waves/wave-inputs";
 import { planGroupCells } from "../waves/enemy-spawn-planner";
 import {
@@ -480,6 +480,7 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
         artifacts: context.offerableArtifacts ?? [],
         build: world.runBuild,
         waveNumber: runtime.waveNumber,
+        playerMobilityKind: player.mobility?.kind ?? null,
         draw: () => world.random.get("rewards").nextUnit(),
       });
       if (offer) {
@@ -519,17 +520,55 @@ export function resolveRewardSelection(
   if (!card || !artifact) {
     return { accepted: false, reason: "Unknown or stale reward selection.", events: [] };
   }
+  const classified = classifyArtifactEffect(artifact);
+  if (classified.kind === "unsupported") {
+    // Defends the same guarantee as generateSingleCardOffer's filter: an unsupported effect
+    // (deferred Speed, Chain Dash) is never granted, even if it were somehow offered.
+    return { accepted: false, reason: "Unsupported artifact effect.", events: [] };
+  }
 
   world.clearPendingRewardOffer();
-  world.applyRewardSelection(artifactId, card.resultingStackCount);
 
-  const damageBonus = channelEffectAmount(artifact, "normal-attack-damage");
-  if (damageBonus) {
-    const player = world.listEntities().find((entity) => entity.kind === "player");
-    if (player) {
-      world.setNormalAttackDamage(player.id, (player.normalAttackDamage ?? 0) + damageBonus);
+  const player = world.listEntities().find((entity) => entity.kind === "player");
+  let trigger: ArtifactTrigger | undefined;
+  if (player) {
+    switch (classified.kind) {
+      case "normal-attack-damage":
+        world.setNormalAttackDamage(
+          player.id,
+          (player.normalAttackDamage ?? 0) + classified.amount,
+        );
+        break;
+      case "mobility-attack-damage":
+        if (player.mobility) {
+          world.setMobilityDamage(player.id, player.mobility.damage + classified.amount);
+        }
+        break;
+      case "mobility-cooldown":
+        if (player.mobility) {
+          world.setMobilityCooldownConfig(
+            player.id,
+            Math.max(0, player.mobility.cooldown - classified.amount),
+          );
+        }
+        break;
+      case "mobility-range":
+        if (player.mobility) {
+          world.setMobilityRange(player.id, player.mobility.range + classified.amount);
+        }
+        break;
+      case "max-health":
+        world.raiseMaxHealth(player.id, classified.amount);
+        break;
+      case "trigger":
+        trigger = classified.trigger;
+        break;
     }
   }
+
+  // Apply the selected card's authored effect exactly once: the card already carries its
+  // resulting stack count, so this records that stack plus any acquired trigger in one write.
+  world.applyRewardSelection(artifactId, card.resultingStackCount, trigger);
 
   const events: CombatEvent[] = [
     { type: "reward_selected", artifactId, stackCount: card.resultingStackCount },

@@ -289,3 +289,204 @@ describe("action previews", () => {
     expect(previewAttackVictimMarkers(previewAttack(world, "player", { x: 1, y: 0 }))).toEqual([]);
   });
 });
+
+const HEAVY_GUARD = {
+  id: "heavy",
+  name: "Heavy",
+  base: 100,
+  lethalTierGain: 0,
+  stagger: 2,
+  protection: 5,
+  protectionMultiplier: 0.5,
+};
+
+function spawnDashPlayer(
+  world: ReturnType<typeof createTrainingArena>,
+  cell = { x: 1, y: 3 },
+): void {
+  world.spawn({
+    id: "player",
+    kind: "player",
+    archetype: "training-player",
+    cell,
+    hp: 100,
+    normalAttackDamage: 20,
+    mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 1 },
+  });
+}
+
+describe("Dash trigger previews: Guard Shredder and Execution", () => {
+  it("previews ordinary Guard math on a back hit with no acquired trigger", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 2, y: 3 },
+      hp: 100,
+      guardDefinition: HEAVY_GUARD,
+      facing: { x: 1, y: 0 },
+    });
+
+    const preview = previewDash(world, "player", { x: 1, y: 0 }, 3);
+    const victim = preview.victims.find((candidate) => candidate.enemyId === "enemy");
+
+    expect(victim?.hit).toMatchObject({ guardBroken: false, guardAfter: 68 });
+  });
+
+  it("previews a guaranteed guard break on a qualifying back-angle Dash hit once acquired", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 2, y: 3 },
+      hp: 100,
+      guardDefinition: HEAVY_GUARD,
+      facing: { x: 1, y: 0 },
+    });
+    world.applyRewardSelection("guard_shredder", 1, "guard-shredder");
+
+    const preview = previewDash(world, "player", { x: 1, y: 0 }, 3);
+    const victim = preview.victims.find((candidate) => candidate.enemyId === "enemy");
+
+    expect(victim?.hit).toMatchObject({ guardBroken: true, guardAfter: 0 });
+  });
+
+  it("does not guarantee a break on a front-angle Dash hit even once acquired", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world, { x: 3, y: 3 });
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 2, y: 3 },
+      hp: 100,
+      guardDefinition: HEAVY_GUARD,
+      facing: { x: 1, y: 0 },
+    });
+    world.applyRewardSelection("guard_shredder", 1, "guard-shredder");
+
+    const preview = previewDash(world, "player", { x: -1, y: 0 }, 3);
+    const victim = preview.victims.find((candidate) => candidate.enemyId === "enemy");
+
+    // Dashing at this facing enemy is a front hit: ordinary 4 Guard damage, no forced break.
+    expect(victim?.hit).toMatchObject({ angle: "front", guardBroken: false, guardAfter: 96 });
+  });
+
+  it("previews an instant kill on a staggered target once Execution is acquired", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 2, y: 3 },
+      hp: 45,
+      guardDefinition: HEAVY_GUARD,
+      facing: { x: 1, y: 0 },
+      enemyAction: {
+        role: "thrust",
+        attackId: "thrust",
+        damage: 10,
+        warningTicks: 0,
+        recoveryTicks: 2,
+        offsets: [{ x: 1, y: 0 }],
+      },
+    });
+    world.setEnemyActivity("enemy", "staggered");
+    world.applyRewardSelection("execution", 1, "execution");
+
+    const preview = previewDash(world, "player", { x: 1, y: 0 }, 3);
+    const victim = preview.victims.find((candidate) => candidate.enemyId === "enemy");
+
+    expect(victim?.hit).toMatchObject({ killed: true, hpAfter: 0 });
+  });
+
+  it("does not instant-kill a non-staggered target even once Execution is acquired", () => {
+    const world = createTrainingArena();
+    spawnDashPlayer(world);
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 2, y: 3 },
+      hp: 45,
+      guardDefinition: HEAVY_GUARD,
+      facing: { x: 1, y: 0 },
+    });
+    world.applyRewardSelection("execution", 1, "execution");
+
+    const preview = previewDash(world, "player", { x: 1, y: 0 }, 3);
+    const victim = preview.victims.find((candidate) => candidate.enemyId === "enemy");
+
+    expect(victim?.hit).toMatchObject({ killed: false });
+  });
+
+  it("does not consume either trigger for Smash, only Dash", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "viking",
+      cell: { x: 3, y: 3 },
+      hp: 100,
+      mobility: { kind: "smash", damage: 30, range: 3, cooldown: 6, staggerMultiplier: 2 },
+    });
+    // Off-center within the smash area so the hit is directional (a centered victim's origin
+    // equals its own cell, which resolves to an angle-less basic hit instead).
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 4 },
+      hp: 100,
+      guardDefinition: HEAVY_GUARD,
+      facing: { x: 1, y: 0 },
+    });
+    world.applyRewardSelection("guard_shredder", 1, "guard-shredder");
+    world.applyRewardSelection("execution", 1, "execution");
+
+    const preview = previewSmash(world, "player", { x: 4, y: 3 });
+    const victim = preview.victims.find((candidate) => candidate.enemyId === "enemy");
+
+    expect(victim?.hit).toMatchObject({ angle: "side", guardBroken: false, killed: false });
+  });
+
+  it("does not consume either trigger for Normal Attack", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 3, y: 3 },
+      hp: 100,
+      normalAttackDamage: 20,
+    });
+    world.spawn({
+      id: "enemy",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 2, y: 3 },
+      hp: 45,
+      guardDefinition: HEAVY_GUARD,
+      facing: { x: 1, y: 0 },
+      enemyAction: {
+        role: "thrust",
+        attackId: "thrust",
+        damage: 10,
+        warningTicks: 0,
+        recoveryTicks: 2,
+        offsets: [{ x: 1, y: 0 }],
+      },
+    });
+    world.setEnemyActivity("enemy", "staggered");
+    world.applyRewardSelection("execution", 1, "execution");
+
+    const preview = previewAttack(world, "player", { x: -1, y: 0 });
+
+    expect(preview.hit).toMatchObject({ killed: false });
+  });
+});
