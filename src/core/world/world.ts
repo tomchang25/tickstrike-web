@@ -4,7 +4,6 @@ import type { CombatEvent } from "../events/combat-events";
 import { RandomStreams } from "../random/random-streams";
 import {
   cellKey,
-  manhattanDistance,
   sameCell,
   type ArenaState,
   type EnemyActionDefinition,
@@ -23,7 +22,6 @@ import {
   type PendingRewardOffer,
   type PendingSpawnBatch,
   type Reservation,
-  type ReservationPurpose,
   type RunBuildState,
   type Seed,
   type Telegraph,
@@ -34,31 +32,26 @@ import {
 } from "../model/types";
 import type { AdmittedBatch, QueueMember, SlotState } from "../waves/wave-scheduler";
 import { Arena } from "./arena";
+import {
+  GridBoard,
+  type MovementReservationRequest,
+  type ReservationDecision,
+  type ReservationRequest,
+} from "./grid-board";
 
 export interface SpawnEntityInput extends EntitySpawnData {
   readonly footprint?: readonly Cell[];
   readonly guardDefinition?: GuardDefinition;
 }
 
-export interface ReservationRequest {
-  readonly ownerId: string;
-  readonly purpose: ReservationPurpose;
-  readonly cells: readonly Cell[];
-  readonly activeStep?: boolean;
-}
-
-export interface MovementReservationRequest extends ReservationRequest {
-  readonly purpose: "movement";
-  readonly activeStep?: true;
-}
-
-export interface ReservationDecision {
-  readonly accepted: boolean;
-  readonly granted: boolean;
-  readonly reservation?: Reservation;
-  readonly lostOwners: readonly string[];
-  readonly reason?: string;
-}
+export type {
+  BoardEntityLocator,
+  DisplacementTransaction,
+  MovementReservationRequest,
+  ReservationDecision,
+  ReservationRequest,
+} from "./grid-board";
+export { GridBoard } from "./grid-board";
 
 export interface TelegraphInput {
   readonly sourceId: string;
@@ -111,10 +104,6 @@ export interface AttackResolutionTransaction {
 
 function cloneCell(cell: Cell): Cell {
   return { x: cell.x, y: cell.y };
-}
-
-function cloneReservation(reservation: Reservation): Reservation {
-  return { ...reservation, cells: reservation.cells.map(cloneCell) };
 }
 
 function cloneTelegraph(telegraph: Telegraph): Telegraph {
@@ -199,19 +188,6 @@ function hasDuplicateCells(cells: readonly Cell[]): boolean {
   return keys.size !== cells.length;
 }
 
-function purposePriority(purpose: ReservationPurpose, activeStep: boolean): number {
-  if (purpose === "spawn") {
-    return -1;
-  }
-  if (activeStep && (purpose === "movement" || purpose === "movement_step")) {
-    return 0;
-  }
-  if (purpose === "attack" || purpose === "attack_intent") {
-    return 1;
-  }
-  return 2;
-}
-
 export class World {
   readonly arena: ArenaState;
   readonly seed: number;
@@ -220,9 +196,8 @@ export class World {
   readonly streams: RandomStreams;
 
   private readonly geometry: Arena;
+  private readonly board: GridBoard;
   private readonly entities = new Map<EntityId, EntityState>();
-  private readonly occupancy = new Map<string, EntityId>();
-  private readonly reservations = new Map<string, Reservation>();
   private readonly telegraphs = new Map<string, Telegraph>();
   private currentPlayerCell: Cell | undefined;
   private currentArmedSmashTarget: Cell | undefined;
@@ -231,7 +206,6 @@ export class World {
   private currentPendingReward: PendingRewardOffer | undefined;
   private currentTick = 0;
   private currentOutcome: EncounterOutcome = "running";
-  private nextRegistrationIndex = 0;
   private lastEvents: readonly CombatEvent[] = [];
 
   constructor(arena: Arena, seed?: Seed);
@@ -256,6 +230,10 @@ export class World {
     this.random = new RandomStreams(this.seed);
     this.streams = this.random;
     this.arena = this.geometry.toState();
+    this.board = new GridBoard(this.geometry, {
+      anchorCellOf: (id) => this.entities.get(id)?.cell,
+      playerCell: () => this.currentPlayerCell,
+    });
   }
 
   spawn(input: SpawnEntityInput): EntityState {
@@ -267,16 +245,7 @@ export class World {
     }
 
     const footprint = input.footprint ? input.footprint.map(cloneCell) : [cloneCell(input.cell)];
-    this.validateNewFootprint(input.id, input.cell, footprint);
-    for (const cell of footprint) {
-      const occupant = this.occupancy.get(cellKey(cell));
-      if (occupant) {
-        throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
-      }
-      if (this.reservationAt(cell)) {
-        throw new Error(`Cell ${cellKey(cell)} is reserved.`);
-      }
-    }
+    this.board.validateSpawnPlacement(input.id, input.cell, footprint);
 
     const entity: EntityState = {
       id: input.id,
@@ -323,7 +292,7 @@ export class World {
       phase: "alive",
     };
     this.entities.set(entity.id, entity);
-    this.claimFootprint(entity.id, entity.footprint);
+    this.board.claimFootprint(entity.id, entity.footprint);
     if (entity.kind === "player") {
       this.currentPlayerCell = cloneCell(entity.cell);
     }
@@ -586,12 +555,12 @@ export class World {
   }
 
   getOccupantAt(cell: Cell): EntityState | undefined {
-    const id = this.occupancy.get(cellKey(cell));
+    const id = this.board.occupantIdAt(cell);
     return id ? this.getEntity(id) : undefined;
   }
 
   isOccupied(cell: Cell): boolean {
-    return this.occupancy.has(cellKey(cell));
+    return this.board.isOccupied(cell);
   }
 
   findAliveAt(cell: Cell, kind?: EntityState["kind"]): EntityState | undefined {
@@ -628,7 +597,7 @@ export class World {
     }
 
     const footprint = this.translateFootprint(entity, to);
-    this.validateActiveFootprint(id, footprint);
+    this.board.validateActiveFootprint(id, footprint);
     this.replaceEntityPlacement(entity, { ...entity, cell: cloneCell(to), footprint });
   }
 
@@ -642,7 +611,7 @@ export class World {
     }
 
     if (isTerminalPhase(phase)) {
-      this.releaseFootprint(entity.id, entity.footprint);
+      this.board.releaseFootprint(entity.id, entity.footprint);
       this.releaseReservation(entity.id);
       this.clearTelegraph(entity.id);
       if (entity.kind === "player") {
@@ -666,8 +635,8 @@ export class World {
       return;
     }
 
-    this.validateActiveFootprint(id, entity.footprint);
-    this.claimFootprint(id, entity.footprint);
+    this.board.validateActiveFootprint(id, entity.footprint);
+    this.board.claimFootprint(id, entity.footprint);
     this.entities.set(id, { ...entity, phase });
   }
 
@@ -979,20 +948,16 @@ export class World {
     }
 
     const origin = cloneCell(entity.cell);
-    const workingOccupancy = new Map(this.occupancy);
-    const moves: { readonly id: EntityId; readonly to: Cell }[] = [];
+    const displacement = this.board.beginDisplacementTransaction();
     const damages: { readonly targetId: EntityId; readonly amount: number }[] = [];
     let landing: Cell | undefined;
 
     const transaction: AttackResolutionTransaction = {
       enemy: entity,
       attack: cloneCommittedAttack(attack),
-      isFree: (cell) =>
-        this.geometry.isLegalCell(cell) &&
-        !workingOccupancy.has(cellKey(cell)) &&
-        !this.reservationAt(cell),
+      isFree: (cell) => displacement.isFree(cell),
       livingOccupantAt: (cell) => {
-        const occupantId = workingOccupancy.get(cellKey(cell));
+        const occupantId = displacement.occupantIdAt(cell);
         const occupant = occupantId ? this.entities.get(occupantId) : undefined;
         return occupant && !isTerminalPhase(occupant.phase) ? occupant : undefined;
       },
@@ -1001,9 +966,7 @@ export class World {
         if (!mover) {
           return;
         }
-        workingOccupancy.delete(cellKey(mover.cell));
-        workingOccupancy.set(cellKey(to), moverId);
-        moves.push({ id: moverId, to: cloneCell(to) });
+        displacement.stageMove(moverId, mover.cell, to);
       },
       stageDamage: (targetId, amount) => {
         damages.push({ targetId, amount });
@@ -1012,13 +975,13 @@ export class World {
         landing = cloneCell(to);
       },
       commit: () => {
-        for (const move of moves) {
-          this.releaseFootprint(move.id, this.entities.get(move.id)!.footprint);
+        for (const move of displacement.moves) {
+          this.board.releaseFootprint(move.id, this.entities.get(move.id)!.footprint);
         }
-        for (const move of moves) {
+        for (const move of displacement.moves) {
           const mover = this.entities.get(move.id)!;
           const footprint = this.translateFootprint(mover, move.to);
-          this.claimFootprint(move.id, footprint);
+          this.board.claimFootprint(move.id, footprint);
           this.entities.set(move.id, { ...mover, cell: cloneCell(move.to), footprint });
           if (mover.kind === "player") {
             this.currentPlayerCell = cloneCell(move.to);
@@ -1042,9 +1005,9 @@ export class World {
           committedAttack: undefined,
         };
         if (landing && !sameCell(origin, landing)) {
-          this.releaseFootprint(id, current.footprint);
+          this.board.releaseFootprint(id, current.footprint);
           const footprint = this.translateFootprint(current, landing);
-          this.claimFootprint(id, footprint);
+          this.board.claimFootprint(id, footprint);
           this.entities.set(id, { ...current, cell: cloneCell(landing), footprint, ...recovering });
         } else {
           this.entities.set(id, { ...current, ...recovering });
@@ -1096,8 +1059,8 @@ export class World {
     }
 
     const footprint = this.translateFootprint(entity, to);
-    this.validateTerminalFootprint(id, footprint);
-    this.releaseFootprint(entity.id, entity.footprint);
+    this.board.validateTerminalFootprint(id, footprint);
+    this.board.releaseFootprint(entity.id, entity.footprint);
     this.releaseReservation(entity.id);
     this.clearTelegraph(entity.id);
     this.entities.set(id, {
@@ -1124,7 +1087,7 @@ export class World {
     if (!entity) {
       return;
     }
-    this.releaseFootprint(entity.id, entity.footprint);
+    this.board.releaseFootprint(entity.id, entity.footprint);
     this.releaseReservation(id);
     this.clearTelegraph(id);
     this.entities.delete(id);
@@ -1135,20 +1098,19 @@ export class World {
   }
 
   tileAt(cell: Cell): TileKind {
-    return this.geometry.tileAt(cell);
+    return this.board.tileAt(cell);
   }
 
   isInside(cell: Cell): boolean {
-    return this.geometry.isInBounds(cell);
+    return this.board.isInside(cell);
   }
 
   isLegalCell(cell: Cell): boolean {
-    return this.geometry.isLegalCell(cell);
+    return this.board.isLegalCell(cell);
   }
 
   isWalkable(cell: Cell): boolean {
-    const reservation = this.reservationAt(cell);
-    return this.geometry.isLegalCell(cell) && !this.isOccupied(cell) && !reservation;
+    return this.board.isWalkable(cell);
   }
 
   getRandomStream(domain: string) {
@@ -1156,79 +1118,11 @@ export class World {
   }
 
   previewReservation(request: ReservationRequest): ReservationDecision {
-    const cells = request.cells.map(cloneCell);
-    if (cells.length === 0 || hasDuplicateCells(cells)) {
-      return {
-        accepted: false,
-        granted: false,
-        lostOwners: [],
-        reason: "Reservation cells must be unique and non-empty.",
-      };
-    }
-    if (!cells.every((cell) => this.geometry.isLegalCell(cell))) {
-      return {
-        accepted: false,
-        granted: false,
-        lostOwners: [],
-        reason: "Reservation cells must be legal land cells.",
-      };
-    }
-
-    const current = this.reservations.get(request.ownerId);
-    const conflicts = [...this.reservations.values()].filter(
-      (reservation) =>
-        reservation.ownerId !== request.ownerId &&
-        reservation.cells.some((reserved) => cells.some((cell) => sameCell(cell, reserved))),
-    );
-    const registrationIndex = current?.registrationIndex ?? this.nextRegistrationIndex;
-    const candidate: Reservation = {
-      ownerId: request.ownerId,
-      purpose: request.purpose,
-      cells,
-      activeStep: request.activeStep ?? false,
-      registrationIndex,
-    };
-    const defeated = conflicts.filter(
-      (reservation) => this.compareReservations(candidate, reservation) > 0,
-    );
-    if (defeated.length > 0) {
-      return {
-        accepted: true,
-        granted: false,
-        lostOwners: [],
-        reason: "Reservation lost arbitration.",
-      };
-    }
-    return {
-      accepted: true,
-      granted: true,
-      reservation: cloneReservation(candidate),
-      lostOwners: conflicts.map((reservation) => reservation.ownerId),
-    };
+    return this.board.previewReservation(request);
   }
 
   requestReservation(request: ReservationRequest): ReservationDecision {
-    const decision = this.previewReservation(request);
-    if (!decision.granted || !decision.reservation) {
-      return decision;
-    }
-
-    this.releaseReservation(request.ownerId);
-    for (const ownerId of decision.lostOwners) {
-      this.releaseReservation(ownerId);
-    }
-    if (this.reservations.get(request.ownerId)) {
-      throw new Error(`Reservation owner remained after replacement: ${request.ownerId}`);
-    }
-    const reservation = {
-      ...decision.reservation,
-      registrationIndex:
-        decision.reservation.registrationIndex === this.nextRegistrationIndex
-          ? this.nextRegistrationIndex++
-          : decision.reservation.registrationIndex,
-    };
-    this.reservations.set(request.ownerId, reservation);
-    return { ...decision, reservation: cloneReservation(reservation) };
+    return this.board.requestReservation(request);
   }
 
   /**
@@ -1238,123 +1132,27 @@ export class World {
   requestMovementReservations(
     requests: readonly MovementReservationRequest[],
   ): readonly ReservationDecision[] {
-    const ownerIds = new Set<string>();
-    const invalidReason = (request: MovementReservationRequest): string | undefined => {
-      if (ownerIds.has(request.ownerId)) {
-        return "Reservation owners must be unique.";
-      }
-      ownerIds.add(request.ownerId);
-      if (request.cells.length === 0 || hasDuplicateCells(request.cells)) {
-        return "Reservation cells must be unique and non-empty.";
-      }
-      if (!request.cells.every((cell) => this.geometry.isLegalCell(cell))) {
-        return "Reservation cells must be legal land cells.";
-      }
-      if (request.cells.some((cell) => this.isOccupied(cell))) {
-        return "Movement reservation cells must be unoccupied.";
-      }
-      return undefined;
-    };
-    const reasons = requests.map(invalidReason);
-    if (reasons.some((reason) => reason !== undefined)) {
-      return requests.map((request, index) => ({
-        accepted: false,
-        granted: false,
-        lostOwners: [],
-        ...(reasons[index]
-          ? { reason: reasons[index] }
-          : { reason: "Movement claims were rejected atomically." }),
-      }));
-    }
-
-    const requestedOwners = new Set(requests.map((request) => request.ownerId));
-    const existing = [...this.reservations.values()].filter(
-      (reservation) => !requestedOwners.has(reservation.ownerId),
-    );
-    const candidates = requests.map((request, index): Reservation => ({
-      ownerId: request.ownerId,
-      purpose: "movement",
-      cells: request.cells.map(cloneCell),
-      activeStep: true,
-      registrationIndex:
-        this.reservations.get(request.ownerId)?.registrationIndex ??
-        this.nextRegistrationIndex + index,
-    }));
-    const allCandidates = [...existing, ...candidates];
-    const overlaps = (a: Reservation, b: Reservation): boolean =>
-      a.cells.some((cell) => b.cells.some((other) => sameCell(cell, other)));
-    const granted = new Set(
-      candidates
-        .filter((candidate) =>
-          allCandidates.every(
-            (other) =>
-              other.ownerId === candidate.ownerId ||
-              !overlaps(candidate, other) ||
-              this.compareReservations(candidate, other) <= 0,
-          ),
-        )
-        .map((candidate) => candidate.ownerId),
-    );
-
-    for (const ownerId of requestedOwners) {
-      this.releaseReservation(ownerId);
-    }
-    for (const reservation of existing) {
-      if (
-        candidates.some(
-          (candidate) =>
-            granted.has(candidate.ownerId) &&
-            overlaps(candidate, reservation) &&
-            this.compareReservations(candidate, reservation) < 0,
-        )
-      ) {
-        this.releaseReservation(reservation.ownerId);
-      }
-    }
-    this.nextRegistrationIndex += candidates.filter(
-      (candidate) => !this.reservations.has(candidate.ownerId),
-    ).length;
-    for (const candidate of candidates) {
-      if (granted.has(candidate.ownerId)) {
-        this.reservations.set(candidate.ownerId, candidate);
-      }
-    }
-
-    return requests.map((request, index) => {
-      const reservation = candidates[index]!;
-      return {
-        accepted: true,
-        granted: granted.has(request.ownerId),
-        ...(granted.has(request.ownerId) ? { reservation: cloneReservation(reservation) } : {}),
-        lostOwners: [],
-        ...(granted.has(request.ownerId) ? {} : { reason: "Reservation lost arbitration." }),
-      };
-    });
+    return this.board.requestMovementReservations(requests);
   }
 
   getReservation(ownerId: string): Reservation | undefined {
-    const reservation = this.reservations.get(ownerId);
-    return reservation ? cloneReservation(reservation) : undefined;
+    return this.board.getReservation(ownerId);
   }
 
   listReservations(): readonly Reservation[] {
-    return [...this.reservations.values()].map(cloneReservation);
+    return this.board.listReservations();
   }
 
   reservationAt(cell: Cell): Reservation | undefined {
-    const reservation = [...this.reservations.values()].find((candidate) =>
-      candidate.cells.some((reserved) => sameCell(reserved, cell)),
-    );
-    return reservation ? cloneReservation(reservation) : undefined;
+    return this.board.reservationAt(cell);
   }
 
   isReserved(cell: Cell, excludingOwnerId?: string): boolean {
-    const reservation = this.reservationAt(cell);
-    return Boolean(reservation && reservation.ownerId !== excludingOwnerId);
+    return this.board.isReserved(cell, excludingOwnerId);
   }
 
   releaseReservation(ownerId: string): boolean {
-    return this.reservations.delete(ownerId);
+    return this.board.releaseReservation(ownerId);
   }
 
   setTelegraph(input: TelegraphInput): Telegraph {
@@ -1494,99 +1292,15 @@ export class World {
     };
   }
 
-  private compareReservations(a: Reservation, b: Reservation): number {
-    const priorityA = purposePriority(a.purpose, a.activeStep);
-    const priorityB = purposePriority(b.purpose, b.activeStep);
-    if (priorityA !== priorityB) {
-      return priorityA - priorityB;
-    }
-
-    const player = this.currentPlayerCell;
-    if (player) {
-      const entityA = this.entities.get(a.ownerId);
-      const entityB = this.entities.get(b.ownerId);
-      const distanceA = manhattanDistance(entityA?.cell ?? a.cells[0]!, player);
-      const distanceB = manhattanDistance(entityB?.cell ?? b.cells[0]!, player);
-      if (distanceA !== distanceB) {
-        return distanceA - distanceB;
-      }
-    }
-    return a.registrationIndex - b.registrationIndex;
-  }
-
-  private validateNewFootprint(id: EntityId, anchor: Cell, footprint: readonly Cell[]): void {
-    if (!this.isInside(anchor)) {
-      throw new Error(`Cannot spawn ${id} outside the arena.`);
-    }
-    if (footprint.length === 0) {
-      throw new Error(`Cannot spawn ${id} with an empty footprint.`);
-    }
-    if (hasDuplicateCells(footprint)) {
-      throw new Error(`Cannot spawn ${id} with duplicate footprint cells.`);
-    }
-    if (!footprint.every((cell) => this.geometry.isLegalCell(cell))) {
-      throw new Error(`Cannot spawn ${id} on a non-walkable footprint.`);
-    }
-  }
-
-  private validateActiveFootprint(id: EntityId, footprint: readonly Cell[]): void {
-    if (hasDuplicateCells(footprint)) {
-      throw new Error(`Cannot place ${id} with duplicate footprint cells.`);
-    }
-    if (!footprint.every((cell) => this.geometry.isLegalCell(cell))) {
-      throw new Error(`Cannot place ${id} on a non-walkable footprint.`);
-    }
-    for (const cell of footprint) {
-      const occupant = this.occupancy.get(cellKey(cell));
-      if (occupant && occupant !== id) {
-        throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
-      }
-      const reservation = this.reservationAt(cell);
-      if (reservation && reservation.ownerId !== id) {
-        throw new Error(`Cell ${cellKey(cell)} is reserved.`);
-      }
-    }
-  }
-
-  private validateTerminalFootprint(id: EntityId, footprint: readonly Cell[]): void {
-    if (hasDuplicateCells(footprint)) {
-      throw new Error(`Cannot place ${id} with duplicate footprint cells.`);
-    }
-    if (footprint.some((cell) => !this.isInside(cell))) {
-      throw new Error(`Cannot move ${id} outside the arena.`);
-    }
-    for (const cell of footprint) {
-      const occupant = this.occupancy.get(cellKey(cell));
-      if (occupant && occupant !== id) {
-        throw new Error(`Cell ${cellKey(cell)} is occupied by ${occupant}.`);
-      }
-    }
-  }
-
   private translateFootprint(entity: EntityState, to: Cell): readonly Cell[] {
     const dx = to.x - entity.cell.x;
     const dy = to.y - entity.cell.y;
     return entity.footprint.map((cell) => ({ x: cell.x + dx, y: cell.y + dy }));
   }
 
-  private claimFootprint(id: EntityId, footprint: readonly Cell[]): void {
-    for (const cell of footprint) {
-      this.occupancy.set(cellKey(cell), id);
-    }
-  }
-
-  private releaseFootprint(id: EntityId, footprint: readonly Cell[]): void {
-    for (const cell of footprint) {
-      const key = cellKey(cell);
-      if (this.occupancy.get(key) === id) {
-        this.occupancy.delete(key);
-      }
-    }
-  }
-
   private replaceEntityPlacement(entity: EntityState, next: EntityState): void {
-    this.releaseFootprint(entity.id, entity.footprint);
-    this.claimFootprint(next.id, next.footprint);
+    this.board.releaseFootprint(entity.id, entity.footprint);
+    this.board.claimFootprint(next.id, next.footprint);
     this.entities.set(entity.id, next);
     if (entity.kind === "player") {
       this.currentPlayerCell = cloneCell(next.cell);
