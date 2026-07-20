@@ -38,6 +38,7 @@ import {
   type ReservationDecision,
   type ReservationRequest,
 } from "./grid-board";
+import { RunBuild } from "./run-build";
 import { WaveRuntime } from "./wave-runtime";
 
 export interface SpawnEntityInput extends EntitySpawnData {
@@ -53,6 +54,7 @@ export type {
   ReservationRequest,
 } from "./grid-board";
 export { GridBoard } from "./grid-board";
+export { RunBuild } from "./run-build";
 export { WaveRuntime } from "./wave-runtime";
 
 export interface TelegraphInput {
@@ -138,14 +140,6 @@ function cloneGuard(guard: GuardRuntime): GuardRuntime {
   return { ...guard };
 }
 
-function cloneRunBuild(build: RunBuildState): RunBuildState {
-  return { stacks: { ...build.stacks }, triggers: [...build.triggers] };
-}
-
-function clonePendingRewardOffer(offer: PendingRewardOffer): PendingRewardOffer {
-  return { ...offer, cards: offer.cards.map((card) => ({ ...card })) };
-}
-
 function cloneEntity(entity: EntityState): EntityState {
   return {
     ...entity,
@@ -176,12 +170,11 @@ export class World {
   private readonly geometry: Arena;
   private readonly board: GridBoard;
   private readonly waves = new WaveRuntime();
+  private readonly run = new RunBuild();
   private readonly entities = new Map<EntityId, EntityState>();
   private readonly telegraphs = new Map<string, Telegraph>();
   private currentPlayerCell: Cell | undefined;
   private currentArmedSmashTarget: Cell | undefined;
-  private currentRunBuild: RunBuildState = { stacks: {}, triggers: [] };
-  private currentPendingReward: PendingRewardOffer | undefined;
   private currentTick = 0;
   private currentOutcome: EncounterOutcome = "running";
   private lastEvents: readonly CombatEvent[] = [];
@@ -393,26 +386,20 @@ export class World {
   }
 
   get runBuild(): RunBuildState {
-    return cloneRunBuild(this.currentRunBuild);
+    return this.run.state;
   }
 
   get pendingRewardOffer(): PendingRewardOffer | undefined {
-    return this.currentPendingReward
-      ? clonePendingRewardOffer(this.currentPendingReward)
-      : undefined;
+    return this.run.pendingRewardOffer;
   }
 
   /** Installs a reward offer, pausing command acceptance until it is selected. */
   installPendingRewardOffer(offer: PendingRewardOffer): PendingRewardOffer {
-    if (this.currentPendingReward) {
-      throw new Error("A reward offer is already pending.");
-    }
-    this.currentPendingReward = clonePendingRewardOffer(offer);
-    return this.pendingRewardOffer!;
+    return this.run.installPendingRewardOffer(offer);
   }
 
   clearPendingRewardOffer(): void {
-    this.currentPendingReward = undefined;
+    this.run.clearPendingRewardOffer();
   }
 
   /**
@@ -425,15 +412,7 @@ export class World {
     resultingStackCount: number,
     trigger?: ArtifactTrigger,
   ): RunBuildState {
-    const triggers =
-      trigger && !this.currentRunBuild.triggers.includes(trigger)
-        ? [...this.currentRunBuild.triggers, trigger]
-        : this.currentRunBuild.triggers;
-    this.currentRunBuild = {
-      stacks: { ...this.currentRunBuild.stacks, [artifactId]: resultingStackCount },
-      triggers,
-    };
-    return this.runBuild;
+    return this.run.applyRewardSelection(artifactId, resultingStackCount, trigger);
   }
 
   /** Updates the player entity's own normal-attack damage; the sole owner of that combat stat. */
