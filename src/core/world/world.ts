@@ -37,6 +37,11 @@ import {
   type ReservationDecision,
   type ReservationRequest,
 } from "./grid-board";
+import {
+  CombatOperations,
+  type AttackRetargetResult,
+  type EnemyAttackResolution,
+} from "./combat-operations";
 import { RunBuild } from "./run-build";
 import { WaveRuntime } from "./wave-runtime";
 
@@ -54,19 +59,14 @@ export type {
   TelegraphInput,
 } from "./grid-board";
 export { GridBoard } from "./grid-board";
+export type {
+  AttackRetargetResult,
+  CombatWorldAccess,
+  EnemyAttackResolution,
+} from "./combat-operations";
+export { CombatOperations } from "./combat-operations";
 export { RunBuild } from "./run-build";
 export { WaveRuntime } from "./wave-runtime";
-
-export interface EnemyAttackResolution {
-  readonly attack: CommittedAttack;
-  readonly target: Cell;
-  readonly damage?: DamageResult;
-}
-
-export interface AttackRetargetResult {
-  readonly changed: boolean;
-  readonly telegraph?: Telegraph;
-}
 
 export interface StagedAttackResolutionCommit {
   readonly damageResults: ReadonlyMap<EntityId, DamageResult>;
@@ -113,10 +113,6 @@ function cloneEnemyAction(action: EnemyActionDefinition): EnemyActionDefinition 
   };
 }
 
-function sameCells(a: readonly Cell[], b: readonly Cell[]): boolean {
-  return a.length === b.length && a.every((cell, index) => sameCell(cell, b[index]!));
-}
-
 function cloneCommittedAttack(attack: CommittedAttack): CommittedAttack {
   return {
     ...attack,
@@ -158,6 +154,7 @@ export class World {
 
   private readonly geometry: Arena;
   private readonly board: GridBoard;
+  private readonly combat: CombatOperations;
   private readonly waves = new WaveRuntime();
   private readonly run = new RunBuild();
   private readonly entities = new Map<EntityId, EntityState>();
@@ -193,6 +190,18 @@ export class World {
       anchorCellOf: (id) => this.entities.get(id)?.cell,
       playerCell: () => this.currentPlayerCell,
     });
+    this.combat = new CombatOperations(
+      {
+        getEntity: (id) => this.entities.get(id),
+        setEntity: (id, entity) => {
+          this.entities.set(id, entity);
+        },
+        allEntities: () => this.entities.values(),
+        setPhase: (id, phase) => this.setPhase(id, phase),
+        playerCell: () => this.playerCell,
+      },
+      this.board,
+    );
   }
 
   spawn(input: SpawnEntityInput): EntityState {
@@ -555,272 +564,51 @@ export class World {
   }
 
   applyDamage(targetId: EntityId, damage: number): DamageResult | undefined {
-    if (!Number.isFinite(damage) || damage <= 0) {
-      throw new Error("Damage must be a positive finite number.");
-    }
-
-    const entity = this.entities.get(targetId);
-    if (!entity || isTerminalPhase(entity.phase)) {
-      return undefined;
-    }
-    if (entity.kind === "player" && entity.mobility?.invulnerable) {
-      return undefined;
-    }
-    if (entity.damageImmune) {
-      return undefined;
-    }
-
-    const hpAfter = Math.max(0, entity.hp - damage);
-    const killed = hpAfter === 0;
-    if (killed) {
-      this.setPhase(targetId, "dead");
-    }
-
-    this.entities.set(targetId, { ...this.entities.get(targetId)!, hp: hpAfter });
-    return {
-      targetId,
-      damage,
-      hpBefore: entity.hp,
-      hpAfter,
-      killed,
-    };
+    return this.combat.applyDamage(targetId, damage);
   }
 
   applyBasicHit(hit: BasicHitResult): BasicHitResult | undefined {
-    const damage = this.applyDamage(hit.targetId, hit.damage);
-    if (!damage) {
-      return undefined;
-    }
-    return { ...damage, attackerId: hit.attackerId };
+    return this.combat.applyBasicHit(hit);
   }
 
   applyDirectionalHit(hit: DirectionalHitResult): DirectionalHitResult | undefined {
-    const entity = this.entities.get(hit.targetId);
-    if (!entity || isTerminalPhase(entity.phase)) {
-      return undefined;
-    }
-
-    this.entities.set(hit.targetId, {
-      ...entity,
-      hp: hit.hpAfter,
-      ...(entity.guard ? { guard: { ...entity.guard, current: hit.guardAfter } } : {}),
-    });
-
-    if (hit.guardBroken && !hit.killed && entity.enemyAction && entity.activity !== "staggered") {
-      this.releaseReservation(entity.id);
-      this.clearTelegraph(entity.id);
-      const current = this.entities.get(entity.id)!;
-      const staggerTicks = current.guard?.staggerDuration ?? 0;
-      this.entities.set(entity.id, {
-        ...current,
-        activity: "staggered",
-        recoveryTicks: undefined,
-        restTicks: undefined,
-        committedAttack: undefined,
-        staggerTicks,
-        protectionTicks: undefined,
-      });
-    }
-
-    if (hit.killed) {
-      this.setPhase(hit.targetId, "dead");
-    }
-    return { ...hit };
+    return this.combat.applyDirectionalHit(hit);
   }
 
   setEnemyFacing(id: EntityId, facing: Cell): void {
-    const entity = this.entities.get(id);
-    if (!entity?.enemyAction) {
-      throw new Error(`Entity is not an enabled enemy: ${id}`);
-    }
-    if (entity.phase !== "alive") {
-      throw new Error(`Cannot turn terminal entity: ${id}`);
-    }
-    if (
-      !Number.isInteger(facing.x) ||
-      !Number.isInteger(facing.y) ||
-      Math.abs(facing.x) + Math.abs(facing.y) !== 1
-    ) {
-      throw new Error("Enemy facing must be cardinal.");
-    }
-    this.entities.set(id, { ...entity, facing: cloneCell(facing) });
+    this.combat.setEnemyFacing(id, facing);
   }
 
   setEnemyDecision(id: EntityId, decision: EnemyDecisionKind): void {
-    const entity = this.entities.get(id);
-    if (!entity?.enemyAction) {
-      throw new Error(`Entity is not an enabled enemy: ${id}`);
-    }
-    this.entities.set(id, { ...entity, lastDecision: decision });
+    this.combat.setEnemyDecision(id, decision);
   }
 
   setEnemyActivity(id: EntityId, activity: EntityState["activity"], recoveryTicks?: number): void {
-    const entity = this.entities.get(id);
-    if (!entity?.enemyAction) {
-      throw new Error(`Entity is not an enabled enemy: ${id}`);
-    }
-    if (entity.phase !== "alive") {
-      return;
-    }
-    this.entities.set(id, {
-      ...entity,
-      activity,
-      recoveryTicks: recoveryTicks === undefined ? undefined : recoveryTicks,
-      restTicks: undefined,
-      ...(activity !== "staggered" ? { staggerTicks: undefined } : {}),
-    });
+    this.combat.setEnemyActivity(id, activity, recoveryTicks);
   }
 
   setEnemyResting(id: EntityId, restTicks = 1): void {
-    if (!Number.isInteger(restTicks) || restTicks <= 0) {
-      throw new Error("Enemy rest must be a positive integer.");
-    }
-    const entity = this.entities.get(id);
-    if (!entity?.enemyAction) {
-      throw new Error(`Entity is not an enabled enemy: ${id}`);
-    }
-    if (entity.phase !== "alive") {
-      return;
-    }
-    this.entities.set(id, {
-      ...entity,
-      activity: "resting",
-      recoveryTicks: undefined,
-      restTicks,
-      committedAttack: undefined,
-    });
+    this.combat.setEnemyResting(id, restTicks);
   }
 
   resetEnemyCombatState(id: EntityId): void {
-    const entity = this.entities.get(id);
-    if (!entity?.enemyAction || entity.phase !== "alive") {
-      return;
-    }
-    this.releaseReservation(id);
-    this.clearTelegraph(id);
-    this.entities.set(id, {
-      ...entity,
-      activity: "ready",
-      lastDecision: undefined,
-      recoveryTicks: undefined,
-      restTicks: undefined,
-      committedAttack: undefined,
-      staggerTicks: undefined,
-      protectionTicks: undefined,
-      ...(entity.guard ? { guard: { ...entity.guard, current: entity.guard.max } } : {}),
-    });
+    this.combat.resetEnemyCombatState(id);
   }
 
   advanceEnemyStatuses(): readonly CombatEvent[] {
-    const events: CombatEvent[] = [];
-    for (const entity of this.entities.values()) {
-      if (entity.phase !== "alive" || !entity.enemyAction || !entity.guard) {
-        continue;
-      }
-      if (entity.activity === "staggered") {
-        const ticks = entity.staggerTicks ?? 0;
-        if (ticks > 1) {
-          this.entities.set(entity.id, { ...entity, staggerTicks: ticks - 1 });
-          continue;
-        }
-
-        const guard = { ...entity.guard, current: entity.guard.max };
-        this.entities.set(entity.id, {
-          ...entity,
-          guard,
-          activity: "ready",
-          staggerTicks: undefined,
-          protectionTicks: guard.protectionDuration,
-        });
-        events.push({
-          type: "enemy_stagger_ended",
-          enemyId: entity.id,
-          guard: guard.current,
-          maxGuard: guard.max,
-        });
-        events.push({
-          type: "enemy_protection_started",
-          enemyId: entity.id,
-          ticks: guard.protectionDuration,
-        });
-        continue;
-      }
-
-      const protectionTicks = entity.protectionTicks ?? 0;
-      if (protectionTicks <= 0) {
-        continue;
-      }
-      if (protectionTicks === 1) {
-        this.entities.set(entity.id, { ...entity, protectionTicks: undefined });
-        events.push({ type: "enemy_protection_ended", enemyId: entity.id });
-      } else {
-        this.entities.set(entity.id, { ...entity, protectionTicks: protectionTicks - 1 });
-      }
-    }
-    return events;
+    return this.combat.advanceEnemyStatuses();
   }
 
   commitEnemyAttack(id: EntityId, attack: CommittedAttack): CommittedAttack {
-    const entity = this.entities.get(id);
-    if (!entity?.enemyAction || entity.phase !== "alive" || entity.activity !== "ready") {
-      throw new Error(`Enemy cannot commit an attack: ${id}`);
-    }
-    const committed = cloneCommittedAttack({
-      ...attack,
-      ...(attack.role ? {} : { role: entity.enemyAction.role }),
-      ...(attack.kind || !entity.enemyAction.kind ? {} : { kind: entity.enemyAction.kind }),
-      ...(attack.metadata || !entity.enemyAction.metadata
-        ? {}
-        : { metadata: entity.enemyAction.metadata }),
-    });
-    this.setTelegraph({ sourceId: id, phase: "warning", cells: committed.cells });
-    this.entities.set(id, {
-      ...entity,
-      activity: "telegraphing",
-      recoveryTicks: undefined,
-      restTicks: undefined,
-      committedAttack: committed,
-    });
-    return cloneCommittedAttack(committed);
+    return this.combat.commitEnemyAttack(id, attack);
   }
 
   decrementEnemyAttackWarning(id: EntityId): CommittedAttack | undefined {
-    const entity = this.entities.get(id);
-    const attack = entity?.committedAttack;
-    if (!entity || !attack || entity.activity !== "telegraphing") {
-      return undefined;
-    }
-    const next = { ...attack, warningTicks: Math.max(0, attack.warningTicks - 1) };
-    this.entities.set(id, { ...entity, committedAttack: next });
-    return cloneCommittedAttack(next);
+    return this.combat.decrementEnemyAttackWarning(id);
   }
 
   resolveCommittedEnemyAttack(id: EntityId): EnemyAttackResolution | undefined {
-    const entity = this.entities.get(id);
-    const attack = entity?.committedAttack;
-    if (!entity || !attack || entity.activity !== "telegraphing") {
-      return undefined;
-    }
-    const playerCell = this.playerCell;
-    const target = playerCell ?? attack.cells[0] ?? { x: 0, y: 0 };
-    this.clearTelegraph(id);
-    if (attack.metadata?.selfDestruct) {
-      this.entities.set(id, { ...entity, hp: 0 });
-      this.setPhase(id, "dead");
-    } else {
-      this.entities.set(id, {
-        ...entity,
-        activity: "recovering",
-        recoveryTicks: attack.recoveryTicks,
-        restTicks: undefined,
-        committedAttack: undefined,
-      });
-    }
-    const damage =
-      playerCell && attack.cells.some((cell) => sameCell(cell, playerCell))
-        ? this.applyDamage("player", attack.damage)
-        : undefined;
-    return { attack: cloneCommittedAttack(attack), target: cloneCell(target), damage };
+    return this.combat.resolveCommittedEnemyAttack(id);
   }
 
   /**
@@ -829,19 +617,7 @@ export class World {
    * this only applies the refreshed cells atomically and reports whether anything changed.
    */
   retargetCommittedAttack(id: EntityId, path: readonly Cell[], facing: Cell): AttackRetargetResult {
-    const entity = this.entities.get(id);
-    const attack = entity?.committedAttack;
-    if (!entity || !attack || entity.activity !== "telegraphing") {
-      return { changed: false };
-    }
-    if (sameCells(attack.cells, path)) {
-      return { changed: false };
-    }
-
-    const next: CommittedAttack = { ...attack, cells: path.map(cloneCell) };
-    this.entities.set(id, { ...entity, committedAttack: next, facing: cloneCell(facing) });
-    const telegraph = this.setTelegraph({ sourceId: id, phase: "warning", cells: path });
-    return { changed: true, telegraph };
+    return this.combat.retargetCommittedAttack(id, path, facing);
   }
 
   /**
@@ -904,7 +680,7 @@ export class World {
 
         const damageResults = new Map<EntityId, DamageResult>();
         for (const damage of damages) {
-          const result = this.applyDamage(damage.targetId, damage.amount);
+          const result = this.combat.applyDamage(damage.targetId, damage.amount);
           if (result) {
             damageResults.set(damage.targetId, result);
           }
@@ -934,31 +710,11 @@ export class World {
   }
 
   advanceEnemyRecovery(id: EntityId): boolean {
-    const entity = this.entities.get(id);
-    if (!entity || entity.activity !== "recovering") {
-      return false;
-    }
-    const ticks = entity.recoveryTicks ?? 0;
-    if (ticks > 1) {
-      this.entities.set(id, { ...entity, recoveryTicks: ticks - 1 });
-      return false;
-    }
-    this.entities.set(id, { ...entity, activity: "ready", recoveryTicks: undefined });
-    return true;
+    return this.combat.advanceEnemyRecovery(id);
   }
 
   advanceEnemyRest(id: EntityId): boolean {
-    const entity = this.entities.get(id);
-    if (!entity || entity.activity !== "resting") {
-      return false;
-    }
-    const ticks = entity.restTicks ?? 0;
-    if (ticks > 1) {
-      this.entities.set(id, { ...entity, restTicks: ticks - 1 });
-      return false;
-    }
-    this.entities.set(id, { ...entity, activity: "ready", restTicks: undefined });
-    return true;
+    return this.combat.advanceEnemyRest(id);
   }
 
   moveEntityToPhase(id: EntityId, to: Cell, phase: EntityState["phase"]): void {
