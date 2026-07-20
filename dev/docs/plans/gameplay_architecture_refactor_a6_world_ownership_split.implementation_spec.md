@@ -75,3 +75,25 @@ Measure what remains in `world.ts` (expect roughly entity repository + delegatio
 2. Every existing unit test passes unmodified except mechanical import/type updates; scenario and e2e suites pass unmodified.
 3. Same-seed determinism spot check: `charge-enemy`, `rewards`, and `waves` scenarios produce identical event sequences before and after the split.
 4. No subsystem imports another subsystem's internals; composition happens only in `World`'s constructor.
+
+## Outcome (Step 5 audit)
+
+Completed 2026-07-21. `world.ts` went from 1,658 lines to 963. Subsystems: `grid-board.ts` (496), `combat-operations.ts` (390), `wave-runtime.ts` (95), `run-build.ts` (65). All 332 unit tests, the same-seed determinism harness, and 25 e2e tests pass; the harness compared full event sequences plus final snapshots for `charge-enemy`, `rewards`, and `waves` against a pre-split capture and matched exactly at every step.
+
+### Deviations from the plan as written
+
+- **Telegraphs folded into `GridBoard`** rather than becoming a separate `TelegraphBoard`, as the layout permitted. Telegraphs are a source-keyed cell index validated against arena bounds and queried by cell — structurally identical to the reservation index already there. Landed as its own commit before the combat extraction so the two moves stayed bisectable.
+- **Step 4 split into two commits** (telegraph fold, then combat extraction) because it was the highest-risk step and a single commit would not have isolated a determinism regression.
+- **`RunBuild` rather than `RunBuildState`** as the class name, to avoid colliding with the `RunBuildState` value it holds.
+- **`resolveCommittedAttackTransaction` stayed in `World`** as the composer of board placement and combat damage, as the Step 1 risk note directed. It is the only remaining method that spans two subsystems.
+
+### Delegation decisions
+
+**Keep as permanent facade.** Spatial reads (`isWalkable`, `isInside`, `isLegalCell`, `tileAt`, `isOccupied`, `getOccupantAt`), `playerCell`, and `snapshot` are the world's read model. Core rules, previews, and pathfinding call them everywhere; routing those callers through `world.board` would be churn with no ownership benefit.
+
+**Candidates for later caller migration, deliberately not done here.** The combat cluster (13 delegations, called almost entirely from `enemy-phase` and the enemy behaviors) and the wave/run clusters (8 delegations, called from `wave-phase` and the reward flow) have narrow, identifiable call sites. If a follow-up is ever justified, those callers could take a subsystem handle directly. Nothing depends on this happening.
+
+### Findings for later work
+
+- `setPhase` is the remaining cross-cutting cascade: a terminal transition releases placement, reservations, and telegraphs, and clears an armed smash. It is the sole reason `CombatOperations` needs a world handle at all. If a sixth subsystem is ever justified, it is entity lifecycle — not any of the four extracted here.
+- The player-stat mutators (`setNormalAttackDamage`, `setMobilityDamage`, `setMobilityCooldownConfig`, `setMobilityRange`, `raiseMaxHealth`) are artifact-effect application on entities, not world-state ownership. They belong to the character/artifact work in `character_featurization_and_viking_split.md`, not to a further World split.
