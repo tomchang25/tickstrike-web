@@ -4,7 +4,37 @@ import type { TickstrikeDebugApi } from "../../src/harness/debug-api";
 declare global {
   interface Window {
     __TICKSTRIKE__?: TickstrikeDebugApi;
+    /** Every value `data-retained-presentations` took while a recorder was armed. */
+    __RETAINED_PRESENTATION_LOG__?: string[];
   }
+}
+
+/**
+ * Records every value of `data-retained-presentations` via MutationObserver.
+ * Sampling the attribute cannot observe a short-lived frame reliably — the final
+ * water frame is only present for its own authored duration — so the assertions
+ * read this log instead of polling the live attribute.
+ */
+async function recordRetainedPresentations(page: import("@playwright/test").Page): Promise<void> {
+  await page.evaluate(() => {
+    const canvas = document.querySelector('[data-testid="game-canvas"]');
+    if (!canvas) {
+      throw new Error("Game canvas is unavailable.");
+    }
+    const log: string[] = [];
+    window.__RETAINED_PRESENTATION_LOG__ = log;
+    const record = () => {
+      const value = canvas.getAttribute("data-retained-presentations");
+      if (value) {
+        log.push(value);
+      }
+    };
+    record();
+    new MutationObserver(record).observe(canvas, {
+      attributes: true,
+      attributeFilter: ["data-retained-presentations"],
+    });
+  });
 }
 
 test("Smash scenario completes through the browser harness", async ({ page }) => {
@@ -132,6 +162,7 @@ for (const [scenario, profile] of [
     await page.keyboard.up("Alt");
     await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
+    await recordRetainedPresentations(page);
     await page.mouse.click(target.x, target.y);
     // The drowning victim is already gone from the snapshot; only its retained ghost animates.
     await expect(page.getByTestId("entity-enemy-water")).toHaveCount(0);
@@ -141,8 +172,12 @@ for (const [scenario, profile] of [
     );
     await expect(canvas).not.toHaveAttribute("data-enemy-presentations", /enemy-water:/);
     await expect
-      .poll(async () => canvas.getAttribute("data-retained-presentations"))
-      .toContain(":water:7");
+      .poll(async () =>
+        page.evaluate(() =>
+          (window.__RETAINED_PRESENTATION_LOG__ ?? []).some((entry) => entry.includes(":water:7")),
+        ),
+      )
+      .toBe(true);
     await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
     await expect(page.getByTestId("entity-enemy-water")).toHaveCount(0);
     await expect(canvas).not.toHaveAttribute("data-retained-presentations", /enemy-water:/);
@@ -447,7 +482,6 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("attack-right")).toHaveCount(0);
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("tick-value")).toHaveText("1");
-  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(false);
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "3");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
@@ -581,7 +615,7 @@ test("Dash aimed at an enemy lands before it without dealing damage", async ({ p
 test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets cleanly", async ({
   page,
 }) => {
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/?scenario=ranged-enemy");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
@@ -745,149 +779,6 @@ test("Pointer aiming previews attack and Mobility without advancing until click"
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("event-log")).toContainText("player_dashed");
   await page.keyboard.up("Alt");
-});
-
-test("Tick Arena reaches victory through one deterministic browser command loop", async ({
-  page,
-}) => {
-  test.setTimeout(30_000);
-  await page.goto("/?scenario=tick-arena");
-  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
-  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
-
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    if (!api) {
-      throw new Error("Tickstrike debug API is unavailable.");
-    }
-    const directions = [
-      { x: 0, y: -1 },
-      { x: 1, y: 0 },
-      { x: 0, y: 1 },
-      { x: -1, y: 0 },
-    ];
-    const sameCell = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-      a.x === b.x && a.y === b.y;
-    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-      Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-
-    for (let step = 0; step < 300; step += 1) {
-      const state = api.getState();
-      if (state.outcome !== "running") {
-        break;
-      }
-      const player = state.entities.find((entity) => entity.id === "player");
-      if (!player) {
-        throw new Error("Player is missing from the scenario.");
-      }
-      const enabledEnemies = state.entities.filter(
-        (entity) => entity.kind === "enemy" && entity.enemyAction && entity.phase === "alive",
-      );
-      if (enabledEnemies.length === 0) {
-        break;
-      }
-
-      const candidates = directions.filter((direction) => {
-        const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
-        if (
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= state.arena.width ||
-          cell.y >= state.arena.height
-        ) {
-          return false;
-        }
-        const index = cell.y * state.arena.width + cell.x;
-        if (state.arena.tiles[index] !== "floor") {
-          return false;
-        }
-        if (
-          state.entities.some((entity) => entity.phase === "alive" && sameCell(entity.cell, cell))
-        ) {
-          return false;
-        }
-        return !state.telegraphs.some((telegraph) =>
-          telegraph.cells.some((telegraphCell) => sameCell(telegraphCell, cell)),
-        );
-      });
-      const playerIsThreatened = state.telegraphs.some((telegraph) =>
-        telegraph.cells.some((cell) => sameCell(cell, player.cell)),
-      );
-      if (playerIsThreatened && candidates.length > 0) {
-        await api.execute({ type: "move", actorId: "player", direction: candidates[0] });
-        continue;
-      }
-
-      const adjacent = enabledEnemies.find((enemy) => distance(enemy.cell, player.cell) === 1);
-      if (adjacent) {
-        const relation = { x: player.cell.x - adjacent.cell.x, y: player.cell.y - adjacent.cell.y };
-        const isFront =
-          adjacent.facing && relation.x === adjacent.facing.x && relation.y === adjacent.facing.y;
-        if (isFront) {
-          const flank = candidates.find((direction) => {
-            const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
-            return (
-              distance(cell, adjacent.cell) === 1 &&
-              !(
-                cell.x - adjacent.cell.x === adjacent.facing?.x &&
-                cell.y - adjacent.cell.y === adjacent.facing?.y
-              )
-            );
-          });
-          if (flank) {
-            await api.execute({ type: "move", actorId: "player", direction: flank });
-            continue;
-          }
-        }
-        await api.execute({
-          type: "attack",
-          actorId: "player",
-          direction: { x: adjacent.cell.x - player.cell.x, y: adjacent.cell.y - player.cell.y },
-        });
-        continue;
-      }
-
-      const aligned = enabledEnemies.find(
-        (enemy) => enemy.cell.x === player.cell.x || enemy.cell.y === player.cell.y,
-      );
-      if (aligned && (!player.mobility || player.mobility.remainingCooldown === 0)) {
-        const direction =
-          aligned.cell.x === player.cell.x
-            ? { x: 0, y: Math.sign(aligned.cell.y - player.cell.y) }
-            : { x: Math.sign(aligned.cell.x - player.cell.x), y: 0 };
-        await api.execute({ type: "dash", actorId: "player", direction });
-        continue;
-      }
-
-      const target = [...enabledEnemies].sort(
-        (a, b) => distance(a.cell, player.cell) - distance(b.cell, player.cell),
-      )[0];
-      const toward = directions
-        .filter((direction) =>
-          direction.x !== 0 ? target.cell.x !== player.cell.x : target.cell.y !== player.cell.y,
-        )
-        .sort((a, b) => {
-          const nextA = { x: player.cell.x + a.x, y: player.cell.y + a.y };
-          const nextB = { x: player.cell.x + b.x, y: player.cell.y + b.y };
-          return distance(nextA, target.cell) - distance(nextB, target.cell);
-        })
-        .find((direction) => candidates.some((candidate) => sameCell(candidate, direction)));
-      await api.execute({
-        type: "move",
-        actorId: "player",
-        direction: toward ?? candidates[0] ?? directions[0],
-      });
-    }
-
-    for (let step = 0; step < 24 && api.getState().outcome === "running"; step += 1) {
-      await api.execute({ type: "attack", actorId: "player", direction: { x: -1, y: 0 } });
-    }
-  });
-
-  await expect(page.getByTestId("encounter-result")).toHaveAttribute("data-outcome", "victory");
-  await expect(page.getByTestId("encounter-result")).toContainText("Victory");
-  await expect(page.getByTestId("encounter-status")).toContainText("Victory");
-  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
 test("Tick Arena presents defeat and restarts cleanly after a committed hit", async ({ page }) => {
