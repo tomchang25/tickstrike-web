@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { EntityState, WorldSnapshot } from "../../../../src/core/model/types";
+import type { EntityState, Telegraph, WorldSnapshot } from "../../../../src/core/model/types";
 import { PixiGameRenderer } from "../../../../src/presentation/pixi/PixiGameRenderer";
 
 function snapshot(
   cell: { x: number; y: number },
   entities?: readonly EntityState[],
+  telegraphs?: readonly Telegraph[],
 ): WorldSnapshot {
   return {
     tick: 1,
@@ -30,11 +31,41 @@ function snapshot(
       },
     ],
     reservations: [],
-    telegraphs: [],
+    telegraphs: telegraphs ?? [],
     waveRuntime: undefined,
     seed: 1,
     lastEvents: [],
   };
+}
+
+function attackingEnemy(warningTicks: number): EntityState {
+  return {
+    id: "enemy-attacker",
+    kind: "enemy",
+    archetype: "thrust",
+    cell: { x: 2, y: 2 },
+    footprint: [{ x: 2, y: 2 }],
+    hp: 10,
+    maxHp: 10,
+    phase: "alive",
+    activity: "telegraphing",
+    committedAttack: {
+      attackId: "thrust-attack",
+      cells: [{ x: 1, y: 1 }],
+      damage: 5,
+      warningTicks,
+      recoveryTicks: 1,
+    },
+  };
+}
+
+function labelTexts(container: { children: readonly unknown[] }): string[] {
+  return container.children.flatMap((child) => {
+    const withChildren = child as { children?: readonly { text?: unknown }[] };
+    return (withChildren.children ?? [])
+      .filter((grandchild) => typeof grandchild.text === "string")
+      .map((grandchild) => String(grandchild.text));
+  });
 }
 
 function drowningEnemy(presentationId: string): EntityState {
@@ -143,5 +174,71 @@ describe("PixiGameRenderer terminal view detachment", () => {
     expect(recreatedView).toBeDefined();
     expect(recreatedView).not.toBe(originalView);
     expect(originalView?.destroyed).toBe(true);
+  });
+});
+
+describe("PixiGameRenderer spawning telegraph projection", () => {
+  it("renders a spawning telegraph's marker and countdown from remainingTicks", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(
+      snapshot(cell, undefined, [
+        { sourceId: "spawn:w1:s0", phase: "spawning", cells: [{ x: 2, y: 2 }], remainingTicks: 2 },
+      ]),
+    );
+
+    expect(labelTexts(renderer.telegraphLabelLayer)).toEqual(["2"]);
+    expect(renderer.telegraphLayer.children.length).toBe(1);
+  });
+
+  it("never falls back to a stray committedAttack lookup when remainingTicks is zero", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(
+      snapshot(
+        cell,
+        [attackingEnemy(5)],
+        [
+          {
+            sourceId: "enemy-attacker",
+            phase: "spawning",
+            cells: [{ x: 2, y: 2 }],
+            remainingTicks: 0,
+          },
+        ],
+      ),
+    );
+
+    expect(labelTexts(renderer.telegraphLabelLayer)).toEqual([]);
+  });
+
+  it("uses a distinct spawn color without disturbing attack warning markers", () => {
+    const renderer = new PixiGameRenderer();
+    const cell = { x: 0, y: 0 };
+    renderer.sync(
+      snapshot(
+        cell,
+        [attackingEnemy(3)],
+        [
+          {
+            sourceId: "spawn:w1:s0",
+            phase: "spawning",
+            cells: [{ x: 2, y: 2 }],
+            remainingTicks: 2,
+          },
+          { sourceId: "enemy-attacker", phase: "warning", cells: [{ x: 1, y: 1 }] },
+        ],
+      ),
+    );
+
+    const colors = renderer.telegraphLayer.children.map((child) => {
+      const graphics = child as unknown as {
+        context: { instructions: readonly { data: { style: { color: number } } }[] };
+      };
+      return graphics.context.instructions[0]?.data.style.color;
+    });
+    expect(colors).toContain(0x9a7cff);
+    expect(colors).toContain(0xffd166);
+    expect(labelTexts(renderer.telegraphLabelLayer).sort()).toEqual(["2", "3"]);
   });
 });

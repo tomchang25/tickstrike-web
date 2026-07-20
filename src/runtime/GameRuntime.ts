@@ -1,6 +1,6 @@
 import { resolveCommand, type ActionResolution } from "../core/actions/action-resolver";
 import type { GameCommand } from "../core/actions/commands";
-import type { WorldSnapshot } from "../core/model/types";
+import type { Cell, WorldSnapshot } from "../core/model/types";
 import type { World } from "../core/world/world";
 import type { TestScenario } from "../harness/types";
 import type { ContentInspection } from "../harness/content-inspection";
@@ -87,6 +87,10 @@ export class GameRuntime {
 
   getEntityBounds(id: string): ScreenBounds | undefined {
     return this.renderer.getEntityBounds(id);
+  }
+
+  isWalkable(cell: Cell): boolean {
+    return this.requireWorld().isWalkable(cell);
   }
 
   getContentInspection(): ContentInspection | undefined {

@@ -1,5 +1,5 @@
 import type { GameCommand } from "../core/actions/commands";
-import type { EntityState, WorldSnapshot } from "../core/model/types";
+import type { Cell, EntityState, WorldSnapshot } from "../core/model/types";
 import type { GameRuntime } from "../runtime/GameRuntime";
 import type { ContentInspection } from "./content-inspection";
 import { requireScenario, scenarios } from "./scenario-registry";
@@ -13,6 +13,7 @@ export interface TickstrikeDebugApi {
   isIdle(): boolean;
   getEntity(id: string): EntityState | undefined;
   getEntityBounds(id: string): ReturnType<GameRuntime["getEntityBounds"]>;
+  isWalkable(cell: Cell): boolean;
   getContentInspection(): ContentInspection | undefined;
   execute(command: GameCommand): Promise<void>;
 }
@@ -33,6 +34,7 @@ export function installDebugApi(runtime: GameRuntime): () => void {
     isIdle: () => runtime.isIdle,
     getEntity: (id) => runtime.snapshot().entities.find((entity) => entity.id === id),
     getEntityBounds: (id) => runtime.getEntityBounds(id),
+    isWalkable: (cell) => runtime.isWalkable(cell),
     getContentInspection: () => runtime.getContentInspection(),
     execute: async (command) => {
       await runtime.execute(command);

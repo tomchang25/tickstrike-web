@@ -1156,17 +1156,25 @@ export class PixiGameRenderer {
     this.telegraphLayer.removeChildren().forEach((child) => child.destroy());
     this.telegraphLabelLayer.removeChildren().forEach((child) => child.destroy());
     for (const telegraph of snapshot.telegraphs) {
+      const color =
+        telegraph.phase === "active"
+          ? 0xff5c7a
+          : telegraph.phase === "spawning"
+            ? 0x9a7cff
+            : 0xffd166;
       for (const cell of telegraph.cells) {
         const marker = new Graphics()
           .rect(cell.x * CELL_SIZE + 12, cell.y * CELL_SIZE + 12, CELL_SIZE - 24, CELL_SIZE - 24)
-          .fill({ color: telegraph.phase === "active" ? 0xff5c7a : 0xffd166, alpha: 0.22 });
+          .fill({ color, alpha: 0.22 });
         this.telegraphLayer.addChild(marker);
       }
     }
 
     const entitiesById = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
     const sources = snapshot.telegraphs.flatMap((telegraph) => {
-      const ticks = entitiesById.get(telegraph.sourceId)?.committedAttack?.warningTicks;
+      const ticks =
+        telegraph.remainingTicks ??
+        entitiesById.get(telegraph.sourceId)?.committedAttack?.warningTicks;
       return ticks === undefined ? [] : [{ cells: telegraph.cells, ticks }];
     });
     const summaries = aggregateTelegraphLabels(sources);
@@ -1229,6 +1237,9 @@ export class PixiGameRenderer {
         })
         .join("|");
       this.app.canvas.dataset.telegraphSourceCount = String(snapshot.telegraphs.length);
+      this.app.canvas.dataset.spawnTelegraphCount = String(
+        snapshot.telegraphs.filter((telegraph) => telegraph.phase === "spawning").length,
+      );
       this.app.canvas.dataset.committedAttackCount = String(
         snapshot.entities.filter((entity) => entity.committedAttack !== undefined).length,
       );

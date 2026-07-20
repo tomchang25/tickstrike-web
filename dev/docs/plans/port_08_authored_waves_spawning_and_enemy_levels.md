@@ -53,7 +53,7 @@ The plan lands as five ordered children in the same Tick Arena scenario. They ar
 | B     | World-owned wave runtime state, spawn reservations, spawning telegraphs, and snapshot exposure | [Draft Implementation Spec](port_08_b_world_spawn_reservation_and_telegraph.implementation_spec.md) |
 | C     | Wave phase orchestration on the accepted-tick boundary and the spawn/clear event stream        | [Sketch](port_08_c_wave_phase_orchestration.sketch.md)                                              |
 | C1    | Terminal entity lifecycle, retained Pixi ghosts, and terminal-free semantic snapshots          | [Draft Implementation Spec](port_08_c1_terminal_entity_lifecycle.implementation_spec.md)            |
-| D     | Spawn-warning presentation and a wave-driven browser scenario with acceptance                  | [Sketch](port_08_d_spawn_presentation_and_wave_scenario.sketch.md)                                  |
+| D     | Spawn-warning presentation and a wave-driven browser scenario with acceptance                  | [Draft Implementation Spec](port_08_d_spawn_presentation_and_wave_scenario.implementation_spec.md)  |
 
 Child A establishes the deterministic decision core with no world dependency, so it is testable in isolation before anything is wired. Child B gives the world the state and claim vocabulary the scheduler drives through. Child C connects that vocabulary to the accepted-tick boundary and establishes wave-aware completion. Child C1 removes terminal entities from canonical snapshots while retaining their Pixi visuals only for terminal timelines. Child D makes the wave behavior visible and asserts it in the browser, and only then introduces Endless.
 
