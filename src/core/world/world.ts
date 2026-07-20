@@ -73,34 +73,40 @@ export interface EnemyAttackResolution {
   readonly damage?: DamageResult;
 }
 
-export interface ChargeDisplacementResult {
-  readonly entityId: EntityId;
-  readonly from: Cell;
-  /** Present when the entity accepted a sideways push; absent when it was blocked in place. */
-  readonly to?: Cell;
-  readonly blocked: boolean;
-  readonly damage?: DamageResult;
-}
-
-export interface ChargeImpactResult {
-  readonly targetId?: EntityId;
-  readonly cell: Cell;
-  readonly outcome: "empty" | "normal" | "blocked";
-  readonly from?: Cell;
-  readonly to?: Cell;
-  readonly damage?: DamageResult;
-}
-
-export interface ChargeAttackResolution {
-  readonly attack: CommittedAttack;
-  readonly displacements: readonly ChargeDisplacementResult[];
-  readonly impact: ChargeImpactResult;
-  readonly landing: { readonly from: Cell; readonly to: Cell };
-}
-
-export interface ChargeRetargetResult {
+export interface AttackRetargetResult {
   readonly changed: boolean;
   readonly telegraph?: Telegraph;
+}
+
+export interface StagedAttackResolutionCommit {
+  readonly damageResults: ReadonlyMap<EntityId, DamageResult>;
+}
+
+/**
+ * Constrained mutation surface handed to a behavior's detonation policy. All
+ * placement questions consult a working occupancy view that reflects staged
+ * moves, so a policy computes every displacement from one pre-detonation
+ * snapshot; nothing mutates until `commit()`.
+ */
+export interface AttackResolutionTransaction {
+  /** Pre-detonation snapshot of the resolving enemy. */
+  readonly enemy: EntityState;
+  readonly attack: CommittedAttack;
+  /** Legal terrain, unclaimed in the working occupancy view, and unreserved. */
+  isFree(cell: Cell): boolean;
+  /** The live (non-terminal) occupant at a cell in the working occupancy view. */
+  livingOccupantAt(cell: Cell): EntityState | undefined;
+  /** Stages an entity displacement; applied atomically on commit. */
+  stageMove(id: EntityId, to: Cell): void;
+  stageDamage(id: EntityId, amount: number): void;
+  /** Stages where the resolving enemy itself lands; omitted, it stays in place. */
+  stageLanding(to: Cell): void;
+  /**
+   * Applies staged moves then staged damages, clears the telegraph, and moves
+   * the enemy into recovery at its staged landing. Call exactly once, as the
+   * policy's final step.
+   */
+  commit(): StagedAttackResolutionCommit;
 }
 
 function cloneCell(cell: Cell): Cell {
@@ -935,11 +941,11 @@ export class World {
   }
 
   /**
-   * Refreshes a telegraphing Charge's locked commitment to a newly supplied live path/facing.
-   * The caller (enemy-phase) decides whether the live Player still satisfies Charge's range rule;
+   * Refreshes a telegraphing enemy's locked commitment to a newly supplied live path/facing.
+   * The calling behavior decides whether the live Player still satisfies its targeting rule;
    * this only applies the refreshed cells atomically and reports whether anything changed.
    */
-  retargetChargeAttack(id: EntityId, path: readonly Cell[], facing: Cell): ChargeRetargetResult {
+  retargetCommittedAttack(id: EntityId, path: readonly Cell[], facing: Cell): AttackRetargetResult {
     const entity = this.entities.get(id);
     const attack = entity?.committedAttack;
     if (!entity || !attack || entity.activity !== "telegraphing") {
@@ -956,12 +962,16 @@ export class World {
   }
 
   /**
-   * Resolves a detonating Charge attack as one atomic transaction: alternating side displacement
-   * for non-target path occupants, target knockback or blocked double damage, and Charge's own
-   * landing. Every accepted placement and damage result is computed from a single pre-detonation
-   * snapshot before anything is applied, so entity iteration order cannot affect the outcome.
+   * Runs a behavior-supplied detonation policy against one atomic transaction. The policy
+   * stages displacements and damage from a single pre-detonation snapshot, then commits;
+   * a policy that returns undefined without committing leaves the world untouched. Staged
+   * placement and damage application are ordered by the transaction, so entity iteration
+   * order cannot affect the outcome.
    */
-  resolveChargeAttack(id: EntityId): ChargeAttackResolution | undefined {
+  resolveCommittedAttackTransaction<T>(
+    id: EntityId,
+    policy: (transaction: AttackResolutionTransaction) => T | undefined,
+  ): T | undefined {
     const entity = this.entities.get(id);
     const attack = entity?.committedAttack;
     if (!entity || !attack || entity.activity !== "telegraphing") {
@@ -969,154 +979,81 @@ export class World {
     }
 
     const origin = cloneCell(entity.cell);
-    const path = attack.cells;
-    if (path.length === 0) {
-      return undefined;
-    }
-    const targetCell = path[path.length - 1]!;
-    const sidePath = path.slice(0, -1);
-    const direction = entity.facing ?? { x: 1, y: 0 };
-    const right = { x: -direction.y, y: direction.x };
-    const left = { x: direction.y, y: -direction.x };
-
     const workingOccupancy = new Map(this.occupancy);
-    const isFree = (cell: Cell): boolean =>
-      this.geometry.isLegalCell(cell) &&
-      !workingOccupancy.has(cellKey(cell)) &&
-      !this.reservationAt(cell);
-
-    const displacements: ChargeDisplacementResult[] = [];
     const moves: { readonly id: EntityId; readonly to: Cell }[] = [];
     const damages: { readonly targetId: EntityId; readonly amount: number }[] = [];
+    let landing: Cell | undefined;
 
-    for (let index = 0; index < sidePath.length; index += 1) {
-      const cell = sidePath[index]!;
-      const occupantId = workingOccupancy.get(cellKey(cell));
-      if (!occupantId) {
-        continue;
-      }
-      const occupant = this.entities.get(occupantId);
-      if (!occupant || isTerminalPhase(occupant.phase)) {
-        continue;
-      }
-
-      const rightFirst = index % 2 === 0;
-      const primary = rightFirst ? right : left;
-      const secondary = rightFirst ? left : right;
-      const primaryDestination = { x: cell.x + primary.x, y: cell.y + primary.y };
-      const secondaryDestination = { x: cell.x + secondary.x, y: cell.y + secondary.y };
-      const destination = isFree(primaryDestination)
-        ? primaryDestination
-        : isFree(secondaryDestination)
-          ? secondaryDestination
-          : undefined;
-
-      if (destination) {
-        workingOccupancy.delete(cellKey(occupant.cell));
-        workingOccupancy.set(cellKey(destination), occupantId);
-        moves.push({ id: occupantId, to: destination });
-        displacements.push({
-          entityId: occupantId,
-          from: cloneCell(occupant.cell),
-          to: cloneCell(destination),
-          blocked: false,
-        });
-      } else {
-        damages.push({ targetId: occupantId, amount: attack.damage });
-        displacements.push({ entityId: occupantId, from: cloneCell(occupant.cell), blocked: true });
-      }
-    }
-
-    const targetOccupantId = workingOccupancy.get(cellKey(targetCell));
-    const targetOccupant = targetOccupantId ? this.entities.get(targetOccupantId) : undefined;
-    let impact: ChargeImpactResult;
-    let landingCell: Cell;
-
-    if (!targetOccupant || isTerminalPhase(targetOccupant.phase)) {
-      impact = { cell: cloneCell(targetCell), outcome: "empty" };
-      landingCell = cloneCell(targetCell);
-    } else {
-      const forwardDestination = { x: targetCell.x + direction.x, y: targetCell.y + direction.y };
-      if (isFree(forwardDestination)) {
-        workingOccupancy.delete(cellKey(targetCell));
-        workingOccupancy.set(cellKey(forwardDestination), targetOccupant.id);
-        moves.push({ id: targetOccupant.id, to: forwardDestination });
-        damages.push({ targetId: targetOccupant.id, amount: attack.damage });
-        impact = {
-          targetId: targetOccupant.id,
-          cell: cloneCell(targetCell),
-          outcome: "normal",
-          from: cloneCell(targetCell),
-          to: cloneCell(forwardDestination),
-        };
-        landingCell = cloneCell(targetCell);
-      } else {
-        damages.push({ targetId: targetOccupant.id, amount: attack.damage * 2 });
-        impact = { targetId: targetOccupant.id, cell: cloneCell(targetCell), outcome: "blocked" };
-        let fallback: Cell | undefined;
-        for (let index = sidePath.length - 1; index >= 0; index -= 1) {
-          const candidate = sidePath[index]!;
-          if (isFree(candidate)) {
-            fallback = candidate;
-            break;
+    const transaction: AttackResolutionTransaction = {
+      enemy: entity,
+      attack: cloneCommittedAttack(attack),
+      isFree: (cell) =>
+        this.geometry.isLegalCell(cell) &&
+        !workingOccupancy.has(cellKey(cell)) &&
+        !this.reservationAt(cell),
+      livingOccupantAt: (cell) => {
+        const occupantId = workingOccupancy.get(cellKey(cell));
+        const occupant = occupantId ? this.entities.get(occupantId) : undefined;
+        return occupant && !isTerminalPhase(occupant.phase) ? occupant : undefined;
+      },
+      stageMove: (moverId, to) => {
+        const mover = this.entities.get(moverId);
+        if (!mover) {
+          return;
+        }
+        workingOccupancy.delete(cellKey(mover.cell));
+        workingOccupancy.set(cellKey(to), moverId);
+        moves.push({ id: moverId, to: cloneCell(to) });
+      },
+      stageDamage: (targetId, amount) => {
+        damages.push({ targetId, amount });
+      },
+      stageLanding: (to) => {
+        landing = cloneCell(to);
+      },
+      commit: () => {
+        for (const move of moves) {
+          this.releaseFootprint(move.id, this.entities.get(move.id)!.footprint);
+        }
+        for (const move of moves) {
+          const mover = this.entities.get(move.id)!;
+          const footprint = this.translateFootprint(mover, move.to);
+          this.claimFootprint(move.id, footprint);
+          this.entities.set(move.id, { ...mover, cell: cloneCell(move.to), footprint });
+          if (mover.kind === "player") {
+            this.currentPlayerCell = cloneCell(move.to);
           }
         }
-        landingCell = fallback ? cloneCell(fallback) : origin;
-      }
-    }
 
-    for (const move of moves) {
-      this.releaseFootprint(move.id, this.entities.get(move.id)!.footprint);
-    }
-    for (const move of moves) {
-      const mover = this.entities.get(move.id)!;
-      const footprint = this.translateFootprint(mover, move.to);
-      this.claimFootprint(move.id, footprint);
-      this.entities.set(move.id, { ...mover, cell: cloneCell(move.to), footprint });
-      if (mover.kind === "player") {
-        this.currentPlayerCell = cloneCell(move.to);
-      }
-    }
+        const damageResults = new Map<EntityId, DamageResult>();
+        for (const damage of damages) {
+          const result = this.applyDamage(damage.targetId, damage.amount);
+          if (result) {
+            damageResults.set(damage.targetId, result);
+          }
+        }
 
-    const damageResults = new Map<EntityId, DamageResult>();
-    for (const damage of damages) {
-      const result = this.applyDamage(damage.targetId, damage.amount);
-      if (result) {
-        damageResults.set(damage.targetId, result);
-      }
-    }
-    const resolvedDisplacements = displacements.map((displacement) =>
-      displacement.blocked
-        ? { ...displacement, damage: damageResults.get(displacement.entityId) }
-        : displacement,
-    );
-    const resolvedImpact: ChargeImpactResult = impact.targetId
-      ? { ...impact, damage: damageResults.get(impact.targetId) }
-      : impact;
-
-    this.clearTelegraph(id);
-    const current = this.entities.get(id)!;
-    const recovering = {
-      activity: "recovering" as const,
-      recoveryTicks: attack.recoveryTicks,
-      restTicks: undefined,
-      committedAttack: undefined,
+        this.clearTelegraph(id);
+        const current = this.entities.get(id)!;
+        const recovering = {
+          activity: "recovering" as const,
+          recoveryTicks: attack.recoveryTicks,
+          restTicks: undefined,
+          committedAttack: undefined,
+        };
+        if (landing && !sameCell(origin, landing)) {
+          this.releaseFootprint(id, current.footprint);
+          const footprint = this.translateFootprint(current, landing);
+          this.claimFootprint(id, footprint);
+          this.entities.set(id, { ...current, cell: cloneCell(landing), footprint, ...recovering });
+        } else {
+          this.entities.set(id, { ...current, ...recovering });
+        }
+        return { damageResults };
+      },
     };
-    if (!sameCell(origin, landingCell)) {
-      this.releaseFootprint(id, current.footprint);
-      const footprint = this.translateFootprint(current, landingCell);
-      this.claimFootprint(id, footprint);
-      this.entities.set(id, { ...current, cell: cloneCell(landingCell), footprint, ...recovering });
-    } else {
-      this.entities.set(id, { ...current, ...recovering });
-    }
 
-    return {
-      attack: cloneCommittedAttack(attack),
-      displacements: resolvedDisplacements,
-      impact: resolvedImpact,
-      landing: { from: origin, to: cloneCell(landingCell) },
-    };
+    return policy(transaction);
   }
 
   advanceEnemyRecovery(id: EntityId): boolean {

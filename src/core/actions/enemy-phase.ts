@@ -1,12 +1,13 @@
 import type { CombatEvent } from "../events/combat-events";
-import { sameCell, type DamageResult, type EntityId, type EntityState } from "../model/types";
-import type { ChargeAttackResolution, World } from "../world/world";
+import { sameCell, type EntityState } from "../model/types";
+import type { World } from "../world/world";
 import {
-  chargeLiveRetarget,
   committedAttackFromDecision,
   decideEnemyAction,
   type EnemyActionDecision,
 } from "../enemies/enemy-actions";
+import { getEnemyBehavior } from "../enemies/behaviors";
+import { genericDetonationEvents } from "../enemies/attack-resolution-events";
 
 function enabledEnemies(world: World): readonly EntityState[] {
   return world
@@ -27,114 +28,6 @@ interface PendingMovement {
   readonly enemy: EntityState;
   readonly decision: Extract<EnemyActionDecision, { type: "move" }>;
   nextCandidate: number;
-}
-
-function damageEventsFor(
-  world: World,
-  attackerId: EntityId,
-  targetId: EntityId,
-  damage: DamageResult,
-): CombatEvent[] {
-  const target = world.requireEntity(targetId);
-  if (target.kind === "player") {
-    const events: CombatEvent[] = [
-      { type: "player_damaged", playerId: targetId, damage, hp: target.hp, maxHp: target.maxHp },
-    ];
-    if (damage.killed) {
-      events.push({ type: "player_died", playerId: targetId, cell: target.cell });
-    }
-    return events;
-  }
-  const events: CombatEvent[] = [
-    {
-      type: "enemy_damaged",
-      enemyId: targetId,
-      hit: { ...damage, attackerId },
-      hp: target.hp,
-      maxHp: target.maxHp,
-    },
-  ];
-  if (damage.killed) {
-    events.push({ type: "enemy_died", enemyId: targetId, attackerId, cell: target.cell });
-  }
-  return events;
-}
-
-function chargeResolutionEvents(
-  world: World,
-  enemyId: EntityId,
-  resolution: ChargeAttackResolution,
-): CombatEvent[] {
-  const events: CombatEvent[] = [
-    {
-      type: "enemy_attack_detonated",
-      enemyId,
-      attack: resolution.attack,
-      target: resolution.impact.cell,
-    },
-  ];
-
-  for (const displacement of resolution.displacements) {
-    if (displacement.blocked && displacement.damage) {
-      events.push(...damageEventsFor(world, enemyId, displacement.entityId, displacement.damage));
-    }
-  }
-
-  if (resolution.impact.targetId) {
-    events.push({
-      type: "charge_impact",
-      enemyId,
-      targetId: resolution.impact.targetId,
-      cell: resolution.impact.cell,
-      outcome: resolution.impact.outcome,
-    });
-    if (resolution.impact.damage) {
-      events.push(
-        ...damageEventsFor(world, enemyId, resolution.impact.targetId, resolution.impact.damage),
-      );
-    }
-  } else {
-    events.push({ type: "charge_impact", enemyId, cell: resolution.impact.cell, outcome: "empty" });
-  }
-
-  for (const displacement of resolution.displacements) {
-    if (!displacement.blocked && displacement.to) {
-      events.push({
-        type: "entity_displaced",
-        entityId: displacement.entityId,
-        from: displacement.from,
-        to: displacement.to,
-        cause: "charge_side_push",
-      });
-    }
-  }
-  if (
-    resolution.impact.outcome === "normal" &&
-    resolution.impact.targetId &&
-    resolution.impact.to
-  ) {
-    events.push({
-      type: "entity_displaced",
-      entityId: resolution.impact.targetId,
-      from: resolution.impact.from!,
-      to: resolution.impact.to,
-      cause: "charge_target_knockback",
-    });
-  }
-
-  events.push({
-    type: "charge_landed",
-    enemyId,
-    from: resolution.landing.from,
-    to: resolution.landing.to,
-  });
-  events.push({ type: "telegraph_changed", sourceId: enemyId, cleared: true });
-  events.push({
-    type: "enemy_recovering",
-    enemyId,
-    recoveryTicks: resolution.attack.recoveryTicks,
-  });
-  return events;
 }
 
 export function resolveEnemyPhase(world: World): CombatEvent[] {
@@ -168,21 +61,9 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
       continue;
     }
 
-    if (current.enemyAction?.role === "charge") {
-      const retarget = chargeLiveRetarget(current, world.playerCell, (cell) =>
-        world.isLegalCell(cell),
-      );
-      if (retarget) {
-        const result = world.retargetChargeAttack(current.id, retarget.path, retarget.facing);
-        if (result.changed && result.telegraph) {
-          events.push({
-            type: "telegraph_changed",
-            sourceId: current.id,
-            telegraph: result.telegraph,
-            cleared: false,
-          });
-        }
-      }
+    const behavior = current.enemyAction ? getEnemyBehavior(current.enemyAction.role) : undefined;
+    if (behavior?.retarget) {
+      events.push(...behavior.retarget(world, current));
     }
 
     const telegraph = world.getTelegraph(enemy.id);
@@ -191,54 +72,11 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
       continue;
     }
 
-    if (current.enemyAction?.role === "charge") {
-      const chargeResolution = world.resolveChargeAttack(enemy.id);
-      if (!chargeResolution) {
-        continue;
-      }
-      events.push(...chargeResolutionEvents(world, enemy.id, chargeResolution));
-      continue;
-    }
-
-    const resolution = world.resolveCommittedEnemyAttack(enemy.id);
-    if (!resolution) {
-      continue;
-    }
-    events.push({
-      type: "enemy_attack_detonated",
-      enemyId: enemy.id,
-      attack: resolution.attack,
-      target: resolution.target,
-      ...(resolution.damage ? { hit: resolution.damage } : {}),
-    });
-    if (resolution.damage) {
-      const player = world.requireEntity(resolution.damage.targetId);
-      events.push({
-        type: "player_damaged",
-        playerId: player.id,
-        damage: resolution.damage,
-        hp: player.hp,
-        maxHp: player.maxHp,
-      });
-      if (resolution.damage.killed) {
-        events.push({ type: "player_died", playerId: player.id, cell: player.cell });
-      }
-    }
-    if (resolution.attack.metadata?.selfDestruct) {
-      events.push({ type: "enemy_self_destructed", enemyId: enemy.id, cell: current.cell });
-      events.push({
-        type: "enemy_died",
-        enemyId: enemy.id,
-        attackerId: enemy.id,
-        cell: current.cell,
-      });
-    } else {
-      events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: true });
-      events.push({
-        type: "enemy_recovering",
-        enemyId: enemy.id,
-        recoveryTicks: resolution.attack.recoveryTicks,
-      });
+    const resolved = behavior?.resolveAttack
+      ? behavior.resolveAttack(world, enemy.id, telegraph)
+      : genericDetonationEvents(world, enemy.id, telegraph);
+    if (resolved) {
+      events.push(...resolved);
     }
   }
 
@@ -347,7 +185,7 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
         world.setEnemyFacing(current.id, candidate.facing);
         world.setEnemyDecision(current.id, "move");
         world.moveEntity(current.id, candidate.destination);
-        if (current.enemyAction?.role === "ranged") {
+        if (current.enemyAction && getEnemyBehavior(current.enemyAction.role).restsAfterMove) {
           world.setEnemyResting(current.id);
         }
         movementEvents.set(current.id, {

@@ -5,6 +5,7 @@ import type { GuardDefinition } from "../../../../src/core/content/actor-schema"
 import type { EnemyActionDefinition } from "../../../../src/core/model/types";
 import type { AdmittedBatch, SlotState } from "../../../../src/core/waves/wave-scheduler";
 import { World } from "../../../../src/core/world/world";
+import { resolveChargeAttack } from "../../../../src/core/enemies/behaviors/charge-enemy";
 
 describe("canonical world occupancy", () => {
   it("indexes explicit footprints and owns the player cell", () => {
@@ -432,7 +433,7 @@ const chargeAction: EnemyActionDefinition = {
   warningTicks: 2,
   recoveryTicks: 2,
   offsets: [],
-  chargeTuning: { minRange: 1, maxRange: 5, preferredMinRange: 2 },
+  chargeTuning: { maxRange: 5 },
 };
 
 function chargeWorld(): World {
@@ -490,7 +491,7 @@ describe("Charge attack resolution", () => {
       { x: 5, y: 5 },
     ]);
 
-    const resolution = world.resolveChargeAttack("enemy-charge");
+    const resolution = resolveChargeAttack(world, "enemy-charge");
     expect(resolution).toBeDefined();
     expect(resolution?.displacements).toEqual([
       { entityId: "blocker-a", from: { x: 7, y: 5 }, to: { x: 7, y: 4 }, blocked: false },
@@ -569,7 +570,7 @@ describe("Charge attack resolution", () => {
       { x: 4, y: 5 },
     ]);
 
-    const resolution = world.resolveChargeAttack("enemy-charge");
+    const resolution = resolveChargeAttack(world, "enemy-charge");
     expect(resolution?.displacements).toEqual([
       { entityId: "blocker-a", from: { x: 7, y: 5 }, to: { x: 7, y: 4 }, blocked: false },
       {
@@ -637,7 +638,7 @@ describe("Charge attack resolution", () => {
       { x: 6, y: 5 },
     ]);
 
-    const resolution = world.resolveChargeAttack("enemy-charge");
+    const resolution = resolveChargeAttack(world, "enemy-charge");
     expect(resolution?.impact.outcome).toBe("blocked");
     expect(resolution?.landing).toEqual({ from: { x: 8, y: 5 }, to: { x: 8, y: 5 } });
     expect(world.requireEntity("enemy-charge").cell).toEqual({ x: 8, y: 5 });
@@ -652,7 +653,7 @@ describe("Charge attack resolution", () => {
       { x: 5, y: 5 },
     ]);
 
-    const resolution = world.resolveChargeAttack("enemy-charge");
+    const resolution = resolveChargeAttack(world, "enemy-charge");
     expect(resolution?.impact).toEqual({ cell: { x: 5, y: 5 }, outcome: "empty" });
     expect(resolution?.displacements).toEqual([]);
     expect(world.requireEntity("enemy-charge").cell).toEqual({ x: 5, y: 5 });
@@ -675,7 +676,7 @@ describe("Charge attack resolution", () => {
       committedAttack: undefined,
     });
     expect(world.getTelegraph("enemy-charge")).toBeUndefined();
-    expect(world.resolveChargeAttack("enemy-charge")).toBeUndefined();
+    expect(resolveChargeAttack(world, "enemy-charge")).toBeUndefined();
   });
 });
 
