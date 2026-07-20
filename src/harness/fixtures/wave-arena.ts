@@ -1,11 +1,11 @@
-import { createShippedArena as createShippedArenaGeometry } from "../../core/world/arena";
-import { World } from "../../core/world/world";
-import type { Seed } from "../../core/model/types";
-import type { WavePhaseContext } from "../../core/actions/wave-phase";
-import { createInitialSlotStates } from "../../core/waves/wave-scheduler";
-import { waveCatalog } from "../../content/wave-catalog";
-import { buildEnemySpawnInput } from "../../content/wave-enemy-spawn";
-import { actorCatalog } from "../../content/actor-catalog";
+import { createShippedArena as createShippedArenaGeometry } from "@core/world/arena";
+import { World } from "@core/world/world";
+import type { Seed } from "@core/model/types";
+import type { WavePhaseContext } from "@core/actions/wave-phase";
+import { createInitialSlotStates } from "@core/waves/wave-scheduler";
+import { waveCatalog } from "@content/wave-catalog";
+import { buildEnemySpawnInput } from "@content/wave-enemy-spawn";
+import { actorCatalog } from "@content/actor-catalog";
 
 export const WAVE_SCENARIO_SEED = "waves-foundation";
 

@@ -1,7 +1,7 @@
-import { actorCatalog } from "../../content/actor-catalog";
-import { resolveEnemyActionDefinition } from "../../content/enemy-action-resolution";
-import type { EnemyActionDefinition, Seed, TileKind } from "../../core/model/types";
-import { World } from "../../core/world/world";
+import { actorCatalog } from "@content/actor-catalog";
+import { resolveEnemyActionDefinition } from "@content/enemy-action-resolution";
+import type { EnemyActionDefinition, Seed, TileKind } from "@core/model/types";
+import { World } from "@core/world/world";
 
 const WIDTH = 10;
 const HEIGHT = 10;

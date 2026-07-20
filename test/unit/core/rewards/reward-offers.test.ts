@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ArtifactDefinition } from "../../../../src/core/content/artifact-schema";
-import type { RunBuildState } from "../../../../src/core/model/types";
+import type { ArtifactDefinition } from "@core/content/artifact-schema";
+import type { RunBuildState } from "@core/model/types";
 import {
   classifyArtifactEffect,
   createEmptyRunBuild,
@@ -12,7 +12,7 @@ import {
   isArtifactSupported,
   withAcquiredTrigger,
   withArtifactStackCount,
-} from "../../../../src/core/rewards/reward-offers";
+} from "@core/rewards/reward-offers";
 
 function artifact(overrides: Partial<ArtifactDefinition> = {}): ArtifactDefinition {
   return {

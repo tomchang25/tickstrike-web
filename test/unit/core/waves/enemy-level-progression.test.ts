@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { EnemyDefinition, GuardDefinition } from "../../../../src/core/content/actor-schema";
-import type { WaveProgressionProfile } from "../../../../src/core/content/wave-schema";
-import {
-  projectEnemyLevel,
-  projectGuardValue,
-} from "../../../../src/core/waves/enemy-level-progression";
+import type { EnemyDefinition, GuardDefinition } from "@core/content/actor-schema";
+import type { WaveProgressionProfile } from "@core/content/wave-schema";
+import { projectEnemyLevel, projectGuardValue } from "@core/waves/enemy-level-progression";
 
 const enemy: EnemyDefinition = {
   id: "thrust_enemy",

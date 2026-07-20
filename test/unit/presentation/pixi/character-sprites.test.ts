@@ -1,9 +1,6 @@
 import { Texture } from "pixi.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createPlayerSprite,
-  setNinjaSpriteSheet,
-} from "../../../../src/presentation/pixi/character-sprites";
+import { createPlayerSprite, setNinjaSpriteSheet } from "@presentation/pixi/character-sprites";
 
 beforeEach(() => setNinjaSpriteSheet(Texture.WHITE));
 afterEach(() => setNinjaSpriteSheet(undefined));

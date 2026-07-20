@@ -8,10 +8,10 @@ import {
   previewSmash,
   previewSmashVictimMarkers,
   smashArea,
-} from "../../../../src/core/actions/action-preview";
-import { createFoundationArena } from "../../../../src/harness/fixtures/shipped-arena";
-import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
-import { resolveCommand } from "../../../../src/core/actions/action-resolver";
+} from "@core/actions/action-preview";
+import { createFoundationArena } from "@harness/fixtures/shipped-arena";
+import { createTrainingArena } from "@harness/fixtures/training-arena";
+import { resolveCommand } from "@core/actions/action-resolver";
 
 describe("action previews", () => {
   it("resolves an occupied and empty adjacent attack target without mutating the world", () => {

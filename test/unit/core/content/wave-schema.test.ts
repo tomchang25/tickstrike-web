@@ -4,8 +4,8 @@ import {
   createWaveContentCatalog,
   validateWaveContent,
   type WaveContentInput,
-} from "../../../../src/core/content/wave-schema";
-import { actorCatalog } from "../../../../src/content/actor-catalog";
+} from "@core/content/wave-schema";
+import { actorCatalog } from "@content/actor-catalog";
 
 const validContent: WaveContentInput = {
   groups: [

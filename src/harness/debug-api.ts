@@ -1,6 +1,6 @@
-import type { GameCommand } from "../core/actions/commands";
-import type { Cell, EntityState, WorldSnapshot } from "../core/model/types";
-import type { GameRuntime } from "../runtime/GameRuntime";
+import type { GameCommand } from "@core/actions/commands";
+import type { Cell, EntityState, WorldSnapshot } from "@core/model/types";
+import type { GameRuntime } from "@runtime/GameRuntime";
 import type { ContentInspection } from "./content-inspection";
 import { requireScenario, scenarios } from "./scenario-registry";
 

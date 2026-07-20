@@ -18,7 +18,18 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "vitest/globals"]
+    "types": ["vite/client", "vitest/globals"],
+    "paths": {
+      "@app/*": ["./src/app/*"],
+      "@content/*": ["./src/content/*"],
+      "@core/*": ["./src/core/*"],
+      "@harness/*": ["./src/harness/*"],
+      "@platform/*": ["./src/platform/*"],
+      "@presentation/*": ["./src/presentation/*"],
+      "@runtime/*": ["./src/runtime/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@ui/*": ["./src/ui/*"]
+    }
   },
   "include": ["src", "test/unit"]
 }

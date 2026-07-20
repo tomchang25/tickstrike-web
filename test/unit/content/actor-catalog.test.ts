@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actorCatalog } from "../../../src/content/actor-catalog";
+import { actorCatalog } from "@content/actor-catalog";
 
 describe("canonical actor content", () => {
   it("contains the complete shipped inventory", () => {

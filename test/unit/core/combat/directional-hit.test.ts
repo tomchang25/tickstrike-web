@@ -1,14 +1,11 @@
 import { describe, expect, it } from "vitest";
-import {
-  calculateDirectionalHit,
-  classifyHitAngle,
-} from "../../../../src/core/combat/directional-hit";
-import { previewAttack } from "../../../../src/core/actions/action-preview";
-import { resolveCommand } from "../../../../src/core/actions/action-resolver";
-import { actorCatalog } from "../../../../src/content/actor-catalog";
-import { createFoundationArena } from "../../../../src/harness/fixtures/shipped-arena";
-import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
-import type { EntityState } from "../../../../src/core/model/types";
+import { calculateDirectionalHit, classifyHitAngle } from "@core/combat/directional-hit";
+import { previewAttack } from "@core/actions/action-preview";
+import { resolveCommand } from "@core/actions/action-resolver";
+import { actorCatalog } from "@content/actor-catalog";
+import { createFoundationArena } from "@harness/fixtures/shipped-arena";
+import { createTrainingArena } from "@harness/fixtures/training-arena";
+import type { EntityState } from "@core/model/types";
 
 function targetAt(cell: { x: number; y: number }, facing: { x: number; y: number }): EntityState {
   const guard = actorCatalog.guards.find((candidate) => candidate.id === "small");

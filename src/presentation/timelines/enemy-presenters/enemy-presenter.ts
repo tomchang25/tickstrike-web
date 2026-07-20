@@ -1,7 +1,7 @@
 import type { Container, Graphics } from "pixi.js";
 import type { gsap } from "gsap";
-import type { CombatEvent } from "../../../core/events/combat-events";
-import type { Cell, EntityId } from "../../../core/model/types";
+import type { CombatEvent } from "@core/events/combat-events";
+import type { Cell, EntityId } from "@core/model/types";
 import type { EnemyPresentation } from "../../pixi/enemy-sprites";
 
 /**

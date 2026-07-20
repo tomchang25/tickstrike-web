@@ -1,6 +1,6 @@
-import { resolveAreaOffsets } from "../core/enemies/area-shapes";
-import type { EnemyDefinition } from "../core/content/actor-schema";
-import type { EnemyActionDefinition } from "../core/model/types";
+import { resolveAreaOffsets } from "@core/enemies/area-shapes";
+import type { EnemyDefinition } from "@core/content/actor-schema";
+import type { EnemyActionDefinition } from "@core/model/types";
 import { actorCatalog } from "./actor-catalog";
 
 /**

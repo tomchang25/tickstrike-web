@@ -1,6 +1,6 @@
-import type { EncounterOutcome, MobilityKind, WorldSnapshot } from "../core/model/types";
-import type { ContentInspection } from "../harness/content-inspection";
-import type { TestScenario } from "../harness/types";
+import type { EncounterOutcome, MobilityKind, WorldSnapshot } from "@core/model/types";
+import type { ContentInspection } from "@harness/content-inspection";
+import type { TestScenario } from "@harness/types";
 
 export interface TestbedPanelProps {
   readonly scenarios: readonly TestScenario[];

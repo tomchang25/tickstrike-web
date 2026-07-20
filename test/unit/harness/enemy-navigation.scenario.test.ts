@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolveCommand } from "../../../src/core/actions/action-resolver";
-import { createEnemyNavigationArena } from "../../../src/harness/fixtures/enemy-navigation-arena";
+import { resolveCommand } from "@core/actions/action-resolver";
+import { createEnemyNavigationArena } from "@harness/fixtures/enemy-navigation-arena";
 
 describe("enemy navigation testbed scenario", () => {
   it("creates the deterministic 10x10 twenty-enemy pathfinding arena", () => {

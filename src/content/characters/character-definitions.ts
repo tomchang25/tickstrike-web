@@ -1,4 +1,4 @@
-import type { CharacterDefinition } from "../../core/content/actor-schema";
+import type { CharacterDefinition } from "@core/content/actor-schema";
 
 export const characterDefinitions: readonly CharacterDefinition[] = [
   {

@@ -1,5 +1,5 @@
 import { gsap } from "gsap";
-import type { CombatEvent } from "../../../core/events/combat-events";
+import type { CombatEvent } from "@core/events/combat-events";
 import type { EnemyPresenter, EnemyPresenterContext } from "./enemy-presenter";
 
 const FUSE_BLINK_INTERVAL = 0.22;

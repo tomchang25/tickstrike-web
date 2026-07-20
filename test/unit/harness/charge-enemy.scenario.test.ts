@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolveCommand } from "../../../src/core/actions/action-resolver";
-import { requireScenario } from "../../../src/harness/scenario-registry";
+import { resolveCommand } from "@core/actions/action-resolver";
+import { requireScenario } from "@harness/scenario-registry";
 
 describe("Charge motion ownership scenario", () => {
   it("produces same-direction Player movement, knockback, side push, and landing", () => {

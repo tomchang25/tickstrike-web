@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { actorCatalog } from "../../../src/content/actor-catalog";
-import { waveCatalog } from "../../../src/content/wave-catalog";
-import {
-  buildEnemySpawnInput,
-  resolveEnemyActionDefinition,
-} from "../../../src/content/wave-enemy-spawn";
+import { actorCatalog } from "@content/actor-catalog";
+import { waveCatalog } from "@content/wave-catalog";
+import { buildEnemySpawnInput, resolveEnemyActionDefinition } from "@content/wave-enemy-spawn";
 
 const profile = waveCatalog.progressionProfile;
 

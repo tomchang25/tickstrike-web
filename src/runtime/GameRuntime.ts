@@ -1,12 +1,12 @@
-import { resolveCommand, type ActionResolution } from "../core/actions/action-resolver";
-import type { GameCommand } from "../core/actions/commands";
-import { resolveRewardSelection, type RewardSelectionResolution } from "../core/actions/wave-phase";
-import type { Cell, WorldSnapshot } from "../core/model/types";
-import type { World } from "../core/world/world";
-import type { TestScenario } from "../harness/types";
-import type { ContentInspection } from "../harness/content-inspection";
-import { PixiGameRenderer, type ScreenBounds } from "../presentation/pixi/PixiGameRenderer";
-import { PresentationDirector } from "../presentation/timelines/PresentationDirector";
+import { resolveCommand, type ActionResolution } from "@core/actions/action-resolver";
+import type { GameCommand } from "@core/actions/commands";
+import { resolveRewardSelection, type RewardSelectionResolution } from "@core/actions/wave-phase";
+import type { Cell, WorldSnapshot } from "@core/model/types";
+import type { World } from "@core/world/world";
+import type { TestScenario } from "@harness/types";
+import type { ContentInspection } from "@harness/content-inspection";
+import { PixiGameRenderer, type ScreenBounds } from "@presentation/pixi/PixiGameRenderer";
+import { PresentationDirector } from "@presentation/timelines/PresentationDirector";
 
 export type RuntimeListener = (snapshot: WorldSnapshot) => void;
 

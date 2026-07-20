@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createShippedArena } from "../../../../src/harness/fixtures/shipped-arena";
+import { createShippedArena } from "@harness/fixtures/shipped-arena";
 
 describe("world reservations and telegraphs", () => {
   it("arbitrates active movement before attack intent atomically", () => {

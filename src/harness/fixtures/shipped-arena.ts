@@ -1,8 +1,8 @@
-import { createShippedArena as createShippedArenaGeometry } from "../../core/world/arena";
-import { World } from "../../core/world/world";
-import type { Seed } from "../../core/model/types";
-import { actorCatalog } from "../../content/actor-catalog";
-import { resolveEnemyActionDefinition } from "../../content/enemy-action-resolution";
+import { createShippedArena as createShippedArenaGeometry } from "@core/world/arena";
+import { World } from "@core/world/world";
+import type { Seed } from "@core/model/types";
+import { actorCatalog } from "@content/actor-catalog";
+import { resolveEnemyActionDefinition } from "@content/enemy-action-resolution";
 
 export const SHIPPED_SCENARIO_SEED = "tick-arena-foundation";
 

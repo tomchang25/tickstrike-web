@@ -1,4 +1,4 @@
-import type { AttackDefinition, EnemyDefinition } from "../../../core/content/actor-schema";
+import type { AttackDefinition, EnemyDefinition } from "@core/content/actor-schema";
 
 export const DEFAULT_ENEMY_SPRITE_SCALE = 3.5;
 

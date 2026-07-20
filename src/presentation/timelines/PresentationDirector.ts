@@ -1,7 +1,7 @@
 import { gsap } from "gsap";
-import type { CombatEvent } from "../../core/events/combat-events";
-import { collectTerminalEntityIds } from "../../core/events/terminal-entities";
-import type { EntityId } from "../../core/model/types";
+import type { CombatEvent } from "@core/events/combat-events";
+import { collectTerminalEntityIds } from "@core/events/terminal-entities";
+import type { EntityId } from "@core/model/types";
 import {
   enemyPresentationLabel,
   type DetachedEntityView,

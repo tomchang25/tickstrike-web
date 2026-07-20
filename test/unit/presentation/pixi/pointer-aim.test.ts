@@ -4,7 +4,7 @@ import {
   resolveAimDirection,
   resolveAimDistance,
   screenPointToCell,
-} from "../../../../src/presentation/pixi/pointer-aim";
+} from "@presentation/pixi/pointer-aim";
 
 describe("pointer aim", () => {
   it("converts a CSS-scaled canvas point to a grid cell", () => {

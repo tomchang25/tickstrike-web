@@ -11,7 +11,7 @@ import {
   type DashPreview,
   type PreviewVictimMarker,
   type SmashPreview,
-} from "../../core/actions/action-preview";
+} from "@core/actions/action-preview";
 import {
   cardinalDirection,
   cellKey,
@@ -21,7 +21,7 @@ import {
   type EntityState,
   type MobilityKind,
   type WorldSnapshot,
-} from "../../core/model/types";
+} from "@core/model/types";
 import {
   CELL_SIZE,
   INITIAL_AIM,
@@ -46,9 +46,9 @@ import {
   type EnemyWaterAnimation,
   type EnemyPresentation,
 } from "./enemy-sprites";
-import { enemyWaterAnimationAssets } from "../../content/enemies/enemy-water-animation-assets";
-import ninjaSpriteSheetUrl from "../../content/characters/assets/ninja/body-sprite-sheet.png";
-import { enemySpriteSheetUrls } from "../../content/enemies/features";
+import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animation-assets";
+import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
+import { enemySpriteSheetUrls } from "@content/enemies/features";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =

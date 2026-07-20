@@ -1,6 +1,6 @@
-import type { TileKind } from "../../core/model/types";
-import type { Seed } from "../../core/model/types";
-import { World } from "../../core/world/world";
+import type { TileKind } from "@core/model/types";
+import type { Seed } from "@core/model/types";
+import { World } from "@core/world/world";
 
 const ROWS = [
   "##########",

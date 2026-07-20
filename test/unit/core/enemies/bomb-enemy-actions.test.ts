@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { resolveCommand } from "../../../../src/core/actions/action-resolver";
-import { resolveAreaOffsets } from "../../../../src/core/enemies/area-shapes";
+import { resolveCommand } from "@core/actions/action-resolver";
+import { resolveAreaOffsets } from "@core/enemies/area-shapes";
 import {
   bombAreaCells,
   decideEnemyAction,
   type EnemyDecisionContext,
-} from "../../../../src/core/enemies/enemy-actions";
-import type { EnemyActionDefinition, EntityState } from "../../../../src/core/model/types";
-import { World } from "../../../../src/core/world/world";
+} from "@core/enemies/enemy-actions";
+import type { EnemyActionDefinition, EntityState } from "@core/model/types";
+import { World } from "@core/world/world";
 
 const bombOffsets = resolveAreaOffsets({ shape: "manhattan", radius: 4 });
 

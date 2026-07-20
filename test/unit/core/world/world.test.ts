@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
-import { calculateDirectionalHit } from "../../../../src/core/combat/directional-hit";
-import type { GuardDefinition } from "../../../../src/core/content/actor-schema";
-import type { EnemyActionDefinition } from "../../../../src/core/model/types";
-import type { AdmittedBatch, SlotState } from "../../../../src/core/waves/wave-scheduler";
-import { World } from "../../../../src/core/world/world";
-import { resolveChargeAttack } from "../../../../src/core/enemies/behaviors/charge-enemy";
+import { createTrainingArena } from "@harness/fixtures/training-arena";
+import { calculateDirectionalHit } from "@core/combat/directional-hit";
+import type { GuardDefinition } from "@core/content/actor-schema";
+import type { EnemyActionDefinition } from "@core/model/types";
+import type { AdmittedBatch, SlotState } from "@core/waves/wave-scheduler";
+import { World } from "@core/world/world";
+import { resolveChargeAttack } from "@core/enemies/behaviors/charge-enemy";
 
 describe("canonical world occupancy", () => {
   it("indexes explicit footprints and owns the player cell", () => {

@@ -4,7 +4,7 @@ import {
   createEnemyPresentation,
   type EnemyWaterAnimation,
   type EnemyPresentation,
-} from "../../../../src/presentation/pixi/enemy-sprites";
+} from "@presentation/pixi/enemy-sprites";
 
 let presentation: EnemyPresentation | undefined;
 const WATER_ANIMATION: EnemyWaterAnimation = {

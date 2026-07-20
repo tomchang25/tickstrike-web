@@ -1,4 +1,4 @@
-import type { WorldSnapshot } from "../core/model/types";
+import type { WorldSnapshot } from "@core/model/types";
 
 export interface SemanticMirrorProps {
   readonly snapshot: WorldSnapshot;

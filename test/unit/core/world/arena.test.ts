@@ -7,9 +7,9 @@ import {
   directionBetween,
   isCardinalDirection,
   manhattanDistance,
-} from "../../../../src/core/model/types";
-import { createShippedArena } from "../../../../src/core/world/arena";
-import { createShippedArena as createShippedWorld } from "../../../../src/harness/fixtures/shipped-arena";
+} from "@core/model/types";
+import { createShippedArena } from "@core/world/arena";
+import { createShippedArena as createShippedWorld } from "@harness/fixtures/shipped-arena";
 
 describe("shipped arena geometry", () => {
   it("creates the twelve-by-twelve land rectangle and sea perimeter", () => {

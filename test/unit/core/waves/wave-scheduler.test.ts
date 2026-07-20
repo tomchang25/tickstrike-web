@@ -3,15 +3,15 @@ import type {
   SpawnGroupDefinition,
   WaveDefinition,
   WaveGroupSlot,
-} from "../../../../src/core/content/wave-schema";
-import type { RandomUnitSource } from "../../../../src/core/waves/wave-inputs";
+} from "@core/content/wave-schema";
+import type { RandomUnitSource } from "@core/waves/wave-inputs";
 import {
   createInitialSlotStates,
   evaluateSlotEligibility,
   expandSlotQueue,
   selectAtomicBatch,
   type SlotState,
-} from "../../../../src/core/waves/wave-scheduler";
+} from "@core/waves/wave-scheduler";
 
 function sequenceSource(values: readonly number[]): RandomUnitSource {
   let index = 0;

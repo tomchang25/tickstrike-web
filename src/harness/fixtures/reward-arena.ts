@@ -1,18 +1,18 @@
-import { createShippedArena as createShippedArenaGeometry } from "../../core/world/arena";
-import { World } from "../../core/world/world";
-import type { Seed } from "../../core/model/types";
-import type { WavePhaseContext } from "../../core/actions/wave-phase";
-import type { ArtifactDefinition } from "../../core/content/artifact-schema";
+import { createShippedArena as createShippedArenaGeometry } from "@core/world/arena";
+import { World } from "@core/world/world";
+import type { Seed } from "@core/model/types";
+import type { WavePhaseContext } from "@core/actions/wave-phase";
+import type { ArtifactDefinition } from "@core/content/artifact-schema";
 import type {
   GrowthCurve,
   GuardGrowthInput,
   SpawnGroupDefinition,
   WaveDefinition,
   WaveProgressionProfile,
-} from "../../core/content/wave-schema";
-import { createInitialSlotStates } from "../../core/waves/wave-scheduler";
-import { actorCatalog } from "../../content/actor-catalog";
-import { artifactCatalog } from "../../content/artifact-catalog";
+} from "@core/content/wave-schema";
+import { createInitialSlotStates } from "@core/waves/wave-scheduler";
+import { actorCatalog } from "@content/actor-catalog";
+import { artifactCatalog } from "@content/artifact-catalog";
 
 export const REWARD_SCENARIO_SEED = "rewards-foundation";
 

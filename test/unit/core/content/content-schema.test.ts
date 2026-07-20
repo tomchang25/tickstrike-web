@@ -3,10 +3,10 @@ import {
   ContentCatalogValidationError,
   createContentCatalog,
   validateContentCatalog,
-} from "../../../../src/core/content/content-schema";
-import { actorCatalog } from "../../../../src/content/actor-catalog";
-import { artifactCatalog } from "../../../../src/content/artifact-catalog";
-import { waveCatalog } from "../../../../src/content/wave-catalog";
+} from "@core/content/content-schema";
+import { actorCatalog } from "@content/actor-catalog";
+import { artifactCatalog } from "@content/artifact-catalog";
+import { waveCatalog } from "@content/wave-catalog";
 
 const validInput = { actor: actorCatalog, wave: waveCatalog, artifact: artifactCatalog };
 

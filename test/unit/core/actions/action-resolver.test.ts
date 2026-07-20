@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { resolveCommand } from "../../../../src/core/actions/action-resolver";
-import { commandConsumesTime, type GameCommand } from "../../../../src/core/actions/commands";
-import type { WavePhaseContext } from "../../../../src/core/actions/wave-phase";
+import { resolveCommand } from "@core/actions/action-resolver";
+import { commandConsumesTime, type GameCommand } from "@core/actions/commands";
+import type { WavePhaseContext } from "@core/actions/wave-phase";
 import type {
   GrowthCurve,
   SpawnGroupDefinition,
   WaveDefinition,
   WaveProgressionProfile,
-} from "../../../../src/core/content/wave-schema";
-import { createInitialSlotStates } from "../../../../src/core/waves/wave-scheduler";
-import { createFoundationArena } from "../../../../src/harness/fixtures/shipped-arena";
-import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
+} from "@core/content/wave-schema";
+import { createInitialSlotStates } from "@core/waves/wave-scheduler";
+import { createFoundationArena } from "@harness/fixtures/shipped-arena";
+import { createTrainingArena } from "@harness/fixtures/training-arena";
 
 describe("Smash action", () => {
   it("arms on the first action and releases the locked landing on the second", () => {

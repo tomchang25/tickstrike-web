@@ -1,4 +1,4 @@
-import type { GuardDefinition } from "../../core/content/actor-schema";
+import type { GuardDefinition } from "@core/content/actor-schema";
 
 export { attackDefinitions, enemyDefinitions } from "./features";
 

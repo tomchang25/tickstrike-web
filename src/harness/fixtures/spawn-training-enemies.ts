@@ -1,4 +1,4 @@
-import type { World } from "../../core/world/world";
+import type { World } from "@core/world/world";
 
 export function spawnTrainingEnemies(world: World): void {
   world.spawn({

@@ -1,5 +1,5 @@
 import { Container, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
-import type { Cell } from "../../core/model/types";
+import type { Cell } from "@core/model/types";
 
 export type PlayerSpritePose = "idle" | "move" | "dash";
 

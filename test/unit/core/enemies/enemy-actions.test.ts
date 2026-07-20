@@ -4,10 +4,10 @@ import {
   decideEnemyAction,
   rotatedAttackCells,
   rotateLocalOffset,
-} from "../../../../src/core/enemies/enemy-actions";
-import type { EnemyActionDefinition, EntityState } from "../../../../src/core/model/types";
-import { resolveCommand } from "../../../../src/core/actions/action-resolver";
-import { createShippedArena } from "../../../../src/harness/fixtures/shipped-arena";
+} from "@core/enemies/enemy-actions";
+import type { EnemyActionDefinition, EntityState } from "@core/model/types";
+import { resolveCommand } from "@core/actions/action-resolver";
+import { createShippedArena } from "@harness/fixtures/shipped-arena";
 
 const thrust: EnemyActionDefinition = {
   role: "thrust",

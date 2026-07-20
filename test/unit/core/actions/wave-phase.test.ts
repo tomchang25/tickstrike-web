@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
-import type { ArtifactDefinition } from "../../../../src/core/content/artifact-schema";
+import { createTrainingArena } from "@harness/fixtures/training-arena";
+import type { ArtifactDefinition } from "@core/content/artifact-schema";
 import type {
   GrowthCurve,
   GuardGrowthInput,
@@ -8,13 +8,13 @@ import type {
   WaveDefinition,
   WaveGroupSlot,
   WaveProgressionProfile,
-} from "../../../../src/core/content/wave-schema";
-import type { WavePhaseContext } from "../../../../src/core/actions/wave-phase";
-import { resolveRewardSelection, resolveWavePhase } from "../../../../src/core/actions/wave-phase";
-import { createInitialSlotStates } from "../../../../src/core/waves/wave-scheduler";
-import type { SpawnEntityInput, World } from "../../../../src/core/world/world";
-import { World as WorldClass } from "../../../../src/core/world/world";
-import type { TileKind } from "../../../../src/core/model/types";
+} from "@core/content/wave-schema";
+import type { WavePhaseContext } from "@core/actions/wave-phase";
+import { resolveRewardSelection, resolveWavePhase } from "@core/actions/wave-phase";
+import { createInitialSlotStates } from "@core/waves/wave-scheduler";
+import type { SpawnEntityInput, World } from "@core/world/world";
+import { World as WorldClass } from "@core/world/world";
+import type { TileKind } from "@core/model/types";
 
 const ZERO_CURVE: GrowthCurve = {
   standardCoefficient: 0,

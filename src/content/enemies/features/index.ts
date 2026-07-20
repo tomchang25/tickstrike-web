@@ -1,4 +1,4 @@
-import type { AttackDefinition, EnemyDefinition } from "../../../core/content/actor-schema";
+import type { AttackDefinition, EnemyDefinition } from "@core/content/actor-schema";
 import type {
   EnemyFeature,
   EnemyPresentationProfile,

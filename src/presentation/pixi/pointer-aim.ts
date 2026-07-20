@@ -1,4 +1,4 @@
-import type { Cell } from "../../core/model/types";
+import type { Cell } from "@core/model/types";
 
 export const CELL_SIZE = 64;
 export const INITIAL_AIM: Cell = { x: 1, y: 0 };

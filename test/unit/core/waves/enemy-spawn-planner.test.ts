@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { planGroupCells } from "../../../../src/core/waves/enemy-spawn-planner";
-import type { RandomUnitSource, WaveWorldView } from "../../../../src/core/waves/wave-inputs";
-import { cellKey, manhattanDistance, sameCell, type Cell } from "../../../../src/core/model/types";
+import { planGroupCells } from "@core/waves/enemy-spawn-planner";
+import type { RandomUnitSource, WaveWorldView } from "@core/waves/wave-inputs";
+import { cellKey, manhattanDistance, sameCell, type Cell } from "@core/model/types";
 
 function sequenceSource(values: readonly number[]): RandomUnitSource {
   let index = 0;

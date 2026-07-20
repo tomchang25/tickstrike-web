@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { RandomStream } from "../../../../src/core/random/random-stream";
-import { RandomStreams } from "../../../../src/core/random/random-streams";
+import { RandomStream } from "@core/random/random-stream";
+import { RandomStreams } from "@core/random/random-streams";
 
 describe("deterministic random streams", () => {
   it("replays the same sequence for the same seed", () => {

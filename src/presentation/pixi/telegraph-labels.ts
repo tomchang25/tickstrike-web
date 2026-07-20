@@ -1,5 +1,5 @@
-import type { Cell } from "../../core/model/types";
-import { cellKey, sameCell } from "../../core/model/types";
+import type { Cell } from "@core/model/types";
+import { cellKey, sameCell } from "@core/model/types";
 
 export interface TelegraphLabelSource {
   readonly cells: readonly Cell[];

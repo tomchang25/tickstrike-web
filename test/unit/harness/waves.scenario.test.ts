@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { resolveCommand } from "../../../src/core/actions/action-resolver";
+import { resolveCommand } from "@core/actions/action-resolver";
 import {
   createWaveArena,
   WAVE_SCENARIO_SEED,
   waveScenarioContext,
-} from "../../../src/harness/fixtures/wave-arena";
-import { waveCatalog } from "../../../src/content/wave-catalog";
+} from "@harness/fixtures/wave-arena";
+import { waveCatalog } from "@content/wave-catalog";
 
 describe("waves scenario fixture", () => {
   it("starts with only the regular player, Wave 1 slots, and no enemies or telegraphs", () => {

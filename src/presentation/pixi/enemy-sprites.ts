@@ -1,16 +1,16 @@
 import { Container, Rectangle, Sprite, Texture } from "pixi.js";
 import { gsap } from "gsap";
-import type { Cell, EntityState } from "../../core/model/types";
+import type { Cell, EntityState } from "@core/model/types";
 import {
   enemyPresentationProfiles,
   type EnemyPresentationProfile,
-} from "../../content/enemies/features";
+} from "@content/enemies/features";
 
 export type EnemySpritePose = "idle" | "move" | "prepareAttack" | "commitCue";
 export type EnemySpritePalette = string;
 export type EnemySpriteSheetKey = string;
 
-export type { EnemyPresentationProfile } from "../../content/enemies/features";
+export type { EnemyPresentationProfile } from "@content/enemies/features";
 
 export interface EnemyWaterAnimation {
   readonly sheet: Texture;

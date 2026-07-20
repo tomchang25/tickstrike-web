@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findEnemyPaths } from "../../../../src/core/enemies/enemy-path-planner";
+import { findEnemyPaths } from "@core/enemies/enemy-path-planner";
 
 describe("enemy path planner", () => {
   it("does not return a path whose first step is blocked", () => {

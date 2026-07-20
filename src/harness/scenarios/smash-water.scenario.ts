@@ -1,4 +1,4 @@
-import { actorCatalog } from "../../content/actor-catalog";
+import { actorCatalog } from "@content/actor-catalog";
 import { createTrainingArena } from "../fixtures/training-arena";
 import type { TestScenario } from "../types";
 

@@ -1,7 +1,7 @@
-import type { WaveEnemySpawnRequest } from "../core/actions/wave-phase";
-import type { EnemyDefinition, GuardDefinition } from "../core/content/actor-schema";
-import { projectEnemyLevel } from "../core/waves/enemy-level-progression";
-import type { SpawnEntityInput } from "../core/world/world";
+import type { WaveEnemySpawnRequest } from "@core/actions/wave-phase";
+import type { EnemyDefinition, GuardDefinition } from "@core/content/actor-schema";
+import { projectEnemyLevel } from "@core/waves/enemy-level-progression";
+import type { SpawnEntityInput } from "@core/world/world";
 import { actorCatalog } from "./actor-catalog";
 import { resolveEnemyActionDefinition } from "./enemy-action-resolution";
 

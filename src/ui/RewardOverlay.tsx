@@ -1,5 +1,5 @@
-import type { PendingRewardOffer } from "../core/model/types";
-import { artifactCatalog } from "../content/artifact-catalog";
+import type { PendingRewardOffer } from "@core/model/types";
+import { artifactCatalog } from "@content/artifact-catalog";
 
 export interface RewardOverlayProps {
   readonly offer: PendingRewardOffer;

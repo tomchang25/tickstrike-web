@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { artifactCatalog } from "../../../src/content/artifact-catalog";
+import { artifactCatalog } from "@content/artifact-catalog";
 
 describe("canonical artifact content", () => {
   it("contains the nine shipped artifacts in registry order", () => {

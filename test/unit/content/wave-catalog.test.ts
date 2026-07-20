@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { waveCatalog } from "../../../src/content/wave-catalog";
+import { waveCatalog } from "@content/wave-catalog";
 
 describe("canonical wave content", () => {
   it("contains the complete shipped wave inventory", () => {

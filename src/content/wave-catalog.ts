@@ -1,5 +1,5 @@
 import { actorCatalog } from "./actor-catalog";
-import { createWaveContentCatalog } from "../core/content/wave-schema";
+import { createWaveContentCatalog } from "@core/content/wave-schema";
 import {
   demoWaveDefinitions,
   endlessWaveDefinition,

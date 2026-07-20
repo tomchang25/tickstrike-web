@@ -3,7 +3,7 @@ import {
   aggregateTelegraphLabels,
   formatTelegraphMultiplier,
   placeTelegraphLabels,
-} from "../../../../src/presentation/pixi/telegraph-labels";
+} from "@presentation/pixi/telegraph-labels";
 
 describe("telegraph labels", () => {
   it("aggregates repeated values and keeps distinct values in ascending order", () => {
