@@ -33,6 +33,8 @@ function snapshot(
     reservations: [],
     telegraphs: telegraphs ?? [],
     waveRuntime: undefined,
+    runBuild: { stacks: {} },
+    pendingReward: undefined,
     seed: 1,
     lastEvents: [],
   };

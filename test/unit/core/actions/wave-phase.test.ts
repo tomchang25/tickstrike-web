@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
+import type { ArtifactDefinition } from "../../../../src/core/content/artifact-schema";
 import type {
   GrowthCurve,
   GuardGrowthInput,
@@ -9,7 +10,7 @@ import type {
   WaveProgressionProfile,
 } from "../../../../src/core/content/wave-schema";
 import type { WavePhaseContext } from "../../../../src/core/actions/wave-phase";
-import { resolveWavePhase } from "../../../../src/core/actions/wave-phase";
+import { resolveRewardSelection, resolveWavePhase } from "../../../../src/core/actions/wave-phase";
 import { createInitialSlotStates } from "../../../../src/core/waves/wave-scheduler";
 import type { SpawnEntityInput, World } from "../../../../src/core/world/world";
 import { World as WorldClass } from "../../../../src/core/world/world";
@@ -48,7 +49,10 @@ function slot(overrides: Partial<WaveGroupSlot> = {}): WaveGroupSlot {
   };
 }
 
-function groupWithCount(count: number, strategy: SpawnGroupDefinition["placementStrategy"] = "scatter"): SpawnGroupDefinition {
+function groupWithCount(
+  count: number,
+  strategy: SpawnGroupDefinition["placementStrategy"] = "scatter",
+): SpawnGroupDefinition {
   return {
     id: "grunt-group",
     placementStrategy: strategy,
@@ -76,12 +80,14 @@ function fakeSpawnInput(request: {
 function makeContext(
   groups: readonly SpawnGroupDefinition[],
   waves: readonly (WaveDefinition | undefined)[],
+  offerableArtifacts?: readonly ArtifactDefinition[],
 ): WavePhaseContext {
   return {
     groups,
     progressionProfile: PROFILE,
     waveFor: (waveNumber) => waves[waveNumber - 1],
     buildEnemySpawnInput: fakeSpawnInput,
+    ...(offerableArtifacts ? { offerableArtifacts } : {}),
   };
 }
 
@@ -95,7 +101,11 @@ function spawnPlayer(world: World, cell = { x: 2, y: 2 }): void {
   });
 }
 
-function installWave(world: World, wave: WaveDefinition, groups: readonly SpawnGroupDefinition[]): void {
+function installWave(
+  world: World,
+  wave: WaveDefinition,
+  groups: readonly SpawnGroupDefinition[],
+): void {
   const random = () => world.random.get("waves").nextUnit();
   const slots = createInitialSlotStates(wave, groups, 1, random);
   world.setWave(1, slots);
@@ -146,7 +156,9 @@ describe("resolveWavePhase: immediate spawn (warningTicks 0)", () => {
     expect(world.listTelegraphs()).toEqual([]);
     expect(world.listReservations().filter((r) => r.purpose === "spawn")).toEqual([]);
     expect(
-      world.listEntities().filter((entity) => entity.kind === "enemy" && entity.id.startsWith("wave-")),
+      world
+        .listEntities()
+        .filter((entity) => entity.kind === "enemy" && entity.id.startsWith("wave-")),
     ).toHaveLength(2);
   });
 });
@@ -163,7 +175,10 @@ describe("resolveWavePhase: warned batch lifecycle", () => {
 
     const warned = resolveWavePhase(world, context);
     expect(warned.events.map((event) => event.type)).toEqual(["wave_group_warned"]);
-    const warnEvent = warned.events[0] as { cells: readonly { x: number; y: number }[]; sourceId: string };
+    const warnEvent = warned.events[0] as {
+      cells: readonly { x: number; y: number }[];
+      sourceId: string;
+    };
     expect(warnEvent.cells).toHaveLength(1);
     const warnedCell = warnEvent.cells[0]!;
 
@@ -194,7 +209,10 @@ describe("resolveWavePhase: warned batch lifecycle", () => {
     const context = makeContext(groups, [wave]);
 
     const warned = resolveWavePhase(world, context);
-    const warnEvent = warned.events[0] as { cells: readonly { x: number; y: number }[]; sourceId: string };
+    const warnEvent = warned.events[0] as {
+      cells: readonly { x: number; y: number }[];
+      sourceId: string;
+    };
     const warnedCell = warnEvent.cells[0]!;
 
     // Simulate drift: the reserved cell becomes occupied by something else before expiry.
@@ -205,7 +223,9 @@ describe("resolveWavePhase: warned batch lifecycle", () => {
     const expired = resolveWavePhase(world, context);
 
     expect(expired.events.map((event) => event.type)).toEqual(["wave_group_spawned"]);
-    const spawnedEvent = expired.events[0] as { spawns: readonly { cell: { x: number; y: number } }[] };
+    const spawnedEvent = expired.events[0] as {
+      spawns: readonly { cell: { x: number; y: number } }[];
+    };
     expect(spawnedEvent.spawns[0]!.cell).not.toEqual(warnedCell);
   });
 
@@ -218,28 +238,72 @@ describe("resolveWavePhase: warned batch lifecycle", () => {
     );
     const world = new WorldClass(rows[0].length, rows.length, tiles, "wave-phase-requeue");
     spawnPlayer(world, { x: 1, y: 1 });
-    world.spawn({ id: "filler-a", kind: "enemy", archetype: "filler", cell: { x: 2, y: 1 }, hp: 1 });
-    world.spawn({ id: "filler-b", kind: "enemy", archetype: "filler", cell: { x: 3, y: 1 }, hp: 1 });
-    world.spawn({ id: "filler-c", kind: "enemy", archetype: "filler", cell: { x: 1, y: 2 }, hp: 1 });
-    world.spawn({ id: "filler-d", kind: "enemy", archetype: "filler", cell: { x: 3, y: 2 }, hp: 1 });
-    world.spawn({ id: "filler-e", kind: "enemy", archetype: "filler", cell: { x: 1, y: 3 }, hp: 1 });
-    world.spawn({ id: "filler-f", kind: "enemy", archetype: "filler", cell: { x: 3, y: 3 }, hp: 1 });
+    world.spawn({
+      id: "filler-a",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 2, y: 1 },
+      hp: 1,
+    });
+    world.spawn({
+      id: "filler-b",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 3, y: 1 },
+      hp: 1,
+    });
+    world.spawn({
+      id: "filler-c",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 1, y: 2 },
+      hp: 1,
+    });
+    world.spawn({
+      id: "filler-d",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 3, y: 2 },
+      hp: 1,
+    });
+    world.spawn({
+      id: "filler-e",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 1, y: 3 },
+      hp: 1,
+    });
+    world.spawn({
+      id: "filler-f",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 3, y: 3 },
+      hp: 1,
+    });
     // Legal cells: (1,1) player, (2,1),(3,1),(1,2),(2,2) free,(3,2),(1,3),(2,3) free,(3,3).
     world.advanceTick();
 
     const groups = [groupWithCount(1)];
-    const wave: WaveDefinition = { id: "w1", populationCap: 10, slots: [slot({ warningTicks: 1 })] };
+    const wave: WaveDefinition = {
+      id: "w1",
+      populationCap: 10,
+      slots: [slot({ warningTicks: 1 })],
+    };
     installWave(world, wave, groups);
     const context = makeContext(groups, [wave]);
 
     const warned = resolveWavePhase(world, context);
     expect(warned.events.map((event) => event.type)).toEqual(["wave_group_warned"]);
-    const warnEvent = warned.events[0] as { cells: readonly { x: number; y: number }[]; sourceId: string };
+    const warnEvent = warned.events[0] as {
+      cells: readonly { x: number; y: number }[];
+      sourceId: string;
+    };
     const warnedCell = warnEvent.cells[0]!;
 
     // Two free cells remain: (2,2) and (2,3), one of which is now reserved as warnedCell. Fill
     // the other one, then let the reserved cell drift so no replacement cell exists at all.
-    const otherFreeCell = warnedCell.x === 2 && warnedCell.y === 2 ? { x: 2, y: 3 } : { x: 2, y: 2 };
+    const otherFreeCell =
+      warnedCell.x === 2 && warnedCell.y === 2 ? { x: 2, y: 3 } : { x: 2, y: 2 };
     world.spawn({ id: "filler-g", kind: "enemy", archetype: "filler", cell: otherFreeCell, hp: 1 });
     world.releaseReservation(warnEvent.sourceId);
     world.spawn({ id: "blocker", kind: "enemy", archetype: "blocker", cell: warnedCell, hp: 1 });
@@ -255,9 +319,7 @@ describe("resolveWavePhase: warned batch lifecycle", () => {
     ]);
     expect(world.waveRuntime?.slots[0]?.remainingQueue).toHaveLength(1);
     expect(world.waveRuntime?.pendingBatch).toBeUndefined();
-    expect(
-      world.listEntities().filter((entity) => entity.id.startsWith("wave-")),
-    ).toHaveLength(0);
+    expect(world.listEntities().filter((entity) => entity.id.startsWith("wave-"))).toHaveLength(0);
   });
 });
 
@@ -265,8 +327,20 @@ describe("resolveWavePhase: admission blocking", () => {
   it("defers with population-headroom when the batch would exceed the cap", () => {
     const world = createTrainingArena();
     spawnPlayer(world, { x: 2, y: 2 });
-    world.spawn({ id: "existing-1", kind: "enemy", archetype: "filler", cell: { x: 5, y: 5 }, hp: 1 });
-    world.spawn({ id: "existing-2", kind: "enemy", archetype: "filler", cell: { x: 6, y: 5 }, hp: 1 });
+    world.spawn({
+      id: "existing-1",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 5, y: 5 },
+      hp: 1,
+    });
+    world.spawn({
+      id: "existing-2",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 6, y: 5 },
+      hp: 1,
+    });
     world.advanceTick();
 
     const groups = [groupWithCount(2)];
@@ -284,7 +358,13 @@ describe("resolveWavePhase: admission blocking", () => {
   it("never lets a later slot bypass a blocked earlier slot", () => {
     const world = createTrainingArena();
     spawnPlayer(world, { x: 2, y: 2 });
-    world.spawn({ id: "existing-1", kind: "enemy", archetype: "filler", cell: { x: 5, y: 5 }, hp: 1 });
+    world.spawn({
+      id: "existing-1",
+      kind: "enemy",
+      archetype: "filler",
+      cell: { x: 5, y: 5 },
+      hp: 1,
+    });
     world.advanceTick();
 
     const groups = [groupWithCount(3, "scatter"), groupWithCount(1, "scatter")];
@@ -305,9 +385,7 @@ describe("resolveWavePhase: admission blocking", () => {
     expect(result.events).toEqual([
       { type: "wave_group_deferred", waveNumber: 1, slotIndex: 0, reason: "population-headroom" },
     ]);
-    expect(
-      world.listEntities().filter((entity) => entity.id.startsWith("wave-")),
-    ).toHaveLength(0);
+    expect(world.listEntities().filter((entity) => entity.id.startsWith("wave-"))).toHaveLength(0);
   });
 });
 
@@ -318,14 +396,22 @@ describe("resolveWavePhase: wave clear and advance", () => {
     world.advanceTick();
 
     const groups = [groupWithCount(1)];
-    const wave1: WaveDefinition = { id: "w1", populationCap: 5, slots: [slot({ warningTicks: 0 })] };
-    const wave2: WaveDefinition = { id: "w2", populationCap: 5, slots: [slot({ warningTicks: 0 })] };
+    const wave1: WaveDefinition = {
+      id: "w1",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    const wave2: WaveDefinition = {
+      id: "w2",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
     installWave(world, wave1, groups);
     const context = makeContext(groups, [wave1, wave2]);
 
     const spawnResult = resolveWavePhase(world, context);
-    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!
-      .entityId;
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
+      .spawns[0]!.entityId;
 
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
@@ -342,13 +428,17 @@ describe("resolveWavePhase: wave clear and advance", () => {
     world.advanceTick();
 
     const groups = [groupWithCount(1)];
-    const wave1: WaveDefinition = { id: "w1", populationCap: 5, slots: [slot({ warningTicks: 0 })] };
+    const wave1: WaveDefinition = {
+      id: "w1",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
     installWave(world, wave1, groups);
     const context = makeContext(groups, [wave1]);
 
     const spawnResult = resolveWavePhase(world, context);
-    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!
-      .entityId;
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
+      .spawns[0]!.entityId;
 
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
@@ -370,7 +460,11 @@ describe("resolveWavePhase: wave clear and advance", () => {
       populationCap: 5,
       slots: [
         slot({ warningTicks: 0 }),
-        slot({ spawnGroupId: "group-b", warningTicks: 2, startCondition: "previous-group-cleared" }),
+        slot({
+          spawnGroupId: "group-b",
+          warningTicks: 2,
+          startCondition: "previous-group-cleared",
+        }),
       ],
     };
     installWave(world, wave, [groupA, groupB]);
@@ -378,8 +472,8 @@ describe("resolveWavePhase: wave clear and advance", () => {
 
     const firstSpawn = resolveWavePhase(world, context);
     expect(firstSpawn.victoryReady).toBe(false);
-    const spawnedId = (firstSpawn.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!
-      .entityId;
+    const spawnedId = (firstSpawn.events[0] as { spawns: readonly { entityId: string }[] })
+      .spawns[0]!.entityId;
 
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
@@ -395,5 +489,279 @@ describe("resolveWavePhase: wave clear and advance", () => {
     const stillCounting = resolveWavePhase(world, context);
     expect(stillCounting.events).toEqual([]);
     expect(stillCounting.victoryReady).toBe(false);
+  });
+});
+
+const ATTACK_UP: ArtifactDefinition = {
+  id: "attack_up",
+  name: "Sharpened Edge",
+  descriptionTemplate: "+%d normal attack damage",
+  category: "minor",
+  maxStacks: 3,
+  exclusivityGroup: "",
+  isCurse: false,
+  minWave: 1,
+  magnitude: 10,
+  requiredMobility: null,
+  effects: [{ kind: "channel", channel: "normal-attack-damage", amount: 10 }],
+  presentation: { id: "artifact.attack_up" },
+};
+
+describe("resolveWavePhase: pauses a clear on an eligible reward instead of advancing", () => {
+  it("installs a pending offer and reports reward_offered without starting the next wave", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      normalAttackDamage: 20,
+    });
+    world.advanceTick();
+
+    const groups = [groupWithCount(1)];
+    const wave1: WaveDefinition = {
+      id: "w1",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    const wave2: WaveDefinition = {
+      id: "w2",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    installWave(world, wave1, groups);
+    const context = makeContext(groups, [wave1, wave2], [ATTACK_UP]);
+
+    const spawnResult = resolveWavePhase(world, context);
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
+      .spawns[0]!.entityId;
+    world.setPhase(spawnedId, "dead");
+    world.advanceTick();
+
+    const clearResult = resolveWavePhase(world, context);
+
+    expect(clearResult.events.map((event) => event.type)).toEqual([
+      "wave_cleared",
+      "reward_offered",
+    ]);
+    expect(clearResult.victoryReady).toBe(false);
+    expect(world.pendingRewardOffer).toEqual({
+      waveNumber: 1,
+      cards: [{ artifactId: "attack_up", resultingStackCount: 1 }],
+    });
+    // The wave number does not advance and no next-wave content is initialized yet.
+    expect(world.waveRuntime?.waveNumber).toBe(1);
+  });
+
+  it("blocks command acceptance while paused, verified via the pending offer flag itself", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      normalAttackDamage: 20,
+    });
+    world.installPendingRewardOffer({
+      waveNumber: 1,
+      cards: [{ artifactId: "attack_up", resultingStackCount: 1 }],
+    });
+    expect(world.pendingRewardOffer).toBeDefined();
+  });
+
+  it("draws its card from the 'rewards' stream, never perturbing 'waves' stream output", () => {
+    // Two independently-seeded (same default seed) worlds cleared the same way: one pauses on a
+    // reward and resumes via selection, the other advances immediately. If the reward draw ever
+    // touched the "waves" stream, Wave 2's slot state would diverge between them.
+    function clearWaveOne(context: WavePhaseContext) {
+      const world = createTrainingArena();
+      world.spawn({
+        id: "player",
+        kind: "player",
+        archetype: "training-player",
+        cell: { x: 2, y: 2 },
+        hp: 100,
+        normalAttackDamage: 20,
+      });
+      world.advanceTick();
+      const groups = [groupWithCount(1)];
+      const wave1: WaveDefinition = {
+        id: "w1",
+        populationCap: 5,
+        slots: [slot({ warningTicks: 0 })],
+      };
+      installWave(world, wave1, groups);
+
+      const spawnResult = resolveWavePhase(world, context);
+      const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
+        .spawns[0]!.entityId;
+      world.setPhase(spawnedId, "dead");
+      world.advanceTick();
+      resolveWavePhase(world, context);
+      return world;
+    }
+
+    const groups = [groupWithCount(1)];
+    const wave1: WaveDefinition = {
+      id: "w1",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    const wave2: WaveDefinition = {
+      id: "w2",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    const withRewards = makeContext(groups, [wave1, wave2], [ATTACK_UP]);
+    const withoutRewards = makeContext(groups, [wave1, wave2]);
+
+    const pausedWorld = clearWaveOne(withRewards);
+    expect(pausedWorld.pendingRewardOffer).toBeDefined();
+    resolveRewardSelection(pausedWorld, "attack_up", withRewards);
+
+    const directWorld = clearWaveOne(withoutRewards);
+
+    expect(pausedWorld.waveRuntime).toEqual(directWorld.waveRuntime);
+  });
+
+  it("skips the offer and advances directly once the sole candidate is already at its stack cap", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      normalAttackDamage: 20,
+    });
+    world.advanceTick();
+
+    const groups = [groupWithCount(1)];
+    const wave1: WaveDefinition = {
+      id: "w1",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    const wave2: WaveDefinition = {
+      id: "w2",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    installWave(world, wave1, groups);
+    const context = makeContext(groups, [wave1, wave2], [ATTACK_UP]);
+    world.applyRewardSelection("attack_up", ATTACK_UP.maxStacks);
+
+    const spawnResult = resolveWavePhase(world, context);
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
+      .spawns[0]!.entityId;
+    world.setPhase(spawnedId, "dead");
+    world.advanceTick();
+
+    const clearResult = resolveWavePhase(world, context);
+
+    expect(clearResult.events.map((event) => event.type)).toEqual(["wave_cleared", "wave_started"]);
+    expect(world.pendingRewardOffer).toBeUndefined();
+    expect(world.waveRuntime?.waveNumber).toBe(2);
+  });
+});
+
+describe("resolveRewardSelection", () => {
+  function setUpPausedWorld() {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      normalAttackDamage: 20,
+    });
+    world.advanceTick();
+
+    const groups = [groupWithCount(1)];
+    const wave1: WaveDefinition = {
+      id: "w1",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 0 })],
+    };
+    const wave2: WaveDefinition = {
+      id: "w2",
+      populationCap: 5,
+      slots: [slot({ warningTicks: 1 })],
+    };
+    installWave(world, wave1, groups);
+    const context = makeContext(groups, [wave1, wave2], [ATTACK_UP]);
+
+    const spawnResult = resolveWavePhase(world, context);
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
+      .spawns[0]!.entityId;
+    world.setPhase(spawnedId, "dead");
+    world.advanceTick();
+    resolveWavePhase(world, context);
+
+    return { world, context };
+  }
+
+  it("rejects when no offer is pending", () => {
+    const world = createTrainingArena();
+    const context = makeContext([groupWithCount(1)], [], [ATTACK_UP]);
+    const result = resolveRewardSelection(world, "attack_up", context);
+    expect(result).toEqual({
+      accepted: false,
+      reason: "No reward selection is pending.",
+      events: [],
+    });
+  });
+
+  it("rejects a stale or unknown artifact ID without changing state", () => {
+    const { world, context } = setUpPausedWorld();
+    const before = world.snapshot();
+
+    const result = resolveRewardSelection(world, "unknown_artifact", context);
+
+    expect(result.accepted).toBe(false);
+    expect(result.reason).toBe("Unknown or stale reward selection.");
+    expect(world.snapshot()).toEqual(before);
+  });
+
+  it("applies the stack, raises normal-attack damage, clears the offer, and starts the next wave", () => {
+    const { world, context } = setUpPausedWorld();
+
+    const result = resolveRewardSelection(world, "attack_up", context);
+
+    expect(result.accepted).toBe(true);
+    expect(result.events.map((event) => event.type)).toEqual(["reward_selected", "wave_started"]);
+    expect(world.pendingRewardOffer).toBeUndefined();
+    expect(world.runBuild).toEqual({ stacks: { attack_up: 1 } });
+    expect(world.requireEntity("player").normalAttackDamage).toBe(30);
+    expect(world.waveRuntime?.waveNumber).toBe(2);
+    // Selection installs the next wave's slot state without consuming a tick or spawning anything.
+    expect(world.tick).toBe(2);
+    expect(world.listActiveEntities().filter((entity) => entity.kind === "enemy")).toHaveLength(0);
+
+    // The next accepted-command wave phase call now warns Wave 2 through the normal path.
+    world.advanceTick();
+    const warned = resolveWavePhase(world, context);
+    expect(warned.events.map((event) => event.type)).toEqual(["wave_group_warned"]);
+  });
+
+  it("stacks a second selection on top of the first", () => {
+    const { world, context } = setUpPausedWorld();
+    resolveRewardSelection(world, "attack_up", context);
+    expect(world.requireEntity("player").normalAttackDamage).toBe(30);
+
+    // Manually reinstall a second offer to exercise repeated selection without a full wave loop.
+    world.installPendingRewardOffer({
+      waveNumber: 2,
+      cards: [{ artifactId: "attack_up", resultingStackCount: 2 }],
+    });
+    const result = resolveRewardSelection(world, "attack_up", context);
+
+    expect(result.accepted).toBe(true);
+    expect(world.runBuild).toEqual({ stacks: { attack_up: 2 } });
+    expect(world.requireEntity("player").normalAttackDamage).toBe(40);
   });
 });

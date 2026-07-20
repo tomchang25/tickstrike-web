@@ -6,6 +6,7 @@ import type {
   EntityId,
   EncounterOutcome,
   Reservation,
+  RewardOfferCard,
   Telegraph,
 } from "../model/types";
 
@@ -241,6 +242,16 @@ export type CombatEvent =
   | {
       readonly type: "wave_cleared";
       readonly waveNumber: number;
+    }
+  | {
+      readonly type: "reward_offered";
+      readonly waveNumber: number;
+      readonly cards: readonly RewardOfferCard[];
+    }
+  | {
+      readonly type: "reward_selected";
+      readonly artifactId: string;
+      readonly stackCount: number;
     };
 
 export interface DamageEvent {

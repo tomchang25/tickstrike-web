@@ -149,6 +149,70 @@ header > p {
   color: #ff9b9b;
 }
 
+.reward-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(12 14 19 / 78%);
+}
+
+.reward-overlay-panel {
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+  padding: 20px;
+  border: 1px solid #72d4ff;
+  border-radius: 12px;
+  background: #151922;
+  box-shadow: 0 16px 44px rgb(0 0 0 / 45%);
+  text-align: center;
+}
+
+.reward-overlay-panel h2 {
+  margin: 0;
+  color: #72d4ff;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reward-card-list {
+  display: grid;
+  gap: 10px;
+}
+
+.reward-card {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid #3b91b8;
+  border-radius: 10px;
+  background: #1b6688;
+  color: #e8eef7;
+  text-align: left;
+}
+
+.reward-card:hover:not(:disabled) {
+  background: #21769a;
+}
+
+.reward-card strong {
+  font-size: 1rem;
+}
+
+.reward-card span {
+  color: #d7e6f2;
+  font-size: 0.85rem;
+}
+
+.reward-card small {
+  color: #aeddf2;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
 .semantic-mirror {
   position: absolute;
   width: 1px;

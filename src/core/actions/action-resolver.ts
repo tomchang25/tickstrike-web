@@ -74,6 +74,14 @@ export function resolveCommand(
   if (world.outcome !== "running") {
     return { accepted: false, consumedTime: false, reason: "Encounter has ended.", events: [] };
   }
+  if (world.pendingRewardOffer) {
+    return {
+      accepted: false,
+      consumedTime: false,
+      reason: "A reward selection is pending.",
+      events: [],
+    };
+  }
 
   const playerResult = resolvePlayerAction(world, command);
   if (!playerResult.accepted) {

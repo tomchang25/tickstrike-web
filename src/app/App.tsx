@@ -4,6 +4,7 @@ import { installDebugApi } from "../harness/debug-api";
 import { requireScenario, scenarios } from "../harness/scenario-registry";
 import { GameRuntime } from "../runtime/GameRuntime";
 import type { PointerCommit, PointerMode } from "../presentation/pixi/PixiGameRenderer";
+import { RewardOverlay } from "../ui/RewardOverlay";
 import { SemanticMirror } from "../ui/SemanticMirror";
 import { TestbedPanel } from "../ui/TestbedPanel";
 
@@ -26,6 +27,10 @@ export function App() {
   const selectedScenario = useMemo(() => requireScenario(selectedScenarioId), [selectedScenarioId]);
   const commandsEnabled = selectedScenario.commandsEnabled !== false;
   const encounterRunning = snapshot?.outcome === "running";
+  const pendingReward = snapshot?.pendingReward;
+  // React disabling is supplementary; the runtime's own command serialization already rejects a
+  // command while a reward selection is pending (see resolveCommand).
+  const interactive = commandsEnabled && encounterRunning && !pendingReward;
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -87,7 +92,7 @@ export function App() {
 
   const move = useCallback(
     async (direction: Cell) => {
-      if (!commandsEnabled || !encounterRunning) {
+      if (!interactive) {
         return;
       }
       const runtime = runtimeRef.current;
@@ -96,12 +101,12 @@ export function App() {
       }
       await execute(() => runtime.execute({ type: "move", actorId: "player", direction }));
     },
-    [commandsEnabled, encounterRunning, execute],
+    [execute, interactive],
   );
 
   const attack = useCallback(
     async (direction: Cell) => {
-      if (!commandsEnabled || !encounterRunning) {
+      if (!interactive) {
         return;
       }
       const runtime = runtimeRef.current;
@@ -110,12 +115,12 @@ export function App() {
       }
       await execute(() => runtime.execute({ type: "attack", actorId: "player", direction }));
     },
-    [commandsEnabled, encounterRunning, execute],
+    [execute, interactive],
   );
 
   const dash = useCallback(
     async (direction: Cell, distance?: number) => {
-      if (!commandsEnabled || !encounterRunning) {
+      if (!interactive) {
         return;
       }
       const runtime = runtimeRef.current;
@@ -126,12 +131,12 @@ export function App() {
         runtime.execute({ type: "dash", actorId: "player", direction, distance }),
       );
     },
-    [commandsEnabled, encounterRunning, execute],
+    [execute, interactive],
   );
 
   const smash = useCallback(
     async (target: Cell) => {
-      if (!commandsEnabled || !encounterRunning) {
+      if (!interactive) {
         return;
       }
       const runtime = runtimeRef.current;
@@ -150,20 +155,31 @@ export function App() {
         }),
       );
     },
-    [commandsEnabled, encounterRunning, execute],
+    [execute, interactive],
+  );
+
+  const selectReward = useCallback(
+    async (artifactId: string) => {
+      const runtime = runtimeRef.current;
+      if (!runtime || !pendingReward) {
+        return;
+      }
+      await execute(() => runtime.selectReward(artifactId));
+    },
+    [execute, pendingReward],
   );
 
   useEffect(() => {
     const heldMovement = new Map<string, number>();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Alt") {
-        if (commandsEnabled && encounterRunning) {
+        if (interactive) {
           event.preventDefault();
           setPointerMode("mobility");
         }
         return;
       }
-      if (!commandsEnabled || !encounterRunning) {
+      if (!interactive) {
         return;
       }
       const directions: Record<string, Cell | undefined> = {
@@ -232,7 +248,7 @@ export function App() {
       window.removeEventListener("keyup", onKeyUp);
       delete document.documentElement.dataset.keyboardInputReady;
     };
-  }, [attack, commandsEnabled, encounterRunning, move]);
+  }, [attack, interactive, move]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -242,7 +258,7 @@ export function App() {
     runtime.renderer.setDebugMode(debugMode);
     runtime.renderer.setPointerMode(pointerMode);
     return runtime.renderer.bindPointerInput({
-      canInteract: () => commandsEnabled && encounterRunning,
+      canInteract: () => interactive,
       onPrimaryClick: (commit: PointerCommit) => {
         if (commit.kind === "attack") {
           return attack(commit.direction);
@@ -253,7 +269,7 @@ export function App() {
         return smash(commit.target);
       },
     });
-  }, [attack, commandsEnabled, dash, debugMode, encounterRunning, pointerMode, smash, snapshot]);
+  }, [attack, dash, debugMode, interactive, pointerMode, smash, snapshot]);
 
   const activeMobility: MobilityKind =
     snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash";
@@ -292,6 +308,9 @@ export function App() {
                 generation={runtimeRef.current?.generation}
                 isIdle={Boolean(runtimeRef.current?.isIdle)}
               />
+            ) : null}
+            {pendingReward ? (
+              <RewardOverlay offer={pendingReward} busy={busy} onSelect={selectReward} />
             ) : null}
           </div>
           <p className="hint">

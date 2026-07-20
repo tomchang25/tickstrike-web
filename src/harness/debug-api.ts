@@ -16,6 +16,7 @@ export interface TickstrikeDebugApi {
   isWalkable(cell: Cell): boolean;
   getContentInspection(): ContentInspection | undefined;
   execute(command: GameCommand): Promise<void>;
+  selectReward(artifactId: string): Promise<void>;
 }
 
 declare global {
@@ -38,6 +39,9 @@ export function installDebugApi(runtime: GameRuntime): () => void {
     getContentInspection: () => runtime.getContentInspection(),
     execute: async (command) => {
       await runtime.execute(command);
+    },
+    selectReward: async (artifactId) => {
+      await runtime.selectReward(artifactId);
     },
   };
 

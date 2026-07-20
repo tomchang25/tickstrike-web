@@ -230,8 +230,7 @@ describe("telegraph remainingTicks", () => {
     expect(spawning.remainingTicks).toBe(3);
     expect(world.getTelegraph("spawn:1")?.remainingTicks).toBe(3);
     expect(
-      world.listTelegraphs().find((telegraph) => telegraph.sourceId === "spawn:1")
-        ?.remainingTicks,
+      world.listTelegraphs().find((telegraph) => telegraph.sourceId === "spawn:1")?.remainingTicks,
     ).toBe(3);
     expect(
       world.snapshot().telegraphs.find((telegraph) => telegraph.sourceId === "spawn:1")
@@ -886,5 +885,85 @@ describe("Guardless enabled enemies do not block generic status processing", () 
     expect(bombEntity.activity).toBe("ready");
     expect(bombEntity.staggerTicks).toBeUndefined();
     expect(bombEntity.protectionTicks).toBeUndefined();
+  });
+});
+
+describe("run build and pending reward ownership", () => {
+  it("starts with an empty build and no pending offer", () => {
+    const world = createTrainingArena();
+    expect(world.runBuild).toEqual({ stacks: {} });
+    expect(world.pendingRewardOffer).toBeUndefined();
+    expect(world.snapshot()).toMatchObject({ runBuild: { stacks: {} }, pendingReward: undefined });
+  });
+
+  it("returns defensive copies that mutation cannot reach back into", () => {
+    const world = createTrainingArena();
+    const offer = { waveNumber: 1, cards: [{ artifactId: "attack_up", resultingStackCount: 1 }] };
+    world.installPendingRewardOffer(offer);
+
+    const readBack = world.pendingRewardOffer!;
+    (
+      readBack.cards as { artifactId: string; resultingStackCount: number }[]
+    )[0]!.resultingStackCount = 99;
+    expect(world.pendingRewardOffer?.cards[0]?.resultingStackCount).toBe(1);
+
+    const build = world.runBuild;
+    (build.stacks as Record<string, number>).attack_up = 42;
+    expect(world.runBuild.stacks.attack_up).toBeUndefined();
+  });
+
+  it("throws when installing a second offer while one is already pending", () => {
+    const world = createTrainingArena();
+    world.installPendingRewardOffer({
+      waveNumber: 1,
+      cards: [{ artifactId: "attack_up", resultingStackCount: 1 }],
+    });
+    expect(() =>
+      world.installPendingRewardOffer({
+        waveNumber: 1,
+        cards: [{ artifactId: "attack_up", resultingStackCount: 1 }],
+      }),
+    ).toThrow("already pending");
+  });
+
+  it("clears a pending offer and applies a reward selection to the build", () => {
+    const world = createTrainingArena();
+    world.installPendingRewardOffer({
+      waveNumber: 1,
+      cards: [{ artifactId: "attack_up", resultingStackCount: 1 }],
+    });
+    world.clearPendingRewardOffer();
+    expect(world.pendingRewardOffer).toBeUndefined();
+
+    world.applyRewardSelection("attack_up", 1);
+    expect(world.runBuild).toEqual({ stacks: { attack_up: 1 } });
+  });
+
+  it("updates only the targeted entity's normal-attack damage", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      normalAttackDamage: 20,
+    });
+    world.setNormalAttackDamage("player", 30);
+    expect(world.requireEntity("player").normalAttackDamage).toBe(30);
+  });
+
+  it("rejects a negative or non-finite normal-attack damage", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      normalAttackDamage: 20,
+    });
+    expect(() => world.setNormalAttackDamage("player", -1)).toThrow();
+    expect(() => world.setNormalAttackDamage("player", Number.NaN)).toThrow();
   });
 });

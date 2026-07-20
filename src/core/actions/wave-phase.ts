@@ -1,6 +1,12 @@
-import type { SpawnGroupDefinition, WaveDefinition, WaveProgressionProfile } from "../content/wave-schema";
+import type { ArtifactDefinition } from "../content/artifact-schema";
+import type {
+  SpawnGroupDefinition,
+  WaveDefinition,
+  WaveProgressionProfile,
+} from "../content/wave-schema";
 import type { CombatEvent } from "../events/combat-events";
 import { sameCell, type Cell, type EntityId } from "../model/types";
+import { channelEffectAmount, generateSingleCardOffer } from "../rewards/run-build";
 import type { WaveWorldView } from "../waves/wave-inputs";
 import { planGroupCells } from "../waves/enemy-spawn-planner";
 import {
@@ -34,11 +40,19 @@ export interface WavePhaseContext {
   /** The wave definition for a 1-based wave number, or undefined when the run is complete. */
   waveFor(waveNumber: number): WaveDefinition | undefined;
   buildEnemySpawnInput(request: WaveEnemySpawnRequest): SpawnEntityInput;
+  /** Reward candidates offerable at a cleared wave. Omitted or empty means rewards never pause. */
+  readonly offerableArtifacts?: readonly ArtifactDefinition[];
 }
 
 export interface WavePhaseResult {
   readonly events: readonly CombatEvent[];
   readonly victoryReady: boolean;
+}
+
+export interface RewardSelectionResolution {
+  readonly accepted: boolean;
+  readonly reason?: string;
+  readonly events: readonly CombatEvent[];
 }
 
 const WAVE_ENTITY_ID_PATTERN = /^wave-(\d+)-slot-(\d+)-t\d+-\d+$/;
@@ -91,9 +105,7 @@ function buildWaveWorldView(world: World, playerCell: Cell): WaveWorldView {
     width: world.arena.width,
     height: world.arena.height,
     playerCell,
-    livingEnemyCount: world
-      .listActiveEntities()
-      .filter((entity) => entity.kind === "enemy").length,
+    livingEnemyCount: world.listActiveEntities().filter((entity) => entity.kind === "enemy").length,
     isArenaLegal: (cell) => world.isLegalCell(cell),
     isOccupied: (cell) => world.isOccupied(cell),
     isReserved: (cell) => world.isReserved(cell),
@@ -101,15 +113,25 @@ function buildWaveWorldView(world: World, playerCell: Cell): WaveWorldView {
 }
 
 /** A repair view additionally treats already-claimed replacement cells as occupied. */
-function buildRepairView(world: World, playerCell: Cell, extraOccupied: readonly Cell[]): WaveWorldView {
+function buildRepairView(
+  world: World,
+  playerCell: Cell,
+  extraOccupied: readonly Cell[],
+): WaveWorldView {
   const base = buildWaveWorldView(world, playerCell);
   return {
     ...base,
-    isOccupied: (cell) => base.isOccupied(cell) || extraOccupied.some((claimed) => sameCell(claimed, cell)),
+    isOccupied: (cell) =>
+      base.isOccupied(cell) || extraOccupied.some((claimed) => sameCell(claimed, cell)),
   };
 }
 
-function isSpawnCellStillLegal(world: World, playerCell: Cell, cell: Cell, ownerId: string): boolean {
+function isSpawnCellStillLegal(
+  world: World,
+  playerCell: Cell,
+  cell: Cell,
+  ownerId: string,
+): boolean {
   if (!world.isLegalCell(cell) || world.isOccupied(cell) || sameCell(cell, playerCell)) {
     return false;
   }
@@ -250,7 +272,15 @@ function resolveExpiredBatch(
   world.releaseReservation(ownerId);
   world.clearTelegraph(ownerId);
 
-  const spawns = spawnAssignments(world, context, waveNumber, batch.slotIndex, tick, counter, assignments);
+  const spawns = spawnAssignments(
+    world,
+    context,
+    waveNumber,
+    batch.slotIndex,
+    tick,
+    counter,
+    assignments,
+  );
   world.clearPendingSpawnBatch();
 
   const runtime = world.waveRuntime!;
@@ -337,12 +367,19 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
   const afterExpiry = world.waveRuntime!;
   const eligibleSlots = evaluateSlotEligibility(wave, afterExpiry.slots);
   world.setWave(runtime.waveNumber, eligibleSlots);
-  const livingEnemyCount = world.listActiveEntities().filter((entity) => entity.kind === "enemy").length;
+  const livingEnemyCount = world
+    .listActiveEntities()
+    .filter((entity) => entity.kind === "enemy").length;
   const admittedBatch = selectAtomicBatch(wave, context.groups, eligibleSlots, livingEnemyCount);
 
   if (admittedBatch) {
     const view = buildWaveWorldView(world, playerCell);
-    const placement = planGroupCells(admittedBatch.placementStrategy, admittedBatch.members.length, view, random);
+    const placement = planGroupCells(
+      admittedBatch.placementStrategy,
+      admittedBatch.members.length,
+      view,
+      random,
+    );
     if ("failed" in placement) {
       events.push({
         type: "wave_group_deferred",
@@ -397,7 +434,10 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
           remainingTicks: admittedBatch.warningTicks,
         });
         world.installPendingSpawnBatch(admittedBatch, placement.cells);
-        world.setWave(runtime.waveNumber, withClearedQueue(eligibleSlots, admittedBatch.slotIndex, false));
+        world.setWave(
+          runtime.waveNumber,
+          withClearedQueue(eligibleSlots, admittedBatch.slotIndex, false),
+        );
         events.push({
           type: "wave_group_warned",
           waveNumber: runtime.waveNumber,
@@ -435,6 +475,19 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
       if (!nextWave) {
         return { events, victoryReady: true };
       }
+
+      const offer = generateSingleCardOffer({
+        artifacts: context.offerableArtifacts ?? [],
+        build: world.runBuild,
+        waveNumber: runtime.waveNumber,
+        draw: () => world.random.get("rewards").nextUnit(),
+      });
+      if (offer) {
+        world.installPendingRewardOffer(offer);
+        events.push({ type: "reward_offered", waveNumber: offer.waveNumber, cards: offer.cards });
+        return { events, victoryReady: false };
+      }
+
       const nextSlots = createInitialSlotStates(nextWave, context.groups, nextWaveNumber, random);
       world.setWave(nextWaveNumber, nextSlots);
       events.push({ type: "wave_started", waveNumber: nextWaveNumber });
@@ -442,4 +495,55 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
   }
 
   return { events, victoryReady: false };
+}
+
+/**
+ * Resolves a pending reward offer as its own serialized boundary: it mutates the run build and
+ * the player's normal-attack damage, then initializes the next wave's slot state without spawning
+ * or warning anything — that happens through the normal wave phase on a later accepted command.
+ * Never runs the accepted-player-action path, the enemy phase, or presentation.
+ */
+export function resolveRewardSelection(
+  world: World,
+  artifactId: string,
+  context: WavePhaseContext,
+): RewardSelectionResolution {
+  const offer = world.pendingRewardOffer;
+  if (!offer) {
+    return { accepted: false, reason: "No reward selection is pending.", events: [] };
+  }
+  const card = offer.cards.find((candidate) => candidate.artifactId === artifactId);
+  const artifact = (context.offerableArtifacts ?? []).find(
+    (candidate) => candidate.id === artifactId,
+  );
+  if (!card || !artifact) {
+    return { accepted: false, reason: "Unknown or stale reward selection.", events: [] };
+  }
+
+  world.clearPendingRewardOffer();
+  world.applyRewardSelection(artifactId, card.resultingStackCount);
+
+  const damageBonus = channelEffectAmount(artifact, "normal-attack-damage");
+  if (damageBonus) {
+    const player = world.listEntities().find((entity) => entity.kind === "player");
+    if (player) {
+      world.setNormalAttackDamage(player.id, (player.normalAttackDamage ?? 0) + damageBonus);
+    }
+  }
+
+  const events: CombatEvent[] = [
+    { type: "reward_selected", artifactId, stackCount: card.resultingStackCount },
+  ];
+
+  const nextWaveNumber = offer.waveNumber + 1;
+  const nextWave = context.waveFor(nextWaveNumber);
+  if (nextWave) {
+    const random = () => world.random.get("waves").nextUnit();
+    const nextSlots = createInitialSlotStates(nextWave, context.groups, nextWaveNumber, random);
+    world.setWave(nextWaveNumber, nextSlots);
+    events.push({ type: "wave_started", waveNumber: nextWaveNumber });
+  }
+
+  world.recordEvents(events);
+  return { accepted: true, events };
 }

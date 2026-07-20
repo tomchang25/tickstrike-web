@@ -19,9 +19,11 @@ import {
   type EncounterOutcome,
   type GuardRuntime,
   isTerminalPhase,
+  type PendingRewardOffer,
   type PendingSpawnBatch,
   type Reservation,
   type ReservationPurpose,
+  type RunBuildState,
   type Seed,
   type Telegraph,
   type TelegraphPhase,
@@ -162,6 +164,14 @@ function cloneWaveRuntime(state: WaveRuntimeState): WaveRuntimeState {
   };
 }
 
+function cloneRunBuild(build: RunBuildState): RunBuildState {
+  return { stacks: { ...build.stacks } };
+}
+
+function clonePendingRewardOffer(offer: PendingRewardOffer): PendingRewardOffer {
+  return { ...offer, cards: offer.cards.map((card) => ({ ...card })) };
+}
+
 function cloneEntity(entity: EntityState): EntityState {
   return {
     ...entity,
@@ -210,6 +220,8 @@ export class World {
   private currentPlayerCell: Cell | undefined;
   private currentArmedSmashTarget: Cell | undefined;
   private currentWaveRuntime: WaveRuntimeState | undefined;
+  private currentRunBuild: RunBuildState = { stacks: {} };
+  private currentPendingReward: PendingRewardOffer | undefined;
   private currentTick = 0;
   private currentOutcome: EncounterOutcome = "running";
   private nextRegistrationIndex = 0;
@@ -352,7 +364,9 @@ export class World {
    * victory once Child C1 removes terminal entities and the terminal scan would otherwise never
    * fire again.
    */
-  updateEncounterOutcome(waveGate?: { readonly victoryReady: boolean }): EncounterOutcome | undefined {
+  updateEncounterOutcome(waveGate?: {
+    readonly victoryReady: boolean;
+  }): EncounterOutcome | undefined {
     if (this.currentOutcome !== "running") {
       return undefined;
     }
@@ -453,6 +467,49 @@ export class World {
       return;
     }
     this.currentWaveRuntime = { ...this.currentWaveRuntime, pendingBatch: undefined };
+  }
+
+  get runBuild(): RunBuildState {
+    return cloneRunBuild(this.currentRunBuild);
+  }
+
+  get pendingRewardOffer(): PendingRewardOffer | undefined {
+    return this.currentPendingReward
+      ? clonePendingRewardOffer(this.currentPendingReward)
+      : undefined;
+  }
+
+  /** Installs a reward offer, pausing command acceptance until it is selected. */
+  installPendingRewardOffer(offer: PendingRewardOffer): PendingRewardOffer {
+    if (this.currentPendingReward) {
+      throw new Error("A reward offer is already pending.");
+    }
+    this.currentPendingReward = clonePendingRewardOffer(offer);
+    return this.pendingRewardOffer!;
+  }
+
+  clearPendingRewardOffer(): void {
+    this.currentPendingReward = undefined;
+  }
+
+  /** Records the selected artifact's resulting stack count in the run build. */
+  applyRewardSelection(artifactId: string, resultingStackCount: number): RunBuildState {
+    this.currentRunBuild = {
+      stacks: { ...this.currentRunBuild.stacks, [artifactId]: resultingStackCount },
+    };
+    return this.runBuild;
+  }
+
+  /** Updates the player entity's own normal-attack damage; the sole owner of that combat stat. */
+  setNormalAttackDamage(id: EntityId, damage: number): void {
+    if (!Number.isFinite(damage) || damage < 0) {
+      throw new Error("Normal attack damage must be a non-negative finite number.");
+    }
+    const entity = this.entities.get(id);
+    if (!entity) {
+      throw new Error(`Unknown entity: ${id}`);
+    }
+    this.entities.set(id, { ...entity, normalAttackDamage: damage });
   }
 
   getOccupantAt(cell: Cell): EntityState | undefined {
@@ -1426,6 +1483,8 @@ export class World {
       reservations: this.listReservations(),
       telegraphs: this.listTelegraphs(),
       waveRuntime: this.waveRuntime,
+      runBuild: this.runBuild,
+      pendingReward: this.pendingRewardOffer,
       seed: this.seed,
       lastEvents: this.lastEvents.map((event) => structuredClone(event)),
     };

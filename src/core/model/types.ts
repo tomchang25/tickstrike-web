@@ -199,6 +199,23 @@ export interface WaveRuntimeState {
   readonly pendingBatch?: PendingSpawnBatch;
 }
 
+/** Run-scoped acquired artifact stacks, keyed by artifact ID. The sole source of reward contributions. */
+export interface RunBuildState {
+  readonly stacks: Readonly<Record<string, number>>;
+}
+
+/** One offerable artifact and the stack count the player would reach by selecting it. */
+export interface RewardOfferCard {
+  readonly artifactId: string;
+  readonly resultingStackCount: number;
+}
+
+/** Installed when a wave clears with at least one eligible reward; blocks commands until selected. */
+export interface PendingRewardOffer {
+  readonly waveNumber: number;
+  readonly cards: readonly RewardOfferCard[];
+}
+
 export interface ArenaState {
   readonly width: number;
   readonly height: number;
@@ -218,6 +235,8 @@ export interface WorldSnapshot {
   readonly reservations: readonly Reservation[];
   readonly telegraphs: readonly Telegraph[];
   readonly waveRuntime: WaveRuntimeState | undefined;
+  readonly runBuild: RunBuildState;
+  readonly pendingReward: PendingRewardOffer | undefined;
   readonly seed: number;
   readonly lastEvents: readonly import("../events/combat-events").CombatEvent[];
 }

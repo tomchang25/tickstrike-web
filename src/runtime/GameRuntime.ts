@@ -1,5 +1,6 @@
 import { resolveCommand, type ActionResolution } from "../core/actions/action-resolver";
 import type { GameCommand } from "../core/actions/commands";
+import { resolveRewardSelection, type RewardSelectionResolution } from "../core/actions/wave-phase";
 import type { Cell, WorldSnapshot } from "../core/model/types";
 import type { World } from "../core/world/world";
 import type { TestScenario } from "../harness/types";
@@ -16,8 +17,8 @@ export class GameRuntime {
   private world: World | undefined;
   private scenario: TestScenario | undefined;
   private readonly listeners = new Set<RuntimeListener>();
-  private readonly queuedCommands: QueuedCommand[] = [];
-  private activeCommand: QueuedCommand | undefined;
+  private readonly queuedCommands: QueuedJob[] = [];
+  private activeCommand: QueuedJob | undefined;
   private processingCommands = false;
   private currentGeneration = 0;
 
@@ -70,7 +71,30 @@ export class GameRuntime {
     }
     const generation = this.currentGeneration;
     return new Promise<ActionResolution>((resolve, reject) => {
-      this.queuedCommands.push({ command, generation, resolve, reject });
+      this.queuedCommands.push({ kind: "command", command, generation, resolve, reject });
+      void this.drainCommands();
+    });
+  }
+
+  /**
+   * Serializes a reward-card selection through the same queue as `execute` so it can never race a
+   * queued command. Mutates core state and returns its semantic result with no enemy phase or
+   * presentation timeline — only `emit()` publishes the updated snapshot.
+   */
+  selectReward(artifactId: string): Promise<RewardSelectionResolution> {
+    if (!this.world) {
+      return Promise.reject(new Error("No world loaded."));
+    }
+    if (!this.scenario?.waveContext) {
+      return Promise.resolve({
+        accepted: false,
+        reason: "No reward context available for this scenario.",
+        events: [],
+      });
+    }
+    const generation = this.currentGeneration;
+    return new Promise<RewardSelectionResolution>((resolve, reject) => {
+      this.queuedCommands.push({ kind: "reward", artifactId, generation, resolve, reject });
       void this.drainCommands();
     });
   }
@@ -120,39 +144,55 @@ export class GameRuntime {
         this.activeCommand = job;
 
         try {
-          const resolution = resolveCommand(
-            this.requireWorld(),
-            job.command,
-            this.scenario?.waveContext,
-          );
-
-          if (resolution.accepted) {
-            this.presentation.reserveMotionOwners(resolution.events, job.generation);
-            // The resolver already removed these entities, so capture must precede the
-            // projection that would otherwise reconcile their views away.
-            this.presentation.captureTerminalViews(resolution.events, job.generation);
-          }
-
-          this.emit();
-
-          let presentationDone: Promise<void> | undefined;
-
-          if (resolution.accepted) {
-            presentationDone = this.presentation.play(resolution.events, job.generation);
-            void presentationDone.then(
-              () => this.notifyPresentationSettled(job.generation),
-              () => this.notifyPresentationSettled(job.generation),
+          if (job.kind === "command") {
+            const resolution = resolveCommand(
+              this.requireWorld(),
+              job.command,
+              this.scenario?.waveContext,
             );
-          }
 
-          if (job.generation !== this.currentGeneration) {
-            job.reject(new Error("Command cancelled by scenario replacement."));
+            if (resolution.accepted) {
+              this.presentation.reserveMotionOwners(resolution.events, job.generation);
+              // The resolver already removed these entities, so capture must precede the
+              // projection that would otherwise reconcile their views away.
+              this.presentation.captureTerminalViews(resolution.events, job.generation);
+            }
+
+            this.emit();
+
+            let presentationDone: Promise<void> | undefined;
+
+            if (resolution.accepted) {
+              presentationDone = this.presentation.play(resolution.events, job.generation);
+              void presentationDone.then(
+                () => this.notifyPresentationSettled(job.generation),
+                () => this.notifyPresentationSettled(job.generation),
+              );
+            }
+
+            if (job.generation !== this.currentGeneration) {
+              job.reject(new Error("Command cancelled by scenario replacement."));
+            } else {
+              job.resolve(resolution);
+            }
+
+            if (presentationDone) {
+              await presentationDone;
+            }
           } else {
-            job.resolve(resolution);
-          }
+            // Reward selection never touches the enemy phase or the presentation timeline.
+            const waveContext = this.scenario?.waveContext;
+            const resolution = waveContext
+              ? resolveRewardSelection(this.requireWorld(), job.artifactId, waveContext)
+              : { accepted: false, reason: "No reward context available.", events: [] };
 
-          if (presentationDone) {
-            await presentationDone;
+            this.emit();
+
+            if (job.generation !== this.currentGeneration) {
+              job.reject(new Error("Reward selection cancelled by scenario replacement."));
+            } else {
+              job.resolve(resolution);
+            }
           }
         } catch (error) {
           job.reject(error);
@@ -213,9 +253,20 @@ export class GameRuntime {
   }
 }
 
-interface QueuedCommand {
+interface QueuedCommandJob {
+  readonly kind: "command";
   readonly command: GameCommand;
   readonly generation: number;
   readonly resolve: (resolution: ActionResolution) => void;
   readonly reject: (reason: unknown) => void;
 }
+
+interface QueuedRewardJob {
+  readonly kind: "reward";
+  readonly artifactId: string;
+  readonly generation: number;
+  readonly resolve: (resolution: RewardSelectionResolution) => void;
+  readonly reject: (reason: unknown) => void;
+}
+
+type QueuedJob = QueuedCommandJob | QueuedRewardJob;
