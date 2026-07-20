@@ -42,6 +42,9 @@ Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from 
 
 One line, no rationale, no backing document.
 
+- [model_ownership] Move the wave queue, slot, and admitted-batch shapes into `core/model/types.ts` so the model vocabulary stops importing `core/waves/` and the type cycle disappears
+- [boundary_tooling] Raise the `no-circular` rule to error and drop the swc parser once dependency-cruiser supports TypeScript 7 and can classify type-only imports again
+
 ---
 
 ## Bug
