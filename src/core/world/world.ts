@@ -36,6 +36,7 @@ import {
   type MovementReservationRequest,
   type ReservationDecision,
   type ReservationRequest,
+  type TelegraphInput,
 } from "./grid-board";
 import {
   CombatOperations,
