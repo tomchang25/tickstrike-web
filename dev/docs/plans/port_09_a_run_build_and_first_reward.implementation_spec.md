@@ -42,19 +42,19 @@ The runtime exposes a serialized reward-selection boundary and rejects player co
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| ---- | ----------- | ------- |
-| `src/core/model/types.ts` | Medium | Add run-build and reward snapshot types. |
-| `src/core/world/world.ts` | Medium | Own, clone, apply, and clear build state. |
-| `src/core/rewards/run-build.ts` | Medium | Add pure eligibility, offer, and stack rules. |
-| `src/core/actions/wave-phase.ts` | Medium | Pause at a cleared wave and resume only after selection. |
-| `src/core/actions/action-resolver.ts` | Small | Reject accepted-tick commands during a pending offer. |
-| `src/runtime/GameRuntime.ts` | Medium | Serialize and publish reward selection. |
-| `src/app/App.tsx` | Medium | Render and submit the reward overlay. |
-| `src/app/styles.css` | Medium | Style the accessible reward overlay responsively. |
-| `src/harness/*` | Medium | Provide a deterministic reward-boundary scenario and debug selection API. |
-| `test/unit/core/**` | Large | Cover build, selection, pause, damage, and reset behavior. |
-| `test/e2e/*.spec.ts` | Medium | Assert the visible offer, blocked input, selection, resume, and reset. |
+| File                                  | Change Size | Purpose                                                                   |
+| ------------------------------------- | ----------- | ------------------------------------------------------------------------- |
+| `src/core/model/types.ts`             | Medium      | Add run-build and reward snapshot types.                                  |
+| `src/core/world/world.ts`             | Medium      | Own, clone, apply, and clear build state.                                 |
+| `src/core/rewards/run-build.ts`       | Medium      | Add pure eligibility, offer, and stack rules.                             |
+| `src/core/actions/wave-phase.ts`      | Medium      | Pause at a cleared wave and resume only after selection.                  |
+| `src/core/actions/action-resolver.ts` | Small       | Reject accepted-tick commands during a pending offer.                     |
+| `src/runtime/GameRuntime.ts`          | Medium      | Serialize and publish reward selection.                                   |
+| `src/app/App.tsx`                     | Medium      | Render and submit the reward overlay.                                     |
+| `src/app/styles.css`                  | Medium      | Style the accessible reward overlay responsively.                         |
+| `src/harness/*`                       | Medium      | Provide a deterministic reward-boundary scenario and debug selection API. |
+| `test/unit/core/**`                   | Large       | Cover build, selection, pause, damage, and reset behavior.                |
+| `test/e2e/*.spec.ts`                  | Medium      | Assert the visible offer, blocked input, selection, resume, and reset.    |
 
 ## Execution Outline
 
@@ -72,13 +72,13 @@ The runtime exposes a serialized reward-selection boundary and rejects player co
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| ---- | ----------------- |
-| Player command while card is open | Reject without tick, enemy phase, or wave change. |
-| Selection after reset or scenario replacement | Reject as stale; the replacement snapshot has no offer. |
-| Reset while card is visible | Fresh World has base damage, no stacks, no offer, and no card. |
-| Fixed seed and command sequence | Produces the same offer without changing wave randomness. |
-| `attack_up` has reached its cap | Start the next wave without an offer; never leave the arena paused on an inert card. |
+| Case                                          | Expected Handling                                                                    |
+| --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Player command while card is open             | Reject without tick, enemy phase, or wave change.                                    |
+| Selection after reset or scenario replacement | Reject as stale; the replacement snapshot has no offer.                              |
+| Reset while card is visible                   | Fresh World has base damage, no stacks, no offer, and no card.                       |
+| Fixed seed and command sequence               | Produces the same offer without changing wave randomness.                            |
+| `attack_up` has reached its cap               | Start the next wave without an offer; never leave the arena paused on an inert card. |
 
 ## Acceptance Criteria
 

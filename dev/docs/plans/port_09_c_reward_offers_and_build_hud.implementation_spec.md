@@ -40,18 +40,18 @@ React renders the offer and a compact build HUD from snapshots. The HUD is read-
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| ---- | ----------- | ------- |
-| `src/core/rewards/run-build.ts` | Large | Generate ordinary and milestone offer sets deterministically. |
-| `src/core/model/types.ts` | Small | Carry multi-card offer and HUD snapshot data. |
-| `src/core/actions/wave-phase.ts` | Small | Supply completed-wave cadence to the existing reward boundary. |
-| `src/ui/RewardOverlay.tsx` | Medium | Render selectable accessible cards from snapshots. |
-| `src/ui/RunBuildHud.tsx` | Medium | Render acquired artifacts and stack counts read-only. |
-| `src/app/App.tsx` | Medium | Compose overlay and build HUD with runtime callbacks. |
-| `src/app/styles.css` | Medium | Provide responsive card and HUD layout. |
-| `src/harness/**` | Medium | Expose deterministic offer inspection for browser tests. |
-| `test/unit/core/**` | Large | Assert offer pools, cadence, fallback, and RNG isolation. |
-| `test/e2e/*.spec.ts` | Large | Assert visible cards, HUD, input pause, resume, and teardown. |
+| File                             | Change Size | Purpose                                                        |
+| -------------------------------- | ----------- | -------------------------------------------------------------- |
+| `src/core/rewards/run-build.ts`  | Large       | Generate ordinary and milestone offer sets deterministically.  |
+| `src/core/model/types.ts`        | Small       | Carry multi-card offer and HUD snapshot data.                  |
+| `src/core/actions/wave-phase.ts` | Small       | Supply completed-wave cadence to the existing reward boundary. |
+| `src/ui/RewardOverlay.tsx`       | Medium      | Render selectable accessible cards from snapshots.             |
+| `src/ui/RunBuildHud.tsx`         | Medium      | Render acquired artifacts and stack counts read-only.          |
+| `src/app/App.tsx`                | Medium      | Compose overlay and build HUD with runtime callbacks.          |
+| `src/app/styles.css`             | Medium      | Provide responsive card and HUD layout.                        |
+| `src/harness/**`                 | Medium      | Expose deterministic offer inspection for browser tests.       |
+| `test/unit/core/**`              | Large       | Assert offer pools, cadence, fallback, and RNG isolation.      |
+| `test/e2e/*.spec.ts`             | Large       | Assert visible cards, HUD, input pause, resume, and teardown.  |
 
 ## Execution Outline
 
@@ -69,12 +69,12 @@ React renders the offer and a compact build HUD from snapshots. The HUD is read-
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| ---- | ----------------- |
-| Fewer than three eligible ordinary artifacts | Render only valid, distinct cards. |
-| No eligible Major at a milestone | Fill remaining positions with distinct eligible Minor times-two cards. |
-| Artifact is one stack from its cap | Do not generate a two-stack card that would partially grant. |
-| Reset or scenario replacement while overlay is open | Remove all cards and HUD state from the old run immediately. |
+| Case                                                | Expected Handling                                                      |
+| --------------------------------------------------- | ---------------------------------------------------------------------- |
+| Fewer than three eligible ordinary artifacts        | Render only valid, distinct cards.                                     |
+| No eligible Major at a milestone                    | Fill remaining positions with distinct eligible Minor times-two cards. |
+| Artifact is one stack from its cap                  | Do not generate a two-stack card that would partially grant.           |
+| Reset or scenario replacement while overlay is open | Remove all cards and HUD state from the old run immediately.           |
 
 ## Acceptance Criteria
 

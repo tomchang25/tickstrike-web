@@ -58,7 +58,12 @@ export function buildEnemySpawnInput(request: WaveEnemySpawnRequest): SpawnEntit
     },
     facing: { x: 1, y: 0 },
     ...(guardDefinition
-      ? { guardDefinition: { ...guardDefinition, base: Math.max(1, Math.round(projection.maxGuard)) } }
+      ? {
+          guardDefinition: {
+            ...guardDefinition,
+            base: Math.max(1, Math.round(projection.maxGuard)),
+          },
+        }
       : {}),
   };
 }

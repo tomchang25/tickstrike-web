@@ -15,11 +15,11 @@
 
 ### 1.2 實測數據（2026-07 盤點，port branch）
 
-| 檔案 | 行數 | 內容 |
-| --- | --- | --- |
-| `src/core/world/world.ts` | 1,658 行 / ~97 methods | Entity repository、occupancy、reservation、telegraph、wave、reward、damage、movement、snapshot 全部集中（state 欄位見 world.ts:209-229） |
-| `src/presentation/pixi/PixiGameRenderer.ts` | 1,372 行 | Snapshot 投影與 reconcile |
-| `src/presentation/timelines/PresentationDirector.ts` | 715 行 | 兩個大型 switch，涵蓋 **43 種 CombatEvent**（約 158-533 行） |
+| 檔案                                                 | 行數                   | 內容                                                                                                                                     |
+| ---------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/core/world/world.ts`                            | 1,658 行 / ~97 methods | Entity repository、occupancy、reservation、telegraph、wave、reward、damage、movement、snapshot 全部集中（state 欄位見 world.ts:209-229） |
+| `src/presentation/pixi/PixiGameRenderer.ts`          | 1,372 行               | Snapshot 投影與 reconcile                                                                                                                |
+| `src/presentation/timelines/PresentationDirector.ts` | 715 行                 | 兩個大型 switch，涵蓋 **43 種 CombatEvent**（約 158-533 行）                                                                             |
 
 - 整個 `src/` 約 13,000 行，三個中樞檔佔近 3,800 行 ≈ **29% 的 codebase 是中央調度**。
 - Charge Enemy 一個 vertical slice 觸及 **~31 個檔案**（source + asset + scenario + test）；純 runtime 部分約 10–14 個檔案。
@@ -140,10 +140,10 @@ Replay 前提：`初始狀態 + 相同指令序列 → 必然相同結果`。Rol
 
 ### 4.3 成功度量（檔案預算）
 
-| 變更類型 | 允許觸及的主要檔案數 |
-| --- | --- |
-| 新敵人，沿用既有 behavior（改數值/外觀） | **2–4 個** |
-| 全新 enemy behavior | **4–7 個**（且全部在該 feature 自己的模組內 + 註冊點一行） |
+| 變更類型                                 | 允許觸及的主要檔案數                                       |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| 新敵人，沿用既有 behavior（改數值/外觀） | **2–4 個**                                                 |
+| 全新 enemy behavior                      | **4–7 個**（且全部在該 feature 自己的模組內 + 註冊點一行） |
 
 超出預算 = 架構回歸，當 bug 處理。
 
@@ -247,13 +247,13 @@ World（facade 暫留）
 
 ### A7. 測試分級制度（取代已刪除的 completion contract）
 
-| 變更類型 | 驗收要求 |
-| --- | --- |
-| 新敵人數值/外觀，沿用既有 behavior | Content/schema test；必要時 sprite test |
-| 新 enemy behavior | Behavior unit test + 一個 deterministic scenario |
-| 新 browser-visible integration | 共用 Playwright scenario（驗系統能力，不逐 content variant 重複） |
-| 新 terminal / multi-entity animation | Presentation unit + Playwright cleanup 斷言 |
-| 新全域系統 | 完整 vertical slice |
+| 變更類型                             | 驗收要求                                                          |
+| ------------------------------------ | ----------------------------------------------------------------- |
+| 新敵人數值/外觀，沿用既有 behavior   | Content/schema test；必要時 sprite test                           |
+| 新 enemy behavior                    | Behavior unit test + 一個 deterministic scenario                  |
+| 新 browser-visible integration       | 共用 Playwright scenario（驗系統能力，不逐 content variant 重複） |
+| 新 terminal / multi-entity animation | Presentation unit + Playwright cleanup 斷言                       |
+| 新全域系統                           | 完整 vertical slice                                               |
 
 **原則**：Playwright 驗證「系統能力」，不為每個 content variant 重複一套；按新增風險決定驗收層級。
 
@@ -292,11 +292,11 @@ Entity 是有生命週期、有行為的物件並自持 view；component 是普�
 
 ### 6.3 選型時的判斷矩陣
 
-| 未來需求 | 傾向 |
-| --- | --- |
-| Replay / rollback / lockstep / 大量同質單位批次處理 | B-1（或停在 Phase A） |
-| 數十隻以內、每隻有明確個性的敵人；不做 netcode | B-2 可考慮 |
-| 兩者皆非、Phase A 後已不痛 | **停在 Phase A，不做 Phase B** |
+| 未來需求                                            | 傾向                           |
+| --------------------------------------------------- | ------------------------------ |
+| Replay / rollback / lockstep / 大量同質單位批次處理 | B-1（或停在 Phase A）          |
+| 數十隻以內、每隻有明確個性的敵人；不做 netcode      | B-2 可考慮                     |
+| 兩者皆非、Phase A 後已不痛                          | **停在 Phase A，不做 Phase B** |
 
 ### 6.4 Phase B 無論選哪個形態都不做的事
 
@@ -308,15 +308,15 @@ Entity 是有生命週期、有行為的物件並自持 view；component 是普�
 
 ## 7. 決策記錄摘要（ADR-style）
 
-| # | 決策 | 理由 | 狀態 |
-| --- | --- | --- | --- |
-| D1 | 病因判定為 change amplification（中央 dispatch + 多重翻譯 + port-era 驗收合約），非 PixiJS | §1–§2 實測 | 定案 |
-| D2 | 刪除 port-era feature completion contract，改分級驗收（§5.7） | 合約是 port 驗證的暫時規範 | 已執行（AGENTS.md 已刪該段） |
-| D3 | Phase A：保留 deterministic 邊界，按 feature 去中央化 | 三方共識；風險最低且直接命中痛點 | 待執行 |
-| D4 | Phase B 延後，雙 gate 決策；B-1/B-2 二選一或不做 | §3.2 可證偽檢驗 + §3.4 代價分析 | 延後 |
-| D5 | 本專案不遷移 Phaser；下一款另議 | 換框架不消除規範造成的架構形狀 | 定案 |
-| D6 | Gameplay 永不 await 動畫；terminal detached view 原則保留 | 格子規則要求邏輯立即定案 | 定案（不變式） |
-| D7 | Semantic events 保留；Snapshot 重定位為 read model / serializer | 多實體位移不可從最終 snapshot 還原 | 定案 |
+| #   | 決策                                                                                       | 理由                               | 狀態                         |
+| --- | ------------------------------------------------------------------------------------------ | ---------------------------------- | ---------------------------- |
+| D1  | 病因判定為 change amplification（中央 dispatch + 多重翻譯 + port-era 驗收合約），非 PixiJS | §1–§2 實測                         | 定案                         |
+| D2  | 刪除 port-era feature completion contract，改分級驗收（§5.7）                              | 合約是 port 驗證的暫時規範         | 已執行（AGENTS.md 已刪該段） |
+| D3  | Phase A：保留 deterministic 邊界，按 feature 去中央化                                      | 三方共識；風險最低且直接命中痛點   | 待執行                       |
+| D4  | Phase B 延後，雙 gate 決策；B-1/B-2 二選一或不做                                           | §3.2 可證偽檢驗 + §3.4 代價分析    | 延後                         |
+| D5  | 本專案不遷移 Phaser；下一款另議                                                            | 換框架不消除規範造成的架構形狀     | 定案                         |
+| D6  | Gameplay 永不 await 動畫；terminal detached view 原則保留                                  | 格子規則要求邏輯立即定案           | 定案（不變式）               |
+| D7  | Semantic events 保留；Snapshot 重定位為 read model / serializer                            | 多實體位移不可從最終 snapshot 還原 | 定案                         |
 
 ---
 

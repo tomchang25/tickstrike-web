@@ -42,21 +42,21 @@ The current Child A worktree implements a minimal build with artifact-ID stack c
 
 ## Files to Change
 
-| File | Change Size | Purpose |
-| ---- | ----------- | ------- |
-| `src/core/rewards/run-build.ts` | Large | Classify supported effects, update trigger state, and filter Mobility-incompatible candidates. |
-| `src/core/model/types.ts` | Medium | Extend run-build snapshot state with acquired triggers. |
-| `src/core/world/world.ts` | Medium | Add validated effective-stat mutations for channel application. |
-| `src/core/actions/wave-phase.ts` | Medium | Replace Child A's inline normal-damage branch with the selected-artifact transaction. |
-| `src/core/actions/action-preview.ts` | Medium | Project Guard Shredder and Execution into Dash previews from run-build triggers. |
-| `src/core/actions/player-actions.ts` | Medium | Commit trigger-adjusted Dash previews through the existing event path. |
-| `src/harness/fixtures/reward-arena.ts` | Medium | Supply deterministic supported-effect offer contexts. |
-| `src/harness/scenarios/rewards.scenario.ts` | Small | Register deterministic effect coverage without a second runtime. |
-| `test/unit/core/rewards/run-build.test.ts` | Large | Assert effect classification, trigger ownership, Mobility eligibility, and deferred exclusions. |
-| `test/unit/core/actions/action-preview.test.ts` | Medium | Assert qualifying and non-qualifying Dash trigger previews. |
-| `test/unit/core/actions/wave-phase.test.ts` | Large | Assert each selection applies its effect atomically and preserves Child A's pause/resume contract. |
-| `test/unit/core/world/world.test.ts` | Medium | Assert maximum-health and configured-Mobility mutations. |
-| `test/e2e/rewards.spec.ts` | Large | Assert supported effects through the same visible reward overlay and arena. |
+| File                                            | Change Size | Purpose                                                                                            |
+| ----------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| `src/core/rewards/run-build.ts`                 | Large       | Classify supported effects, update trigger state, and filter Mobility-incompatible candidates.     |
+| `src/core/model/types.ts`                       | Medium      | Extend run-build snapshot state with acquired triggers.                                            |
+| `src/core/world/world.ts`                       | Medium      | Add validated effective-stat mutations for channel application.                                    |
+| `src/core/actions/wave-phase.ts`                | Medium      | Replace Child A's inline normal-damage branch with the selected-artifact transaction.              |
+| `src/core/actions/action-preview.ts`            | Medium      | Project Guard Shredder and Execution into Dash previews from run-build triggers.                   |
+| `src/core/actions/player-actions.ts`            | Medium      | Commit trigger-adjusted Dash previews through the existing event path.                             |
+| `src/harness/fixtures/reward-arena.ts`          | Medium      | Supply deterministic supported-effect offer contexts.                                              |
+| `src/harness/scenarios/rewards.scenario.ts`     | Small       | Register deterministic effect coverage without a second runtime.                                   |
+| `test/unit/core/rewards/run-build.test.ts`      | Large       | Assert effect classification, trigger ownership, Mobility eligibility, and deferred exclusions.    |
+| `test/unit/core/actions/action-preview.test.ts` | Medium      | Assert qualifying and non-qualifying Dash trigger previews.                                        |
+| `test/unit/core/actions/wave-phase.test.ts`     | Large       | Assert each selection applies its effect atomically and preserves Child A's pause/resume contract. |
+| `test/unit/core/world/world.test.ts`            | Medium      | Assert maximum-health and configured-Mobility mutations.                                           |
+| `test/e2e/rewards.spec.ts`                      | Large       | Assert supported effects through the same visible reward overlay and arena.                        |
 
 ## Execution Outline
 
@@ -76,14 +76,14 @@ The current Child A worktree implements a minimal build with artifact-ID stack c
 
 ## Edge Cases
 
-| Case | Expected Handling |
-| ---- | ----------------- |
-| Maximum-health reward while injured | Increase current HP by the gained maximum amount, capped at new maximum. |
+| Case                                     | Expected Handling                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Maximum-health reward while injured      | Increase current HP by the gained maximum amount, capped at new maximum.                   |
 | Cooldown reward while cooldown is active | Preserve remaining cooldown; subsequent Mobility use applies the reduced configured value. |
-| Artifact requires Dash on a Smash player | Exclude it before offer generation; do not create a disabled card. |
-| Guard Shredder on front or side Dash hit | Use ordinary guard calculation. |
-| Execution on a non-staggered target | Use ordinary Dash damage and terminal rules. |
-| Viking run | Dash-only majors remain ineligible. |
+| Artifact requires Dash on a Smash player | Exclude it before offer generation; do not create a disabled card.                         |
+| Guard Shredder on front or side Dash hit | Use ordinary guard calculation.                                                            |
+| Execution on a non-staggered target      | Use ordinary Dash damage and terminal rules.                                               |
+| Viking run                               | Dash-only majors remain ineligible.                                                        |
 
 ## Acceptance Criteria
 

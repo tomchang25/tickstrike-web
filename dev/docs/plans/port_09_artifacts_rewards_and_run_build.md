@@ -22,11 +22,11 @@ Reward randomness uses a dedicated deterministic stream, independent of wave com
 
 ### Delivery Sequence
 
-| Child | Focus | Current document |
-| ----- | ----- | ---------------- |
-| A | Run-owned build, one deterministic `attack_up` offer, selection pause, and reset-safe reward UI | [Draft Implementation Spec](port_09_a_run_build_and_first_reward.implementation_spec.md) |
-| B | Shared artifact-effect application for the supported channels plus Guard Shredder and Execution | [Draft Implementation Spec](port_09_b_uniform_artifact_effects.implementation_spec.md) |
-| C | Three-card offers, milestone cadence, compact build HUD, and full reward-flow browser acceptance | [Draft Implementation Spec](port_09_c_reward_offers_and_build_hud.implementation_spec.md) |
+| Child | Focus                                                                                            | Current document                                                                          |
+| ----- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| A     | Run-owned build, one deterministic `attack_up` offer, selection pause, and reset-safe reward UI  | [Draft Implementation Spec](port_09_a_run_build_and_first_reward.implementation_spec.md)  |
+| B     | Shared artifact-effect application for the supported channels plus Guard Shredder and Execution  | [Draft Implementation Spec](port_09_b_uniform_artifact_effects.implementation_spec.md)    |
+| C     | Three-card offers, milestone cadence, compact build HUD, and full reward-flow browser acceptance | [Draft Implementation Spec](port_09_c_reward_offers_and_build_hud.implementation_spec.md) |
 
 Child A proves the state and pause boundary with one visible effect before the effect surface expands. Child B makes supported artifacts use one acquisition and projection path, rather than adding per-artifact state owners. Child C turns the proved boundary into the regular reward cadence and exposes the acquired build without taking ownership away from the runtime.
 
