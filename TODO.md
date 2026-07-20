@@ -30,7 +30,6 @@ Nothing currently in progress.
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_08_waves] Feed authored waves and spawn warnings into the same world and Tick boundary - [ref plans/port_08_authored_waves_spawning_and_enemy_levels.md]
 - [port_09_rewards] Add deterministic reward selection and run-scoped build effects to the same arena - [ref plans/port_09_artifacts_rewards_and_run_build.md]
 - [port_10_run] Connect wave completion, rewards, death, restart, and the milestone branch through the same runtime - [ref plans/port_10_complete_run_lifecycle.md]
 - [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
@@ -106,6 +105,10 @@ Evaluate curse offer APIs, terrain mutation APIs, music and UI-audio capabilitie
 ### Future Mobility-Specific Major Effects
 
 Expand Dash and Smash with additional Mobility-specific Major effects after Ninja and Viking parity proves class eligibility and runtime seams. Future effects must remain tied to the active class Mobility rather than restoring generic payload replacement.
+
+### Chain Dash Route Rework
+
+Keep `chain_dash` as validated but unavailable authored content until its replacement is designed. The approved direction is a player-directed multi-target Dash route that automatically resolves Slash-style Dash hits from A to B to C, never targets the same enemy twice within one route, and defines its route selection, legality, timing, cooldown, interruption, preview, and presentation rules before implementation. The reference cooldown-clear and prepared free-action behavior remains deferred with the future Speed action model.
 
 ### Player Baseline Balance Pass
 
