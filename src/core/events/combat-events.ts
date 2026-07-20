@@ -207,6 +207,40 @@ export type CombatEvent =
       readonly telegraph?: Telegraph;
       readonly sourceId: string;
       readonly cleared: boolean;
+    }
+  | {
+      readonly type: "wave_started";
+      readonly waveNumber: number;
+    }
+  | {
+      readonly type: "wave_group_warned";
+      readonly waveNumber: number;
+      readonly slotIndex: number;
+      readonly sourceId: string;
+      readonly cells: readonly Cell[];
+      readonly warningTicks: number;
+    }
+  | {
+      readonly type: "wave_group_spawned";
+      readonly waveNumber: number;
+      readonly slotIndex: number;
+      readonly spawns: readonly { entityId: EntityId; cell: Cell; level: number }[];
+    }
+  | {
+      readonly type: "wave_group_requeued";
+      readonly waveNumber: number;
+      readonly slotIndex: number;
+      readonly memberCount: number;
+    }
+  | {
+      readonly type: "wave_group_deferred";
+      readonly waveNumber: number;
+      readonly slotIndex: number;
+      readonly reason: "population-headroom" | "placement-failed";
+    }
+  | {
+      readonly type: "wave_cleared";
+      readonly waveNumber: number;
     };
 
 export interface DamageEvent {

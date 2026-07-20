@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { resolveCommand } from "../../../../src/core/actions/action-resolver";
 import { commandConsumesTime, type GameCommand } from "../../../../src/core/actions/commands";
+import type { WavePhaseContext } from "../../../../src/core/actions/wave-phase";
+import type {
+  GrowthCurve,
+  SpawnGroupDefinition,
+  WaveDefinition,
+  WaveProgressionProfile,
+} from "../../../../src/core/content/wave-schema";
+import { createInitialSlotStates } from "../../../../src/core/waves/wave-scheduler";
 import { createFoundationArena } from "../../../../src/harness/fixtures/shipped-arena";
 import { createTrainingArena } from "../../../../src/harness/fixtures/training-arena";
 
@@ -687,5 +695,139 @@ describe("playable encounter outcomes", () => {
     expect(defeated.requireEntity("player")).toMatchObject({ hp: 0, phase: "dead" });
     expect(lastEvents.map((event) => event.type)).toContain("player_died");
     expect(lastEvents).toContainEqual({ type: "encounter_ended", outcome: "defeat" });
+  });
+});
+
+describe("wave phase wiring in the accepted-command path", () => {
+  const zeroCurve: GrowthCurve = {
+    standardCoefficient: 0,
+    standardExponent: 1,
+    lethalCoefficient: 0,
+    lethalExponent: 1,
+  };
+  const profile: WaveProgressionProfile = {
+    lethalLevelStart: 10,
+    hpCurve: zeroCurve,
+    damageCurve: zeroCurve,
+    defenseCurve: zeroCurve,
+    guardGrowth: { basis: "base-wave", standardWaveLimit: 20, lethalTierCadence: 5 },
+  };
+  const groups: readonly SpawnGroupDefinition[] = [
+    {
+      id: "grunt-group",
+      placementStrategy: "scatter",
+      compositionMode: "fixed",
+      weightedTotalCount: 0,
+      entries: [{ enemyId: "grunt", count: 1 }],
+    },
+  ];
+  const wave: WaveDefinition = {
+    id: "w1",
+    populationCap: 5,
+    slots: [
+      {
+        spawnGroupId: "grunt-group",
+        startCondition: "immediate-overlap",
+        survivorThreshold: 0,
+        warningTicks: 0,
+        levelOffset: 0,
+        isBoss: false,
+      },
+    ],
+  };
+  const waveContext: WavePhaseContext = {
+    groups,
+    progressionProfile: profile,
+    waveFor: (waveNumber) => (waveNumber === 1 ? wave : undefined),
+    buildEnemySpawnInput: (request) => ({
+      id: request.id,
+      kind: "enemy",
+      archetype: request.enemyId,
+      cell: request.cell,
+      hp: 10,
+    }),
+  };
+
+  it("runs the wave phase after the enemy phase and splices its events before encounter_ended", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+    });
+    const random = () => world.random.get("waves").nextUnit();
+    world.setWave(1, createInitialSlotStates(wave, groups, 1, random));
+
+    const result = resolveCommand(
+      world,
+      { type: "move", actorId: "player", direction: { x: 1, y: 0 } },
+      waveContext,
+    );
+
+    expect(result.accepted).toBe(true);
+    const types = result.events.map((event) => event.type);
+    const commandIndex = types.indexOf("command_resolved");
+    const waveIndex = types.indexOf("wave_group_spawned");
+    const advancedIndex = types.indexOf("world_advanced");
+    expect(commandIndex).toBeLessThan(waveIndex);
+    expect(waveIndex).toBeLessThan(advancedIndex);
+    expect(
+      world.listEntities().filter((entity) => entity.id.startsWith("wave-")),
+    ).toHaveLength(1);
+  });
+
+  it("leaves a scenario with no wave context byte-for-byte unchanged (legacy no-op)", () => {
+    const world = createFoundationArena();
+    const result = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.events.some((event) => event.type.startsWith("wave_"))).toBe(false);
+    expect(world.waveRuntime).toBeUndefined();
+  });
+
+  it("does not declare victory from a false-empty board while a wave is still producing", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+    });
+    const twoWaveContext: WavePhaseContext = {
+      ...waveContext,
+      waveFor: (waveNumber) => (waveNumber <= 2 ? wave : undefined),
+    };
+    const random = () => world.random.get("waves").nextUnit();
+    world.setWave(1, createInitialSlotStates(wave, groups, 1, random));
+
+    const spawnResult = resolveCommand(
+      world,
+      { type: "move", actorId: "player", direction: { x: 1, y: 0 } },
+      twoWaveContext,
+    );
+    expect(world.outcome).toBe("running");
+
+    const spawnedId = world
+      .listEntities()
+      .find((entity) => entity.id.startsWith("wave-"))!.id;
+    world.setPhase(spawnedId, "dead");
+
+    const clearResult = resolveCommand(
+      world,
+      { type: "move", actorId: "player", direction: { x: -1, y: 0 } },
+      twoWaveContext,
+    );
+
+    // The board is empty here (wave 1 cleared, wave 2 not yet admitted) but the run is not over.
+    expect(clearResult.events.map((event) => event.type)).toContain("wave_cleared");
+    expect(world.outcome).toBe("running");
+    expect(spawnResult.events.some((event) => event.type === "encounter_ended")).toBe(false);
   });
 });

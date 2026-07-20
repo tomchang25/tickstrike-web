@@ -346,7 +346,13 @@ export class World {
     return this.currentOutcome;
   }
 
-  updateEncounterOutcome(): EncounterOutcome | undefined {
+  /**
+   * `waveGate`, when supplied, replaces the terminal-enemy scan for victory rather than merely
+   * suppressing it — it is the sole victory signal for a wave-driven world, so it still declares
+   * victory once Child C1 removes terminal entities and the terminal scan would otherwise never
+   * fire again.
+   */
+  updateEncounterOutcome(waveGate?: { readonly victoryReady: boolean }): EncounterOutcome | undefined {
     if (this.currentOutcome !== "running") {
       return undefined;
     }
@@ -355,6 +361,14 @@ export class World {
     if (player && player.phase !== "alive") {
       this.currentOutcome = "defeat";
       return this.currentOutcome;
+    }
+
+    if (waveGate) {
+      if (waveGate.victoryReady) {
+        this.currentOutcome = "victory";
+        return this.currentOutcome;
+      }
+      return undefined;
     }
 
     const enabledEnemies = [...this.entities.values()].filter(

@@ -332,6 +332,99 @@ describe("wave runtime state", () => {
   });
 });
 
+describe("wave-gated encounter outcome", () => {
+  it("does not declare victory from a terminal enemy when a wave gate is supplied", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "enemy-thrust",
+      kind: "enemy",
+      archetype: "thrust",
+      cell: { x: 4, y: 2 },
+      hp: 10,
+      enemyAction: {
+        role: "thrust",
+        attackId: "thrust",
+        damage: 10,
+        warningTicks: 2,
+        recoveryTicks: 2,
+        offsets: [{ x: 1, y: 0 }],
+      },
+      facing: { x: 1, y: 0 },
+    });
+    world.applyDamage("enemy-thrust", 100);
+
+    expect(world.updateEncounterOutcome({ victoryReady: false })).toBeUndefined();
+    expect(world.outcome).toBe("running");
+  });
+
+  it("declares victory from victoryReady alone, even with no enabled enemies in the map", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+    });
+
+    expect(world.updateEncounterOutcome({ victoryReady: true })).toBe("victory");
+    expect(world.outcome).toBe("victory");
+  });
+
+  it("still declares defeat first, before consulting the wave gate", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 10,
+    });
+    world.applyDamage("player", 10);
+
+    expect(world.updateEncounterOutcome({ victoryReady: true })).toBe("defeat");
+    expect(world.outcome).toBe("defeat");
+  });
+
+  it("preserves the legacy terminal-enemy scan when no wave gate is supplied", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "enemy-thrust",
+      kind: "enemy",
+      archetype: "thrust",
+      cell: { x: 4, y: 2 },
+      hp: 10,
+      enemyAction: {
+        role: "thrust",
+        attackId: "thrust",
+        damage: 10,
+        warningTicks: 2,
+        recoveryTicks: 2,
+        offsets: [{ x: 1, y: 0 }],
+      },
+      facing: { x: 1, y: 0 },
+    });
+    world.applyDamage("enemy-thrust", 100);
+
+    expect(world.updateEncounterOutcome()).toBe("victory");
+    expect(world.outcome).toBe("victory");
+  });
+});
+
 const chargeAction: EnemyActionDefinition = {
   role: "charge",
   attackId: "charge",

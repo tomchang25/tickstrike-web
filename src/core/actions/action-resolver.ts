@@ -1,5 +1,7 @@
 import type { CombatEvent } from "../events/combat-events";
 import type { World } from "../world/world";
+import type { WavePhaseContext } from "./wave-phase";
+import { resolveWavePhase } from "./wave-phase";
 import type { GameCommand } from "./commands";
 import { resolveEnemyPhase } from "./enemy-phase";
 import { resolvePlayerAction } from "./player-actions";
@@ -15,11 +17,15 @@ function finishAccepted(
   world: World,
   command: GameCommand,
   events: readonly CombatEvent[],
+  waveContext: WavePhaseContext | undefined,
 ): ActionResolution {
   const advanced = world.advancePlayerAction();
   const enemyEvents = resolveEnemyPhase(world);
   world.clearMobilityInvulnerability(command.actorId);
-  const outcome = world.updateEncounterOutcome();
+  const waveResult = resolveWavePhase(world, waveContext);
+  const outcome = world.updateEncounterOutcome(
+    world.waveRuntime ? { victoryReady: waveResult.victoryReady } : undefined,
+  );
   const completeEvents: CombatEvent[] = [
     {
       type: "command_resolved",
@@ -29,6 +35,7 @@ function finishAccepted(
     },
     ...events,
     ...enemyEvents,
+    ...waveResult.events,
     ...(outcome && outcome !== "running" ? [{ type: "encounter_ended", outcome } as const] : []),
     advanced,
   ];
@@ -40,7 +47,11 @@ function finishAccepted(
   };
 }
 
-export function resolveCommand(world: World, command: GameCommand): ActionResolution {
+export function resolveCommand(
+  world: World,
+  command: GameCommand,
+  waveContext?: WavePhaseContext,
+): ActionResolution {
   if (world.outcome !== "running") {
     return { accepted: false, consumedTime: false, reason: "Encounter has ended.", events: [] };
   }
@@ -55,5 +66,5 @@ export function resolveCommand(world: World, command: GameCommand): ActionResolu
     };
   }
 
-  return finishAccepted(world, command, playerResult.events);
+  return finishAccepted(world, command, playerResult.events, waveContext);
 }
