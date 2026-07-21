@@ -1,6 +1,7 @@
 import type { GameCommand } from "@core/actions/commands";
-import type { Cell, EntityState, WorldSnapshot } from "@core/model/types";
+import type { Cell, EntityState, MilestoneChoice, WorldSnapshot } from "@core/model/types";
 import type { GameRuntime } from "@runtime/game-runtime";
+import type { RunCommandLog } from "@runtime/command-log";
 import type { ContentInspection } from "./content-inspection";
 import { requireScenario, scenarios } from "./scenario-registry";
 
@@ -17,6 +18,9 @@ export interface TickstrikeDebugApi {
   getContentInspection(): ContentInspection | undefined;
   execute(command: GameCommand): Promise<void>;
   selectReward(artifactId: string): Promise<void>;
+  selectMilestoneDecision(choice: MilestoneChoice): Promise<void>;
+  exportCommandLog(): RunCommandLog;
+  replayCommandLog(log: RunCommandLog): Promise<void>;
 }
 
 declare global {
@@ -42,6 +46,13 @@ export function installDebugApi(runtime: GameRuntime): () => void {
     },
     selectReward: async (artifactId) => {
       await runtime.selectReward(artifactId);
+    },
+    selectMilestoneDecision: async (choice) => {
+      await runtime.selectMilestoneDecision(choice);
+    },
+    exportCommandLog: () => runtime.exportCommandLog(),
+    replayCommandLog: async (log) => {
+      await runtime.replayCommandLog(requireScenario(log.scenarioId), log);
     },
   };
 

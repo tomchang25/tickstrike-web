@@ -1,12 +1,18 @@
 import { resolveCommand, type ActionResolution } from "@core/actions/action-resolver";
 import type { GameCommand } from "@core/actions/commands";
-import { resolveRewardSelection, type RewardSelectionResolution } from "@core/actions/wave-phase";
-import type { Cell, WorldSnapshot } from "@core/model/types";
+import {
+  resolveMilestoneDecision,
+  resolveRewardSelection,
+  type MilestoneDecisionResolution,
+  type RewardSelectionResolution,
+} from "@core/actions/wave-phase";
+import type { Cell, MilestoneChoice, Seed, WorldSnapshot } from "@core/model/types";
 import type { World } from "@core/world/world";
 import type { TestScenario } from "@harness/types";
 import type { ContentInspection } from "@harness/content-inspection";
 import { PixiGameRenderer, type ScreenBounds } from "@presentation/pixi/pixi-game-renderer";
 import { PresentationDirector } from "@presentation/timelines/presentation-director";
+import { cloneCommandLog, type RunCommandLog, type RunCommandLogEntry } from "./command-log";
 
 export type RuntimeListener = (snapshot: WorldSnapshot) => void;
 
@@ -21,6 +27,7 @@ export class GameRuntime {
   private activeCommand: QueuedJob | undefined;
   private processingCommands = false;
   private currentGeneration = 0;
+  private commandLog: MutableRunCommandLog = { scenarioId: "", seed: undefined, entries: [] };
 
   get generation(): number {
     return this.currentGeneration;
@@ -44,6 +51,7 @@ export class GameRuntime {
     this.invalidateWork("Scenario replaced.");
     this.scenario = scenario;
     this.world = scenario.createWorld(scenario.seed);
+    this.commandLog = { scenarioId: scenario.id, seed: scenario.seed, entries: [] };
     this.presentation.setGeneration(this.currentGeneration);
     this.renderer.sync(this.world.snapshot());
     this.emit();
@@ -97,6 +105,62 @@ export class GameRuntime {
       this.queuedCommands.push({ kind: "reward", artifactId, generation, resolve, reject });
       void this.drainCommands();
     });
+  }
+
+  /**
+   * Serializes a milestone End Run / Continue Endless decision through the same queue as `execute`
+   * and `selectReward`. Mutates core through `resolveMilestoneDecision` with no enemy phase or
+   * presentation timeline; only `emit()` publishes the updated snapshot.
+   */
+  selectMilestoneDecision(choice: MilestoneChoice): Promise<MilestoneDecisionResolution> {
+    if (!this.world) {
+      return Promise.reject(new Error("No world loaded."));
+    }
+    if (!this.scenario?.waveContext) {
+      return Promise.resolve({
+        accepted: false,
+        reason: "No milestone context available for this scenario.",
+        events: [],
+      });
+    }
+    const generation = this.currentGeneration;
+    return new Promise<MilestoneDecisionResolution>((resolve, reject) => {
+      this.queuedCommands.push({ kind: "milestone", choice, generation, resolve, reject });
+      void this.drainCommands();
+    });
+  }
+
+  /** A mutation-safe copy of the current run's accepted-input log. */
+  exportCommandLog(): RunCommandLog {
+    return cloneCommandLog(this.commandLog);
+  }
+
+  /**
+   * Rebuilds the run from `log.seed` and re-drives every recorded entry through the same public
+   * entrances that recorded it, reproducing the run's final snapshot. Takes the already-resolved
+   * scenario because `src/runtime` may not import the harness scenario registry; the debug API
+   * resolves `log.scenarioId`. Throws if a replayed entry is rejected, signaling a stale log.
+   */
+  async replayCommandLog(scenario: TestScenario, log: RunCommandLog): Promise<WorldSnapshot> {
+    this.loadScenario({ ...scenario, seed: log.seed });
+    for (const entry of log.entries) {
+      const resolution = await this.replayEntry(entry);
+      if (!resolution.accepted) {
+        throw new Error(`Replay entry (${entry.kind}) was rejected: ${resolution.reason ?? "unknown"}`);
+      }
+    }
+    return this.snapshot();
+  }
+
+  private replayEntry(entry: RunCommandLogEntry): Promise<{ readonly accepted: boolean; readonly reason?: string }> {
+    switch (entry.kind) {
+      case "command":
+        return this.execute(entry.command);
+      case "reward":
+        return this.selectReward(entry.artifactId);
+      case "milestone":
+        return this.selectMilestoneDecision(entry.choice);
+    }
   }
 
   snapshot(): WorldSnapshot {
@@ -169,13 +233,16 @@ export class GameRuntime {
             if (job.generation !== this.currentGeneration) {
               job.reject(new Error("Command cancelled by scenario replacement."));
             } else {
+              if (resolution.accepted) {
+                this.commandLog.entries.push({ kind: "command", command: structuredClone(job.command) });
+              }
               job.resolve(resolution);
             }
 
             if (presentationDone) {
               await presentationDone;
             }
-          } else {
+          } else if (job.kind === "reward") {
             // Reward selection never touches the enemy phase or the presentation timeline.
             const waveContext = this.scenario?.waveContext;
             const resolution = waveContext
@@ -187,6 +254,26 @@ export class GameRuntime {
             if (job.generation !== this.currentGeneration) {
               job.reject(new Error("Reward selection cancelled by scenario replacement."));
             } else {
+              if (resolution.accepted) {
+                this.commandLog.entries.push({ kind: "reward", artifactId: job.artifactId });
+              }
+              job.resolve(resolution);
+            }
+          } else {
+            // Milestone decision never touches the enemy phase or the presentation timeline.
+            const waveContext = this.scenario?.waveContext;
+            const resolution = waveContext
+              ? resolveMilestoneDecision(this.requireWorld(), job.choice, waveContext)
+              : { accepted: false, reason: "No milestone context available.", events: [] };
+
+            this.emit();
+
+            if (job.generation !== this.currentGeneration) {
+              job.reject(new Error("Milestone decision cancelled by scenario replacement."));
+            } else {
+              if (resolution.accepted) {
+                this.commandLog.entries.push({ kind: "milestone", choice: job.choice });
+              }
               job.resolve(resolution);
             }
           }
@@ -265,4 +352,19 @@ interface QueuedRewardJob {
   readonly reject: (reason: unknown) => void;
 }
 
-type QueuedJob = QueuedCommandJob | QueuedRewardJob;
+interface QueuedMilestoneJob {
+  readonly kind: "milestone";
+  readonly choice: MilestoneChoice;
+  readonly generation: number;
+  readonly resolve: (resolution: MilestoneDecisionResolution) => void;
+  readonly reject: (reason: unknown) => void;
+}
+
+type QueuedJob = QueuedCommandJob | QueuedRewardJob | QueuedMilestoneJob;
+
+/** The runtime's mutable working copy of the run log; `RunCommandLog` is the exported readonly view. */
+interface MutableRunCommandLog {
+  scenarioId: string;
+  seed: Seed | undefined;
+  entries: RunCommandLogEntry[];
+}
