@@ -28,11 +28,11 @@ The mixer exposes three volume controls — Master, Effect, and Music — where 
 
 ### Child decomposition
 
-| Child | Focus                                                                                                     | Current document form                                                          |
-| ----- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 12.1  | Audio engine: WebAudio mixer, gesture unlock, Master/Effect/Music volume, and per-cue rate limiting       | Implementation spec: port_12_01_audio_engine.implementation_spec.md            |
-| 12.2  | Event-to-cue delivery: cue registry, reference SFX assets, and an audio director on the same event stream | Implementation spec: port_12_02_event_cue_delivery.implementation_spec.md      |
-| 12.3  | Teardown completeness and full-run verification of cue coverage and orphan-free stop                      | Plan child; create a verified implementation spec immediately before execution |
+| Child | Focus                                                                                                     | Current document form                                                            |
+| ----- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 12.1  | Audio engine: WebAudio mixer, gesture unlock, Master/Effect/Music volume, and per-cue rate limiting       | Implementation spec: port_12_01_audio_engine.implementation_spec.md              |
+| 12.2  | Event-to-cue delivery: cue registry, reference SFX assets, and an audio director on the same event stream | Implementation spec: port_12_02_event_cue_delivery.implementation_spec.md        |
+| 12.3  | Teardown completeness and full-run verification of cue coverage and orphan-free stop                      | Implementation spec: port_12_03_teardown_and_verification.implementation_spec.md |
 
 Recommended landing order is 12.1, 12.2, then 12.3.
 

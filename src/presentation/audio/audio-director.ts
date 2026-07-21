@@ -32,6 +32,15 @@ const HIT_FEEDBACK: Partial<Record<CombatEvent["type"], { readonly cue: CueId; r
   enemy_damaged: { cue: "damaged", rank: 2 },
 };
 
+/**
+ * Every event type that produces a cue, for coverage checks that must classify a run's events as
+ * audible or intentionally silent without duplicating the mapping above.
+ */
+export const AUDIBLE_EVENT_TYPES: ReadonlySet<CombatEvent["type"]> = new Set([
+  ...(Object.keys(EVENT_CUES) as CombatEvent["type"][]),
+  ...(Object.keys(HIT_FEEDBACK) as CombatEvent["type"][]),
+]);
+
 export interface AudioDirectorOptions {
   /** Injected so tests are deterministic; drives stream choice and pitch. Defaults to `Math.random`. */
   readonly random?: () => number;

@@ -30,4 +30,8 @@ test("a combat event plays an audio cue after the first gesture", async ({ page 
       { timeout: 10000 },
     )
     .toBeGreaterThan(0);
+
+  // A reset stops every voice, leaving no orphan audio source.
+  await page.evaluate(() => window.__TICKSTRIKE__!.reset());
+  expect(await page.evaluate(() => window.__TICKSTRIKE__!.getAudioActiveVoices())).toBe(0);
 });

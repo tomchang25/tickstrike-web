@@ -321,6 +321,24 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     };
   }, []);
 
+  // Pause audio while the tab is hidden and resume it on return. Separate from the input layer's own
+  // visibility handler; both suspend/resume are guarded no-ops before the context is unlocked.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      const runtime = runtimeRef.current;
+      if (!runtime) {
+        return;
+      }
+      if (document.visibilityState === "hidden") {
+        runtime.audio.suspend();
+      } else {
+        runtime.audio.resume();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
   useEffect(() => {
     const runtime = runtimeRef.current;
     if (!runtime || !snapshot) {

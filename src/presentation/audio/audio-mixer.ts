@@ -104,6 +104,20 @@ export class AudioMixer {
     }
   }
 
+  /** Suspends the running context so audio pauses (e.g. tab hidden). No-op before unlock. */
+  suspend(): void {
+    if (this.context && this.context.state === "running") {
+      void this.context.suspend();
+    }
+  }
+
+  /** Resumes a suspended context (e.g. tab visible again). No-op before unlock or when running. */
+  resume(): void {
+    if (this.context && this.context.state === "suspended") {
+      void this.context.resume();
+    }
+  }
+
   /** Records the given volumes and applies any that map to a live gain node. Safe before unlock. */
   setVolumes(volumes: Partial<AudioMixerVolumes>): void {
     if (volumes.master !== undefined) {

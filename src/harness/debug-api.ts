@@ -17,6 +17,7 @@ export interface TickstrikeDebugApi {
   isWalkable(cell: Cell): boolean;
   getContentInspection(): ContentInspection | undefined;
   getAudioPlayCount(): number;
+  getAudioActiveVoices(): number;
   execute(command: GameCommand): Promise<void>;
   selectReward(artifactId: string): Promise<void>;
   selectMilestoneDecision(choice: MilestoneChoice): Promise<void>;
@@ -44,6 +45,7 @@ export function installDebugApi(runtime: GameRuntime): () => void {
     isWalkable: (cell) => runtime.isWalkable(cell),
     getContentInspection: () => runtime.getContentInspection(),
     getAudioPlayCount: () => runtime.audio.totalPlayed,
+    getAudioActiveVoices: () => runtime.audio.activeVoiceCount,
     execute: async (command) => {
       await runtime.execute(command);
     },

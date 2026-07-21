@@ -45,6 +45,7 @@ class FakeContext {
   state: "suspended" | "running" | "closed" = "suspended";
   readonly destination = { id: "destination" };
   resumeCalls = 0;
+  suspendCalls = 0;
   closeCalls = 0;
   readonly gains: FakeGain[] = [];
   readonly sources: FakeSource[] = [];
@@ -73,6 +74,11 @@ class FakeContext {
   async resume(): Promise<void> {
     this.resumeCalls += 1;
     this.state = "running";
+  }
+
+  async suspend(): Promise<void> {
+    this.suspendCalls += 1;
+    this.state = "suspended";
   }
 
   async close(): Promise<void> {
@@ -254,6 +260,29 @@ describe("AudioMixer", () => {
     // The limiter was cleared, so the previously saturated key may fire again.
     mixer.play({ buffer, limiterKey: "hit", maxPerWindow: 1, windowSec: 1 });
     expect(mixer.activeVoiceCount).toBe(1);
+  });
+
+  it("suspends and resumes only a matching context state", () => {
+    const { mixer, context } = createMixer();
+
+    // Before unlock there is no context; both are guarded no-ops.
+    mixer.suspend();
+    mixer.resume();
+    expect(context.suspendCalls).toBe(0);
+    expect(context.resumeCalls).toBe(0);
+
+    mixer.unlock();
+    expect(context.state).toBe("running");
+
+    mixer.suspend();
+    expect(context.suspendCalls).toBe(1);
+    expect(context.state).toBe("suspended");
+    // Suspending an already-suspended context does nothing.
+    mixer.suspend();
+    expect(context.suspendCalls).toBe(1);
+
+    mixer.resume();
+    expect(context.state).toBe("running");
   });
 
   it("closes the context on dispose and returns to the pre-unlock state", () => {
