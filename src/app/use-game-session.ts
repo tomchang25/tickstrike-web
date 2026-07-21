@@ -309,7 +309,7 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
       if (!runtime) {
         return;
       }
-      runtime.audio.unlock();
+      runtime.unlockAudio();
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
     };

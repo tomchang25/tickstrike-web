@@ -14,6 +14,7 @@ class FakeSource {
   started = false;
   stopped = false;
   connectedTo: unknown = undefined;
+  readonly playbackRate = { value: 1 };
 
   connect(target: unknown): void {
     this.connectedTo = target;
@@ -169,6 +170,18 @@ describe("AudioMixer", () => {
 
     mixer.play({ buffer, bus: "music" });
     expect(at(context.sources, 1).connectedTo).toBe(at(context.gains, MUSIC));
+  });
+
+  it("applies playback rate and counts every started voice", () => {
+    const { mixer, context, buffer } = createMixer();
+    mixer.unlock();
+
+    mixer.play({ buffer, playbackRate: 1.2 });
+    expect(at(context.sources, 0).playbackRate.value).toBe(1.2);
+    expect(mixer.totalPlayed).toBe(1);
+
+    mixer.play({ buffer });
+    expect(mixer.totalPlayed).toBe(2);
   });
 
   it("inserts a per-voice gain when the cue carries its own volume", () => {

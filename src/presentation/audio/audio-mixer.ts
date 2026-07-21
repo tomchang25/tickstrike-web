@@ -19,6 +19,8 @@ export interface AudioCue {
   readonly windowSec?: number;
   /** Per-cue linear attenuation `0..1`, layered under the bus gain. Defaults to `1`. */
   readonly volume?: number;
+  /** Source playback rate; doubles as pitch. Defaults to `1`. */
+  readonly playbackRate?: number;
 }
 
 export interface AudioMixerOptions {
@@ -49,6 +51,7 @@ export class AudioMixer {
   private readonly volumes = { master: 1, effect: 1, music: 1 };
   private readonly activeVoices = new Set<AudioBufferSourceNode>();
 
+  private playCount = 0;
   private context: AudioContext | undefined;
   private masterGain: GainNode | undefined;
   private busGains: Record<AudioBus, GainNode> | undefined;
@@ -65,6 +68,20 @@ export class AudioMixer {
 
   get isUnlocked(): boolean {
     return this.context !== undefined;
+  }
+
+  /** Cumulative count of voices actually started; surfaced for browser verification. */
+  get totalPlayed(): number {
+    return this.playCount;
+  }
+
+  /** Decodes encoded audio bytes through the live context, or resolves undefined without one. */
+  async decode(bytes: ArrayBuffer): Promise<AudioBuffer | undefined> {
+    const context = this.context;
+    if (!context) {
+      return undefined;
+    }
+    return context.decodeAudioData(bytes);
   }
 
   /**
@@ -131,6 +148,9 @@ export class AudioMixer {
 
     const source = context.createBufferSource();
     source.buffer = cue.buffer;
+    if (cue.playbackRate !== undefined) {
+      source.playbackRate.value = cue.playbackRate;
+    }
     source.connect(this.voiceDestination(context, busGains[cue.bus ?? "effect"], cue.volume));
 
     this.activeVoices.add(source);
@@ -138,6 +158,7 @@ export class AudioMixer {
       this.activeVoices.delete(source);
       source.disconnect();
     };
+    this.playCount += 1;
     source.start();
   }
 

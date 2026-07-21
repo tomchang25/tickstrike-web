@@ -11,6 +11,7 @@ import type { Cell, MilestoneChoice, Seed, WorldSnapshot } from "@core/model/typ
 import type { World } from "@core/world/world";
 import type { TestScenario } from "@harness/types";
 import type { ContentInspection } from "@harness/content-inspection";
+import { AudioDirector } from "@presentation/audio/audio-director";
 import { AudioMixer } from "@presentation/audio/audio-mixer";
 import { PixiGameRenderer, type ScreenBounds } from "@presentation/pixi/pixi-game-renderer";
 import { PresentationDirector } from "@presentation/timelines/presentation-director";
@@ -22,6 +23,7 @@ export class GameRuntime {
   readonly renderer = new PixiGameRenderer();
   readonly presentation = new PresentationDirector(this.renderer);
   readonly audio = new AudioMixer();
+  readonly audioDirector = new AudioDirector(this.audio);
 
   private world: World | undefined;
   private scenario: TestScenario | undefined;
@@ -42,6 +44,15 @@ export class GameRuntime {
 
   async mount(host: HTMLElement): Promise<void> {
     await this.renderer.mount(host);
+  }
+
+  /**
+   * Unlocks the audio context on a user gesture and kicks the one-time cue load so buffers are ready
+   * before combat. Coordinates the runtime's two audio owners (mixer and director) from one seam.
+   */
+  unlockAudio(): void {
+    this.audio.unlock();
+    void this.audioDirector.load();
   }
 
   destroy(): void {
@@ -271,6 +282,7 @@ export class GameRuntime {
             let presentationDone: Promise<void> | undefined;
 
             if (resolution.accepted) {
+              this.audioDirector.play(resolution.events);
               presentationDone = this.presentation.play(resolution.events, job.generation);
               void presentationDone.then(
                 () => this.notifyPresentationSettled(job.generation),
@@ -303,6 +315,7 @@ export class GameRuntime {
               job.reject(new Error("Reward selection cancelled by scenario replacement."));
             } else {
               if (resolution.accepted) {
+                this.audioDirector.play(resolution.events);
                 this.commandLog.entries.push({ kind: "reward", artifactId: job.artifactId });
               }
               job.resolve(resolution);

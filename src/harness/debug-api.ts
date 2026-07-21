@@ -16,6 +16,7 @@ export interface TickstrikeDebugApi {
   getEntityBounds(id: string): ReturnType<GameRuntime["getEntityBounds"]>;
   isWalkable(cell: Cell): boolean;
   getContentInspection(): ContentInspection | undefined;
+  getAudioPlayCount(): number;
   execute(command: GameCommand): Promise<void>;
   selectReward(artifactId: string): Promise<void>;
   selectMilestoneDecision(choice: MilestoneChoice): Promise<void>;
@@ -42,6 +43,7 @@ export function installDebugApi(runtime: GameRuntime): () => void {
     getEntityBounds: (id) => runtime.getEntityBounds(id),
     isWalkable: (cell) => runtime.isWalkable(cell),
     getContentInspection: () => runtime.getContentInspection(),
+    getAudioPlayCount: () => runtime.audio.totalPlayed,
     execute: async (command) => {
       await runtime.execute(command);
     },
