@@ -39,8 +39,25 @@ export interface PointerInputBinding {
 
 export interface InputPresentationHooks {
   applyFacing(direction: Cell): void;
-  drawPreview(): void;
+  drawPreview(model: PointerPreviewModel): void;
   clearPreview(): void;
+}
+
+/**
+ * The computed preview the {@link PreviewPainter} renders. It carries the
+ * accepted flags and geometry the controller derived from core `action-preview`
+ * plus the resolved pointer mode, mobility, and armed-smash flag, so the painter
+ * decides nothing.
+ */
+export interface PointerPreviewModel {
+  readonly pointerMode: PointerMode;
+  readonly mobility: MobilityKind;
+  readonly armedSmash: boolean;
+  readonly attack: AttackPreview | undefined;
+  readonly smash: SmashPreview | undefined;
+  readonly dash: DashPreview | undefined;
+  readonly retainedDash: DashPreview | undefined;
+  readonly victims: readonly PreviewVictimMarker[];
 }
 
 /**
@@ -72,32 +89,21 @@ export class InputController {
     private readonly hooks: InputPresentationHooks,
   ) {}
 
-  get pointerMode(): PointerMode {
-    return this.mode;
-  }
-
   get playerFacing(): Cell {
     return this.facing;
   }
 
-  get attackPreview(): AttackPreview | undefined {
-    return this.attack;
-  }
-
-  get dashPreview(): DashPreview | undefined {
-    return this.dash;
-  }
-
-  get retainedDashPreview(): DashPreview | undefined {
-    return this.retainedDash;
-  }
-
-  get smashPreview(): SmashPreview | undefined {
-    return this.smash;
-  }
-
-  get victimPreviewMarkers(): readonly PreviewVictimMarker[] {
-    return this.victims;
+  private previewModel(): PointerPreviewModel {
+    return {
+      pointerMode: this.mode,
+      mobility: this.activeMobility(),
+      armedSmash: Boolean(this.snapshot()?.armedSmashTarget),
+      attack: this.attack,
+      smash: this.smash,
+      dash: this.dash,
+      retainedDash: this.retainedDash,
+      victims: this.victims,
+    };
   }
 
   setPointerMode(mode: PointerMode): void {
@@ -263,7 +269,7 @@ export class InputController {
     }
   }
 
-  activeMobility(): MobilityKind {
+  private activeMobility(): MobilityKind {
     return (
       this.snapshot()?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash"
     );
@@ -306,7 +312,7 @@ export class InputController {
       }
       this.smash = previewSmash(snapshot, player.id, snapshot.armedSmashTarget);
       this.victims = previewSmashVictimMarkers(this.smash);
-      this.hooks.drawPreview();
+      this.hooks.drawPreview(this.previewModel());
       return;
     }
 
@@ -323,7 +329,7 @@ export class InputController {
     if (this.mode === "attack" && !snapshot.armedSmashTarget) {
       this.attack = previewAttack(snapshot, player.id, direction);
       this.victims = previewAttackVictimMarkers(this.attack);
-      this.hooks.drawPreview();
+      this.hooks.drawPreview(this.previewModel());
       return;
     }
 
@@ -344,7 +350,7 @@ export class InputController {
       );
       this.victims = previewSmashVictimMarkers(this.smash);
     }
-    this.hooks.drawPreview();
+    this.hooks.drawPreview(this.previewModel());
   }
 
   private pointerToCell(event: PointerEvent): Cell | undefined {
