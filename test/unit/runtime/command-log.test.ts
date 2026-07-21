@@ -8,6 +8,7 @@ const SAMPLE: RunCommandLog = {
     { kind: "command", command: { type: "move", actorId: "player", direction: { x: 1, y: 0 } } },
     { kind: "reward", artifactId: "attack_up" },
     { kind: "milestone", choice: "continue-endless" },
+    { kind: "cancel" },
   ],
 };
 

@@ -1,5 +1,6 @@
 import { resolveCommand, type ActionResolution } from "@core/actions/action-resolver";
 import type { GameCommand } from "@core/actions/commands";
+import { resolveSmashCancel, type SmashCancelResolution } from "@core/actions/player-actions";
 import {
   resolveMilestoneDecision,
   resolveRewardSelection,
@@ -155,6 +156,23 @@ export class GameRuntime {
     }));
   }
 
+  /**
+   * Serializes a windup cancel through the same queue as every other input. Clears an armed Smash
+   * through `resolveSmashCancel` with no waveContext, enemy phase, or presentation timeline; only
+   * `emit()` publishes the updated snapshot. Rejects at the resolver when nothing is armed.
+   */
+  cancelArmedSmash(): Promise<SmashCancelResolution> {
+    if (!this.world) {
+      return Promise.reject(new Error("No world loaded."));
+    }
+    return this.submit<SmashCancelResolution>((resolve, reject, generation) => ({
+      kind: "cancel",
+      generation,
+      resolve,
+      reject,
+    }));
+  }
+
   /** A mutation-safe copy of the current run's accepted-input log. */
   exportCommandLog(): RunCommandLog {
     return cloneCommandLog(this.commandLog);
@@ -185,6 +203,8 @@ export class GameRuntime {
         return this.selectReward(entry.artifactId);
       case "milestone":
         return this.selectMilestoneDecision(entry.choice);
+      case "cancel":
+        return this.cancelArmedSmash();
     }
   }
 
@@ -284,7 +304,7 @@ export class GameRuntime {
               }
               job.resolve(resolution);
             }
-          } else {
+          } else if (job.kind === "milestone") {
             // Milestone decision never touches the enemy phase or the presentation timeline.
             const waveContext = this.scenario?.waveContext;
             const resolution = waveContext
@@ -298,6 +318,20 @@ export class GameRuntime {
             } else {
               if (resolution.accepted) {
                 this.commandLog.entries.push({ kind: "milestone", choice: job.choice });
+              }
+              job.resolve(resolution);
+            }
+          } else {
+            // Windup cancel needs no waveContext and never touches the enemy phase or presentation.
+            const resolution = resolveSmashCancel(this.requireWorld());
+
+            this.emit();
+
+            if (job.generation !== this.currentGeneration) {
+              job.reject(new Error("Windup cancel cancelled by scenario replacement."));
+            } else {
+              if (resolution.accepted) {
+                this.commandLog.entries.push({ kind: "cancel" });
               }
               job.resolve(resolution);
             }
@@ -385,7 +419,14 @@ interface QueuedMilestoneJob {
   readonly reject: (reason: unknown) => void;
 }
 
-type QueuedJob = QueuedCommandJob | QueuedRewardJob | QueuedMilestoneJob;
+interface QueuedCancelJob {
+  readonly kind: "cancel";
+  readonly generation: number;
+  readonly resolve: (resolution: SmashCancelResolution) => void;
+  readonly reject: (reason: unknown) => void;
+}
+
+type QueuedJob = QueuedCommandJob | QueuedRewardJob | QueuedMilestoneJob | QueuedCancelJob;
 
 /** The runtime's mutable working copy of the run log; `RunCommandLog` is the exported readonly view. */
 interface MutableRunCommandLog {

@@ -19,6 +19,7 @@ export interface TickstrikeDebugApi {
   execute(command: GameCommand): Promise<void>;
   selectReward(artifactId: string): Promise<void>;
   selectMilestoneDecision(choice: MilestoneChoice): Promise<void>;
+  cancelArmedSmash(): Promise<void>;
   exportCommandLog(): RunCommandLog;
   replayCommandLog(log: RunCommandLog): Promise<void>;
 }
@@ -49,6 +50,9 @@ export function installDebugApi(runtime: GameRuntime): () => void {
     },
     selectMilestoneDecision: async (choice) => {
       await runtime.selectMilestoneDecision(choice);
+    },
+    cancelArmedSmash: async () => {
+      await runtime.cancelArmedSmash();
     },
     exportCommandLog: () => runtime.exportCommandLog(),
     replayCommandLog: async (log) => {

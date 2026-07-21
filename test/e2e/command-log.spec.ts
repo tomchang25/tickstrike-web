@@ -109,3 +109,34 @@ test("records accepted commands and a reward, clears on reset, and replays to an
   const replayed = await readState(page);
   expect(replayed).toEqual(recorded);
 });
+
+test("records a windup cancel that leaves the Tick unchanged and replays identically", async ({ page }) => {
+  await page.goto("/debug?scenario=smash-water");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+
+  // Arm a Smash windup, then cancel it directly.
+  await page.evaluate(() =>
+    window.__TICKSTRIKE__!.execute({ type: "smash", actorId: "player", target: { x: 4, y: 3 } }),
+  );
+  const armed = await readState(page);
+  expect(armed.armedSmashTarget).toEqual({ x: 4, y: 3 });
+  const tickAfterArm = armed.tick;
+
+  await page.evaluate(() => window.__TICKSTRIKE__!.cancelArmedSmash());
+  const cancelled = await readState(page);
+  expect(cancelled.armedSmashTarget).toBeUndefined();
+  expect(cancelled.tick).toBe(tickAfterArm);
+
+  const log = await page.evaluate(() => window.__TICKSTRIKE__!.exportCommandLog());
+  expect(log.scenarioId).toBe("smash-water");
+  expect(log.entries.some((entry) => entry.kind === "command")).toBe(true);
+  expect(log.entries.some((entry) => entry.kind === "cancel")).toBe(true);
+
+  const recorded = await readState(page);
+  await page.evaluate(async (replayLog) => {
+    await window.__TICKSTRIKE__!.replayCommandLog(replayLog);
+  }, log);
+  const replayed = await readState(page);
+  expect(replayed).toEqual(recorded);
+});

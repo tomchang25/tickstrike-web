@@ -400,3 +400,36 @@ export function resolvePlayerAction(context: PlayerActionContext, command: GameC
       return resolveSmash(context, command);
   }
 }
+
+/**
+ * The narrow capability handle {@link resolveSmashCancel} receives. Like the reward and milestone
+ * resolvers, cancel is driven directly by the runtime queue rather than through the action resolver,
+ * so it records its own event instead of returning it up to `finishAccepted`. `World` satisfies this
+ * structurally.
+ */
+export interface SmashCancelWorld {
+  readonly armedSmashTarget: Cell | undefined;
+  clearArmedSmash(): void;
+  recordEvents(events: readonly CombatEvent[]): void;
+}
+
+export interface SmashCancelResolution {
+  readonly accepted: boolean;
+  readonly reason?: string;
+  readonly events: readonly CombatEvent[];
+}
+
+/**
+ * Clears an armed Smash windup without spending a Tick or running any phase. The player returns to
+ * idle and the cancel is published as a `smash_cancelled` event; rejects when nothing is armed.
+ */
+export function resolveSmashCancel(world: SmashCancelWorld): SmashCancelResolution {
+  const armedTarget = world.armedSmashTarget;
+  if (!armedTarget) {
+    return { accepted: false, reason: "No armed Smash to cancel.", events: [] };
+  }
+  world.clearArmedSmash();
+  const events: CombatEvent[] = [{ type: "smash_cancelled", target: armedTarget }];
+  world.recordEvents(events);
+  return { accepted: true, events };
+}

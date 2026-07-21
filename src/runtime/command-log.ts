@@ -1,11 +1,15 @@
 import type { GameCommand } from "@core/actions/commands";
 import type { MilestoneChoice, Seed } from "@core/model/types";
 
-/** One accepted input in a run: a gameplay command, a reward selection, or a milestone decision. */
+/**
+ * One accepted input in a run: a gameplay command, a reward selection, a milestone decision, or a
+ * windup cancel. The cancel carries no payload — a run has at most one armed Smash at a time.
+ */
 export type RunCommandLogEntry =
   | { readonly kind: "command"; readonly command: GameCommand }
   | { readonly kind: "reward"; readonly artifactId: string }
-  | { readonly kind: "milestone"; readonly choice: MilestoneChoice };
+  | { readonly kind: "milestone"; readonly choice: MilestoneChoice }
+  | { readonly kind: "cancel" };
 
 /**
  * An append-only record of a single run's accepted inputs, plus the scenario identity and seed
@@ -27,6 +31,8 @@ function cloneEntry(entry: RunCommandLogEntry): RunCommandLogEntry {
       return { kind: "reward", artifactId: entry.artifactId };
     case "milestone":
       return { kind: "milestone", choice: entry.choice };
+    case "cancel":
+      return { kind: "cancel" };
   }
 }
 

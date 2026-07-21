@@ -161,6 +161,10 @@ export type CombatEvent =
       readonly cell: Cell;
     }
   | {
+      readonly type: "smash_cancelled";
+      readonly target: Cell;
+    }
+  | {
       readonly type: "enemy_crushed";
       readonly enemyId: EntityId;
       readonly cell: Cell;
