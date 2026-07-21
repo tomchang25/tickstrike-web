@@ -35,21 +35,21 @@ Use one fixed deterministic scenario:
 
 ## Ordered Plans
 
-| Plan | Focus                                  | Result in the same Tick Arena                                                                               |
-| ---- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 02   | Deterministic arena and runtime seam   | A resettable board with one player and three enemy fixtures.                                                |
-| 03   | Player verbs and Tick boundary         | Move, Normal Attack, Dash, accepted/rejected commands, and one-tick advancement.                            |
-| 04   | Basic enemy tick combat and Guard      | Thrust/Slash HP, tick actions, locked attacks, directional Guard, presentation, and browser acceptance.     |
-| 05   | First playable Tick Arena              | Encounter win, defeat, restart, terminal presentation, and cleanup form one playable loop.                  |
-| 06   | Mobility combat refinement             | Dash and Smash extend the existing combat rules without changing the entry point.                           |
-| 07   | Additional enemies                     | Ranged and later roles reuse the same activity and navigation contracts; no role-specific runtime.          |
-| 08   | Waves and spawning                     | Authored waves and spawn warnings feed the same world and Tick boundary.                                    |
-| 09   | Rewards and run build                  | Rewards modify the existing player state after an encounter; no parallel combat state.                      |
-| 10   | Run lifecycle                          | Start, wave completion, death, restart, and the endless branch reuse the same runtime.                      |
-| 11   | Production shell                       | HUD, input, settings, and debug controls project the existing runtime.                                      |
-| 12   | Audio delivery                         | Event-driven combat audio with safe unlock, volume, rate limits, and teardown on the same path.             |
-| 13   | Reference visual parity and polish     | The same Tick Arena matches the audited reference board, entities, feedback, HUD, and presentation quality. |
-| 14   | Platform and release hardening         | Responsive behavior, shell lifecycle, teardown, and browser/Windows packaging validate the same path.       |
+| Plan | Focus                                | Result in the same Tick Arena                                                                               |
+| ---- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| 02   | Deterministic arena and runtime seam | A resettable board with one player and three enemy fixtures.                                                |
+| 03   | Player verbs and Tick boundary       | Move, Normal Attack, Dash, accepted/rejected commands, and one-tick advancement.                            |
+| 04   | Basic enemy tick combat and Guard    | Thrust/Slash HP, tick actions, locked attacks, directional Guard, presentation, and browser acceptance.     |
+| 05   | First playable Tick Arena            | Encounter win, defeat, restart, terminal presentation, and cleanup form one playable loop.                  |
+| 06   | Mobility combat refinement           | Dash and Smash extend the existing combat rules without changing the entry point.                           |
+| 07   | Additional enemies                   | Ranged and later roles reuse the same activity and navigation contracts; no role-specific runtime.          |
+| 08   | Waves and spawning                   | Authored waves and spawn warnings feed the same world and Tick boundary.                                    |
+| 09   | Rewards and run build                | Rewards modify the existing player state after an encounter; no parallel combat state.                      |
+| 10   | Run lifecycle                        | Start, wave completion, death, restart, and the endless branch reuse the same runtime.                      |
+| 11   | Production shell                     | HUD, input, settings, and debug controls project the existing runtime.                                      |
+| 12   | Audio delivery                       | Event-driven combat audio with safe unlock, volume, rate limits, and teardown on the same path.             |
+| 13   | Reference visual parity and polish   | The same Tick Arena matches the audited reference board, entities, feedback, HUD, and presentation quality. |
+| 14   | Platform and release hardening       | Responsive behavior, shell lifecycle, teardown, and browser/Windows packaging validate the same path.       |
 
 ## Done When
 
