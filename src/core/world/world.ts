@@ -100,6 +100,27 @@ export interface AttackResolutionTransaction {
   commit(): StagedAttackResolutionCommit;
 }
 
+/**
+ * The world's read model: entity queries, geometry, tick, and outcome, with no
+ * mutation. Per-phase contexts (hardening spec d) compose this with the narrow
+ * subsystem handles a phase is allowed to mutate, so a phase declares exactly
+ * the capabilities it uses and physically cannot reach the rest of `World`.
+ * `World` implements this structurally; it re-types existing facade reads and
+ * adds no method. Lives here, not in `actions/`, so `World` can implement it
+ * without a world -> actions import cycle.
+ */
+export interface WorldView {
+  getEntity(id: EntityId): EntityState | undefined;
+  requireEntity(id: EntityId): EntityState;
+  listEntities(): readonly EntityState[];
+  listActiveEntities(): readonly EntityState[];
+  readonly playerCell: Cell | undefined;
+  readonly armedSmashTarget: Cell | undefined;
+  readonly arena: ArenaState;
+  readonly tick: number;
+  readonly outcome: EncounterOutcome;
+}
+
 function cloneCell(cell: Cell): Cell {
   return { x: cell.x, y: cell.y };
 }
@@ -146,7 +167,7 @@ function hasDuplicateCells(cells: readonly Cell[]): boolean {
   return keys.size !== cells.length;
 }
 
-export class World {
+export class World implements WorldView {
   readonly arena: ArenaState;
   readonly seed: number;
   readonly rootSeed: number;
@@ -154,10 +175,16 @@ export class World {
   readonly streams: RandomStreams;
 
   private readonly geometry: Arena;
-  private readonly board: GridBoard;
-  private readonly combat: CombatOperations;
-  private readonly waves = new WaveRuntime();
-  private readonly run = new RunBuild();
+  /**
+   * Composed subsystems, exposed as readonly capability handles so a per-phase
+   * context (hardening spec d) can hand a phase the narrow subsystem it mutates
+   * instead of the whole facade. The facade delegations stay for existing
+   * callers, tests, and the harness.
+   */
+  readonly board: GridBoard;
+  readonly combat: CombatOperations;
+  readonly waves = new WaveRuntime();
+  readonly run = new RunBuild();
   private readonly entities = new Map<EntityId, EntityState>();
   private currentPlayerCell: Cell | undefined;
   private currentArmedSmashTarget: Cell | undefined;
