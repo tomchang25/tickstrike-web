@@ -124,6 +124,12 @@ Platform owns adapters for browser capabilities, Tauri, Steam, filesystem, cloud
 
 Shared is an exception for source with demonstrated cross-feature ownership and no more precise owner. Do not use it as a default location or a miscellaneous directory.
 
+## Enforcement
+
+The per-layer import boundaries above are machine-checked by `npm run check:boundaries` (dependency-cruiser, configured in `.dependency-cruiser.cjs`), which runs inside `npm run check`. The cruise freezes the cross-layer dependency set measured at adoption: `core` reaches nothing outward, and each other layer imports only within its recorded set. Widening a boundary means editing both this prose and the rule file in the same change; a rule the prose does not describe, or prose the rule does not enforce, is the drift this pairing exists to prevent. Cross-layer imports use the `@layer/*` path aliases so a boundary crossing is visible in the import specifier itself.
+
+`npm run check:unused` (knip) reports dead files, exports, and dependencies. It runs in report mode and does not yet gate `check`; see `dev/docs/plans/engineering_hardening.md` for the burn-down.
+
 ## Placement Test
 
 Before adding or moving a project file:

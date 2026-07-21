@@ -8,12 +8,14 @@ An enemy is described in exactly one feature module under `src/content/enemies/f
 
 Never add role or profile branching to `enemy-phase`, `world`, `PresentationDirector`, or `PixiGameRenderer`. These hubs hold no per-feature knowledge; features reach them only through the registries above.
 
+Registry-only access is machine-checked by `npm run check:boundaries`: outside each registry's own directory, only its `index.ts` may be imported, so reaching past a behavior, presenter, or feature registry fails `npm run check`. Keep this prose and `.dependency-cruiser.cjs` in step when the seams change.
+
 The same pattern is planned for the character axis; see `dev/docs/plans/character_featurization_and_viking_split.md` before starting character-scoped work.
 
 ## File budget
 
 A new enemy reusing an existing behavior touches at most 2–4 files; a new behavior touches 4–7. Exceeding the budget is an architecture regression — fix the seam instead of spreading the feature.
 
-## Pending ownership work
+## World subsystem ownership
 
-`world.ts` is scheduled for a subsystem split; read `dev/docs/plans/gameplay_architecture_refactor_a6_world_ownership_split.implementation_spec.md` before restructuring anything inside `src/core/world/`.
+`world.ts` composes four subsystems, each owning one kind of state: `GridBoard` (space), `CombatOperations` (enemy combat lifecycle), `WaveRuntime` (wave progression), `RunBuild` (artifact build and pending reward). They are wired in `World`'s constructor and must not import one another — `check:boundaries` enforces this, with the single recorded exception that `combat-operations` may reach `grid-board` for spatial answers. Add new mutable gameplay state to the subsystem that owns its concern, not to the `World` facade. Background and the delegation audit are in `dev/docs/plans/gameplay_architecture_refactor_a6_world_ownership_split.implementation_spec.md`.
