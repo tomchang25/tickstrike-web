@@ -34,6 +34,14 @@ Use Node.js 22.12 or newer with the npm lockfile. Run `npm install` when depende
 
 Use the default command timeout for unit and build checks. Browser checks may use Playwright's configured test and server timeouts; do not replace readiness with arbitrary sleeps.
 
+## Browser Acceptance Run Policy
+
+CI runs the full Chromium suite on every push and pull request; a full local `npm run test:e2e` run duplicates that gate and is reserved for at most one closeout run per spec or plan — or skipped entirely in favor of CI. It is never a per-commit or per-step gate.
+
+Per-commit browser verification uses a targeted selection covering the changed behavior — `npx playwright test -g "<test name>"` or `npx playwright test <file>.spec.ts:<line>` — kept to a handful of tests. When a plan or spec says "e2e green after each commit", satisfy it with the targeted selection locally and let CI cover the full suite after push.
+
+A PreToolUse hook in `.claude/settings.json` (`.claude/hooks/block-full-e2e.mjs`) mechanically rejects unfiltered `test:e2e` and `playwright test` commands; keep this policy and that hook in step.
+
 ## Determining A Result
 
 A layer passes or fails according to the exit status of its command, never according to a filtered view of its output. Piping a verification command into `grep`, `tail`, or `head` replaces its exit status with the filter's, so the failure signal is discarded and a summary line such as `25 passed` can be read while the `3 failed` line above it is not. When a summary is wanted, let the command complete and establish its exit status first, then read the output separately.

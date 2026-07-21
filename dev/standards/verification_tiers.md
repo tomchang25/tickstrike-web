@@ -12,6 +12,10 @@ Scope verification to the risk of the change; never run the full vertical slice 
 
 Playwright verifies system capabilities, not per-content variants.
 
+## Browser suite scope
+
+The table's Playwright rows name which capability needs a scenario, not how often the suite runs. Per-commit verification runs only a targeted selection (`npx playwright test -g "<test name>"` or `<file>.spec.ts:<line>`); the full `npm run test:e2e` suite runs in CI on every push and locally at most once per spec, at closeout. The operational contract and its enforcing hook live in `dev/agent_rules/test_operations.md`.
+
 ## Determinism goldens
 
 `test/unit/determinism/` runs the Charge, rewards, and waves scenarios through a fixed command script and compares each accepted flag, the full ordered semantic-event stream, and the final snapshot against a committed golden under `__golden__/`. A normal run — `npm test`, `npm run check`, CI — only asserts and never rewrites a golden, so a divergence stays red until a human resolves it.
