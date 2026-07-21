@@ -8,14 +8,10 @@ import {
 
 describe("pointer aim", () => {
   it("converts a CSS-scaled canvas point to a grid cell", () => {
-    expect(
-      screenPointToCell(
-        { x: 90, y: 132 },
-        { left: 10, top: 20, width: 384, height: 384 },
-        768,
-        768,
-      ),
-    ).toEqual({ x: 2, y: 3 });
+    expect(screenPointToCell({ x: 90, y: 132 }, { left: 10, top: 20, width: 384, height: 384 }, 768, 768)).toEqual({
+      x: 2,
+      y: 3,
+    });
   });
 
   it("uses the dominant cardinal direction and last aim for ambiguous deltas", () => {
@@ -32,12 +28,7 @@ describe("pointer aim", () => {
 
   it("rejects points outside the canvas rectangle", () => {
     expect(
-      screenPointToCell(
-        { x: 394, y: 244 },
-        { left: 10, top: 20, width: 384, height: 384 },
-        768,
-        768,
-      ),
+      screenPointToCell({ x: 394, y: 244 }, { left: 10, top: 20, width: 384, height: 384 }, 768, 768),
     ).toBeUndefined();
   });
 });

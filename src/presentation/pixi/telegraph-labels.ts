@@ -29,9 +29,7 @@ const CORNER_OFFSETS: readonly Cell[] = [
   { x: -0.3, y: 0.3 },
 ];
 
-export function aggregateTelegraphLabels(
-  sources: readonly TelegraphLabelSource[],
-): readonly TelegraphCellSummary[] {
+export function aggregateTelegraphLabels(sources: readonly TelegraphLabelSource[]): readonly TelegraphCellSummary[] {
   const cells = new Map<string, { readonly cell: Cell; readonly counts: Map<number, number> }>();
 
   for (const source of sources) {
@@ -57,9 +55,7 @@ export function aggregateTelegraphLabels(
 
   return [...cells.values()].map(({ cell, counts }) => ({
     cell,
-    entries: [...counts.entries()]
-      .sort(([left], [right]) => left - right)
-      .map(([ticks, count]) => ({ ticks, count })),
+    entries: [...counts.entries()].sort(([left], [right]) => left - right).map(([ticks, count]) => ({ ticks, count })),
   }));
 }
 

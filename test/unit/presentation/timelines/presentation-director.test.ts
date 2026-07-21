@@ -359,9 +359,7 @@ describe("PresentationDirector combat feedback", () => {
     const { renderer } = createRenderer();
     const director = new PresentationDirector(renderer);
 
-    await director.play([
-      { type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
-    ]);
+    await director.play([{ type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } }]);
 
     expect(renderer.setPlayerAnimation).toHaveBeenNthCalledWith(1, "move");
     expect(renderer.setPlayerAnimation).toHaveBeenLastCalledWith("idle");
@@ -395,9 +393,9 @@ describe("PresentationDirector combat feedback", () => {
       playStaggerEnded: vi.fn(() => gsap.timeline()),
       clearAction: vi.fn(),
     };
-    (
-      renderer as unknown as { getEnemyPresentation: () => typeof presentation }
-    ).getEnemyPresentation = vi.fn(() => presentation);
+    (renderer as unknown as { getEnemyPresentation: () => typeof presentation }).getEnemyPresentation = vi.fn(
+      () => presentation,
+    );
 
     await new PresentationDirector(renderer).play([
       { type: "enemy_moved", enemyId: "enemy", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },

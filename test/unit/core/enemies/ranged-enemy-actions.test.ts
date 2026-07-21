@@ -121,9 +121,7 @@ describe("Ranged distance-band decisions", () => {
   });
 
   it("does not fall back to melee-origin navigation", () => {
-    const decision = decideEnemyAction(
-      context(enemy({ cell: { x: 2, y: 3 } }), { x: 8, y: 3 }, ["3,3"]),
-    );
+    const decision = decideEnemyAction(context(enemy({ cell: { x: 2, y: 3 } }), { x: 8, y: 3 }, ["3,3"]));
     expect(decision).toEqual({ type: "wait" });
   });
 });

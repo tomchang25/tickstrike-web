@@ -10,10 +10,7 @@ const WATER_ENEMIES = [
   { id: "water-bomb", enemyId: "bomb_enemy" },
 ] as const;
 
-function createWaterAnimationScenario(
-  id: string,
-  enemyId: (typeof WATER_ENEMIES)[number]["enemyId"],
-): TestScenario {
+function createWaterAnimationScenario(id: string, enemyId: (typeof WATER_ENEMIES)[number]["enemyId"]): TestScenario {
   return {
     id,
     title: `Water Animation / ${enemyId}`,

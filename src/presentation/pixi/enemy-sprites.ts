@@ -1,10 +1,7 @@
 import { Container, Rectangle, Sprite, Texture } from "pixi.js";
 import { gsap } from "gsap";
 import type { Cell, EntityState } from "@core/model/types";
-import {
-  enemyPresentationProfiles,
-  type EnemyPresentationProfile,
-} from "@content/enemies/features";
+import { enemyPresentationProfiles, type EnemyPresentationProfile } from "@content/enemies/features";
 
 export type EnemySpritePose = "idle" | "move" | "prepareAttack" | "commitCue";
 export type EnemySpritePalette = string;
@@ -52,9 +49,7 @@ const STAGGER_TINT = 0x4d80ff;
 const PREPARE_SCALE = { x: 1.12, y: 0.84 };
 const COMMIT_SCALE = { x: 1.2, y: 0.78 };
 
-export function getEnemyPresentationProfile(
-  profileId: string,
-): EnemyPresentationProfile | undefined {
+export function getEnemyPresentationProfile(profileId: string): EnemyPresentationProfile | undefined {
   return enemyPresentationProfiles.get(profileId);
 }
 
@@ -73,11 +68,7 @@ const POSE_ROWS: Record<EnemySpritePose, number> = {
 };
 
 function isCardinal(cell: Cell): boolean {
-  return (
-    Number.isInteger(cell.x) &&
-    Number.isInteger(cell.y) &&
-    Math.abs(cell.x) + Math.abs(cell.y) === 1
-  );
+  return Number.isInteger(cell.x) && Number.isInteger(cell.y) && Math.abs(cell.x) + Math.abs(cell.y) === 1;
 }
 
 function directionColumn(direction: Cell): number {
@@ -418,13 +409,6 @@ export function createEnemyPresentation(
 ): EnemyPresentation | undefined {
   const profile = getEnemyPresentationProfile(profileId);
   return profile
-    ? new SmallEnemyPresentation(
-        profile.id,
-        profile.palette,
-        sheet,
-        waterAnimation,
-        onChange,
-        profile.scale,
-      )
+    ? new SmallEnemyPresentation(profile.id, profile.palette, sheet, waterAnimation, onChange, profile.scale)
     : undefined;
 }

@@ -86,9 +86,7 @@ export function createFoundationArena(seed: Seed = SHIPPED_SCENARIO_SEED): World
     enemyAction: resolveEnemyActionDefinition(charge),
     facing: { x: 0, y: -1 },
   });
-  const bombGuard = bomb.guardId
-    ? actorCatalog.guards.find((guard) => guard.id === bomb.guardId)
-    : undefined;
+  const bombGuard = bomb.guardId ? actorCatalog.guards.find((guard) => guard.id === bomb.guardId) : undefined;
   world.spawn({
     id: "enemy-bomb",
     kind: "enemy",

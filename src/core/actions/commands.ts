@@ -25,10 +25,5 @@ export type GameCommand =
     };
 
 export function commandConsumesTime(command: GameCommand): boolean {
-  return (
-    command.type === "move" ||
-    command.type === "smash" ||
-    command.type === "attack" ||
-    command.type === "dash"
-  );
+  return command.type === "move" || command.type === "smash" || command.type === "attack" || command.type === "dash";
 }

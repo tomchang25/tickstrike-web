@@ -66,11 +66,7 @@ function finishAccepted(
   };
 }
 
-export function resolveCommand(
-  world: World,
-  command: GameCommand,
-  waveContext?: WavePhaseContext,
-): ActionResolution {
+export function resolveCommand(world: World, command: GameCommand, waveContext?: WavePhaseContext): ActionResolution {
   if (world.outcome !== "running") {
     return { accepted: false, consumedTime: false, reason: "Encounter has ended.", events: [] };
   }

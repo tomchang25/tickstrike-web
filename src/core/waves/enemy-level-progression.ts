@@ -10,26 +10,18 @@ export interface EnemyLevelProjection {
 }
 
 function statGrowth(curve: GrowthCurve, level: number, lethalLevelStart: number): number {
-  const standardTerm =
-    curve.standardCoefficient * Math.pow(Math.max(level - 1, 0), curve.standardExponent);
+  const standardTerm = curve.standardCoefficient * Math.pow(Math.max(level - 1, 0), curve.standardExponent);
   const lethalTerm =
-    curve.lethalCoefficient *
-    Math.pow(Math.max(level - (lethalLevelStart - 1), 0), curve.lethalExponent);
+    curve.lethalCoefficient * Math.pow(Math.max(level - (lethalLevelStart - 1), 0), curve.lethalExponent);
   return standardTerm + lethalTerm;
 }
 
 /** Guard ignores level and the slot's level offset; it scales only from the base wave number. */
-export function projectGuardValue(
-  guard: GuardDefinition,
-  waveNumber: number,
-  guardGrowth: GuardGrowthInput,
-): number {
+export function projectGuardValue(guard: GuardDefinition, waveNumber: number, guardGrowth: GuardGrowthInput): number {
   if (waveNumber <= guardGrowth.standardWaveLimit) {
     return guard.base;
   }
-  const lethalTier =
-    Math.floor((waveNumber - guardGrowth.standardWaveLimit - 1) / guardGrowth.lethalTierCadence) +
-    1;
+  const lethalTier = Math.floor((waveNumber - guardGrowth.standardWaveLimit - 1) / guardGrowth.lethalTierCadence) + 1;
   return guard.base + guard.lethalTierGain * lethalTier;
 }
 

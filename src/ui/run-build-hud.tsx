@@ -6,9 +6,7 @@ export interface RunBuildHudProps {
 }
 
 function artifactName(artifactId: string): string {
-  return (
-    artifactCatalog.artifacts.find((candidate) => candidate.id === artifactId)?.name ?? artifactId
-  );
+  return artifactCatalog.artifacts.find((candidate) => candidate.id === artifactId)?.name ?? artifactId;
 }
 
 /**

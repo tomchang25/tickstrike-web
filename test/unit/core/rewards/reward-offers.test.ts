@@ -199,13 +199,7 @@ describe("run-build: eligibility", () => {
   });
 });
 
-const MINORS = [
-  ATTACK_UP,
-  DASH_ATTACK_UP,
-  MOBILITY_COOLDOWN_DOWN,
-  MOBILITY_RANGE_UP,
-  MAX_HEALTH_UP,
-] as const;
+const MINORS = [ATTACK_UP, DASH_ATTACK_UP, MOBILITY_COOLDOWN_DOWN, MOBILITY_RANGE_UP, MAX_HEALTH_UP] as const;
 const MAJORS = [GUARD_SHREDDER, EXECUTION] as const;
 
 /** A constant zero draw always takes the head of the remaining pool, i.e. content order. */
@@ -213,15 +207,7 @@ const takeInOrder = () => 0;
 
 describe("reward offer: milestone cadence", () => {
   it("treats every third completed wave as a milestone and nothing else", () => {
-    expect([1, 2, 3, 4, 5, 6, 9].map(isMilestoneWave)).toEqual([
-      false,
-      false,
-      true,
-      false,
-      false,
-      true,
-      true,
-    ]);
+    expect([1, 2, 3, 4, 5, 6, 9].map(isMilestoneWave)).toEqual([false, false, true, false, false, true, true]);
     expect(isMilestoneWave(0)).toBe(false);
   });
 });

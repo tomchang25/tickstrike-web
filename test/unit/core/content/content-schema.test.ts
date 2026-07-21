@@ -38,9 +38,7 @@ describe("content catalog aggregation", () => {
       wave: {
         ...waveCatalog,
         groups: waveCatalog.groups.map((group, index) =>
-          index === 0
-            ? { ...group, entries: [{ ...group.entries[0]!, enemyId: "missing-enemy" }] }
-            : group,
+          index === 0 ? { ...group, entries: [{ ...group.entries[0]!, enemyId: "missing-enemy" }] } : group,
         ),
       },
       artifact: artifactCatalog,

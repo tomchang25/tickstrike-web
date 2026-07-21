@@ -62,10 +62,7 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     }
   }
 
-  protected attackCommitted(
-    context: EnemyPresenterContext,
-    event: EventOf<"enemy_attack_committed">,
-  ): void {
+  protected attackCommitted(context: EnemyPresenterContext, event: EventOf<"enemy_attack_committed">): void {
     const presentation = context.getPresentation();
     if (presentation) {
       context.addTimeline(presentation.playPrepareAttack());
@@ -86,10 +83,7 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     );
   }
 
-  protected attackDetonated(
-    context: EnemyPresenterContext,
-    event: EventOf<"enemy_attack_detonated">,
-  ): void {
+  protected attackDetonated(context: EnemyPresenterContext, event: EventOf<"enemy_attack_detonated">): void {
     const presentation = context.getPresentation();
     if (presentation) {
       context.addTimeline(presentation.playAttackCommit());
@@ -104,11 +98,7 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     context.addTimeline(
       gsap
         .timeline()
-        .fromTo(
-          effect.scale,
-          { x: 0.25, y: 0.25 },
-          { x: 2, y: 2, duration: 0.16, ease: "power2.out" },
-        )
+        .fromTo(effect.scale, { x: 0.25, y: 0.25 }, { x: 2, y: 2, duration: 0.16, ease: "power2.out" })
         .to(effect, { alpha: 0, duration: 0.12 }, "<0.06"),
       () => context.releaseTransient(effect),
     );
@@ -135,10 +125,7 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     );
   }
 
-  protected guardDamaged(
-    context: EnemyPresenterContext,
-    _event: EventOf<"enemy_guard_damaged">,
-  ): void {
+  protected guardDamaged(context: EnemyPresenterContext, _event: EventOf<"enemy_guard_damaged">): void {
     const view = context.getView();
     if (!view) {
       return;
@@ -152,10 +139,7 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     );
   }
 
-  protected guardBroken(
-    context: EnemyPresenterContext,
-    _event: EventOf<"enemy_guard_broken">,
-  ): void {
+  protected guardBroken(context: EnemyPresenterContext, _event: EventOf<"enemy_guard_broken">): void {
     const view = context.getView();
     if (!view) {
       return;
@@ -192,10 +176,7 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     );
   }
 
-  protected staggerEnded(
-    context: EnemyPresenterContext,
-    _event: EventOf<"enemy_stagger_ended">,
-  ): void {
+  protected staggerEnded(context: EnemyPresenterContext, _event: EventOf<"enemy_stagger_ended">): void {
     const presentation = context.getPresentation();
     if (!presentation) {
       return;
@@ -206,26 +187,17 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     }
   }
 
-  protected protectionStarted(
-    context: EnemyPresenterContext,
-    _event: EventOf<"enemy_protection_started">,
-  ): void {
+  protected protectionStarted(context: EnemyPresenterContext, _event: EventOf<"enemy_protection_started">): void {
     const view = context.getView();
     if (!view) {
       return;
     }
     context.addTimeline(
-      gsap
-        .timeline()
-        .to(view, { alpha: 0.7, duration: 0.08 })
-        .to(view, { alpha: 1, duration: 0.12 }),
+      gsap.timeline().to(view, { alpha: 0.7, duration: 0.08 }).to(view, { alpha: 1, duration: 0.12 }),
     );
   }
 
-  protected selfDestructed(
-    context: EnemyPresenterContext,
-    event: EventOf<"enemy_self_destructed">,
-  ): void {
+  protected selfDestructed(context: EnemyPresenterContext, event: EventOf<"enemy_self_destructed">): void {
     context.getPresentation()?.stopBlink();
     const effect = context.createImpact(event.cell, 0xff5a33);
     context.addTimeline(
@@ -301,10 +273,7 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     );
   }
 
-  protected attackInterrupted(
-    context: EnemyPresenterContext,
-    _event: EventOf<"enemy_attack_interrupted">,
-  ): void {
+  protected attackInterrupted(context: EnemyPresenterContext, _event: EventOf<"enemy_attack_interrupted">): void {
     context.getPresentation()?.clearAction();
   }
 }

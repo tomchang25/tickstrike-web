@@ -25,12 +25,7 @@ function describeCard(artifactId: string): { readonly name: string; readonly des
 export function RewardOverlay({ offer, busy, onSelect }: RewardOverlayProps) {
   return (
     <div className="reward-overlay" data-testid="reward-overlay">
-      <div
-        className="reward-overlay-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reward-overlay-title"
-      >
+      <div className="reward-overlay-panel" role="dialog" aria-modal="true" aria-labelledby="reward-overlay-title">
         <h2 id="reward-overlay-title">Choose a reward</h2>
         <div className="reward-card-list">
           {offer.cards.map((card) => {

@@ -498,11 +498,7 @@ describe("player-clocked action boundary", () => {
       direction: { x: 1, y: 0 },
     });
     expect(accepted.accepted).toBe(true);
-    expect(accepted.events.map((event) => event.type)).toEqual([
-      "command_resolved",
-      "actor_moved",
-      "world_advanced",
-    ]);
+    expect(accepted.events.map((event) => event.type)).toEqual(["command_resolved", "actor_moved", "world_advanced"]);
     expect(world.snapshot().tick).toBe(1);
   });
 
@@ -816,11 +812,7 @@ describe("wave phase wiring in the accepted-command path", () => {
     const random = () => world.random.get("waves").nextUnit();
     world.setWave(1, createInitialSlotStates(wave, groups, 1, random));
 
-    const result = resolveCommand(
-      world,
-      { type: "move", actorId: "player", direction: { x: 1, y: 0 } },
-      waveContext,
-    );
+    const result = resolveCommand(world, { type: "move", actorId: "player", direction: { x: 1, y: 0 } }, waveContext);
 
     expect(result.accepted).toBe(true);
     const types = result.events.map((event) => event.type);

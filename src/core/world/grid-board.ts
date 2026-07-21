@@ -243,9 +243,7 @@ export class GridBoard {
       activeStep: request.activeStep ?? false,
       registrationIndex,
     };
-    const defeated = conflicts.filter(
-      (reservation) => this.compareReservations(candidate, reservation) > 0,
-    );
+    const defeated = conflicts.filter((reservation) => this.compareReservations(candidate, reservation) > 0);
     if (defeated.length > 0) {
       return {
         accepted: true,
@@ -290,9 +288,7 @@ export class GridBoard {
    * Claims all one-cell movement intents as one arbitration step. The claims
    * remain installed until the enemy phase applies every granted movement.
    */
-  requestMovementReservations(
-    requests: readonly MovementReservationRequest[],
-  ): readonly ReservationDecision[] {
+  requestMovementReservations(requests: readonly MovementReservationRequest[]): readonly ReservationDecision[] {
     const ownerIds = new Set<string>();
     const invalidReason = (request: MovementReservationRequest): string | undefined => {
       if (ownerIds.has(request.ownerId)) {
@@ -316,24 +312,19 @@ export class GridBoard {
         accepted: false,
         granted: false,
         lostOwners: [],
-        ...(reasons[index]
-          ? { reason: reasons[index] }
-          : { reason: "Movement claims were rejected atomically." }),
+        ...(reasons[index] ? { reason: reasons[index] } : { reason: "Movement claims were rejected atomically." }),
       }));
     }
 
     const requestedOwners = new Set(requests.map((request) => request.ownerId));
-    const existing = [...this.reservations.values()].filter(
-      (reservation) => !requestedOwners.has(reservation.ownerId),
-    );
+    const existing = [...this.reservations.values()].filter((reservation) => !requestedOwners.has(reservation.ownerId));
     const candidates = requests.map((request, index): Reservation => ({
       ownerId: request.ownerId,
       purpose: "movement",
       cells: request.cells.map(cloneCell),
       activeStep: true,
       registrationIndex:
-        this.reservations.get(request.ownerId)?.registrationIndex ??
-        this.nextRegistrationIndex + index,
+        this.reservations.get(request.ownerId)?.registrationIndex ?? this.nextRegistrationIndex + index,
     }));
     const allCandidates = [...existing, ...candidates];
     const overlaps = (a: Reservation, b: Reservation): boolean =>
@@ -366,9 +357,7 @@ export class GridBoard {
         this.releaseReservation(reservation.ownerId);
       }
     }
-    this.nextRegistrationIndex += candidates.filter(
-      (candidate) => !this.reservations.has(candidate.ownerId),
-    ).length;
+    this.nextRegistrationIndex += candidates.filter((candidate) => !this.reservations.has(candidate.ownerId)).length;
     for (const candidate of candidates) {
       if (granted.has(candidate.ownerId)) {
         this.reservations.set(candidate.ownerId, candidate);
@@ -457,9 +446,7 @@ export class GridBoard {
     const moves: { readonly id: EntityId; readonly to: Cell }[] = [];
     return {
       isFree: (cell) =>
-        this.geometry.isLegalCell(cell) &&
-        !workingOccupancy.has(cellKey(cell)) &&
-        !this.reservationAt(cell),
+        this.geometry.isLegalCell(cell) && !workingOccupancy.has(cellKey(cell)) && !this.reservationAt(cell),
       occupantIdAt: (cell) => workingOccupancy.get(cellKey(cell)),
       stageMove: (id, from, to) => {
         workingOccupancy.delete(cellKey(from));
@@ -479,14 +466,8 @@ export class GridBoard {
 
     const player = this.locator.playerCell();
     if (player) {
-      const distanceA = manhattanDistance(
-        this.locator.anchorCellOf(a.ownerId) ?? a.cells[0]!,
-        player,
-      );
-      const distanceB = manhattanDistance(
-        this.locator.anchorCellOf(b.ownerId) ?? b.cells[0]!,
-        player,
-      );
+      const distanceA = manhattanDistance(this.locator.anchorCellOf(a.ownerId) ?? a.cells[0]!, player);
+      const distanceB = manhattanDistance(this.locator.anchorCellOf(b.ownerId) ?? b.cells[0]!, player);
       if (distanceA !== distanceB) {
         return distanceA - distanceB;
       }

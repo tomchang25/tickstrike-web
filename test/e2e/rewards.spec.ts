@@ -43,8 +43,7 @@ async function clearWaveForReward(page: Page): Promise<void> {
       { x: 0, y: 1 },
       { x: -1, y: 0 },
     ];
-    const sameCell = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-      a.x === b.x && a.y === b.y;
+    const sameCell = (a: { x: number; y: number }, b: { x: number; y: number }) => a.x === b.x && a.y === b.y;
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
@@ -57,9 +56,7 @@ async function clearWaveForReward(page: Page): Promise<void> {
       if (!player) {
         return;
       }
-      const enemy = state.entities.find(
-        (entity) => entity.kind === "enemy" && entity.phase === "alive",
-      );
+      const enemy = state.entities.find((entity) => entity.kind === "enemy" && entity.phase === "alive");
       if (!enemy) {
         // The next wave hasn't warned or spawned yet: a harmless whiff advances the wave phase.
         await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
@@ -76,21 +73,14 @@ async function clearWaveForReward(page: Page): Promise<void> {
 
       const candidates = DIRECTIONS.filter((direction) => {
         const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
-        if (
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= state.arena.width ||
-          cell.y >= state.arena.height
-        ) {
+        if (cell.x < 0 || cell.y < 0 || cell.x >= state.arena.width || cell.y >= state.arena.height) {
           return false;
         }
         const index = cell.y * state.arena.width + cell.x;
         if (state.arena.tiles[index] !== "floor") {
           return false;
         }
-        return !state.entities.some(
-          (entity) => entity.phase === "alive" && sameCell(entity.cell, cell),
-        );
+        return !state.entities.some((entity) => entity.phase === "alive" && sameCell(entity.cell, cell));
       });
       const toward = [...candidates].sort((a, b) => {
         const nextA = { x: player.cell.x + a.x, y: player.cell.y + a.y };
@@ -183,14 +173,11 @@ test("Reward offers present three cards, a Major milestone, and a live build HUD
   // The non-Major milestone card grants two stacks over the pre-milestone build, whatever it lands on.
   const minorCard = offer3?.cards.find((card) => !MAJOR_IDS.includes(card.artifactId));
   expect(minorCard).toBeDefined();
-  expect(minorCard!.resultingStackCount).toBe(
-    (buildBeforeMilestone[minorCard!.artifactId] ?? 0) + 2,
-  );
+  expect(minorCard!.resultingStackCount).toBe((buildBeforeMilestone[minorCard!.artifactId] ?? 0) + 2);
   await page.getByTestId(`reward-card-${majorCard!.artifactId}`).click();
   await expect(overlay).toHaveCount(0);
   const afterWave3 = await readState(page);
-  const expectedTrigger =
-    majorCard!.artifactId === "guard_shredder" ? "guard-shredder" : "execution";
+  const expectedTrigger = majorCard!.artifactId === "guard_shredder" ? "guard-shredder" : "execution";
   expect(afterWave3.runBuild.triggers).toContain(expectedTrigger);
   await expect(page.getByTestId(`run-build-item-${majorCard!.artifactId}`)).toBeVisible();
 

@@ -53,12 +53,7 @@ export function createWaveArena(seed: Seed = WAVE_SCENARIO_SEED): World {
     throw new Error("Wave 1 content is incomplete.");
   }
   const random = () => world.random.get("waves").nextUnit();
-  const slots = createInitialSlotStates(
-    firstWave,
-    waveScenarioContext.groups,
-    FIRST_WAVE_NUMBER,
-    random,
-  );
+  const slots = createInitialSlotStates(firstWave, waveScenarioContext.groups, FIRST_WAVE_NUMBER, random);
   world.setWave(FIRST_WAVE_NUMBER, slots);
 
   return world;

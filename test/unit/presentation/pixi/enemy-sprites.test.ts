@@ -73,9 +73,7 @@ describe("small enemy sprite profiles", () => {
   });
 
   it("keeps unknown enemy archetypes on the generic renderer path", () => {
-    expect(
-      createEnemyPresentation("enemy.unknown", Texture.WHITE, WATER_ANIMATION),
-    ).toBeUndefined();
+    expect(createEnemyPresentation("enemy.unknown", Texture.WHITE, WATER_ANIMATION)).toBeUndefined();
   });
 
   it("settles action and tint feedback back to idle base visuals", () => {

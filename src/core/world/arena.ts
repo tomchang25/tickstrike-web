@@ -1,10 +1,4 @@
-import {
-  cellKey,
-  type ArenaState,
-  type Cell,
-  type TerrainKind,
-  type TileKind,
-} from "../model/types";
+import { cellKey, type ArenaState, type Cell, type TerrainKind, type TileKind } from "../model/types";
 
 export interface ArenaInput {
   readonly width: number;
@@ -45,9 +39,7 @@ export class Arena {
   constructor(input: ArenaInput) {
     validateDimensions(input.width, input.height);
     if (input.terrain.length !== input.width * input.height) {
-      throw new Error(
-        `Expected ${input.width * input.height} terrain cells, received ${input.terrain.length}.`,
-      );
+      throw new Error(`Expected ${input.width * input.height} terrain cells, received ${input.terrain.length}.`);
     }
     if (input.terrain.some((terrain) => terrain !== "land" && terrain !== "sea")) {
       throw new Error("Arena terrain must contain only land or sea values.");

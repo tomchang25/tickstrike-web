@@ -1,11 +1,5 @@
 import type { CombatEvent } from "../events/combat-events";
-import type {
-  BasicHitResult,
-  DirectionalHitResult,
-  EntityId,
-  EntityState,
-  WorldSnapshot,
-} from "../model/types";
+import type { BasicHitResult, DirectionalHitResult, EntityId, EntityState, WorldSnapshot } from "../model/types";
 import { isCardinalDirection, type Cell } from "../model/types";
 import type { CombatOperations, GridBoard, WorldView } from "../world/world";
 import type { GameCommand } from "./commands";
@@ -84,9 +78,7 @@ function appendEnemyHitEvents(
         damage: hit.guardDamage,
         guard: target.guard.current,
         maxGuard: target.guard.max,
-        ...(target.protectionTicks !== undefined
-          ? { protectionTicks: target.protectionTicks }
-          : {}),
+        ...(target.protectionTicks !== undefined ? { protectionTicks: target.protectionTicks } : {}),
       });
     }
   }
@@ -133,11 +125,7 @@ function appendEnemyHitEvents(
   return true;
 }
 
-function resolveSmashVictim(
-  context: PlayerActionContext,
-  events: CombatEvent[],
-  victim: SmashVictimPreview,
-): void {
+function resolveSmashVictim(context: PlayerActionContext, events: CombatEvent[], victim: SmashVictimPreview): void {
   if (victim.displacement === "crush") {
     const enemy = context.requireEntity(victim.enemyId);
     if (victim.hit) {
@@ -153,10 +141,7 @@ function resolveSmashVictim(
   if (!victim.hit || !appendEnemyHitEvents(context, events, { hit: victim.hit })) {
     return;
   }
-  if (
-    (victim.displacement !== "knockback" && victim.displacement !== "water") ||
-    !victim.destination
-  ) {
+  if ((victim.displacement !== "knockback" && victim.displacement !== "water") || !victim.destination) {
     return;
   }
 
@@ -262,9 +247,7 @@ function resolveAttack(
             damage: hit.guardDamage,
             guard: target.guard.current,
             maxGuard: target.guard.max,
-            ...(target.protectionTicks !== undefined
-              ? { protectionTicks: target.protectionTicks }
-              : {}),
+            ...(target.protectionTicks !== undefined ? { protectionTicks: target.protectionTicks } : {}),
           });
         }
       }
@@ -405,10 +388,7 @@ function resolveSmash(
   return { accepted: true, events };
 }
 
-export function resolvePlayerAction(
-  context: PlayerActionContext,
-  command: GameCommand,
-): PlayerActionResult {
+export function resolvePlayerAction(context: PlayerActionContext, command: GameCommand): PlayerActionResult {
   switch (command.type) {
     case "move":
       return resolveMove(context, command);

@@ -47,9 +47,7 @@ export class WaveRuntime {
     this.current = {
       waveNumber,
       slots: slots.map(cloneSlotState),
-      ...(this.current?.pendingBatch
-        ? { pendingBatch: clonePendingBatch(this.current.pendingBatch) }
-        : {}),
+      ...(this.current?.pendingBatch ? { pendingBatch: clonePendingBatch(this.current.pendingBatch) } : {}),
     };
   }
 

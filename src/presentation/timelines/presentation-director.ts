@@ -2,11 +2,7 @@ import { gsap } from "gsap";
 import type { CombatEvent } from "@core/events/combat-events";
 import { collectTerminalEntityIds } from "@core/events/terminal-entities";
 import type { EntityId } from "@core/model/types";
-import {
-  enemyPresentationLabel,
-  type DetachedEntityView,
-  type PixiGameRenderer,
-} from "../pixi/pixi-game-renderer";
+import { enemyPresentationLabel, type DetachedEntityView, type PixiGameRenderer } from "../pixi/pixi-game-renderer";
 import { getEnemyPresenter, type EnemyPresenterContext } from "./enemy-presenters";
 
 const MOVE_DURATION = 0.26;
@@ -104,11 +100,7 @@ export class PresentationDirector {
   constructor(private readonly renderer: PixiGameRenderer) {}
 
   get isIdle(): boolean {
-    return (
-      this.activeTimelines.size === 0 &&
-      this.terminalViews.size === 0 &&
-      this.renderer.transientCount === 0
-    );
+    return this.activeTimelines.size === 0 && this.terminalViews.size === 0 && this.renderer.transientCount === 0;
   }
 
   get terminalViewCount(): number {
@@ -243,9 +235,7 @@ export class PresentationDirector {
           // Every enemy-scoped event routes to the presenter registered for the
           // enemy's presentation profile; the coordinator holds no per-role cases.
           if ("enemyId" in event) {
-            const presenter = getEnemyPresenter(
-              this.getEnemyPresentation(event.enemyId)?.profileId,
-            );
+            const presenter = getEnemyPresenter(this.getEnemyPresentation(event.enemyId)?.profileId);
             presenter.presentEvent(this.presenterContext(event.enemyId, animations), event);
           }
           break;
@@ -318,18 +308,13 @@ export class PresentationDirector {
   private refreshTerminalPresentationLabels(): void {
     this.renderer.setTerminalPresentationLabels(
       [...this.terminalViews.entries()]
-        .map(([id, view]) =>
-          view.enemyPresentation ? enemyPresentationLabel(id, view.enemyPresentation) : undefined,
-        )
+        .map(([id, view]) => (view.enemyPresentation ? enemyPresentationLabel(id, view.enemyPresentation) : undefined))
         .filter((label): label is string => label !== undefined)
         .join("|"),
     );
   }
 
-  private createMotionTrack(
-    entityId: EntityId,
-    steps: readonly BoardMotionStep[],
-  ): gsap.core.Timeline | undefined {
+  private createMotionTrack(entityId: EntityId, steps: readonly BoardMotionStep[]): gsap.core.Timeline | undefined {
     const view = this.getEntityView(entityId);
     if (!view) {
       return undefined;
@@ -396,21 +381,14 @@ export class PresentationDirector {
             waterClock,
             {
               progress: presentation.waterFrameDurationsMs.length,
-              duration:
-                (presentation.waterFrameDurationsMs[
-                  presentation.waterFrameDurationsMs.length - 1
-                ] ?? 0) / 1000,
+              duration: (presentation.waterFrameDurationsMs[presentation.waterFrameDurationsMs.length - 1] ?? 0) / 1000,
               ease: "none",
             },
             waterCursor,
           );
         } else {
           track.to(view, { rotation: -0.18, duration: 0.08 }, cursor + step.duration);
-          track.to(
-            view,
-            { rotation: 0.18, duration: 0.08, repeat: 3, yoyo: true },
-            cursor + step.duration + 0.08,
-          );
+          track.to(view, { rotation: 0.18, duration: 0.08, repeat: 3, yoyo: true }, cursor + step.duration + 0.08);
           track.to(view.scale, { x: 0.75, y: 0.3, duration: 0.18 }, cursor + step.duration + 0.4);
           track.to(view, { alpha: 0, duration: 0.2 }, cursor + step.duration + 0.58);
         }

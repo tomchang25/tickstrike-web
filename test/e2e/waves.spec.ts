@@ -7,9 +7,7 @@ declare global {
   }
 }
 
-test("Waves scenario warns, spawns, clears, and warns the next group in the same arena", async ({
-  page,
-}) => {
+test("Waves scenario warns, spawns, clears, and warns the next group in the same arena", async ({ page }) => {
   test.setTimeout(45_000);
   await page.goto("/?scenario=waves");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
@@ -37,9 +35,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
   expect(warned?.entities.filter((entity) => entity.kind === "enemy")).toHaveLength(0);
   expect(warned?.telegraphs).toHaveLength(1);
   expect(warned?.telegraphs[0]).toMatchObject({ phase: "spawning", remainingTicks: 1 });
-  const spawnReservations = warned?.reservations.filter(
-    (reservation) => reservation.purpose === "spawn",
-  );
+  const spawnReservations = warned?.reservations.filter((reservation) => reservation.purpose === "spawn");
   expect(spawnReservations).toHaveLength(1);
   // The reservation blocking movement covers exactly the cells shown in the telegraph.
   expect(spawnReservations?.[0]?.cells).toEqual(warned?.telegraphs[0]?.cells);
@@ -51,9 +47,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
   await expect(canvas).toHaveAttribute("data-telegraph-source-count", "1");
   await expect(canvas).toHaveAttribute("data-spawn-telegraph-count", "1");
   await expect(canvas).toHaveAttribute("data-telegraph-labels", /:1(?:@|\||$)/);
-  await expect
-    .poll(() => page.evaluate((cell) => window.__TICKSTRIKE__?.isWalkable(cell), reservedCell))
-    .toBe(false);
+  await expect.poll(() => page.evaluate((cell) => window.__TICKSTRIKE__?.isWalkable(cell), reservedCell)).toBe(false);
 
   // The following accepted command expires the warning through Child C's normal spawn path.
   await page.evaluate(async () => {
@@ -67,9 +61,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
   await expect(page.getByTestId("tick-value")).toHaveText("2");
   const spawned = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   expect(spawned?.telegraphs).toHaveLength(0);
-  expect(
-    spawned?.reservations.filter((reservation) => reservation.purpose === "spawn"),
-  ).toHaveLength(0);
+  expect(spawned?.reservations.filter((reservation) => reservation.purpose === "spawn")).toHaveLength(0);
   const wave1Enemies = spawned?.entities.filter(
     (entity) => entity.kind === "enemy" && entity.id.startsWith("wave-1-slot-0-"),
   );
@@ -88,8 +80,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
       { x: 0, y: 1 },
       { x: -1, y: 0 },
     ];
-    const sameCell = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-      a.x === b.x && a.y === b.y;
+    const sameCell = (a: { x: number; y: number }, b: { x: number; y: number }) => a.x === b.x && a.y === b.y;
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
@@ -100,10 +91,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
         break;
       }
       const enemies = state.entities.filter(
-        (entity) =>
-          entity.kind === "enemy" &&
-          entity.id.startsWith("wave-1-slot-0-") &&
-          entity.phase === "alive",
+        (entity) => entity.kind === "enemy" && entity.id.startsWith("wave-1-slot-0-") && entity.phase === "alive",
       );
       if (enemies.length === 0) {
         break;
@@ -111,21 +99,14 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
 
       const candidates = DIRECTIONS.filter((direction) => {
         const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
-        if (
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= state.arena.width ||
-          cell.y >= state.arena.height
-        ) {
+        if (cell.x < 0 || cell.y < 0 || cell.x >= state.arena.width || cell.y >= state.arena.height) {
           return false;
         }
         const index = cell.y * state.arena.width + cell.x;
         if (state.arena.tiles[index] !== "floor") {
           return false;
         }
-        if (
-          state.entities.some((entity) => entity.phase === "alive" && sameCell(entity.cell, cell))
-        ) {
+        if (state.entities.some((entity) => entity.phase === "alive" && sameCell(entity.cell, cell))) {
           return false;
         }
         return !state.telegraphs.some((telegraph) =>
@@ -143,17 +124,13 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
       const adjacent = enemies.find((enemy) => distance(enemy.cell, player.cell) === 1);
       if (adjacent) {
         const relation = { x: player.cell.x - adjacent.cell.x, y: player.cell.y - adjacent.cell.y };
-        const isFront =
-          adjacent.facing && relation.x === adjacent.facing.x && relation.y === adjacent.facing.y;
+        const isFront = adjacent.facing && relation.x === adjacent.facing.x && relation.y === adjacent.facing.y;
         if (isFront) {
           const flank = candidates.find((direction) => {
             const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
             return (
               distance(cell, adjacent.cell) === 1 &&
-              !(
-                cell.x - adjacent.cell.x === adjacent.facing?.x &&
-                cell.y - adjacent.cell.y === adjacent.facing?.y
-              )
+              !(cell.x - adjacent.cell.x === adjacent.facing?.x && cell.y - adjacent.cell.y === adjacent.facing?.y)
             );
           });
           if (flank) {
@@ -169,9 +146,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
         continue;
       }
 
-      const aligned = enemies.find(
-        (enemy) => enemy.cell.x === player.cell.x || enemy.cell.y === player.cell.y,
-      );
+      const aligned = enemies.find((enemy) => enemy.cell.x === player.cell.x || enemy.cell.y === player.cell.y);
       if (aligned && (!player.mobility || player.mobility.remainingCooldown === 0)) {
         const direction =
           aligned.cell.x === player.cell.x
@@ -181,9 +156,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
         continue;
       }
 
-      const target = [...enemies].sort(
-        (a, b) => distance(a.cell, player.cell) - distance(b.cell, player.cell),
-      )[0];
+      const target = [...enemies].sort((a, b) => distance(a.cell, player.cell) - distance(b.cell, player.cell))[0];
       const toward = DIRECTIONS.filter((direction) =>
         direction.x !== 0 ? target.cell.x !== player.cell.x : target.cell.y !== player.cell.y,
       )
@@ -204,9 +177,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
   await expect
     .poll(async () =>
       page.evaluate(
-        () =>
-          window.__TICKSTRIKE__?.getState().entities.filter((entity) => entity.kind === "enemy")
-            .length,
+        () => window.__TICKSTRIKE__?.getState().entities.filter((entity) => entity.kind === "enemy").length,
       ),
     )
     .toBe(0);
@@ -227,9 +198,7 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
   expect(wave2Warned?.waveRuntime?.waveNumber).toBe(2);
   expect(wave2Warned?.telegraphs).toHaveLength(1);
   expect(wave2Warned?.telegraphs[0]).toMatchObject({ phase: "spawning" });
-  expect(
-    wave2Warned?.reservations.filter((reservation) => reservation.purpose === "spawn"),
-  ).toHaveLength(1);
+  expect(wave2Warned?.reservations.filter((reservation) => reservation.purpose === "spawn")).toHaveLength(1);
   expect(wave2Warned?.entities.filter((entity) => entity.kind === "enemy")).toHaveLength(0);
 
   // Deterministic reset returns to Wave 1 with no leftover spawn state from Wave 2.

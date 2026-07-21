@@ -81,11 +81,7 @@ function multiply(cell: Cell, amount: number): Cell {
   return { x: cell.x * amount, y: cell.y * amount };
 }
 
-function entityAt(
-  snapshot: WorldSnapshot,
-  cell: Cell,
-  kind?: EntityState["kind"],
-): EntityState | undefined {
+function entityAt(snapshot: WorldSnapshot, cell: Cell, kind?: EntityState["kind"]): EntityState | undefined {
   return snapshot.entities.find((entity) => {
     if (entity.phase !== "alive" || (kind && entity.kind !== kind)) {
       return false;
@@ -98,22 +94,13 @@ function isWalkable(snapshot: WorldSnapshot, cell: Cell, allowEnemyTraversal = f
   if (!Number.isInteger(cell.x) || !Number.isInteger(cell.y)) {
     return false;
   }
-  if (
-    cell.x < 0 ||
-    cell.y < 0 ||
-    cell.x >= snapshot.arena.width ||
-    cell.y >= snapshot.arena.height
-  ) {
+  if (cell.x < 0 || cell.y < 0 || cell.x >= snapshot.arena.width || cell.y >= snapshot.arena.height) {
     return false;
   }
   if (snapshot.arena.terrain[cell.y * snapshot.arena.width + cell.x] !== "land") {
     return false;
   }
-  if (
-    snapshot.reservations.some((reservation) =>
-      reservation.cells.some((reserved) => sameCell(reserved, cell)),
-    )
-  ) {
+  if (snapshot.reservations.some((reservation) => reservation.cells.some((reserved) => sameCell(reserved, cell)))) {
     return false;
   }
   const occupant = entityAt(snapshot, cell);
@@ -204,22 +191,13 @@ function displacementCandidate(
 ): boolean {
   const footprint = translatedFootprint(entity, destination);
   return footprint.every((cell) => {
-    if (
-      cell.x < 0 ||
-      cell.y < 0 ||
-      cell.x >= snapshot.arena.width ||
-      cell.y >= snapshot.arena.height
-    ) {
+    if (cell.x < 0 || cell.y < 0 || cell.x >= snapshot.arena.width || cell.y >= snapshot.arena.height) {
       return false;
     }
     if (snapshot.arena.tiles[cell.y * snapshot.arena.width + cell.x] === "wall") {
       return false;
     }
-    if (
-      snapshot.reservations.some((reservation) =>
-        reservation.cells.some((reserved) => sameCell(reserved, cell)),
-      )
-    ) {
+    if (snapshot.reservations.some((reservation) => reservation.cells.some((reserved) => sameCell(reserved, cell)))) {
       return false;
     }
     return !occupied.has(`${cell.x},${cell.y}`);
@@ -246,9 +224,7 @@ function smashVictimPreviews(
     return aCenter - bCenter || a.id.localeCompare(b.id);
   });
   const occupied = new Set(
-    snapshot.entities
-      .filter((entity) => entity.phase === "alive")
-      .flatMap((entity) => footprintKeys(entity.footprint)),
+    snapshot.entities.filter((entity) => entity.phase === "alive").flatMap((entity) => footprintKeys(entity.footprint)),
   );
   const results: SmashVictimPreview[] = [];
 
@@ -298,8 +274,7 @@ function smashVictimPreviews(
       continue;
     }
 
-    const isWater =
-      snapshot.arena.tiles[destination.y * snapshot.arena.width + destination.x] === "water";
+    const isWater = snapshot.arena.tiles[destination.y * snapshot.arena.width + destination.x] === "water";
 
     if (!isWater) {
       for (const key of footprintKeys(translatedFootprint(enemy, destination))) {
@@ -323,11 +298,7 @@ export function attackTarget(origin: Cell, direction: Cell): Cell {
   return add(origin, direction);
 }
 
-export function previewBasicHit(
-  attackerId: EntityId,
-  target: EntityState,
-  damage: number,
-): BasicHitResult {
+export function previewBasicHit(attackerId: EntityId, target: EntityState, damage: number): BasicHitResult {
   const hpAfter = Math.max(0, target.hp - damage);
   return {
     attackerId,
@@ -374,18 +345,12 @@ export function previewSmashVictimMarkers(preview: SmashPreview): readonly Previ
         if (victim.displacement === "blocked") {
           return [{ enemyId: victim.enemyId, from: victim.origin, outcome: "blocked" as const }];
         }
-        return victim.hit?.killed
-          ? [{ enemyId: victim.enemyId, from: victim.origin, outcome: "kill" as const }]
-          : [];
+        return victim.hit?.killed ? [{ enemyId: victim.enemyId, from: victim.origin, outcome: "kill" as const }] : [];
       })
     : [];
 }
 
-export function previewAttack(
-  source: PreviewSource,
-  actorId: string,
-  direction: Cell,
-): AttackPreview {
+export function previewAttack(source: PreviewSource, actorId: string, direction: Cell): AttackPreview {
   const snapshot = snapshotOf(source);
   const actor = snapshot.entities.find((entity) => entity.id === actorId);
   const target = actor ? attackTarget(actor.cell, direction) : direction;
@@ -428,12 +393,7 @@ export function previewAttack(
   };
 }
 
-export function previewDash(
-  source: PreviewSource,
-  actorId: string,
-  direction: Cell,
-  distance?: number,
-): DashPreview {
+export function previewDash(source: PreviewSource, actorId: string, direction: Cell, distance?: number): DashPreview {
   const snapshot = snapshotOf(source);
   const actor = snapshot.entities.find((entity) => entity.id === actorId);
   const mobility = actor ? activeMobility(actor) : undefined;
@@ -468,11 +428,7 @@ export function previewDash(
     };
   }
   const requestedDistance = distance ?? mobility.range;
-  if (
-    !Number.isInteger(requestedDistance) ||
-    requestedDistance < 1 ||
-    requestedDistance > mobility.range
-  ) {
+  if (!Number.isInteger(requestedDistance) || requestedDistance < 1 || requestedDistance > mobility.range) {
     return {
       accepted: false,
       direction,
@@ -572,10 +528,7 @@ export function previewSmash(source: PreviewSource, actorId: string, target: Cel
   if (mobility.remainingCooldown > 0) {
     return { accepted: false, target, area, victims: [], reason: "Mobility is on cooldown." };
   }
-  if (
-    Math.abs(target.x - actor.cell.x) > mobility.range ||
-    Math.abs(target.y - actor.cell.y) > mobility.range
-  ) {
+  if (Math.abs(target.x - actor.cell.x) > mobility.range || Math.abs(target.y - actor.cell.y) > mobility.range) {
     return { accepted: false, target, area, victims: [], reason: "Smash target is out of range." };
   }
   const landingOccupant = entityAt(snapshot, target);

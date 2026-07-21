@@ -1,20 +1,12 @@
 import type { AttackDefinition, EnemyDefinition } from "@core/content/actor-schema";
-import type {
-  EnemyFeature,
-  EnemyPresentationProfile,
-  EnemyWaterAnimationAsset,
-} from "./enemy-feature";
+import type { EnemyFeature, EnemyPresentationProfile, EnemyWaterAnimationAsset } from "./enemy-feature";
 import { thrustEnemyFeature } from "./thrust";
 import { slashEnemyFeature } from "./slash";
 import { rangedEnemyFeature } from "./ranged";
 import { chargeEnemyFeature } from "./charge";
 import { bombEnemyFeature } from "./bomb";
 
-export type {
-  EnemyFeature,
-  EnemyPresentationProfile,
-  EnemyWaterAnimationAsset,
-} from "./enemy-feature";
+export type { EnemyFeature, EnemyPresentationProfile, EnemyWaterAnimationAsset } from "./enemy-feature";
 export { defineEnemyFeature } from "./enemy-feature";
 
 /**
@@ -29,13 +21,9 @@ export const enemyFeatures: readonly EnemyFeature[] = [
   bombEnemyFeature,
 ];
 
-export const enemyDefinitions: readonly EnemyDefinition[] = enemyFeatures.map(
-  (feature) => feature.enemy,
-);
+export const enemyDefinitions: readonly EnemyDefinition[] = enemyFeatures.map((feature) => feature.enemy);
 
-export const attackDefinitions: readonly AttackDefinition[] = enemyFeatures.flatMap(
-  (feature) => feature.attacks,
-);
+export const attackDefinitions: readonly AttackDefinition[] = enemyFeatures.flatMap((feature) => feature.attacks);
 
 export const enemyPresentationProfiles: ReadonlyMap<string, EnemyPresentationProfile> = new Map(
   enemyFeatures.map((feature) => [feature.presentation.id, feature.presentation]),
@@ -46,9 +34,8 @@ export const enemySpriteSheetUrls: Readonly<Record<string, string>> = Object.fro
   enemyFeatures.map((feature) => [feature.spriteSheet.key, feature.spriteSheet.url]),
 );
 
-export const enemyWaterAnimationAssets: Readonly<Record<string, EnemyWaterAnimationAsset>> =
-  Object.fromEntries(
-    enemyFeatures.flatMap((feature) =>
-      feature.waterAnimation ? [[feature.presentation.id, feature.waterAnimation]] : [],
-    ),
-  );
+export const enemyWaterAnimationAssets: Readonly<Record<string, EnemyWaterAnimationAsset>> = Object.fromEntries(
+  enemyFeatures.flatMap((feature) =>
+    feature.waterAnimation ? [[feature.presentation.id, feature.waterAnimation]] : [],
+  ),
+);

@@ -41,9 +41,7 @@ describe("canonical actor content", () => {
   });
 
   it("records guard values, attack payloads, and every enemy assignment", () => {
-    expect(
-      actorCatalog.guards.map(({ id, base, lethalTierGain }) => ({ id, base, lethalTierGain })),
-    ).toEqual([
+    expect(actorCatalog.guards.map(({ id, base, lethalTierGain }) => ({ id, base, lethalTierGain }))).toEqual([
       { id: "small", base: 32, lethalTierGain: 8 },
       { id: "heavy", base: 64, lethalTierGain: 16 },
     ]);
@@ -59,24 +57,18 @@ describe("canonical actor content", () => {
         { x: 0, y: -1 },
       ],
     });
-    expect(
-      actorCatalog.attacks.filter((attack) => attack.id === "thrust" || attack.id === "slash"),
-    ).toMatchObject([
+    expect(actorCatalog.attacks.filter((attack) => attack.id === "thrust" || attack.id === "slash")).toMatchObject([
       { id: "thrust", warningTicks: 2, recoveryTicks: 2 },
       { id: "slash", warningTicks: 2, recoveryTicks: 2 },
     ]);
 
-    expect(
-      actorCatalog.enemies.map(({ id, guardId, attackIds }) => ({ id, guardId, attackIds })),
-    ).toEqual([
+    expect(actorCatalog.enemies.map(({ id, guardId, attackIds }) => ({ id, guardId, attackIds }))).toEqual([
       { id: "thrust_enemy", guardId: "small", attackIds: ["thrust"] },
       { id: "slash_enemy", guardId: "small", attackIds: ["slash"] },
       { id: "ranged_enemy", guardId: "small", attackIds: ["ranged_cross"] },
       { id: "charge_enemy", guardId: "heavy", attackIds: ["charge"] },
       { id: "bomb_enemy", guardId: null, attackIds: ["bomb_area"] },
     ]);
-    expect(
-      actorCatalog.enemies.find((enemy) => enemy.id === "charge_enemy")?.roleTuning,
-    ).toBeNull();
+    expect(actorCatalog.enemies.find((enemy) => enemy.id === "charge_enemy")?.roleTuning).toBeNull();
   });
 });

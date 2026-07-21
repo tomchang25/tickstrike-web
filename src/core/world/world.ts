@@ -38,11 +38,7 @@ import {
   type ReservationRequest,
   type TelegraphInput,
 } from "./grid-board";
-import {
-  CombatOperations,
-  type AttackRetargetResult,
-  type EnemyAttackResolution,
-} from "./combat-operations";
+import { CombatOperations, type AttackRetargetResult, type EnemyAttackResolution } from "./combat-operations";
 import { RunBuild } from "./run-build";
 import { WaveRuntime } from "./wave-runtime";
 
@@ -60,11 +56,7 @@ export type {
   TelegraphInput,
 } from "./grid-board";
 export { GridBoard } from "./grid-board";
-export type {
-  AttackRetargetResult,
-  CombatWorldAccess,
-  EnemyAttackResolution,
-} from "./combat-operations";
+export type { AttackRetargetResult, CombatWorldAccess, EnemyAttackResolution } from "./combat-operations";
 export { CombatOperations } from "./combat-operations";
 export { RunBuild } from "./run-build";
 export { WaveRuntime } from "./wave-runtime";
@@ -156,9 +148,7 @@ function cloneEntity(entity: EntityState): EntityState {
     ...(entity.enemyAction ? { enemyAction: cloneEnemyAction(entity.enemyAction) } : {}),
     ...(entity.mobility ? { mobility: { ...entity.mobility } } : {}),
     ...(entity.facing ? { facing: cloneCell(entity.facing) } : {}),
-    ...(entity.committedAttack
-      ? { committedAttack: cloneCommittedAttack(entity.committedAttack) }
-      : {}),
+    ...(entity.committedAttack ? { committedAttack: cloneCommittedAttack(entity.committedAttack) } : {}),
   };
 }
 
@@ -194,20 +184,11 @@ export class World implements WorldView {
 
   constructor(arena: Arena, seed?: Seed);
   constructor(width: number, height: number, tiles: readonly TileKind[], seed?: Seed);
-  constructor(
-    arenaOrWidth: Arena | number,
-    heightOrSeed?: number | Seed,
-    tiles?: readonly TileKind[],
-    seed?: Seed,
-  ) {
+  constructor(arenaOrWidth: Arena | number, heightOrSeed?: number | Seed, tiles?: readonly TileKind[], seed?: Seed) {
     const isArena = arenaOrWidth instanceof Arena;
     this.geometry = isArena
       ? arenaOrWidth
-      : Arena.fromTiles(
-          arenaOrWidth,
-          typeof heightOrSeed === "number" ? heightOrSeed : 0,
-          tiles ?? [],
-        );
+      : Arena.fromTiles(arenaOrWidth, typeof heightOrSeed === "number" ? heightOrSeed : 0, tiles ?? []);
     const rootSeed = isArena ? heightOrSeed : seed;
     this.seed = new RandomStreams(rootSeed ?? 0).rootSeed;
     this.rootSeed = this.seed;
@@ -313,9 +294,7 @@ export class World implements WorldView {
   }
 
   listActiveEntities(): readonly EntityState[] {
-    return [...this.entities.values()]
-      .filter((entity) => !isTerminalPhase(entity.phase))
-      .map(cloneEntity);
+    return [...this.entities.values()].filter((entity) => !isTerminalPhase(entity.phase)).map(cloneEntity);
   }
 
   get playerCell(): Cell | undefined {
@@ -336,9 +315,7 @@ export class World implements WorldView {
    * victory once Child C1 removes terminal entities and the terminal scan would otherwise never
    * fire again.
    */
-  updateEncounterOutcome(waveGate?: {
-    readonly victoryReady: boolean;
-  }): EncounterOutcome | undefined {
+  updateEncounterOutcome(waveGate?: { readonly victoryReady: boolean }): EncounterOutcome | undefined {
     if (this.currentOutcome !== "running") {
       return undefined;
     }
@@ -360,10 +337,7 @@ export class World implements WorldView {
     const enabledEnemies = [...this.entities.values()].filter(
       (entity) => entity.kind === "enemy" && entity.enemyAction !== undefined,
     );
-    if (
-      enabledEnemies.length > 0 &&
-      enabledEnemies.every((enemy) => isTerminalPhase(enemy.phase))
-    ) {
+    if (enabledEnemies.length > 0 && enabledEnemies.every((enemy) => isTerminalPhase(enemy.phase))) {
       this.currentOutcome = "victory";
       return this.currentOutcome;
     }
@@ -432,11 +406,7 @@ export class World implements WorldView {
    * trigger artifact, adds its acquired trigger (deduplicated; enforced by the trigger's own
    * one-stack cap upstream, not re-validated here).
    */
-  applyRewardSelection(
-    artifactId: string,
-    resultingStackCount: number,
-    trigger?: ArtifactTrigger,
-  ): RunBuildState {
+  applyRewardSelection(artifactId: string, resultingStackCount: number, trigger?: ArtifactTrigger): RunBuildState {
     return this.run.applyRewardSelection(artifactId, resultingStackCount, trigger);
   }
 
@@ -519,8 +489,7 @@ export class World implements WorldView {
     if (!entity || (kind && entity.kind !== kind)) {
       return undefined;
     }
-    return sameCell(entity.cell, cell) ||
-      entity.footprint.some((occupied) => sameCell(occupied, cell))
+    return sameCell(entity.cell, cell) || entity.footprint.some((occupied) => sameCell(occupied, cell))
       ? entity
       : undefined;
   }
@@ -579,9 +548,7 @@ export class World implements WorldView {
         guard: entity.guard ? { ...entity.guard, current: 0 } : undefined,
         staggerTicks: undefined,
         protectionTicks: undefined,
-        ...(entity.mobility
-          ? { mobility: { ...entity.mobility, remainingCooldown: 0, invulnerable: false } }
-          : {}),
+        ...(entity.mobility ? { mobility: { ...entity.mobility, remainingCooldown: 0, invulnerable: false } } : {}),
       });
       return;
     }
@@ -774,9 +741,7 @@ export class World implements WorldView {
       staggerTicks: undefined,
       protectionTicks: undefined,
       guard: entity.guard ? { ...entity.guard, current: 0 } : undefined,
-      ...(entity.mobility
-        ? { mobility: { ...entity.mobility, remainingCooldown: 0, invulnerable: false } }
-        : {}),
+      ...(entity.mobility ? { mobility: { ...entity.mobility, remainingCooldown: 0, invulnerable: false } } : {}),
     });
   }
 
@@ -827,9 +792,7 @@ export class World implements WorldView {
    * Claims all one-cell movement intents as one arbitration step. The claims
    * remain installed until the enemy phase applies every granted movement.
    */
-  requestMovementReservations(
-    requests: readonly MovementReservationRequest[],
-  ): readonly ReservationDecision[] {
+  requestMovementReservations(requests: readonly MovementReservationRequest[]): readonly ReservationDecision[] {
     return this.board.requestMovementReservations(requests);
   }
 

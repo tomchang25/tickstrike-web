@@ -14,28 +14,22 @@ describe("canonical artifact content", () => {
       "execution",
       "chain_dash",
     ]);
-    expect(
-      artifactCatalog.artifacts.filter((artifact) => artifact.category === "minor"),
-    ).toHaveLength(6);
-    expect(
-      artifactCatalog.artifacts.filter((artifact) => artifact.category === "major"),
-    ).toHaveLength(3);
+    expect(artifactCatalog.artifacts.filter((artifact) => artifact.category === "minor")).toHaveLength(6);
+    expect(artifactCatalog.artifacts.filter((artifact) => artifact.category === "major")).toHaveLength(3);
     expect(artifactCatalog.artifacts.filter((artifact) => artifact.isCurse)).toHaveLength(0);
   });
 
   it("records every shipped display value and immutable metadata", () => {
     expect(
-      artifactCatalog.artifacts.map(
-        ({ id, name, descriptionTemplate, category, maxStacks, minWave, magnitude }) => ({
-          id,
-          name,
-          descriptionTemplate,
-          category,
-          maxStacks,
-          minWave,
-          magnitude,
-        }),
-      ),
+      artifactCatalog.artifacts.map(({ id, name, descriptionTemplate, category, maxStacks, minWave, magnitude }) => ({
+        id,
+        name,
+        descriptionTemplate,
+        category,
+        maxStacks,
+        minWave,
+        magnitude,
+      })),
     ).toEqual([
       {
         id: "attack_up",
@@ -120,9 +114,7 @@ describe("canonical artifact content", () => {
         magnitude: 1,
       },
     ]);
-    expect(artifactCatalog.artifacts.every((artifact) => artifact.exclusivityGroup === "")).toBe(
-      true,
-    );
+    expect(artifactCatalog.artifacts.every((artifact) => artifact.exclusivityGroup === "")).toBe(true);
     expect(artifactCatalog.artifacts.every((artifact) => artifact.isCurse === false)).toBe(true);
   });
 
@@ -190,9 +182,6 @@ describe("canonical artifact content", () => {
         effects: [{ kind: "trigger", trigger: "chain-dash" }],
       },
     ]);
-    expect(
-      artifactCatalog.artifacts.find((artifact) => artifact.id === "dash_attack_up")
-        ?.requiredMobility,
-    ).toBeNull();
+    expect(artifactCatalog.artifacts.find((artifact) => artifact.id === "dash_attack_up")?.requiredMobility).toBeNull();
   });
 });

@@ -68,14 +68,8 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(canvas).toHaveAttribute("data-smash-preview-cell", "4,3");
   await expect(canvas).toHaveAttribute("data-smash-preview-valid", "true");
   await expect(canvas).toHaveAttribute("data-preview-kills", "");
-  await expect(canvas).toHaveAttribute(
-    "data-preview-displacements",
-    "enemy-right:5,3>7,3;enemy-water:4,4>4,6",
-  );
-  await expect(canvas).toHaveAttribute(
-    "data-preview-terminal",
-    "enemy-center:crush;enemy-water:water",
-  );
+  await expect(canvas).toHaveAttribute("data-preview-displacements", "enemy-right:5,3>7,3;enemy-water:4,4>4,6");
+  await expect(canvas).toHaveAttribute("data-preview-terminal", "enemy-center:crush;enemy-water:water");
   await expect(canvas).toHaveAttribute("data-preview-blocked", "enemy-blocked");
   await page.mouse.click(smashTarget.x, smashTarget.y);
   await page.keyboard.up("Alt");
@@ -115,14 +109,10 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
 
   // Once the terminal timelines settle, neither ghost is addressable on the canvas any more.
   await expect
-    .poll(async () =>
-      page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-water"))),
-    )
+    .poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-water"))))
     .toBe(false);
   await expect
-    .poll(async () =>
-      page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-center"))),
-    )
+    .poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-center"))))
     .toBe(false);
 
   await page.getByRole("button", { name: "Reset scenario" }).click();
@@ -130,9 +120,7 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "alive");
   await expect(page.getByTestId("enemy-count")).toHaveText("4");
   await expect
-    .poll(async () =>
-      page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-center"))),
-    )
+    .poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-center"))))
     .toBe(true);
 });
 
@@ -173,25 +161,19 @@ for (const [scenario, profile] of [
     await expect(canvas).not.toHaveAttribute("data-enemy-presentations", /enemy-water:/);
     await expect
       .poll(async () =>
-        page.evaluate(() =>
-          (window.__RETAINED_PRESENTATION_LOG__ ?? []).some((entry) => entry.includes(":water:7")),
-        ),
+        page.evaluate(() => (window.__RETAINED_PRESENTATION_LOG__ ?? []).some((entry) => entry.includes(":water:7"))),
       )
       .toBe(true);
     await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
     await expect(page.getByTestId("entity-enemy-water")).toHaveCount(0);
     await expect(canvas).not.toHaveAttribute("data-retained-presentations", /enemy-water:/);
     await expect
-      .poll(async () =>
-        page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-water"))),
-      )
+      .poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-water"))))
       .toBe(false);
   });
 }
 
-test("switching between water scenarios reconciles the reused entity's presentation", async ({
-  page,
-}) => {
+test("switching between water scenarios reconciles the reused entity's presentation", async ({ page }) => {
   await page.goto("/?scenario=water-ranged");
   const canvas = page.getByTestId("game-canvas");
   await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-water:enemy\.ranged:/);
@@ -277,9 +259,7 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   await expect(canvas).toHaveAttribute("data-player-animation", "idle");
 });
 
-test("Charge retains its facing-direction telegraph when the Player moves aside", async ({
-  page,
-}) => {
+test("Charge retains its facing-direction telegraph when the Player moves aside", async ({ page }) => {
   await page.goto("/?scenario=charge-enemy");
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
@@ -290,14 +270,8 @@ test("Charge retains its facing-direction telegraph when the Player moves aside"
     }
     await api.execute({ type: "move", actorId: "player", direction: { x: -1, y: 0 } });
   });
-  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute(
-    "data-activity",
-    "telegraphing",
-  );
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
-    "data-telegraph-labels",
-    /8,3:2.*7,3:2.*6,3:2/,
-  );
+  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-telegraph-labels", /8,3:2.*7,3:2.*6,3:2/);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -309,14 +283,8 @@ test("Charge retains its facing-direction telegraph when the Player moves aside"
 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "2");
-  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute(
-    "data-attack-warning-ticks",
-    "1",
-  );
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
-    "data-telegraph-labels",
-    /8,3:1.*7,3:1.*6,3:1/,
-  );
+  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute("data-attack-warning-ticks", "1");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-telegraph-labels", /8,3:1.*7,3:1.*6,3:1/);
 });
 
 test("Enemy navigation testbed exposes blocked and reserved grid cells", async ({ page }) => {
@@ -359,10 +327,7 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
-    "data-player-profile",
-    "character.ninja",
-  );
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
 
@@ -372,9 +337,7 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   expect(arena?.terrain.filter((terrain) => terrain === "sea")).toHaveLength(44);
 });
 
-test("Held movement queues steps and settles each player presentation in order", async ({
-  page,
-}) => {
+test("Held movement queues steps and settles each player presentation in order", async ({ page }) => {
   await page.goto("/?scenario=empty-arena");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
@@ -382,9 +345,7 @@ test("Held movement queues steps and settles each player presentation in order",
   const canvas = page.getByTestId("game-canvas");
   await expect(page.locator("html")).toHaveAttribute("data-keyboard-input-ready", "true");
   await page.keyboard.down("ArrowRight");
-  await expect
-    .poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.getState().tick ?? 0))
-    .toBeGreaterThan(1);
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.getState().tick ?? 0)).toBeGreaterThan(1);
   await expect(canvas).toHaveAttribute("data-player-animation", "move");
   const canvasBox = await canvas.boundingBox();
   if (!canvasBox) {
@@ -418,9 +379,7 @@ test("Held movement queues steps and settles each player presentation in order",
   await expect(canvas).toHaveAttribute("data-player-facing", "0,-1");
 });
 
-test("Foundation arena resets its generation without stale presentation state", async ({
-  page,
-}) => {
+test("Foundation arena resets its generation without stale presentation state", async ({ page }) => {
   await page.goto("/?scenario=tick-arena");
 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
@@ -439,10 +398,7 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-facing-x", "1");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-facing-y", "0");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-telegraph", "false");
-  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute(
-    "data-committed-attack-count",
-    "0",
-  );
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "0");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-width", "12");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-height", "12");
   await expect(page.getByTestId("debug-mode")).not.toBeChecked();
@@ -464,9 +420,7 @@ test("Foundation arena resets its generation without stale presentation state", 
 
   const reset = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   expect(reset).toEqual(initial);
-  expect(await page.getByTestId("semantic-mirror").getAttribute("data-reservation-count")).toBe(
-    "0",
-  );
+  expect(await page.getByTestId("semantic-mirror").getAttribute("data-reservation-count")).toBe("0");
   expect(await page.getByTestId("semantic-mirror").getAttribute("data-telegraph-count")).toBe("0");
 });
 
@@ -484,39 +438,18 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("tick-value")).toHaveText("1");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "3");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
-    "data-telegraph-labels",
-    /7,6:.*@head.*8,6:.*@head/,
-  );
-  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute(
-    "data-activity",
-    "telegraphing",
-  );
-  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute(
-    "data-attack-warning-ticks",
-    "2",
-  );
-  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute(
-    "data-attack-warning-ticks",
-    "2",
-  );
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
-    "data-activity",
-    "telegraphing",
-  );
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
-    "data-attack-warning-ticks",
-    "2",
-  );
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-telegraph-labels", /7,6:.*@head.*8,6:.*@head/);
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "2");
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-attack-warning-ticks", "2");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
     "data-enemy-presentations",
     /enemy-thrust:enemy\.thrust:green:prepareAttack.*enemy-slash:enemy\.slash:purple:prepareAttack.*enemy-ranged:enemy\.ranged:eye:prepareAttack/,
   );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-telegraph", "true");
-  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute(
-    "data-committed-attack-count",
-    "3",
-  );
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "3");
   await expect(page.getByTestId("enemy-telegraph-count")).toHaveText("3");
 
   await page.keyboard.press("l");
@@ -525,10 +458,7 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-state", "alive");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "96");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-guard", "28");
-  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute(
-    "data-status",
-    "telegraphing",
-  );
+  await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-status", "telegraphing");
   await expect(page.getByTestId("enemy-guard-enemy-slash")).toContainText("28/32");
   await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
 
@@ -563,18 +493,12 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   });
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
-  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain(
-    "directional_hit",
-  );
-  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain(
-    "enemy_attack_detonated",
-  );
+  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain("directional_hit");
+  expect(await page.getByTestId("event-log").locator("li").allTextContents()).toContain("enemy_attack_detonated");
   const observedEventTypes = await page.evaluate(() =>
     window.__TICKSTRIKE__?.getState().lastEvents.map((event) => event.type),
   );
-  expect(observedEventTypes).toEqual(
-    await page.getByTestId("event-log").locator("li").allTextContents(),
-  );
+  expect(observedEventTypes).toEqual(await page.getByTestId("event-log").locator("li").allTextContents());
 });
 
 test("Dash aimed at an enemy lands before it without dealing damage", async ({ page }) => {
@@ -612,9 +536,7 @@ test("Dash aimed at an enemy lands before it without dealing damage", async ({ p
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
-test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets cleanly", async ({
-  page,
-}) => {
+test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets cleanly", async ({ page }) => {
   await page.goto("/?scenario=ranged-enemy");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
@@ -637,10 +559,7 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   );
   expect(movementState).toMatchObject({ cell: { x: 6, y: 3 }, lastDecision: "move" });
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-  await expect(canvas).toHaveAttribute(
-    "data-enemy-presentations",
-    /enemy-ranged:enemy\.ranged:eye:idle/,
-  );
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:idle/);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -662,18 +581,10 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   });
 
   await expect(page.getByTestId("tick-value")).toHaveText("3");
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
-    "data-activity",
-    "telegraphing",
-  );
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
-    "data-attack-warning-ticks",
-    "2",
-  );
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");
   const committed = await page.evaluate(
-    () =>
-      window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")
-        ?.committedAttack,
+    () => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack,
   );
   expect(committed).toMatchObject({
     metadata: { targetCenter: { x: 6, y: 6 } },
@@ -685,10 +596,7 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
       { x: 5, y: 6 },
     ],
   });
-  await expect(canvas).toHaveAttribute(
-    "data-enemy-presentations",
-    /enemy-ranged:enemy\.ranged:eye:prepareAttack/,
-  );
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:prepareAttack/);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -697,14 +605,10 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
     }
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
   });
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
-    "data-attack-warning-ticks",
-    "1",
-  );
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "1");
   const lockedDuringWarning = await page.evaluate(
     () =>
-      window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")
-        ?.committedAttack?.cells,
+      window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack?.cells,
   );
   expect(lockedDuringWarning).toEqual(committed?.cells);
 
@@ -715,10 +619,7 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
     }
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
   });
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute(
-    "data-activity",
-    "recovering",
-  );
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "recovering");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-telegraph", "false");
   await expect(page.getByTestId("event-log")).toContainText("enemy_attack_detonated");
 
@@ -727,15 +628,10 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-telegraph-count", "0");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-  await expect(canvas).toHaveAttribute(
-    "data-enemy-presentations",
-    /enemy-ranged:enemy\.ranged:eye:idle/,
-  );
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:idle/);
 });
 
-test("Pointer aiming previews attack and Mobility without advancing until click", async ({
-  page,
-}) => {
+test("Pointer aiming previews attack and Mobility without advancing until click", async ({ page }) => {
   await page.goto("/?scenario=tick-arena");
 
   const canvas = page.getByTestId("game-canvas");
@@ -810,9 +706,7 @@ test("Tick Arena presents defeat and restarts cleanly after a committed hit", as
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
-test("Terminal presentation is cancelled before reset and scenario replacement", async ({
-  page,
-}) => {
+test("Terminal presentation is cancelled before reset and scenario replacement", async ({ page }) => {
   test.setTimeout(30_000);
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
@@ -864,9 +758,7 @@ test("Terminal presentation is cancelled before reset and scenario replacement",
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
-test("Bomb commits from the adjacent ring, locks its footprint, and self-destructs on detonation", async ({
-  page,
-}) => {
+test("Bomb commits from the adjacent ring, locks its footprint, and self-destructs on detonation", async ({ page }) => {
   test.setTimeout(30_000);
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
@@ -888,20 +780,14 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
         break;
       }
       const isFree = (cell: { x: number; y: number }) => {
-        if (
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= state.arena.width ||
-          cell.y >= state.arena.height
-        ) {
+        if (cell.x < 0 || cell.y < 0 || cell.x >= state.arena.width || cell.y >= state.arena.height) {
           return false;
         }
         if (state.arena.tiles[cell.y * state.arena.width + cell.x] !== "floor") {
           return false;
         }
         return !state.entities.some(
-          (entity) =>
-            entity.phase === "alive" && entity.cell.x === cell.x && entity.cell.y === cell.y,
+          (entity) => entity.phase === "alive" && entity.cell.x === cell.x && entity.cell.y === cell.y,
         );
       };
       const chebyshev = (a: { x: number; y: number }, b: { x: number; y: number }) =>
@@ -941,14 +827,8 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
     metadata: { selfDestruct: true },
   });
   expect(committed?.committedAttack?.cells).toContainEqual(committed?.cell);
-  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute(
-    "data-activity",
-    "telegraphing",
-  );
-  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute(
-    "data-attack-warning-ticks",
-    "3",
-  );
+  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-activity", "telegraphing");
+  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-attack-warning-ticks", "3");
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -958,10 +838,7 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
   });
-  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute(
-    "data-attack-warning-ticks",
-    "1",
-  );
+  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-attack-warning-ticks", "1");
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -975,12 +852,8 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
   await expect(page.getByTestId("event-log")).toContainText("enemy_self_destructed");
   await expect(page.getByTestId("event-log")).toContainText("enemy_died");
   const finalState = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(finalState?.telegraphs.some((telegraph) => telegraph.sourceId === "enemy-bomb")).toBe(
-    false,
-  );
-  expect(finalState?.reservations.some((reservation) => reservation.ownerId === "enemy-bomb")).toBe(
-    false,
-  );
+  expect(finalState?.telegraphs.some((telegraph) => telegraph.sourceId === "enemy-bomb")).toBe(false);
+  expect(finalState?.reservations.some((reservation) => reservation.ownerId === "enemy-bomb")).toBe(false);
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
@@ -1006,20 +879,14 @@ test("Bomb disarms when killed before its fuse resolves", async ({ page }) => {
         break;
       }
       const isFree = (cell: { x: number; y: number }) => {
-        if (
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= state.arena.width ||
-          cell.y >= state.arena.height
-        ) {
+        if (cell.x < 0 || cell.y < 0 || cell.x >= state.arena.width || cell.y >= state.arena.height) {
           return false;
         }
         if (state.arena.tiles[cell.y * state.arena.width + cell.x] !== "floor") {
           return false;
         }
         return !state.entities.some(
-          (entity) =>
-            entity.phase === "alive" && entity.cell.x === cell.x && entity.cell.y === cell.y,
+          (entity) => entity.phase === "alive" && entity.cell.x === cell.x && entity.cell.y === cell.y,
         );
       };
       const chebyshev = (a: { x: number; y: number }, b: { x: number; y: number }) =>
@@ -1080,15 +947,11 @@ test("Bomb disarms when killed before its fuse resolves", async ({ page }) => {
   await expect(page.getByTestId("entity-enemy-bomb")).toHaveCount(0);
   await expect(page.getByTestId("event-log")).not.toContainText("enemy_self_destructed");
   const finalState = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(finalState?.telegraphs.some((telegraph) => telegraph.sourceId === "enemy-bomb")).toBe(
-    false,
-  );
+  expect(finalState?.telegraphs.some((telegraph) => telegraph.sourceId === "enemy-bomb")).toBe(false);
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
-test("Resetting mid-fuse clears Bomb's telegraph and returns it to a fresh idle state", async ({
-  page,
-}) => {
+test("Resetting mid-fuse clears Bomb's telegraph and returns it to a fresh idle state", async ({ page }) => {
   test.setTimeout(30_000);
   await page.goto("/?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
@@ -1106,30 +969,18 @@ test("Resetting mid-fuse clears Bomb's telegraph and returns it to a fresh idle 
       const state = api.getState();
       const bomb = state.entities.find((entity) => entity.id === "enemy-bomb");
       const player = state.entities.find((entity) => entity.id === "player");
-      if (
-        !bomb ||
-        bomb.phase !== "alive" ||
-        !player ||
-        player.phase !== "alive" ||
-        bomb.activity === "telegraphing"
-      ) {
+      if (!bomb || bomb.phase !== "alive" || !player || player.phase !== "alive" || bomb.activity === "telegraphing") {
         break;
       }
       const isFree = (cell: { x: number; y: number }) => {
-        if (
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= state.arena.width ||
-          cell.y >= state.arena.height
-        ) {
+        if (cell.x < 0 || cell.y < 0 || cell.x >= state.arena.width || cell.y >= state.arena.height) {
           return false;
         }
         if (state.arena.tiles[cell.y * state.arena.width + cell.x] !== "floor") {
           return false;
         }
         return !state.entities.some(
-          (entity) =>
-            entity.phase === "alive" && entity.cell.x === cell.x && entity.cell.y === cell.y,
+          (entity) => entity.phase === "alive" && entity.cell.x === cell.x && entity.cell.y === cell.y,
         );
       };
       const chebyshev = (a: { x: number; y: number }, b: { x: number; y: number }) =>
@@ -1157,10 +1008,7 @@ test("Resetting mid-fuse clears Bomb's telegraph and returns it to a fresh idle 
       await api.execute({ type: "move", actorId: "player", direction });
     }
   });
-  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute(
-    "data-activity",
-    "telegraphing",
-  );
+  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-activity", "telegraphing");
 
   await page.getByRole("button", { name: "Reset scenario" }).click();
 

@@ -47,15 +47,9 @@ export class RunBuild {
    * trigger artifact, adds its acquired trigger (deduplicated; enforced by the trigger's own
    * one-stack cap upstream, not re-validated here).
    */
-  applyRewardSelection(
-    artifactId: string,
-    resultingStackCount: number,
-    trigger?: ArtifactTrigger,
-  ): RunBuildState {
+  applyRewardSelection(artifactId: string, resultingStackCount: number, trigger?: ArtifactTrigger): RunBuildState {
     const triggers =
-      trigger && !this.build.triggers.includes(trigger)
-        ? [...this.build.triggers, trigger]
-        : this.build.triggers;
+      trigger && !this.build.triggers.includes(trigger) ? [...this.build.triggers, trigger] : this.build.triggers;
     this.build = {
       stacks: { ...this.build.stacks, [artifactId]: resultingStackCount },
       triggers,

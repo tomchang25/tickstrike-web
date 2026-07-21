@@ -21,9 +21,7 @@ export function SemanticMirror({ snapshot, generation, isIdle }: SemanticMirrorP
       data-outcome={snapshot.outcome}
       data-reservation-count={snapshot.reservations.length}
       data-telegraph-count={snapshot.telegraphs.length}
-      data-committed-attack-count={
-        snapshot.entities.filter((entity) => entity.committedAttack).length
-      }
+      data-committed-attack-count={snapshot.entities.filter((entity) => entity.committedAttack).length}
     >
       {snapshot.entities.map((entity) => (
         <span

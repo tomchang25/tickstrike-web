@@ -39,13 +39,9 @@ function rangedMovementCandidates(
     return [];
   }
   const movesTowardBand = distance > tuning.maxDistance;
-  const improves = (nextDistance: number) =>
-    movesTowardBand ? nextDistance < distance : nextDistance > distance;
+  const improves = (nextDistance: number) => (movesTowardBand ? nextDistance < distance : nextDistance > distance);
   const boundaryDistance = (nextDistance: number) =>
-    Math.min(
-      Math.abs(nextDistance - tuning.minDistance),
-      Math.abs(nextDistance - tuning.maxDistance),
-    );
+    Math.min(Math.abs(nextDistance - tuning.minDistance), Math.abs(nextDistance - tuning.maxDistance));
 
   return CARDINAL_DIRECTIONS.map((direction) => ({
     destination: { x: enemy.cell.x + direction.x, y: enemy.cell.y + direction.y },

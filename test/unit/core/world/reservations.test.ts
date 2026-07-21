@@ -29,9 +29,7 @@ describe("world reservations and telegraphs", () => {
 
     expect(movement.granted).toBe(true);
     expect(attack.granted).toBe(false);
-    expect(world.listReservations().map((reservation) => reservation.ownerId)).toEqual([
-      "movement",
-    ]);
+    expect(world.listReservations().map((reservation) => reservation.ownerId)).toEqual(["movement"]);
   });
 
   it("replaces claims and keeps overlapping telegraph sources independent", () => {
@@ -45,9 +43,7 @@ describe("world reservations and telegraphs", () => {
     expect(world.isReserved({ x: 3, y: 2 })).toBe(true);
     expect(world.getTelegraphsAt({ x: 4, y: 4 })).toHaveLength(2);
     world.clearTelegraph("one");
-    expect(world.getTelegraphsAt({ x: 4, y: 4 }).map((telegraph) => telegraph.sourceId)).toEqual([
-      "two",
-    ]);
+    expect(world.getTelegraphsAt({ x: 4, y: 4 }).map((telegraph) => telegraph.sourceId)).toEqual(["two"]);
   });
 
   it("releases terminal occupancy and owned semantic state immediately", () => {

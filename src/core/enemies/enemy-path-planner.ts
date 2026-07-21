@@ -62,11 +62,7 @@ function reconstructPath(cameFrom: ReadonlyMap<string, Cell>, goal: Cell): reado
   return path;
 }
 
-function comparePaths(
-  a: readonly Cell[],
-  b: readonly Cell[],
-  distances: ReadonlyMap<string, number>,
-): number {
+function comparePaths(a: readonly Cell[], b: readonly Cell[], distances: ReadonlyMap<string, number>): number {
   if (a.length !== b.length) {
     return a.length - b.length;
   }

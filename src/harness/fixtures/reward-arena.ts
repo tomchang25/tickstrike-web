@@ -81,9 +81,8 @@ function buildRewardWave(waveNumber: number): WaveDefinition {
 // needs Wave 4 to pause on its own offer.
 const REWARD_WAVE_COUNT = 4;
 
-const REWARD_WAVES: readonly WaveDefinition[] = Array.from(
-  { length: REWARD_WAVE_COUNT },
-  (_, index) => buildRewardWave(index + 1),
+const REWARD_WAVES: readonly WaveDefinition[] = Array.from({ length: REWARD_WAVE_COUNT }, (_, index) =>
+  buildRewardWave(index + 1),
 );
 
 /**
@@ -137,12 +136,7 @@ export function createRewardArena(seed: Seed = REWARD_SCENARIO_SEED): World {
     throw new Error("Reward scenario Wave 1 content is incomplete.");
   }
   const random = () => world.random.get("waves").nextUnit();
-  const slots = createInitialSlotStates(
-    firstWave,
-    rewardScenarioContext.groups,
-    FIRST_WAVE_NUMBER,
-    random,
-  );
+  const slots = createInitialSlotStates(firstWave, rewardScenarioContext.groups, FIRST_WAVE_NUMBER, random);
   world.setWave(FIRST_WAVE_NUMBER, slots);
 
   return world;

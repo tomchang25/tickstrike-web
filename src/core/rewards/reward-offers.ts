@@ -16,11 +16,7 @@ export function getArtifactStackCount(build: RunBuildState, artifactId: string):
   return build.stacks[artifactId] ?? 0;
 }
 
-export function withArtifactStackCount(
-  build: RunBuildState,
-  artifactId: string,
-  count: number,
-): RunBuildState {
+export function withArtifactStackCount(build: RunBuildState, artifactId: string, count: number): RunBuildState {
   return { ...build, stacks: { ...build.stacks, [artifactId]: count } };
 }
 
@@ -29,9 +25,7 @@ export function hasAcquiredTrigger(build: RunBuildState, trigger: ArtifactTrigge
 }
 
 export function withAcquiredTrigger(build: RunBuildState, trigger: ArtifactTrigger): RunBuildState {
-  return hasAcquiredTrigger(build, trigger)
-    ? build
-    : { ...build, triggers: [...build.triggers, trigger] };
+  return hasAcquiredTrigger(build, trigger) ? build : { ...build, triggers: [...build.triggers, trigger] };
 }
 
 /** The two Dash triggers this child supports; Chain Dash awaits its replacement route design. */
@@ -159,11 +153,7 @@ function eligibleCandidates(
     if (currentStacks + stackGain > artifact.maxStacks) {
       return false;
     }
-    return !(
-      artifact.exclusivityGroup !== "" &&
-      currentStacks === 0 &&
-      acquiredGroups.has(artifact.exclusivityGroup)
-    );
+    return !(artifact.exclusivityGroup !== "" && currentStacks === 0 && acquiredGroups.has(artifact.exclusivityGroup));
   });
 }
 
@@ -171,11 +161,7 @@ function eligibleCandidates(
  * Selects up to `count` distinct artifacts without replacement, one draw per pick, never taking two
  * that share a non-empty exclusivity group. Deterministic in the caller's `draw` sequence.
  */
-function drawDistinct(
-  pool: readonly ArtifactDefinition[],
-  count: number,
-  draw: () => number,
-): ArtifactDefinition[] {
+function drawDistinct(pool: readonly ArtifactDefinition[], count: number, draw: () => number): ArtifactDefinition[] {
   const remaining = [...pool];
   const chosen: ArtifactDefinition[] = [];
   while (chosen.length < count && remaining.length > 0) {
@@ -192,11 +178,7 @@ function drawDistinct(
   return chosen;
 }
 
-function toCard(
-  build: RunBuildState,
-  artifact: ArtifactDefinition,
-  stackGain: number,
-): RewardOfferCard {
+function toCard(build: RunBuildState, artifact: ArtifactDefinition, stackGain: number): RewardOfferCard {
   return {
     artifactId: artifact.id,
     resultingStackCount: getArtifactStackCount(build, artifact.id) + stackGain,
@@ -211,9 +193,7 @@ function toCard(
  * caller advances the next wave instead of installing an inert offer. No phantom or disabled cards
  * are produced; a smaller eligible pool yields fewer cards.
  */
-export function generateRewardOffer(
-  input: GenerateRewardOfferInput,
-): PendingRewardOffer | undefined {
+export function generateRewardOffer(input: GenerateRewardOfferInput): PendingRewardOffer | undefined {
   const acquiredGroups = acquiredExclusivityGroups(input.artifacts, input.build);
   let cards: RewardOfferCard[];
 
@@ -223,21 +203,14 @@ export function generateRewardOffer(
       MILESTONE_MAJOR_LIMIT,
       input.draw,
     );
-    const majorGroups = new Set(
-      majors.map((major) => major.exclusivityGroup).filter((group) => group !== ""),
+    const majorGroups = new Set(majors.map((major) => major.exclusivityGroup).filter((group) => group !== ""));
+    const minorPool = eligibleCandidates(input, "minor", MILESTONE_MINOR_STACK_GAIN, acquiredGroups).filter(
+      (minor) => minor.exclusivityGroup === "" || !majorGroups.has(minor.exclusivityGroup),
     );
-    const minorPool = eligibleCandidates(
-      input,
-      "minor",
-      MILESTONE_MINOR_STACK_GAIN,
-      acquiredGroups,
-    ).filter((minor) => minor.exclusivityGroup === "" || !majorGroups.has(minor.exclusivityGroup));
     const minors = drawDistinct(minorPool, ORDINARY_CARD_COUNT - majors.length, input.draw);
 
     const majorCards = majors.map((artifact) => toCard(input.build, artifact, 1));
-    const minorCards = minors.map((artifact) =>
-      toCard(input.build, artifact, MILESTONE_MINOR_STACK_GAIN),
-    );
+    const minorCards = minors.map((artifact) => toCard(input.build, artifact, MILESTONE_MINOR_STACK_GAIN));
     cards = [];
     let nextMinor = 0;
     if (minorCards[nextMinor]) {
@@ -251,11 +224,7 @@ export function generateRewardOffer(
       }
     }
   } else {
-    const minors = drawDistinct(
-      eligibleCandidates(input, "minor", 1, acquiredGroups),
-      ORDINARY_CARD_COUNT,
-      input.draw,
-    );
+    const minors = drawDistinct(eligibleCandidates(input, "minor", 1, acquiredGroups), ORDINARY_CARD_COUNT, input.draw);
     cards = minors.map((artifact) => toCard(input.build, artifact, 1));
   }
 

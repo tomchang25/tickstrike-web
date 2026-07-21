@@ -145,11 +145,7 @@ export class GameRuntime {
 
         try {
           if (job.kind === "command") {
-            const resolution = resolveCommand(
-              this.requireWorld(),
-              job.command,
-              this.scenario?.waveContext,
-            );
+            const resolution = resolveCommand(this.requireWorld(), job.command, this.scenario?.waveContext);
 
             if (resolution.accepted) {
               this.presentation.reserveMotionOwners(resolution.events, job.generation);

@@ -7,12 +7,7 @@ import type {
   Telegraph,
 } from "../model/types";
 import type { CombatEvent } from "../events/combat-events";
-import type {
-  AttackResolutionTransaction,
-  CombatOperations,
-  GridBoard,
-  WorldView,
-} from "../world/world";
+import type { AttackResolutionTransaction, CombatOperations, GridBoard, WorldView } from "../world/world";
 
 /**
  * The capability handle the enemy phase and its behavior hooks receive instead
@@ -66,11 +61,7 @@ export interface EnemyBehavior {
    * Chooses the enemy's action for this turn. Only called for an alive, ready
    * enemy with an action definition while the Player is on the board.
    */
-  decide(
-    context: EnemyDecisionContext,
-    action: EnemyActionDefinition,
-    playerCell: Cell,
-  ): EnemyActionDecision;
+  decide(context: EnemyDecisionContext, action: EnemyActionDefinition, playerCell: Cell): EnemyActionDecision;
   /** When true, the enemy enters its authored rest after completing a move. */
   readonly restsAfterMove?: boolean;
   /**

@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type {
-  SpawnGroupDefinition,
-  WaveDefinition,
-  WaveGroupSlot,
-} from "@core/content/wave-schema";
+import type { SpawnGroupDefinition, WaveDefinition, WaveGroupSlot } from "@core/content/wave-schema";
 import type { RandomUnitSource } from "@core/waves/wave-inputs";
 import {
   createInitialSlotStates,
@@ -115,12 +111,7 @@ describe("createInitialSlotStates", () => {
       populationCap: 10,
       slots: [slotFor("grunts"), slotFor("mixed")],
     };
-    const states = createInitialSlotStates(
-      wave,
-      [fixedGroup, weightedGroup],
-      1,
-      sequenceSource([0.2, 0.8]),
-    );
+    const states = createInitialSlotStates(wave, [fixedGroup, weightedGroup], 1, sequenceSource([0.2, 0.8]));
     expect(states).toHaveLength(2);
     expect(states[0]!.remainingQueue).toHaveLength(5);
     expect(states[1]!.remainingQueue).toHaveLength(4);
@@ -163,10 +154,7 @@ describe("evaluateSlotEligibility", () => {
   });
 
   it("cascades eligibility in one pass once the predecessor has spawned and cleared", () => {
-    const next = evaluateSlotEligibility(wave, [
-      baseState({ hasEverSpawned: true, livingCount: 0 }),
-      baseState(),
-    ]);
+    const next = evaluateSlotEligibility(wave, [baseState({ hasEverSpawned: true, livingCount: 0 }), baseState()]);
     expect(next[0]!.eligible).toBe(true);
     expect(next[1]!.eligible).toBe(true);
   });
@@ -255,10 +243,7 @@ describe("selectAtomicBatch", () => {
     const result = selectAtomicBatch(
       wave,
       groups,
-      [
-        state({ eligible: true, remainingQueue: [] }),
-        state({ eligible: true, remainingQueue: members }),
-      ],
+      [state({ eligible: true, remainingQueue: [] }), state({ eligible: true, remainingQueue: members })],
       0,
     );
     expect(result?.slotIndex).toBe(1);
@@ -272,10 +257,7 @@ describe("selectAtomicBatch", () => {
       { enemyId: "thrust_enemy", level: 1 },
       { enemyId: "thrust_enemy", level: 1 },
     ];
-    const slotStates = [
-      state({ eligible: true, remainingQueue: members }),
-      state({ eligible: true }),
-    ];
+    const slotStates = [state({ eligible: true, remainingQueue: members }), state({ eligible: true })];
     const result = selectAtomicBatch(wave, groups, slotStates, 2);
     expect(result).toBeUndefined();
     expect(slotStates[0]!.remainingQueue).toBe(members);

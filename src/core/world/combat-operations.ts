@@ -152,11 +152,7 @@ export class CombatOperations {
     if (entity.phase !== "alive") {
       throw new Error(`Cannot turn terminal entity: ${id}`);
     }
-    if (
-      !Number.isInteger(facing.x) ||
-      !Number.isInteger(facing.y) ||
-      Math.abs(facing.x) + Math.abs(facing.y) !== 1
-    ) {
+    if (!Number.isInteger(facing.x) || !Number.isInteger(facing.y) || Math.abs(facing.x) + Math.abs(facing.y) !== 1) {
       throw new Error("Enemy facing must be cardinal.");
     }
     this.world.setEntity(id, { ...entity, facing: cloneCell(facing) });
@@ -285,9 +281,7 @@ export class CombatOperations {
       ...attack,
       ...(attack.role ? {} : { role: entity.enemyAction.role }),
       ...(attack.kind || !entity.enemyAction.kind ? {} : { kind: entity.enemyAction.kind }),
-      ...(attack.metadata || !entity.enemyAction.metadata
-        ? {}
-        : { metadata: entity.enemyAction.metadata }),
+      ...(attack.metadata || !entity.enemyAction.metadata ? {} : { metadata: entity.enemyAction.metadata }),
     });
     this.board.setTelegraph({ sourceId: id, phase: "warning", cells: committed.cells });
     this.world.setEntity(id, {

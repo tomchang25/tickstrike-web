@@ -59,9 +59,7 @@ function applyDefense(amount: number, defense: number): number {
   return (amount * amount) / (amount + defense);
 }
 
-export function calculateDirectionalHit(
-  input: DirectionalHitInput,
-): DirectionalHitResult | undefined {
+export function calculateDirectionalHit(input: DirectionalHitInput): DirectionalHitResult | undefined {
   if (input.target.phase !== "alive") {
     return undefined;
   }
@@ -102,11 +100,7 @@ export function calculateDirectionalHit(
   // A qualifying back-angle Dash hit zeroes Guard directly, bypassing ordinary Protection scaling,
   // guaranteeing the break before the downstream stagger handling below reacts to it.
   const guardShredderHit =
-    Boolean(input.guardShredderTrigger) &&
-    Boolean(guard) &&
-    !alreadyStaggered &&
-    guardBefore > 0 &&
-    angle === "back";
+    Boolean(input.guardShredderTrigger) && Boolean(guard) && !alreadyStaggered && guardBefore > 0 && angle === "back";
   const guardDamage = guardShredderHit
     ? guardBefore
     : protectionTicks > 0 && rawGuardDamage > 0
@@ -115,11 +109,8 @@ export function calculateDirectionalHit(
   const guardAfter = Math.max(0, guardBefore - guardDamage);
   const guardBroken = guardBefore > 0 && guardAfter === 0;
   const staggerBurst = alreadyStaggered || (guardBroken && input.target.phase === "alive");
-  const guardedHpDamage =
-    guardBefore > 0 && !guardBroken && !alreadyStaggered ? input.damage * 0.2 : input.damage;
-  const hpDamage = alreadyStaggered
-    ? guardedHpDamage * (input.staggerMultiplier ?? 1)
-    : guardedHpDamage;
+  const guardedHpDamage = guardBefore > 0 && !guardBroken && !alreadyStaggered ? input.damage * 0.2 : input.damage;
+  const hpDamage = alreadyStaggered ? guardedHpDamage * (input.staggerMultiplier ?? 1) : guardedHpDamage;
   const defenseAdjustedDamage = applyDefense(hpDamage, input.target.defense ?? 0);
   const hpAfter = Math.max(0, input.target.hp - defenseAdjustedDamage);
 
@@ -139,13 +130,7 @@ export function calculateDirectionalHit(
     defenseAdjustedDamage,
     guardBroken,
     staggerBurst,
-    feedback: alreadyStaggered
-      ? "staggered"
-      : guardBroken
-        ? "guard_break"
-        : guardBefore > 0
-          ? "guarded"
-          : "unblocked",
+    feedback: alreadyStaggered ? "staggered" : guardBroken ? "guard_break" : guardBefore > 0 ? "guarded" : "unblocked",
   };
 }
 

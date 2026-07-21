@@ -4,18 +4,10 @@ import { getEnemyBehavior } from "./behaviors";
 
 export type { EnemyActionDecision, EnemyDecisionContext } from "./enemy-behavior";
 export type { EnemyBehavior } from "./enemy-behavior";
-export {
-  attackOriginCellsFromShape,
-  rotatedAttackCells,
-  rotateLocalOffset,
-} from "./attack-geometry";
+export { attackOriginCellsFromShape, rotatedAttackCells, rotateLocalOffset } from "./attack-geometry";
 export { rangedAttackCells } from "./behaviors/ranged-enemy";
 export { bombAreaCells } from "./behaviors/bomb-enemy";
-export {
-  chargeLiveRetarget,
-  chargeRangePath,
-  type ChargeRangePath,
-} from "./behaviors/charge-enemy";
+export { chargeLiveRetarget, chargeRangePath, type ChargeRangePath } from "./behaviors/charge-enemy";
 
 /** Shared guard for every role, then a pure registry dispatch — no role branching here. */
 export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDecision {
@@ -27,9 +19,7 @@ export function decideEnemyAction(context: EnemyDecisionContext): EnemyActionDec
   return getEnemyBehavior(action.role).decide(context, action, playerCell);
 }
 
-export function committedAttackFromDecision(
-  decision: Extract<EnemyActionDecision, { type: "attack" }>,
-): {
+export function committedAttackFromDecision(decision: Extract<EnemyActionDecision, { type: "attack" }>): {
   readonly attackId: string;
   readonly role: string;
   readonly kind?: string;

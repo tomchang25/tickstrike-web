@@ -230,13 +230,8 @@ describe("telegraph remainingTicks", () => {
     });
     expect(spawning.remainingTicks).toBe(3);
     expect(world.getTelegraph("spawn:1")?.remainingTicks).toBe(3);
-    expect(
-      world.listTelegraphs().find((telegraph) => telegraph.sourceId === "spawn:1")?.remainingTicks,
-    ).toBe(3);
-    expect(
-      world.snapshot().telegraphs.find((telegraph) => telegraph.sourceId === "spawn:1")
-        ?.remainingTicks,
-    ).toBe(3);
+    expect(world.listTelegraphs().find((telegraph) => telegraph.sourceId === "spawn:1")?.remainingTicks).toBe(3);
+    expect(world.snapshot().telegraphs.find((telegraph) => telegraph.sourceId === "spawn:1")?.remainingTicks).toBe(3);
 
     const attack = world.setTelegraph({
       sourceId: "attack:1",
@@ -313,15 +308,11 @@ describe("wave runtime state", () => {
       placementStrategy: "scatter",
     };
 
-    expect(() => world.installPendingSpawnBatch(batch, [{ x: 2, y: 2 }])).toThrow(
-      "without an active wave",
-    );
+    expect(() => world.installPendingSpawnBatch(batch, [{ x: 2, y: 2 }])).toThrow("without an active wave");
 
     world.setWave(1, []);
     world.installPendingSpawnBatch(batch, [{ x: 2, y: 2 }]);
-    expect(() => world.installPendingSpawnBatch(batch, [{ x: 3, y: 3 }])).toThrow(
-      "already installed",
-    );
+    expect(() => world.installPendingSpawnBatch(batch, [{ x: 3, y: 3 }])).toThrow("already installed");
   });
 
   it("decrementPendingSpawnBatchWarning is a no-op with no pending batch", () => {
@@ -711,11 +702,7 @@ function spawnBomb(world: World, cell: { x: number; y: number } = { x: 6, y: 5 }
   });
 }
 
-function commitBomb(
-  world: World,
-  center: { x: number; y: number },
-  cells: readonly { x: number; y: number }[],
-): void {
+function commitBomb(world: World, center: { x: number; y: number }, cells: readonly { x: number; y: number }[]): void {
   world.commitEnemyAttack("enemy-bomb", {
     attackId: "bomb_area",
     cells,
@@ -903,9 +890,7 @@ describe("run build and pending reward ownership", () => {
     world.installPendingRewardOffer(offer);
 
     const readBack = world.pendingRewardOffer!;
-    (
-      readBack.cards as { artifactId: string; resultingStackCount: number }[]
-    )[0]!.resultingStackCount = 99;
+    (readBack.cards as { artifactId: string; resultingStackCount: number }[])[0]!.resultingStackCount = 99;
     expect(world.pendingRewardOffer?.cards[0]?.resultingStackCount).toBe(1);
 
     const build = world.runBuild;

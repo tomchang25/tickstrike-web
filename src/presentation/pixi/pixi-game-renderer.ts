@@ -4,12 +4,7 @@ import { CELL_SIZE } from "./pointer-aim";
 import { BoardPainter } from "./board-painter";
 import { InputController, type PointerInputBinding, type PointerMode } from "./input-controller";
 import { PreviewPainter } from "./preview-painter";
-import {
-  createPlayerSprite,
-  setNinjaSpriteSheet,
-  type PlayerSprite,
-  type PlayerSpritePose,
-} from "./character-sprites";
+import { createPlayerSprite, setNinjaSpriteSheet, type PlayerSprite, type PlayerSpritePose } from "./character-sprites";
 import {
   createEnemyPresentation,
   getEnemyPresentationProfile,
@@ -125,13 +120,7 @@ function combatStatusLabel(entity: EntityState): string {
   return "";
 }
 
-function drawStatusBar(
-  bar: Graphics,
-  current: number,
-  maximum: number,
-  color: number,
-  y: number,
-): void {
+function drawStatusBar(bar: Graphics, current: number, maximum: number, color: number, y: number): void {
   const width = 52;
   const height = 4;
   const ratio = maximum > 0 ? Math.max(0, Math.min(1, current / maximum)) : 0;
@@ -205,10 +194,7 @@ export class PixiGameRenderer {
     });
     setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
     const loadedEnemySpriteSheets = await Promise.all(
-      Object.entries(enemySpriteSheetUrls).map(async ([sheetKey, url]) => [
-        sheetKey,
-        await Assets.load<Texture>(url),
-      ]),
+      Object.entries(enemySpriteSheetUrls).map(async ([sheetKey, url]) => [sheetKey, await Assets.load<Texture>(url)]),
     );
     this.enemySpriteSheets = Object.fromEntries(loadedEnemySpriteSheets);
     const loadedWaterAnimations = await Promise.all(
@@ -353,23 +339,13 @@ export class PixiGameRenderer {
       }
       view.root.alpha = 1;
       view.root.scale.set(1);
-      drawStatusBar(
-        view.hpBar,
-        entity.hp,
-        entity.maxHp,
-        0xff5c7a,
-        entity.kind === "enemy" ? -42 : -34,
-      );
+      drawStatusBar(view.hpBar, entity.hp, entity.maxHp, 0xff5c7a, entity.kind === "enemy" ? -42 : -34);
       view.guardBar.visible = Boolean(entity.guard);
       if (entity.guard) {
         drawStatusBar(view.guardBar, entity.guard.current, entity.guard.max, 0x72d4ff, -36);
       }
       view.label.text =
-        (entity.kind === "player" && view.sprite) || view.enemyPresentation
-          ? ""
-          : entity.kind === "player"
-            ? "P"
-            : "E";
+        (entity.kind === "player" && view.sprite) || view.enemyPresentation ? "" : entity.kind === "player" ? "P" : "E";
       view.label.visible = entity.kind !== "player" || !view.sprite;
       view.facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
       view.facingMarker.text = facingGlyph(entity.facing);
@@ -509,9 +485,7 @@ export class PixiGameRenderer {
 
   createImpact(cell: Cell, color = 0xffffff): Graphics {
     const pixels = cellToPixels(cell);
-    const effect = new Graphics()
-      .circle(0, 0, CELL_SIZE * 0.22)
-      .stroke({ color, width: 5, alpha: 0.9 });
+    const effect = new Graphics().circle(0, 0, CELL_SIZE * 0.22).stroke({ color, width: 5, alpha: 0.9 });
     effect.position.set(pixels.x, pixels.y);
     this.effectsLayer.addChild(effect);
     this.transientEffects.add(effect);
@@ -547,12 +521,9 @@ export class PixiGameRenderer {
     const guardBar = new Graphics();
     guardBar.visible = Boolean(entity.guard);
 
-    const playerSprite =
-      entity.kind === "player" ? createPlayerSprite(`character.${entity.archetype}`) : undefined;
+    const playerSprite = entity.kind === "player" ? createPlayerSprite(`character.${entity.archetype}`) : undefined;
     const enemyProfile =
-      entity.kind === "enemy" && entity.presentationId
-        ? getEnemyPresentationProfile(entity.presentationId)
-        : undefined;
+      entity.kind === "enemy" && entity.presentationId ? getEnemyPresentationProfile(entity.presentationId) : undefined;
     const enemySpriteSheet = enemyProfile ? this.enemySpriteSheets[enemyProfile.sheet] : undefined;
     const waterAnimation = enemyProfile ? this.enemyWaterAnimations[enemyProfile.id] : undefined;
     const enemyPresentation =
@@ -564,21 +535,13 @@ export class PixiGameRenderer {
     const body =
       playerSprite?.body ??
       enemyPresentation?.body ??
-      new Graphics()
-        .roundRect(-22, -22, 44, 44, 10)
-        .fill(0xffffff)
-        .stroke({ color: 0x0a0c10, width: 4 });
+      new Graphics().roundRect(-22, -22, 44, 44, 10).fill(0xffffff).stroke({ color: 0x0a0c10, width: 4 });
     if (!playerSprite && !enemyPresentation) {
       body.tint = entityColor(entity);
     }
 
     const label = new Text({
-      text:
-        (entity.kind === "player" && playerSprite) || enemyPresentation
-          ? ""
-          : entity.kind === "player"
-            ? "P"
-            : "E",
+      text: (entity.kind === "player" && playerSprite) || enemyPresentation ? "" : entity.kind === "player" ? "P" : "E",
       style: {
         fill: 0x10131a,
         fontFamily: "monospace",
@@ -633,11 +596,7 @@ export class PixiGameRenderer {
     root.addChild(
       hpBar,
       guardBar,
-      ...(playerSprite
-        ? [playerSprite.root]
-        : enemyPresentation
-          ? [enemyPresentation.root]
-          : [body]),
+      ...(playerSprite ? [playerSprite.root] : enemyPresentation ? [enemyPresentation.root] : [body]),
       label,
       facingMarker,
       debugLabel,

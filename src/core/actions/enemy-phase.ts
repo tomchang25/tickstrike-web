@@ -1,20 +1,14 @@
 import type { CombatEvent } from "../events/combat-events";
 import { sameCell, type EntityState } from "../model/types";
 import type { EnemyPhaseContext } from "../enemies/enemy-behavior";
-import {
-  committedAttackFromDecision,
-  decideEnemyAction,
-  type EnemyActionDecision,
-} from "../enemies/enemy-actions";
+import { committedAttackFromDecision, decideEnemyAction, type EnemyActionDecision } from "../enemies/enemy-actions";
 import { getEnemyBehavior } from "../enemies/behaviors";
 import { genericDetonationEvents } from "../enemies/attack-resolution-events";
 
 export type { EnemyPhaseContext } from "../enemies/enemy-behavior";
 
 function enabledEnemies(context: EnemyPhaseContext): readonly EntityState[] {
-  return context
-    .listEntities()
-    .filter((entity) => entity.kind === "enemy" && entity.enemyAction !== undefined);
+  return context.listEntities().filter((entity) => entity.kind === "enemy" && entity.enemyAction !== undefined);
 }
 
 interface EnemyDecisionRecord {
@@ -35,27 +29,18 @@ interface PendingMovement {
 export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
   const enemies = enabledEnemies(context);
   const readyAtStart = new Set(
-    enemies
-      .filter((enemy) => enemy.phase === "alive" && enemy.activity === "ready")
-      .map((enemy) => enemy.id),
+    enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "ready").map((enemy) => enemy.id),
   );
   const recoveringAtStart = new Set(
-    enemies
-      .filter((enemy) => enemy.phase === "alive" && enemy.activity === "recovering")
-      .map((enemy) => enemy.id),
+    enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "recovering").map((enemy) => enemy.id),
   );
   const restingAtStart = new Set(
-    enemies
-      .filter((enemy) => enemy.phase === "alive" && enemy.activity === "resting")
-      .map((enemy) => enemy.id),
+    enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "resting").map((enemy) => enemy.id),
   );
   const recoveredThisPhase = new Set<string>();
   const events: CombatEvent[] = [];
   const decisions: EnemyDecisionRecord[] = [];
-  const movementEvents = new Map<
-    string,
-    Extract<CombatEvent, { type: "enemy_moved" | "enemy_waited" }>
-  >();
+  const movementEvents = new Map<string, Extract<CombatEvent, { type: "enemy_moved" | "enemy_waited" }>>();
 
   for (const enemy of enemies) {
     const current = context.getEntity(enemy.id);
@@ -118,8 +103,7 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
           ? context.board.isWalkable(destination)
           : false,
       canPathThrough: (cell) =>
-        context.board.isLegalCell(cell) &&
-        (context.playerCell === undefined || !sameCell(cell, context.playerCell)),
+        context.board.isLegalCell(cell) && (context.playerCell === undefined || !sameCell(cell, context.playerCell)),
       canEndAt: (cell) => context.board.isWalkable(cell),
       isLegalTerrain: (cell) => context.board.isLegalCell(cell),
     });
@@ -130,10 +114,7 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
     (candidate): candidate is MovementDecision => candidate.decision.type === "move",
   );
   const pendingMovements = new Map<string, PendingMovement>(
-    movementDecisions.map(({ enemy, decision }) => [
-      enemy.id,
-      { enemy, decision, nextCandidate: 0 },
-    ]),
+    movementDecisions.map(({ enemy, decision }) => [enemy.id, { enemy, decision, nextCandidate: 0 }]),
   );
 
   while (pendingMovements.size > 0) {

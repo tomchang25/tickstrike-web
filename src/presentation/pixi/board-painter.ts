@@ -1,11 +1,7 @@
 import { Application, Container, Graphics, Text } from "pixi.js";
 import { cellKey, type WorldSnapshot } from "@core/model/types";
 import { CELL_SIZE } from "./pointer-aim";
-import {
-  aggregateTelegraphLabels,
-  formatTelegraphMultiplier,
-  placeTelegraphLabels,
-} from "./telegraph-labels";
+import { aggregateTelegraphLabels, formatTelegraphMultiplier, placeTelegraphLabels } from "./telegraph-labels";
 
 /**
  * Draws the static board — arena tiles, the debug occupancy overlay, reservation
@@ -126,12 +122,7 @@ export class BoardPainter {
     this.telegraphLayer.removeChildren().forEach((child) => child.destroy());
     this.telegraphLabelLayer.removeChildren().forEach((child) => child.destroy());
     for (const telegraph of snapshot.telegraphs) {
-      const color =
-        telegraph.phase === "active"
-          ? 0xff5c7a
-          : telegraph.phase === "spawning"
-            ? 0x9a7cff
-            : 0xffd166;
+      const color = telegraph.phase === "active" ? 0xff5c7a : telegraph.phase === "spawning" ? 0x9a7cff : 0xffd166;
       for (const cell of telegraph.cells) {
         const marker = new Graphics()
           .rect(cell.x * CELL_SIZE + 12, cell.y * CELL_SIZE + 12, CELL_SIZE - 24, CELL_SIZE - 24)
@@ -142,9 +133,7 @@ export class BoardPainter {
 
     const entitiesById = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
     const sources = snapshot.telegraphs.flatMap((telegraph) => {
-      const ticks =
-        telegraph.remainingTicks ??
-        entitiesById.get(telegraph.sourceId)?.committedAttack?.warningTicks;
+      const ticks = telegraph.remainingTicks ?? entitiesById.get(telegraph.sourceId)?.committedAttack?.warningTicks;
       return ticks === undefined ? [] : [{ cells: telegraph.cells, ticks }];
     });
     const summaries = aggregateTelegraphLabels(sources);
@@ -152,10 +141,8 @@ export class BoardPainter {
     const placements = placeTelegraphLabels(summaries, occupiedCells);
 
     for (const placement of placements) {
-      const primaryFontSize =
-        placement.primary && placement.offset.y < 0 ? 36 : placement.primary ? 52 : 26;
-      const multiplierFontSize =
-        placement.primary && placement.offset.y < 0 ? 16 : placement.primary ? 22 : 14;
+      const primaryFontSize = placement.primary && placement.offset.y < 0 ? 36 : placement.primary ? 52 : 26;
+      const multiplierFontSize = placement.primary && placement.offset.y < 0 ? 16 : placement.primary ? 22 : 14;
       const label = new Container();
       label.label = `telegraph-${placement.cell.x}-${placement.cell.y}-${placement.ticks}`;
       label.position.set(
@@ -198,11 +185,7 @@ export class BoardPainter {
         .map((placement) => {
           const multiplier = formatTelegraphMultiplier(placement.count) ?? "";
           const position =
-            placement.primary && placement.offset.y < 0
-              ? "@head"
-              : placement.primary
-                ? "@center"
-                : "@side";
+            placement.primary && placement.offset.y < 0 ? "@head" : placement.primary ? "@center" : "@side";
           return `${placement.cell.x},${placement.cell.y}:${placement.ticks}${multiplier}${position}`;
         })
         .join("|");

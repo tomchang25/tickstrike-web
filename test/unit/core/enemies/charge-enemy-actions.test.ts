@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveCommand } from "@core/actions/action-resolver";
-import {
-  chargeLiveRetarget,
-  decideEnemyAction,
-  type EnemyDecisionContext,
-} from "@core/enemies/enemy-actions";
+import { chargeLiveRetarget, decideEnemyAction, type EnemyDecisionContext } from "@core/enemies/enemy-actions";
 import type { EnemyActionDefinition, EntityState } from "@core/model/types";
 import { World } from "@core/world/world";
 

@@ -21,11 +21,7 @@ export function rotateLocalOffset(offset: Cell, facing: Cell): Cell {
   };
 }
 
-export function rotatedAttackCells(
-  origin: Cell,
-  facing: Cell,
-  offsets: readonly Cell[],
-): readonly Cell[] {
+export function rotatedAttackCells(origin: Cell, facing: Cell, offsets: readonly Cell[]): readonly Cell[] {
   const cells = offsets.map((offset) => addCells(origin, rotateLocalOffset(offset, facing)));
   const seen = new Set<string>();
   return cells.filter((cell) => {
@@ -38,10 +34,7 @@ export function rotatedAttackCells(
   });
 }
 
-export function attackOriginCellsFromShape(
-  target: Cell,
-  action: EnemyActionDefinition,
-): readonly Cell[] {
+export function attackOriginCellsFromShape(target: Cell, action: EnemyActionDefinition): readonly Cell[] {
   const origins: Cell[] = [];
   for (const facing of CARDINAL_DIRECTIONS) {
     for (const offset of action.offsets) {

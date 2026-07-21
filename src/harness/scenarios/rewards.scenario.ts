@@ -1,8 +1,4 @@
-import {
-  createRewardArena,
-  REWARD_SCENARIO_SEED,
-  rewardScenarioContext,
-} from "../fixtures/reward-arena";
+import { createRewardArena, REWARD_SCENARIO_SEED, rewardScenarioContext } from "../fixtures/reward-arena";
 import type { TestScenario } from "../types";
 
 export const scenarios: readonly TestScenario[] = [

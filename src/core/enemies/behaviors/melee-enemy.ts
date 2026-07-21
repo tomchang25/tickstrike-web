@@ -6,11 +6,7 @@ import {
   type EnemyMovementCandidate,
 } from "../../model/types";
 import { findEnemyPaths } from "../enemy-path-planner";
-import {
-  attackOriginCellsFromShape,
-  CARDINAL_DIRECTIONS,
-  rotatedAttackCells,
-} from "../attack-geometry";
+import { attackOriginCellsFromShape, CARDINAL_DIRECTIONS, rotatedAttackCells } from "../attack-geometry";
 import type { EnemyBehavior, EnemyDecisionContext } from "../enemy-behavior";
 
 function attackFacing(
@@ -24,9 +20,7 @@ function attackFacing(
     if (candidates.findIndex((candidate) => sameCell(candidate, facing)) !== index) {
       return false;
     }
-    return rotatedAttackCells(enemy.cell, facing, action.offsets).some((cell) =>
-      sameCell(cell, playerCell),
-    );
+    return rotatedAttackCells(enemy.cell, facing, action.offsets).some((cell) => sameCell(cell, playerCell));
   });
 }
 
@@ -66,12 +60,7 @@ function movementCandidates(
 export const meleeEnemyBehavior: EnemyBehavior = {
   decide(context, action, playerCell) {
     const { enemy } = context;
-    const attackDirection = attackFacing(
-      enemy,
-      playerCell,
-      action,
-      enemy.facing ?? CARDINAL_DIRECTIONS[0]!,
-    );
+    const attackDirection = attackFacing(enemy, playerCell, action, enemy.facing ?? CARDINAL_DIRECTIONS[0]!);
     if (attackDirection) {
       return {
         type: "attack",

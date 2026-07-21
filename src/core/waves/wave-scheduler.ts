@@ -100,11 +100,7 @@ export function createInitialSlotStates(
  * least one member; otherwise `previous-group-cleared`/`previous-group-survivors-at-most` would
  * trivially pass on a predecessor that simply hasn't had its turn at population headroom yet.
  */
-function conditionMet(
-  startCondition: WaveStartCondition,
-  survivorThreshold: number,
-  predecessor: SlotState,
-): boolean {
+function conditionMet(startCondition: WaveStartCondition, survivorThreshold: number, predecessor: SlotState): boolean {
   switch (startCondition) {
     case "previous-group-cleared":
       return predecessor.hasEverSpawned && predecessor.livingCount <= 0;
@@ -121,10 +117,7 @@ function conditionMet(
  * is never revoked. Processes slots in order in a single pass, so a predecessor that becomes
  * eligible earlier in this same call can immediately unlock its successor.
  */
-export function evaluateSlotEligibility(
-  wave: WaveDefinition,
-  slotStates: readonly SlotState[],
-): readonly SlotState[] {
+export function evaluateSlotEligibility(wave: WaveDefinition, slotStates: readonly SlotState[]): readonly SlotState[] {
   const next = [...slotStates];
   for (let index = 0; index < wave.slots.length; index += 1) {
     if (next[index]!.eligible) {
@@ -156,9 +149,7 @@ export function selectAtomicBatch(
   slotStates: readonly SlotState[],
   livingEnemyCount: number,
 ): AdmittedBatch | undefined {
-  const slotIndex = slotStates.findIndex(
-    (state) => state.eligible && state.remainingQueue.length > 0,
-  );
+  const slotIndex = slotStates.findIndex((state) => state.eligible && state.remainingQueue.length > 0);
   if (slotIndex === -1) {
     return undefined;
   }

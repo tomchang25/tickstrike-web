@@ -34,13 +34,7 @@ function findGuardDefinition(guardId: string | null): GuardDefinition | null {
 export function buildEnemySpawnInput(request: WaveEnemySpawnRequest): SpawnEntityInput {
   const enemy = findEnemyDefinition(request.enemyId);
   const guardDefinition = findGuardDefinition(enemy.guardId);
-  const projection = projectEnemyLevel(
-    enemy,
-    guardDefinition,
-    request.level,
-    request.waveNumber,
-    request.profile,
-  );
+  const projection = projectEnemyLevel(enemy, guardDefinition, request.level, request.waveNumber, request.profile);
 
   const baseAction = resolveEnemyActionDefinition(enemy);
 

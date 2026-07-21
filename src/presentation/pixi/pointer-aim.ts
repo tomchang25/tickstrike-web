@@ -51,11 +51,7 @@ export function dominantDirection(delta: Cell, lastAim: Cell = INITIAL_AIM): Cel
   return { x: 0, y: Math.sign(delta.y) };
 }
 
-export function resolveAimDirection(
-  mouseCell: Cell,
-  origin: Cell,
-  lastAim: Cell = INITIAL_AIM,
-): Cell {
+export function resolveAimDirection(mouseCell: Cell, origin: Cell, lastAim: Cell = INITIAL_AIM): Cell {
   return dominantDirection({ x: mouseCell.x - origin.x, y: mouseCell.y - origin.y }, lastAim);
 }
 

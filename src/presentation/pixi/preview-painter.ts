@@ -82,11 +82,7 @@ export class PreviewPainter {
       this.layer.addChild(centerMarker);
       if (preview.accepted) {
         const virtualPlayer = new Graphics()
-          .circle(
-            center.x * CELL_SIZE + CELL_SIZE / 2,
-            center.y * CELL_SIZE + CELL_SIZE / 2,
-            CELL_SIZE * 0.28,
-          )
+          .circle(center.x * CELL_SIZE + CELL_SIZE / 2, center.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE * 0.28)
           .fill({ color: 0xf4fbff, alpha: 0.38 })
           .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
         this.layer.addChild(virtualPlayer);
@@ -118,11 +114,7 @@ export class PreviewPainter {
       .rect(landing.x * CELL_SIZE + 6, landing.y * CELL_SIZE + 6, CELL_SIZE - 12, CELL_SIZE - 12)
       .stroke({ color: 0x72d4ff, width: 5, alpha: 0.95 });
     const virtualPlayer = new Graphics()
-      .circle(
-        landing.x * CELL_SIZE + CELL_SIZE / 2,
-        landing.y * CELL_SIZE + CELL_SIZE / 2,
-        CELL_SIZE * 0.28,
-      )
+      .circle(landing.x * CELL_SIZE + CELL_SIZE / 2, landing.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE * 0.28)
       .fill({ color: 0xf4fbff, alpha: 0.38 })
       .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
     this.layer.addChild(landingMarker, virtualPlayer);
@@ -158,21 +150,14 @@ export class PreviewPainter {
     const displacements = markers.filter(
       (marker) => (marker.outcome === "knockback" || marker.outcome === "water") && marker.to,
     );
-    const terminal = markers.filter(
-      (marker) => marker.outcome === "crush" || marker.outcome === "water",
-    );
+    const terminal = markers.filter((marker) => marker.outcome === "crush" || marker.outcome === "water");
     const blocked = markers.filter((marker) => marker.outcome === "blocked");
 
     canvas.dataset.previewKills = kills.map((marker) => marker.enemyId).join(",");
     canvas.dataset.previewDisplacements = displacements
-      .map(
-        (marker) =>
-          `${marker.enemyId}:${marker.from.x},${marker.from.y}>${marker.to?.x},${marker.to?.y}`,
-      )
+      .map((marker) => `${marker.enemyId}:${marker.from.x},${marker.from.y}>${marker.to?.x},${marker.to?.y}`)
       .join(";");
-    canvas.dataset.previewTerminal = terminal
-      .map((marker) => `${marker.enemyId}:${marker.outcome}`)
-      .join(";");
+    canvas.dataset.previewTerminal = terminal.map((marker) => `${marker.enemyId}:${marker.outcome}`).join(";");
     canvas.dataset.previewBlocked = blocked.map((marker) => marker.enemyId).join(",");
 
     for (const marker of markers) {
@@ -195,12 +180,7 @@ export class PreviewPainter {
       if (marker.outcome === "crush") {
         this.layer.addChild(
           new Graphics()
-            .rect(
-              marker.from.x * CELL_SIZE + 7,
-              marker.from.y * CELL_SIZE + 7,
-              CELL_SIZE - 14,
-              CELL_SIZE - 14,
-            )
+            .rect(marker.from.x * CELL_SIZE + 7, marker.from.y * CELL_SIZE + 7, CELL_SIZE - 14, CELL_SIZE - 14)
             .fill({ color: 0xff8c42, alpha: 0.28 })
             .stroke({ color: 0xffd27d, width: 5, alpha: 1 }),
         );
@@ -239,12 +219,7 @@ export class PreviewPainter {
           .lineTo(to.x - unitX * 16 + unitY * 8, to.y - unitY * 16 - unitX * 8)
           .stroke({ color, width: 4, alpha: 0.85 }),
         new Graphics()
-          .rect(
-            marker.to.x * CELL_SIZE + 6,
-            marker.to.y * CELL_SIZE + 6,
-            CELL_SIZE - 12,
-            CELL_SIZE - 12,
-          )
+          .rect(marker.to.x * CELL_SIZE + 6, marker.to.y * CELL_SIZE + 6, CELL_SIZE - 12, CELL_SIZE - 12)
           .fill({ color, alpha: 0.28 })
           .stroke({ color, width: 5, alpha: 1 }),
       );

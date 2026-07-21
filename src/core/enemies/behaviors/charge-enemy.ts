@@ -95,10 +95,7 @@ export function chargeLiveRetarget(
   return path && facing && sameCell(path.facing, facing) ? path : undefined;
 }
 
-function chargeOriginCells(
-  playerCell: Cell,
-  maxRange: number,
-): { primary: Cell[]; fallback: Cell[] } {
+function chargeOriginCells(playerCell: Cell, maxRange: number): { primary: Cell[]; fallback: Cell[] } {
   const primary: Cell[] = [];
   const fallback: Cell[] = [];
   for (const direction of CARDINAL_DIRECTIONS) {
@@ -146,9 +143,7 @@ function chargeMovementCandidates(
  * occupants, target knockback or blocked double damage, and Charge's own landing.
  * Runs entirely against the transaction's staged view, then commits once.
  */
-function chargeDetonationPolicy(
-  transaction: AttackResolutionTransaction,
-): ChargeAttackResolution | undefined {
+function chargeDetonationPolicy(transaction: AttackResolutionTransaction): ChargeAttackResolution | undefined {
   const { enemy, attack } = transaction;
   const origin = { x: enemy.cell.x, y: enemy.cell.y };
   const path = attack.cells;
@@ -234,9 +229,7 @@ function chargeDetonationPolicy(
   const { damageResults } = transaction.commit();
 
   const resolvedDisplacements = displacements.map((displacement) =>
-    displacement.blocked
-      ? { ...displacement, damage: damageResults.get(displacement.entityId) }
-      : displacement,
+    displacement.blocked ? { ...displacement, damage: damageResults.get(displacement.entityId) } : displacement,
   );
   const resolvedImpact: ChargeImpactResult = impact.targetId
     ? { ...impact, damage: damageResults.get(impact.targetId) }
@@ -251,10 +244,7 @@ function chargeDetonationPolicy(
 }
 
 /** Resolves a detonating Charge attack atomically; undefined when the enemy is not telegraphing. */
-export function resolveChargeAttack(
-  context: EnemyPhaseContext,
-  id: EntityId,
-): ChargeAttackResolution | undefined {
+export function resolveChargeAttack(context: EnemyPhaseContext, id: EntityId): ChargeAttackResolution | undefined {
   return context.resolveCommittedAttackTransaction(id, chargeDetonationPolicy);
 }
 
@@ -287,9 +277,7 @@ function chargeResolutionEvents(
       outcome: resolution.impact.outcome,
     });
     if (resolution.impact.damage) {
-      events.push(
-        ...damageEventsFor(world, enemyId, resolution.impact.targetId, resolution.impact.damage),
-      );
+      events.push(...damageEventsFor(world, enemyId, resolution.impact.targetId, resolution.impact.damage));
     }
   } else {
     events.push({ type: "charge_impact", enemyId, cell: resolution.impact.cell, outcome: "empty" });
@@ -306,11 +294,7 @@ function chargeResolutionEvents(
       });
     }
   }
-  if (
-    resolution.impact.outcome === "normal" &&
-    resolution.impact.targetId &&
-    resolution.impact.to
-  ) {
+  if (resolution.impact.outcome === "normal" && resolution.impact.targetId && resolution.impact.to) {
     events.push({
       type: "entity_displaced",
       entityId: resolution.impact.targetId,
@@ -338,9 +322,7 @@ function chargeResolutionEvents(
 /** Cardinal line-rush behavior: commits when a legal range path exists, otherwise repositions. */
 export const chargeEnemyBehavior: EnemyBehavior = {
   retarget(context, enemy) {
-    const retarget = chargeLiveRetarget(enemy, context.playerCell, (cell) =>
-      context.board.isLegalCell(cell),
-    );
+    const retarget = chargeLiveRetarget(enemy, context.playerCell, (cell) => context.board.isLegalCell(cell));
     if (!retarget) {
       return [];
     }
@@ -367,12 +349,7 @@ export const chargeEnemyBehavior: EnemyBehavior = {
     if (!tuning) {
       return { type: "wait" };
     }
-    const rangePath = chargeRangePath(
-      enemy.cell,
-      playerCell,
-      tuning.maxRange,
-      context.isLegalTerrain,
-    );
+    const rangePath = chargeRangePath(enemy.cell, playerCell, tuning.maxRange, context.isLegalTerrain);
     if (rangePath) {
       return {
         type: "attack",
@@ -382,8 +359,8 @@ export const chargeEnemyBehavior: EnemyBehavior = {
       };
     }
 
-    const candidates = chargeMovementCandidates(enemy, playerCell, tuning, context).filter(
-      (candidate) => context.canMove(candidate.destination),
+    const candidates = chargeMovementCandidates(enemy, playerCell, tuning, context).filter((candidate) =>
+      context.canMove(candidate.destination),
     );
     return candidates.length > 0 ? { type: "move", candidates } : { type: "wait" };
   },

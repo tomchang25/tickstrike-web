@@ -95,8 +95,6 @@ describe("shipped arena geometry", () => {
 
     expect(player.cell).toEqual({ x: 6, y: 6 });
     expect(world.snapshot().arena).toMatchObject({ width: 12, height: 12 });
-    expect(world.snapshot().arena.terrain.filter((terrain) => terrain === "land")).toHaveLength(
-      100,
-    );
+    expect(world.snapshot().arena.terrain.filter((terrain) => terrain === "land")).toHaveLength(100);
   });
 });

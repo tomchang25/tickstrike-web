@@ -300,10 +300,7 @@ const HEAVY_GUARD = {
   protectionMultiplier: 0.5,
 };
 
-function spawnDashPlayer(
-  world: ReturnType<typeof createTrainingArena>,
-  cell = { x: 1, y: 3 },
-): void {
+function spawnDashPlayer(world: ReturnType<typeof createTrainingArena>, cell = { x: 1, y: 3 }): void {
   world.spawn({
     id: "player",
     kind: "player",

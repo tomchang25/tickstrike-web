@@ -128,9 +128,7 @@ export function App() {
       if (!runtime) {
         return;
       }
-      await execute(() =>
-        runtime.execute({ type: "dash", actorId: "player", direction, distance }),
-      );
+      await execute(() => runtime.execute({ type: "dash", actorId: "player", direction, distance }));
     },
     [execute, interactive],
   );
@@ -298,9 +296,7 @@ export function App() {
                 aria-live="polite"
               >
                 <strong>{snapshot.outcome === "victory" ? "Victory" : "Defeat"}</strong>
-                <span>
-                  {snapshot.outcome === "victory" ? "Arena cleared." : "The player fell."}
-                </span>
+                <span>{snapshot.outcome === "victory" ? "Arena cleared." : "The player fell."}</span>
               </div>
             ) : null}
             {snapshot ? (
@@ -310,9 +306,7 @@ export function App() {
                 isIdle={Boolean(runtimeRef.current?.isIdle)}
               />
             ) : null}
-            {pendingReward ? (
-              <RewardOverlay offer={pendingReward} busy={busy} onSelect={selectReward} />
-            ) : null}
+            {pendingReward ? <RewardOverlay offer={pendingReward} busy={busy} onSelect={selectReward} /> : null}
           </div>
           {snapshot ? <RunBuildHud build={snapshot.runBuild} /> : null}
           <p className="hint">

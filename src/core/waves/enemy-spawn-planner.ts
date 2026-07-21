@@ -11,10 +11,7 @@ export type SpawnPlacementResult = { readonly cells: readonly Cell[] } | { reado
 
 function isLegalCell(view: WaveWorldView, cell: Cell): boolean {
   return (
-    !sameCell(cell, view.playerCell) &&
-    view.isArenaLegal(cell) &&
-    !view.isOccupied(cell) &&
-    !view.isReserved(cell)
+    !sameCell(cell, view.playerCell) && view.isArenaLegal(cell) && !view.isOccupied(cell) && !view.isReserved(cell)
   );
 }
 
@@ -32,12 +29,7 @@ function collectLegalCells(view: WaveWorldView): Cell[] {
   return cells;
 }
 
-function collectCellsInBand(
-  view: WaveWorldView,
-  center: Cell,
-  minDistance: number,
-  maxDistance: number,
-): Cell[] {
+function collectCellsInBand(view: WaveWorldView, center: Cell, minDistance: number, maxDistance: number): Cell[] {
   const cells: Cell[] = [];
   for (let y = 0; y < view.height; y += 1) {
     for (let x = 0; x < view.width; x += 1) {
@@ -59,11 +51,7 @@ function drawIndex(random: RandomUnitSource, length: number): number {
 }
 
 /** Draws `count` distinct cells from `candidates` without replacement, consuming one draw each. */
-function selectRandomSubset(
-  candidates: readonly Cell[],
-  count: number,
-  random: RandomUnitSource,
-): Cell[] {
+function selectRandomSubset(candidates: readonly Cell[], count: number, random: RandomUnitSource): Cell[] {
   const pool = [...candidates];
   const chosen: Cell[] = [];
   for (let index = 0; index < count; index += 1) {
@@ -103,10 +91,7 @@ function selectAngularlySpreadCells(
       const candidate = remaining[index]!;
       let minDiff = Infinity;
       for (const picked of chosen) {
-        minDiff = Math.min(
-          minDiff,
-          angleDiff(angleFrom(origin, candidate), angleFrom(origin, picked)),
-        );
+        minDiff = Math.min(minDiff, angleDiff(angleFrom(origin, candidate), angleFrom(origin, picked)));
       }
       if (minDiff > bestMinDiff) {
         bestMinDiff = minDiff;
@@ -118,28 +103,15 @@ function selectAngularlySpreadCells(
   return chosen;
 }
 
-function planPlayerRing(
-  view: WaveWorldView,
-  count: number,
-  random: RandomUnitSource,
-): SpawnPlacementResult {
-  const candidates = collectCellsInBand(
-    view,
-    view.playerCell,
-    PLAYER_RING_MIN_DISTANCE,
-    PLAYER_RING_MAX_DISTANCE,
-  );
+function planPlayerRing(view: WaveWorldView, count: number, random: RandomUnitSource): SpawnPlacementResult {
+  const candidates = collectCellsInBand(view, view.playerCell, PLAYER_RING_MIN_DISTANCE, PLAYER_RING_MAX_DISTANCE);
   if (candidates.length < count) {
     return { failed: true };
   }
   return { cells: selectAngularlySpreadCells(candidates, count, view.playerCell, random) };
 }
 
-function planAnchorCluster(
-  view: WaveWorldView,
-  count: number,
-  random: RandomUnitSource,
-): SpawnPlacementResult {
+function planAnchorCluster(view: WaveWorldView, count: number, random: RandomUnitSource): SpawnPlacementResult {
   const anchorCandidates = collectCellsInBand(
     view,
     view.playerCell,
@@ -154,17 +126,11 @@ function planAnchorCluster(
   if (legalCells.length < count) {
     return { failed: true };
   }
-  const nearest = [...legalCells].sort(
-    (a, b) => manhattanDistance(anchor, a) - manhattanDistance(anchor, b),
-  );
+  const nearest = [...legalCells].sort((a, b) => manhattanDistance(anchor, a) - manhattanDistance(anchor, b));
   return { cells: nearest.slice(0, count) };
 }
 
-function planScatter(
-  view: WaveWorldView,
-  count: number,
-  random: RandomUnitSource,
-): SpawnPlacementResult {
+function planScatter(view: WaveWorldView, count: number, random: RandomUnitSource): SpawnPlacementResult {
   const candidates = collectLegalCells(view);
   if (candidates.length < count) {
     return { failed: true };

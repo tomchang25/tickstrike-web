@@ -12,19 +12,8 @@ import {
   type PreviewVictimMarker,
   type SmashPreview,
 } from "@core/actions/action-preview";
-import {
-  cardinalDirection,
-  sameCell,
-  type Cell,
-  type MobilityKind,
-  type WorldSnapshot,
-} from "@core/model/types";
-import {
-  INITIAL_AIM,
-  resolveAimDirection,
-  resolveAimDistance,
-  screenPointToCell,
-} from "./pointer-aim";
+import { cardinalDirection, sameCell, type Cell, type MobilityKind, type WorldSnapshot } from "@core/model/types";
+import { INITIAL_AIM, resolveAimDirection, resolveAimDistance, screenPointToCell } from "./pointer-aim";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =
@@ -270,9 +259,7 @@ export class InputController {
   }
 
   private activeMobility(): MobilityKind {
-    return (
-      this.snapshot()?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash"
-    );
+    return this.snapshot()?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash";
   }
 
   refreshPreview(allowFacingUpdate = false): void {
@@ -287,9 +274,7 @@ export class InputController {
       return;
     }
 
-    const player = snapshot.entities.find(
-      (entity) => entity.id === "player" && entity.phase === "alive",
-    );
+    const player = snapshot.entities.find((entity) => entity.id === "player" && entity.phase === "alive");
     if (!player) {
       this.attack = undefined;
       this.dash = undefined;
@@ -306,9 +291,7 @@ export class InputController {
 
     if (snapshot.armedSmashTarget) {
       if (allowFacingUpdate) {
-        this.setPlayerFacing(
-          resolveAimDirection(snapshot.armedSmashTarget, player.cell, this.lastAim),
-        );
+        this.setPlayerFacing(resolveAimDirection(snapshot.armedSmashTarget, player.cell, this.lastAim));
       }
       this.smash = previewSmash(snapshot, player.id, snapshot.armedSmashTarget);
       this.victims = previewSmashVictimMarkers(this.smash);
@@ -343,11 +326,7 @@ export class InputController {
         this.retainedDash = this.dash;
       }
     } else {
-      this.smash = previewSmash(
-        snapshot,
-        player.id,
-        clampSmashTarget(this.hoverCell, player.cell, range),
-      );
+      this.smash = previewSmash(snapshot, player.id, clampSmashTarget(this.hoverCell, player.cell, range));
       this.victims = previewSmashVictimMarkers(this.smash);
     }
     this.hooks.drawPreview(this.previewModel());

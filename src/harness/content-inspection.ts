@@ -71,9 +71,7 @@ function freeze<T>(value: T): T {
     return Object.freeze(value.map((item) => freeze(item))) as T;
   }
   if (typeof value === "object" && value !== null) {
-    const clone = Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, freeze(item)]),
-    );
+    const clone = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, freeze(item)]));
     return Object.freeze(clone) as T;
   }
   return value;

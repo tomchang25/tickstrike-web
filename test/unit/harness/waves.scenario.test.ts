@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveCommand } from "@core/actions/action-resolver";
-import {
-  createWaveArena,
-  WAVE_SCENARIO_SEED,
-  waveScenarioContext,
-} from "@harness/fixtures/wave-arena";
+import { createWaveArena, WAVE_SCENARIO_SEED, waveScenarioContext } from "@harness/fixtures/wave-arena";
 import { waveCatalog } from "@content/wave-catalog";
 
 describe("waves scenario fixture", () => {
@@ -50,9 +46,7 @@ describe("waves scenario fixture", () => {
     const snapshot = world.snapshot();
     expect(snapshot.telegraphs).toHaveLength(1);
     expect(snapshot.telegraphs[0]).toMatchObject({ phase: "spawning" });
-    expect(
-      snapshot.reservations.filter((reservation) => reservation.purpose === "spawn"),
-    ).toHaveLength(1);
+    expect(snapshot.reservations.filter((reservation) => reservation.purpose === "spawn")).toHaveLength(1);
     expect(snapshot.waveRuntime?.slots[0]?.eligible).toBe(true);
     expect(snapshot.waveRuntime?.pendingBatch).toBeDefined();
   });

@@ -73,9 +73,9 @@ describe("artifact content validation", () => {
     artifact.effects = [{ kind: "channel", channel: "speed", amount: 1 }];
     artifact.minWave = 1.5;
 
-    expect(() =>
-      createArtifactContentCatalog(malformed as unknown as ArtifactContentInput),
-    ).toThrow(ArtifactContentValidationError);
+    expect(() => createArtifactContentCatalog(malformed as unknown as ArtifactContentInput)).toThrow(
+      ArtifactContentValidationError,
+    );
     expect(validateArtifactContent(malformed).map(({ code }) => code)).toEqual([
       "invalid-positive-integer",
       "invalid-mobility-requirement",

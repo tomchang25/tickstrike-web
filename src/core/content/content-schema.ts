@@ -30,12 +30,7 @@ function formatDiagnostic(diagnostic: ContentCatalogDiagnostic): string {
   return `${diagnostic.code} at ${diagnostic.path}: ${diagnostic.message}`;
 }
 
-function addDiagnostic(
-  diagnostics: ContentCatalogDiagnostic[],
-  code: string,
-  path: string,
-  message: string,
-): void {
+function addDiagnostic(diagnostics: ContentCatalogDiagnostic[], code: string, path: string, message: string): void {
   diagnostics.push({ code, path, message });
 }
 
@@ -43,10 +38,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function validateShape(
-  input: Record<string, unknown>,
-  diagnostics: ContentCatalogDiagnostic[],
-): boolean {
+function validateShape(input: Record<string, unknown>, diagnostics: ContentCatalogDiagnostic[]): boolean {
   let valid = true;
   const domains = [
     ["actor", ["characters", "guards", "attacks", "enemies"]],
@@ -71,30 +63,17 @@ function validateShape(
 
   const wave = input.wave;
   if (isRecord(wave) && !isRecord(wave.endlessTemplate)) {
-    addDiagnostic(
-      diagnostics,
-      "invalid-domain",
-      "wave.endlessTemplate",
-      "must be a wave definition",
-    );
+    addDiagnostic(diagnostics, "invalid-domain", "wave.endlessTemplate", "must be a wave definition");
     valid = false;
   }
   if (isRecord(wave) && !isRecord(wave.progressionProfile)) {
-    addDiagnostic(
-      diagnostics,
-      "invalid-domain",
-      "wave.progressionProfile",
-      "must be a progression profile",
-    );
+    addDiagnostic(diagnostics, "invalid-domain", "wave.progressionProfile", "must be a progression profile");
     valid = false;
   }
   return valid;
 }
 
-function validateInventory(
-  input: ContentCatalogInput,
-  diagnostics: ContentCatalogDiagnostic[],
-): void {
+function validateInventory(input: ContentCatalogInput, diagnostics: ContentCatalogDiagnostic[]): void {
   const expected = [
     ["actor.characters", input.actor.characters.length, 2],
     ["actor.guards", input.actor.guards.length, 2],
@@ -107,12 +86,7 @@ function validateInventory(
 
   expected.forEach(([path, actual, required]) => {
     if (actual !== required) {
-      addDiagnostic(
-        diagnostics,
-        "incomplete-inventory",
-        path,
-        `expected ${required} definitions, received ${actual}`,
-      );
+      addDiagnostic(diagnostics, "incomplete-inventory", path, `expected ${required} definitions, received ${actual}`);
     }
   });
 
@@ -137,17 +111,7 @@ function validateInventory(
     [
       "wave.demoWaves",
       input.wave.demoWaves.map((value) => value.id),
-      [
-        "demo-01",
-        "demo-02",
-        "demo-03",
-        "demo-04",
-        "demo-05",
-        "demo-06",
-        "demo-07",
-        "demo-08",
-        "demo-09",
-      ],
+      ["demo-01", "demo-02", "demo-03", "demo-04", "demo-05", "demo-06", "demo-07", "demo-08", "demo-09"],
     ],
     [
       "artifact.artifacts",
@@ -189,10 +153,7 @@ function validateInventory(
   }
 }
 
-function validateCrossReferences(
-  input: ContentCatalogInput,
-  diagnostics: ContentCatalogDiagnostic[],
-): void {
+function validateCrossReferences(input: ContentCatalogInput, diagnostics: ContentCatalogDiagnostic[]): void {
   const enemyIds = new Set(input.actor.enemies.map((enemy) => enemy.id));
   const guardIds = new Set(input.actor.guards.map((guard) => guard.id));
   const attackIds = new Set(input.actor.attacks.map((attack) => attack.id));
@@ -250,10 +211,7 @@ function validateCrossReferences(
   });
 }
 
-function validateMobilityAvailability(
-  input: ContentCatalogInput,
-  diagnostics: ContentCatalogDiagnostic[],
-): void {
+function validateMobilityAvailability(input: ContentCatalogInput, diagnostics: ContentCatalogDiagnostic[]): void {
   const mobilityKinds = new Set(input.actor.characters.map((character) => character.mobility.kind));
   input.artifact.artifacts.forEach((artifact, index) => {
     if (artifact.requiredMobility !== null && !mobilityKinds.has(artifact.requiredMobility)) {

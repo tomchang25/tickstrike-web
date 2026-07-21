@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveCommand } from "@core/actions/action-resolver";
 import { resolveAreaOffsets } from "@core/enemies/area-shapes";
-import {
-  bombAreaCells,
-  decideEnemyAction,
-  type EnemyDecisionContext,
-} from "@core/enemies/enemy-actions";
+import { bombAreaCells, decideEnemyAction, type EnemyDecisionContext } from "@core/enemies/enemy-actions";
 import type { EnemyActionDefinition, EntityState } from "@core/model/types";
 import { World } from "@core/world/world";
 
@@ -71,8 +67,7 @@ describe("Bomb radius-four Manhattan footprint", () => {
   });
 
   it("clips out-of-bounds cells at an arena edge without duplicating any cell", () => {
-    const isInside = (cell: { x: number; y: number }) =>
-      cell.x >= 0 && cell.x < 12 && cell.y >= 0 && cell.y < 12;
+    const isInside = (cell: { x: number; y: number }) => cell.x >= 0 && cell.x < 12 && cell.y >= 0 && cell.y < 12;
     const cells = bombAreaCells({ x: 0, y: 0 }, bomb, isInside);
     expect(cells.every((cell) => isInside(cell))).toBe(true);
     const keys = cells.map((cell) => `${cell.x},${cell.y}`);

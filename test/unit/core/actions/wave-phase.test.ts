@@ -101,11 +101,7 @@ function spawnPlayer(world: World, cell = { x: 2, y: 2 }): void {
   });
 }
 
-function installWave(
-  world: World,
-  wave: WaveDefinition,
-  groups: readonly SpawnGroupDefinition[],
-): void {
+function installWave(world: World, wave: WaveDefinition, groups: readonly SpawnGroupDefinition[]): void {
   const random = () => world.random.get("waves").nextUnit();
   const slots = createInitialSlotStates(wave, groups, 1, random);
   world.setWave(1, slots);
@@ -156,9 +152,7 @@ describe("resolveWavePhase: immediate spawn (warningTicks 0)", () => {
     expect(world.listTelegraphs()).toEqual([]);
     expect(world.listReservations().filter((r) => r.purpose === "spawn")).toEqual([]);
     expect(
-      world
-        .listEntities()
-        .filter((entity) => entity.kind === "enemy" && entity.id.startsWith("wave-")),
+      world.listEntities().filter((entity) => entity.kind === "enemy" && entity.id.startsWith("wave-")),
     ).toHaveLength(2);
   });
 });
@@ -302,8 +296,7 @@ describe("resolveWavePhase: warned batch lifecycle", () => {
 
     // Two free cells remain: (2,2) and (2,3), one of which is now reserved as warnedCell. Fill
     // the other one, then let the reserved cell drift so no replacement cell exists at all.
-    const otherFreeCell =
-      warnedCell.x === 2 && warnedCell.y === 2 ? { x: 2, y: 3 } : { x: 2, y: 2 };
+    const otherFreeCell = warnedCell.x === 2 && warnedCell.y === 2 ? { x: 2, y: 3 } : { x: 2, y: 2 };
     world.spawn({ id: "filler-g", kind: "enemy", archetype: "filler", cell: otherFreeCell, hp: 1 });
     world.releaseReservation(warnEvent.sourceId);
     world.spawn({ id: "blocker", kind: "enemy", archetype: "blocker", cell: warnedCell, hp: 1 });
@@ -313,10 +306,7 @@ describe("resolveWavePhase: warned batch lifecycle", () => {
 
     // The board is now fully occupied, so the same-tick re-admission attempt for the requeued
     // member also fails, immediately deferring it with a placement failure.
-    expect(expired.events.map((event) => event.type)).toEqual([
-      "wave_group_requeued",
-      "wave_group_deferred",
-    ]);
+    expect(expired.events.map((event) => event.type)).toEqual(["wave_group_requeued", "wave_group_deferred"]);
     expect(world.waveRuntime?.slots[0]?.remainingQueue).toHaveLength(1);
     expect(world.waveRuntime?.pendingBatch).toBeUndefined();
     expect(world.listEntities().filter((entity) => entity.id.startsWith("wave-"))).toHaveLength(0);
@@ -410,8 +400,7 @@ describe("resolveWavePhase: wave clear and advance", () => {
     const context = makeContext(groups, [wave1, wave2]);
 
     const spawnResult = resolveWavePhase(world, context);
-    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
-      .spawns[0]!.entityId;
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
 
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
@@ -437,8 +426,7 @@ describe("resolveWavePhase: wave clear and advance", () => {
     const context = makeContext(groups, [wave1]);
 
     const spawnResult = resolveWavePhase(world, context);
-    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
-      .spawns[0]!.entityId;
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
 
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
@@ -472,8 +460,7 @@ describe("resolveWavePhase: wave clear and advance", () => {
 
     const firstSpawn = resolveWavePhase(world, context);
     expect(firstSpawn.victoryReady).toBe(false);
-    const spawnedId = (firstSpawn.events[0] as { spawns: readonly { entityId: string }[] })
-      .spawns[0]!.entityId;
+    const spawnedId = (firstSpawn.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
 
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
@@ -535,17 +522,13 @@ describe("resolveWavePhase: pauses a clear on an eligible reward instead of adva
     const context = makeContext(groups, [wave1, wave2], [ATTACK_UP]);
 
     const spawnResult = resolveWavePhase(world, context);
-    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
-      .spawns[0]!.entityId;
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
 
     const clearResult = resolveWavePhase(world, context);
 
-    expect(clearResult.events.map((event) => event.type)).toEqual([
-      "wave_cleared",
-      "reward_offered",
-    ]);
+    expect(clearResult.events.map((event) => event.type)).toEqual(["wave_cleared", "reward_offered"]);
     expect(clearResult.victoryReady).toBe(false);
     expect(world.pendingRewardOffer).toEqual({
       waveNumber: 1,
@@ -596,8 +579,7 @@ describe("resolveWavePhase: pauses a clear on an eligible reward instead of adva
       installWave(world, wave1, groups);
 
       const spawnResult = resolveWavePhase(world, context);
-      const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
-        .spawns[0]!.entityId;
+      const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
       world.setPhase(spawnedId, "dead");
       world.advanceTick();
       resolveWavePhase(world, context);
@@ -655,8 +637,7 @@ describe("resolveWavePhase: pauses a clear on an eligible reward instead of adva
     world.applyRewardSelection("attack_up", ATTACK_UP.maxStacks);
 
     const spawnResult = resolveWavePhase(world, context);
-    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
-      .spawns[0]!.entityId;
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
 
@@ -696,8 +677,7 @@ describe("resolveRewardSelection", () => {
     const context = makeContext(groups, [wave1, wave2], [ATTACK_UP]);
 
     const spawnResult = resolveWavePhase(world, context);
-    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
-      .spawns[0]!.entityId;
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
     resolveWavePhase(world, context);
@@ -939,8 +919,7 @@ describe("generateSingleCardOffer wiring: Mobility eligibility at the wave bound
     const context = makeContext(groups, [wave1, wave2], [GUARD_SHREDDER]);
 
     const spawnResult = resolveWavePhase(world, context);
-    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] })
-      .spawns[0]!.entityId;
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
     world.setPhase(spawnedId, "dead");
     world.advanceTick();
 

@@ -30,11 +30,7 @@ const BODY_DIRECTION_COLUMNS = {
 let ninjaSpriteSheet: Texture | undefined;
 
 function isCardinal(cell: Cell): boolean {
-  return (
-    Number.isInteger(cell.x) &&
-    Number.isInteger(cell.y) &&
-    Math.abs(cell.x) + Math.abs(cell.y) === 1
-  );
+  return Number.isInteger(cell.x) && Number.isInteger(cell.y) && Math.abs(cell.x) + Math.abs(cell.y) === 1;
 }
 
 function directionColumn(direction: Cell): number {
@@ -87,12 +83,7 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
   const setFacing = (facing: Cell): void => {
     const direction = isCardinal(facing) ? facing : DEFAULT_FACING;
     currentFacing = { x: direction.x, y: direction.y };
-    const row =
-      currentPose === "dash"
-        ? BODY_DASH_ROW
-        : currentPose === "move"
-          ? currentMoveRow
-          : BODY_IDLE_ROW;
+    const row = currentPose === "dash" ? BODY_DASH_ROW : currentPose === "move" ? currentMoveRow : BODY_IDLE_ROW;
     body.texture = frameAt(directionColumn(direction), row);
   };
 
