@@ -22,7 +22,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > Ship a phase: remove it from that file and append its outcome to `CHANGELOG.md`, leaving this line until every phase ships.
 > When every phase ships: archive the plan file and delete this line.
 
-Nothing currently in progress.
+- [port_10_run] Connect wave completion, rewards, death, restart, and the milestone branch through the same runtime - [ref plans/port_10_complete_run_lifecycle.md]
 
 ---
 
@@ -30,7 +30,6 @@ Nothing currently in progress.
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_10_run] Connect wave completion, rewards, death, restart, and the milestone branch through the same runtime - [ref plans/port_10_complete_run_lifecycle.md]
 - [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
 - [port_12_hardening] Harden assets, audio, responsive behavior, teardown, browser delivery, and Windows packaging for the same path - [ref plans/port_12_assets_audio_platform_and_release_hardening.md]
 - [port_13_visual_parity] Audit port-ref and match the reference board, entities, feedback, HUD, and presentation quality - [ref plans/port_13_visual_parity_and_polish.md]
@@ -147,6 +146,18 @@ Defer Samurai until the fixed-Mobility identity of Ninja and Viking is proven. S
 ### Future Reward Economy
 
 Explore card rarity beyond the shipped Minor/Major categories, weighted rolls, deck-building, final card art, and additional class-specific rewards after the shipped reward cadence and Artifact pool are complete.
+
+### Record Replay
+
+Add an end-of-run trajectory replay (Shadow Gambit-style highlight playback, not a full re-simulation player) built from the recorded semantic-event stream or the port_10 command log. Presentation-only feature; defer until after parity.
+
+### Undo Action
+
+Allow undoing the last player action by re-simulating the run's command log from the scenario seed to the previous entry. Cheap only because the deterministic core and command log exist; decide after parity whether the product wants it at all.
+
+### Checkpoint Revive On Death
+
+On death, offer a Restart From Checkpoint option beside the end summary that rebuilds the state at the current wave's start, limited to three revives per run; once exhausted only the end summary remains. Rebuild via the deterministic substrate (replay the command log to the wave boundary or capture a wave-start rebuild point); define how revives interact with the command log, endless waves, and the run summary before implementation.
 
 ### Future Distribution Integrations
 

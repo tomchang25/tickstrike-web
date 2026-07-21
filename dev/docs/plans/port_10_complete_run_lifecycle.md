@@ -15,11 +15,21 @@ Turn the single Tick Arena into a complete run without changing its command, wor
 4. Resolve player death after the current Tick, stop future world work, and expose restart.
 5. Rebuild the same fresh logical state on restart while cancelling old presentation work.
 6. Support the authored milestone and Endless branch only after the ordinary run path works.
-7. Record every accepted command and reward selection into an append-only log (`scenarioId`, `seed`, ordered entries), cleared on reset or scenario replacement, and expose `exportCommandLog()` and `replayCommandLog()` on the debug API so a seed plus its log reproduces any reported run state. This is the substrate the later save design consumes (a save is a checkpoint snapshot plus, optionally, its log); it is not the save UX, which stays out of scope here. Moved from engineering hardening spec b1, deferred until this lifecycle consumes it.
+7. Record every accepted command, reward selection, and milestone decision into an append-only log (`scenarioId`, `seed`, ordered entries), cleared on reset or scenario replacement, and expose `exportCommandLog()` and `replayCommandLog()` on the debug API so a seed plus its log reproduces any reported run state. This is the substrate the later save design consumes (a save is a checkpoint snapshot plus, optionally, its log); it is not the save UX, which stays out of scope here. Moved from engineering hardening spec b1, deferred until this lifecycle consumes it.
 
 ## Design
 
 The lifecycle is a small state machine around the existing runtime: `running`, `reward`, `dead`, `complete`, and `endless`. These states control command admission; they do not own combat entities or recompute outcomes. A run transition replaces the canonical scenario state and increments the reset generation used by presentation cleanup.
+
+## Children
+
+Execute top to bottom, one child per session, tests green before each commit.
+
+| Child                                 | Scope                                                                                                                                                                           | Handoff                                                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 01 Core milestone pause and decision  | Milestone state, wave-phase branch, decision resolver, admission gate, events, unit tests                                                                                       | [port_10_01_milestone_lifecycle_core.implementation_spec.md](port_10_01_milestone_lifecycle_core.implementation_spec.md)             |
+| 02 Command log and replay             | Runtime `selectMilestoneDecision` entrance, append-only log of accepted commands/rewards/milestone decisions, debug API `exportCommandLog`/`replayCommandLog`, round-trip tests | [port_10_02_command_log_and_replay.sketch.md](port_10_02_command_log_and_replay.sketch.md) (spec after child 01 ships)               |
+| 03 Lifecycle UI and full-run scenario | Milestone overlay in testbed and home shell, shortened-milestone harness scenario, run-lifecycle e2e, switch the home page to the full waves run                                | [port_10_03_lifecycle_ui_and_run_scenario.sketch.md](port_10_03_lifecycle_ui_and_run_scenario.sketch.md) (spec after child 02 ships) |
 
 ## Non-Goals
 
