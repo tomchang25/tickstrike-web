@@ -24,6 +24,7 @@ export type PointerCommit =
 export interface PointerInputBinding {
   canInteract(): boolean;
   onPrimaryClick(commit: PointerCommit): void | Promise<void>;
+  onCancel(): void | Promise<void>;
 }
 
 export interface InputPresentationHooks {
@@ -173,9 +174,19 @@ export class InputController {
       void binding.onPrimaryClick({ kind: "smash", target: this.smash.target });
     };
 
+    const onContextMenu = (event: MouseEvent) => {
+      // Always suppress the browser menu over the canvas; only cancel when a windup is armed.
+      event.preventDefault();
+      if (!binding.canInteract() || !this.snapshot()?.armedSmashTarget) {
+        return;
+      }
+      void binding.onCancel();
+    };
+
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerleave", onPointerLeave);
     canvas.addEventListener("click", onClick);
+    canvas.addEventListener("contextmenu", onContextMenu);
 
     let active = true;
     const cleanup = () => {
@@ -186,6 +197,7 @@ export class InputController {
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerleave", onPointerLeave);
       canvas.removeEventListener("click", onClick);
+      canvas.removeEventListener("contextmenu", onContextMenu);
       if (this.cleanup === cleanup) {
         this.cleanup = undefined;
       }

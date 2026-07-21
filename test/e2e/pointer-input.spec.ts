@@ -164,3 +164,64 @@ test("Pointer aiming previews attack and Mobility without advancing until click"
   await expect(page.getByTestId("event-log")).toContainText("player_dashed");
   await page.keyboard.up("Alt");
 });
+
+test("right-click cancels an armed Smash windup without advancing the Tick", async ({ page }) => {
+  await page.goto("/debug?scenario=smash-water");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+
+  const canvas = page.getByTestId("game-canvas");
+  const box = await canvas.boundingBox();
+  if (!box) {
+    throw new Error("Game canvas has no layout box.");
+  }
+  const target = {
+    x: box.x + ((4 + 0.5) / 12) * box.width,
+    y: box.y + ((3 + 0.5) / 12) * box.height,
+  };
+
+  // Arm a Smash windup through the pointer Mobility mode.
+  await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Smash");
+  await page.keyboard.down("Alt");
+  await page.mouse.move(target.x, target.y);
+  await page.mouse.click(target.x, target.y);
+  await page.keyboard.up("Alt");
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(canvas).toHaveAttribute("data-smash-armed", "true");
+
+  // Right-click cancels the windup: the browser menu is suppressed, the armed target clears, and the
+  // Tick does not advance.
+  await page.mouse.click(target.x, target.y, { button: "right" });
+  await expect
+    .poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.getState().armedSmashTarget))
+    .toBeUndefined();
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("event-log")).toContainText("smash_cancelled");
+});
+
+test("window blur resets a stuck Mobility mode to Attack", async ({ page }) => {
+  await page.goto("/debug?scenario=tick-arena");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+
+  const canvas = page.getByTestId("game-canvas");
+  const box = await canvas.boundingBox();
+  if (!box) {
+    throw new Error("Game canvas has no layout box.");
+  }
+  const cell = {
+    x: box.x + ((7 + 0.5) / 12) * box.width,
+    y: box.y + ((6 + 0.5) / 12) * box.height,
+  };
+
+  // Hold Alt to enter Mobility mode.
+  await page.keyboard.down("Alt");
+  await page.mouse.move(cell.x, cell.y);
+  await expect(canvas).toHaveAttribute("data-pointer-mode", "mobility");
+
+  // Losing focus while Alt is held must release Mobility — keyup would otherwise never arrive.
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await page.mouse.move(cell.x + 1, cell.y);
+  await expect(canvas).toHaveAttribute("data-pointer-mode", "attack");
+  await page.keyboard.up("Alt");
+});

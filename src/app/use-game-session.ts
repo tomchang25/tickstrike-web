@@ -3,11 +3,7 @@ import type { Cell, MilestoneChoice, WorldSnapshot } from "@core/model/types";
 import type { TestScenario } from "@harness/types";
 import type { PointerCommit, PointerMode } from "@presentation/pixi/pixi-game-renderer";
 import { GameRuntime } from "@runtime/game-runtime";
-
-// Held-direction movement steps at a fixed cadence — the movement-rate design parameter — rather
-// than being paced by animation length. It matches the presentation's move duration (0.26 s) so the
-// felt rate is unchanged, but enqueue-triggered fast-forward now trims any longer enemy VFX tail.
-const MOVE_REPEAT_MS = 260;
+import { useKeyboardInput } from "@ui/input/use-keyboard-input";
 
 export interface GameSessionOptions {
   initialScenario: TestScenario;
@@ -197,84 +193,22 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
     [execute, pendingMilestone],
   );
 
-  useEffect(() => {
-    const heldMovement = new Map<string, number>();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Alt") {
-        if (interactive) {
-          event.preventDefault();
-          setPointerMode("mobility");
-        }
-        return;
-      }
-      if (!interactive) {
-        return;
-      }
-      const directions: Record<string, Cell | undefined> = {
-        ArrowUp: { x: 0, y: -1 },
-        ArrowDown: { x: 0, y: 1 },
-        ArrowLeft: { x: -1, y: 0 },
-        ArrowRight: { x: 1, y: 0 },
-        w: { x: 0, y: -1 },
-        s: { x: 0, y: 1 },
-        a: { x: -1, y: 0 },
-        d: { x: 1, y: 0 },
-      };
-      const attackDirections: Record<string, Cell> = {
-        i: { x: 0, y: -1 },
-        j: { x: -1, y: 0 },
-        k: { x: 0, y: 1 },
-        l: { x: 1, y: 0 },
-      };
-      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-      const direction = directions[key];
-      if (direction) {
-        event.preventDefault();
-        if (heldMovement.has(key)) {
-          return;
-        }
-        // Fire on a fixed cadence; move() keeps the interactive/runtime guards, and enqueueing a
-        // step while the previous turn still animates fast-forwards it rather than dropping it.
-        const repeatMove = () => {
-          void move(direction);
-        };
-        repeatMove();
-        heldMovement.set(key, window.setInterval(repeatMove, MOVE_REPEAT_MS));
-        return;
-      }
-      const attackDirection = attackDirections[key];
-      if (attackDirection) {
-        if (event.repeat) {
-          return;
-        }
-        event.preventDefault();
-        void attack(attackDirection);
-      }
-    };
-    const onKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Alt") {
-        setPointerMode("attack");
-      }
-      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-      const timer = heldMovement.get(key);
-      if (timer !== undefined) {
-        window.clearInterval(timer);
-        heldMovement.delete(key);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    document.documentElement.dataset.keyboardInputReady = "true";
-    return () => {
-      for (const timer of heldMovement.values()) {
-        window.clearInterval(timer);
-      }
-      heldMovement.clear();
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-      delete document.documentElement.dataset.keyboardInputReady;
-    };
-  }, [attack, interactive, move]);
+  const cancelArmedSmash = useCallback(async () => {
+    const runtime = runtimeRef.current;
+    if (!runtime) {
+      return;
+    }
+    await execute(() => runtime.cancelArmedSmash());
+  }, [execute]);
+
+  useKeyboardInput({
+    interactive,
+    handlers: {
+      move,
+      attack,
+      setMobilityActive: (active: boolean) => setPointerMode(active ? "mobility" : "attack"),
+    },
+  });
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -294,8 +228,9 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
         }
         return smash(commit.target);
       },
+      onCancel: () => cancelArmedSmash(),
     });
-  }, [attack, dash, debugMode, interactive, pointerMode, smash, snapshot]);
+  }, [attack, cancelArmedSmash, dash, debugMode, interactive, pointerMode, smash, snapshot]);
 
   return {
     canvasHostRef,
