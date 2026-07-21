@@ -15,6 +15,7 @@ Turn the single Tick Arena into a complete run without changing its command, wor
 4. Resolve player death after the current Tick, stop future world work, and expose restart.
 5. Rebuild the same fresh logical state on restart while cancelling old presentation work.
 6. Support the authored milestone and Endless branch only after the ordinary run path works.
+7. Record every accepted command and reward selection into an append-only log (`scenarioId`, `seed`, ordered entries), cleared on reset or scenario replacement, and expose `exportCommandLog()` and `replayCommandLog()` on the debug API so a seed plus its log reproduces any reported run state. This is the substrate the later save design consumes (a save is a checkpoint snapshot plus, optionally, its log); it is not the save UX, which stays out of scope here. Moved from engineering hardening spec b1, deferred until this lifecycle consumes it.
 
 ## Design
 
@@ -33,3 +34,4 @@ The lifecycle is a small state machine around the existing runtime: `running`, `
 2. No Tick, enemy decision, reward callback, or presentation event occurs after a terminal transition.
 3. Restart produces the same initial snapshot as a fresh start and removes old overlays, entities, Telegraphs, and timelines.
 4. The full lifecycle uses the same runtime entry point from first input to terminal outcome.
+5. `exportCommandLog` and `replayCommandLog` round-trip: replaying a seed and its command log through the public entrances reproduces an identical final snapshot for a recorded run.

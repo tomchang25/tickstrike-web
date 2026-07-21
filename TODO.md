@@ -44,9 +44,10 @@ One line, no rationale, no backing document.
 
 - [model_ownership] Move the wave queue, slot, and admitted-batch shapes into `core/model/types.ts` so the model vocabulary stops importing `core/waves/` and the type cycle disappears
 - [boundary_tooling] Raise the `no-circular` rule to error and drop the swc parser once dependency-cruiser supports TypeScript 7 and can classify type-only imports again
-- [dead_code] Burn the `npm run check:unused` baseline to zero then add it to `check` - [ref plans/engineering_hardening.md]
+- [dead_code] Burn the `npm run check:unused` baseline (mostly deliberate extension surface awaiting its consumer, judged per item — delete a real orphan or give the export its consumer) to zero, then add it to `check`
 - [desktop_deps] Confirm whether the Tauri shell needs `@tauri-apps/api` before removing it as unused
-- [determinism_golden] Add reward-selection coverage to the determinism golden by clearing a wave deterministically, or accept the `wave-phase.test.ts` coverage - [ref plans/engineering_hardening.md]
+- [determinism_golden] Add reward-selection coverage to the determinism golden by driving the reward arena to a wave clear on the command path (adapt `wave-phase.test.ts`'s `clearWaveOne`, do not script the bot), or accept the existing `wave-phase.test.ts` coverage
+- [strict_ts] Enable `exactOptionalPropertyTypes`, `noImplicitOverride`, and app-level `verbatimModuleSyntax` in one dedicated commit, never bundled (it forces rewriting the `restTicks: undefined`-style assignments in the A6 world code), now that CI is live
 
 ---
 

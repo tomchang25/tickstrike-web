@@ -64,7 +64,7 @@ Which character a run uses is decided at run start; the choice is owned by the r
 
 - **A — Character features + fixture parameterization**: content registry, renderer generalization, harness/fixture character parameter.
 - **B — Mobility registry + character presenter**: core and presentation seams.
-- **C — Viking artifacts + schema lift + validation simplification**: after A6 Step 3 (done). Lifts the majors-are-dash rule, authors Viking (smash) major artifacts, and — because it already rewrites the same schema files — moves content validation to test time per [engineering_hardening.md](engineering_hardening.md): keep the semantic checks (cross-references, uniqueness, kind/shape compatibility, per-mobility pool completeness) as a vitest catalog sweep; delete the runtime shape-validation plumbing (TS already guarantees shape for compiled-in content, and the diagnostics have no UI consumer).
+- **C — Viking artifacts + schema lift + validation simplification**: after A6 Step 3 (done). Lifts the majors-are-dash rule, authors Viking (smash) major artifacts, and — because it already rewrites the same schema files — moves content validation to test time (deferred from the engineering hardening work and owned here): keep the semantic checks (cross-references, uniqueness, kind/shape compatibility, per-mobility pool completeness) as a vitest catalog sweep; delete the runtime shape-validation plumbing (TS already guarantees shape for compiled-in content, and the diagnostics have no UI consumer).
 - **D — Viking visual slice**: assets and animation parity, coordinated with port_13.
 
 ## Non-goals

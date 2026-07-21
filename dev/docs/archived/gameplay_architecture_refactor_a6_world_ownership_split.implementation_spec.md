@@ -1,7 +1,7 @@
 # A6 — World Ownership Split (Implementation Spec)
 
 > **Parent**: [gameplay_architecture_refactor.mega_plan.md](gameplay_architecture_refactor.mega_plan.md) §5 A6
-> **Status**: Ready to execute
+> **Status**: Done — completed 2026-07-21; see the Outcome section.
 > **Prerequisites**: A1–A5 landed (behavior registry, attack transaction, presenter registry, feature registration)
 
 ## Goal

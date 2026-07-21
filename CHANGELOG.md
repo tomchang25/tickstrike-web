@@ -73,3 +73,8 @@ Rules:
 ### Waves and Spawning in the Same Tick Arena
 
 - 2026-07-20 - [port_08] Authored waves now schedule deterministic atomic spawn warnings and levelled enemies through the Tick Arena, with visible countdowns, terminal cleanup, and browser acceptance coverage
+
+### Engineering Hardening
+
+- 2026-07-21 - [hardening] Layering, World-subsystem, and registry boundaries are now machine-enforced by dependency-cruiser inside `npm run check`, every pull request runs format, lint, boundaries, unit, build, and Chromium acceptance through GitHub Actions, and three committed golden scenarios fail CI on any determinism regression with a reviewable diff
+- 2026-07-21 - [hardening] `PixiGameRenderer` no longer owns pointer input, preview painting, or board painting, and the enemy, player, and wave resolution phases now receive narrow capability contexts instead of the whole `World`, freezing the facade as the default growth surface

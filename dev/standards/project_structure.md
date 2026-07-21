@@ -128,7 +128,7 @@ Shared is an exception for source with demonstrated cross-feature ownership and 
 
 The per-layer import boundaries above are machine-checked by `npm run check:boundaries` (dependency-cruiser, configured in `.dependency-cruiser.cjs`), which runs inside `npm run check`. The cruise freezes the cross-layer dependency set measured at adoption: `core` reaches nothing outward, and each other layer imports only within its recorded set. Widening a boundary means editing both this prose and the rule file in the same change; a rule the prose does not describe, or prose the rule does not enforce, is the drift this pairing exists to prevent. Cross-layer imports use the `@layer/*` path aliases so a boundary crossing is visible in the import specifier itself.
 
-`npm run check:unused` (knip) reports dead files, exports, and dependencies. It runs in report mode and does not yet gate `check`; see `dev/docs/plans/engineering_hardening.md` for the burn-down.
+`npm run check:unused` (knip) reports dead files, exports, and dependencies. It runs in report mode and does not yet gate `check`: the baseline is mostly deliberate extension surface awaiting its consumer rather than dead code, so the burn-down is per-item judgment — delete a genuine orphan, or give an intended-but-unconsumed export the consumer it was built for. Flip `check:unused` into `check` only once the baseline reaches zero.
 
 ## Placement Test
 

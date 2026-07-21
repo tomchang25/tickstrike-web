@@ -14,6 +14,7 @@ Replace the temporary controls with the player-facing HUD and input shell while 
 3. Keep React responsible for low-frequency HUD and overlays; Pixi remains responsible for board entities and combat presentation.
 4. Suppress gameplay input over UI and release held input on focus loss, visibility changes, and route changes.
 5. Add only settings and debug controls that operate through the existing command boundary.
+6. Split the oversized `test/e2e/testbed.spec.ts` (~1,285 lines) into focused specs as this shell reworks the browser input and HUD surface those tests drive. Test-hygiene only; no assertion or coverage change. Moved from engineering hardening, deferred until the e2e surface is next touched.
 
 ## Design
 
