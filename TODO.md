@@ -162,3 +162,7 @@ On death, offer a Restart From Checkpoint option beside the end summary that reb
 ### Future Distribution Integrations
 
 Consider Steamworks, achievements, cloud saves, analytics, PWA, service worker, offline support, gamepad, and touch only after browser and Tauri parity builds are stable and each integration has an explicit release requirement.
+
+### Special-Result And Artifact SFX
+
+Add the reference's result-override combat cues (execution, mobility-kill, and the Guard Shredder artifact) that swap in for the default hit or death sound on a special outcome. Deferred until the artifacts and special-kill effects are reworked and those outcomes are distinguishable in the semantic event stream. Design is parked in `dev/docs/plans/audio_special_result_sfx.sketch.md`.

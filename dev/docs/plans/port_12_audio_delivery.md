@@ -33,11 +33,10 @@ The mixer exposes three volume controls — Master, Effect, and Music — where 
 | 12.1  | Audio engine: WebAudio mixer, gesture unlock, Master/Effect/Music volume, and per-cue rate limiting       | Implementation spec: port_12_01_audio_engine.implementation_spec.md            |
 | 12.2  | Event-to-cue delivery: cue registry, reference SFX assets, and an audio director on the same event stream | Implementation spec: port_12_02_event_cue_delivery.implementation_spec.md      |
 | 12.3  | Teardown completeness and full-run verification of cue coverage and orphan-free stop                      | Plan child; create a verified implementation spec immediately before execution |
-| 12.4  | Special-result and artifact override cues: execution, mobility-kill, and guard-shredder result SFX        | Plan child; deferred until the matching kill/artifact effects are represented  |
 
-Recommended landing order is 12.1, 12.2, then 12.3. 12.4 is deferred.
+Recommended landing order is 12.1, 12.2, then 12.3.
 
-Child 12.4 carries the reference's result-override SFX that replace the default hit or death cue for a special outcome: `execution` (Punch_2.wav), `mobility_kill` (stab_flesh.wav), and the `guard_shredder` artifact (crystal_pling.wav). It is gated on the corresponding execution, mobility-kill, and artifact effects being represented in the Web runtime, and on those semantic outcomes being distinguishable in the event stream.
+The reference's result-override SFX (execution, mobility-kill, and the guard-shredder artifact) are out of this plan's scope; they are parked in the standalone `audio_special_result_sfx.sketch.md`, deferred until the artifacts and special-kill effects are reworked.
 
 ## Non-Goals
 
