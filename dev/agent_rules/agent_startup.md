@@ -21,7 +21,7 @@ The repository uses Node.js 22.12 or newer and npm. Runtime source and packaged 
 
 ## Project-Local Discovery
 
-- Before changing TypeScript, TSX, formatter, or linter configuration, read `dev/standards/code_style_standard.md`.
+- Before changing TypeScript, TSX, formatter, or linter configuration, read `dev/foundation/platforms/web-react/standards/code_style_standard.md` and `dev/standards/code_style.addendum.md`.
 
 Before adding or changing an enemy, character, artifact, or any gameplay behavior/presentation — and before touching `enemy-phase`, `world`, `PresentationDirector`, or `PixiGameRenderer` — read `dev/standards/gameplay_feature_architecture.md`.
 

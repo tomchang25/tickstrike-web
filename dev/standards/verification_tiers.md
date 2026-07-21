@@ -10,7 +10,7 @@ Scope verification to the risk of the change; never run the full vertical slice 
 | New terminal or multi-entity animation | Presentation unit test plus Playwright cleanup assertion   |
 | New global system                      | Full vertical slice                                        |
 
-Playwright verifies system capabilities, not per-content variants.
+The capability rule in `dev/foundation/platforms/web-react/standards/testing_standard.md` applies: Playwright verifies system capabilities, never per-content variants.
 
 ## Browser suite scope
 
@@ -18,6 +18,4 @@ The table's Playwright rows name which capability needs a scenario, not how ofte
 
 ## Determinism goldens
 
-`test/unit/determinism/` runs the Charge, rewards, and waves scenarios through a fixed command script and compares each accepted flag, the full ordered semantic-event stream, and the final snapshot against a committed golden under `__golden__/`. A normal run — `npm test`, `npm run verify`, CI — only asserts and never rewrites a golden, so a divergence stays red until a human resolves it.
-
-Regenerate goldens only with `npm run golden:update`, and only when the change under review **intentionally** alters a rule, a value, or content. The regenerated files land in the diff: review them line by line, and name the behavioral change in the commit message. Regenerating a golden to turn a red test green without an intended behavior change is the precise abuse this gate exists to catch — a determinism regression reaching a golden is a finding, not a formatting chore.
+Golden-fixture discipline — assert-only normal runs, regeneration only for intended behavior changes, line-by-line review — is owned by `dev/foundation/platforms/web-react/standards/testing_standard.md`. Tickstrike's goldens live under `test/unit/determinism/__golden__/` and cover the Charge, rewards, and waves scenarios: a fixed command script is compared against each accepted flag, the full ordered semantic-event stream, and the final snapshot. The dedicated update command is `npm run golden:update`.

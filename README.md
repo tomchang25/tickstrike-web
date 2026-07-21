@@ -98,7 +98,7 @@ The starter sets `bundle.active` to `false`, so it focuses on producing and test
 Every asset consumed by the game must be copied or exported into `src/content/<feature>/assets/` and imported by source code. Use `src/shared/assets/` only for demonstrated cross-feature ownership; the root `assets/` directory is for general references or editable source material.
 
 The canonical repository layout is `dev/foundation/platforms/web-react/standards/project_structure_standard.md`; project deltas live in `dev/standards/project_structure.addendum.md`.
-The formatting and control-flow conventions live in `dev/standards/code_style_standard.md`.
+The canonical code style is `dev/foundation/platforms/web-react/standards/code_style_standard.md`; tool bindings live in `dev/standards/code_style.addendum.md`.
 
 The shared Web development governance is pinned as a Git submodule at `dev/foundation/`. After cloning this repository, initialize it with:
 
