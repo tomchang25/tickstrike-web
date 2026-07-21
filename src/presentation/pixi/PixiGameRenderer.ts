@@ -1,35 +1,8 @@
 import { Application, Assets, Container, Graphics, Sprite, Text, type Texture } from "pixi.js";
-import {
-  clampSmashTarget,
-  previewAttack,
-  previewAttackVictimMarkers,
-  previewDash,
-  previewDashVictimMarkers,
-  previewSmash,
-  previewSmashVictimMarkers,
-  type AttackPreview,
-  type DashPreview,
-  type PreviewVictimMarker,
-  type SmashPreview,
-} from "@core/actions/action-preview";
-import {
-  cardinalDirection,
-  cellKey,
-  sameCell,
-  type Cell,
-  type EntityId,
-  type EntityState,
-  type MobilityKind,
-  type WorldSnapshot,
-} from "@core/model/types";
-import {
-  CELL_SIZE,
-  INITIAL_AIM,
-  resolveAimDirection,
-  resolveAimDistance,
-  screenPointToCell,
-} from "./pointer-aim";
+import { type Cell, type EntityId, type EntityState, type WorldSnapshot } from "@core/model/types";
+import { CELL_SIZE } from "./pointer-aim";
 import { BoardPainter } from "./board-painter";
+import { InputController, type PointerInputBinding, type PointerMode } from "./input-controller";
 import {
   createPlayerSprite,
   setNinjaSpriteSheet,
@@ -46,16 +19,7 @@ import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animatio
 import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
 import { enemySpriteSheetUrls } from "@content/enemies/features";
 
-export type PointerMode = "attack" | "mobility";
-export type PointerCommit =
-  | { readonly kind: "attack"; readonly direction: Cell }
-  | { readonly kind: "dash"; readonly direction: Cell; readonly distance: number }
-  | { readonly kind: "smash"; readonly target: Cell };
-
-export interface PointerInputBinding {
-  canInteract(): boolean;
-  onPrimaryClick(commit: PointerCommit): void | Promise<void>;
-}
+export type { PointerCommit, PointerInputBinding, PointerMode } from "./input-controller";
 
 interface EntityView {
   readonly root: Container;
@@ -198,25 +162,18 @@ export class PixiGameRenderer {
     () => this.host,
   );
 
+  private readonly input = new InputController(this.app, () => this.snapshot, {
+    applyFacing: (direction) => this.applyPlayerFacing(direction),
+    drawPreview: () => this.drawPointerPreview(),
+    clearPreview: () => this.clearPointerPreview(),
+  });
+
   private readonly entityViews = new Map<EntityId, EntityView>();
   private readonly transientEffects = new Set<Graphics>();
   private readonly positionOwners = new Set<EntityId>();
   private host: HTMLElement | undefined;
   private snapshot: WorldSnapshot | undefined;
-  private pointerMode: PointerMode = "attack";
   private debugMode = false;
-  private pointerCell: Cell | undefined;
-  private lastAim: Cell = INITIAL_AIM;
-  private playerFacing: Cell = INITIAL_AIM;
-  private playerFacingLocked = false;
-  private projectedPlayerMotionKey: string | undefined;
-  private dashDistance = 3;
-  private attackPreview: AttackPreview | undefined;
-  private dashPreview: DashPreview | undefined;
-  private retainedDashPreview: DashPreview | undefined;
-  private smashPreview: SmashPreview | undefined;
-  private victimPreviewMarkers: readonly PreviewVictimMarker[] = [];
-  private pointerCleanup: (() => void) | undefined;
   private enemySpriteSheets: Readonly<Record<string, Texture>> = {};
   private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
 
@@ -274,8 +231,7 @@ export class PixiGameRenderer {
   }
 
   destroy(): void {
-    this.pointerCleanup?.();
-    this.pointerCleanup = undefined;
+    this.input.unbind();
     this.clearPointerPreview();
     this.entityViews.clear();
     this.clearPositionReservations();
@@ -289,28 +245,17 @@ export class PixiGameRenderer {
   setPlayerAnimation(pose: PlayerSpritePose): void {
     const player = this.entityViews.get("player");
     player?.sprite?.setPose(pose);
-    this.playerFacingLocked = pose !== "idle";
+    this.input.setFacingLocked(pose !== "idle");
     if (this.host) {
       this.app.canvas.dataset.playerAnimation = pose;
     }
   }
 
   setPlayerFacing(facing: Cell, force = false): void {
-    const direction = cardinalDirection(facing);
-    if (!direction) {
-      return;
-    }
-    if (this.playerFacingLocked && !force) {
-      return;
-    }
-    if (sameCell(this.playerFacing, direction)) {
-      return;
-    }
-    this.applyPlayerFacing(direction);
+    this.input.setPlayerFacing(facing, force);
   }
 
   private applyPlayerFacing(direction: Cell): void {
-    this.playerFacing = direction;
     this.entityViews.get("player")?.sprite?.setFacing(direction);
     if (this.host) {
       this.app.canvas.dataset.playerFacing = `${direction.x},${direction.y}`;
@@ -320,19 +265,12 @@ export class PixiGameRenderer {
   sync(snapshot: WorldSnapshot): void {
     this.snapshot = snapshot;
     if (snapshot.tick === 0) {
-      this.lastAim = INITIAL_AIM;
-      this.playerFacing = INITIAL_AIM;
-      this.playerFacingLocked = false;
-      this.projectedPlayerMotionKey = undefined;
-      this.dashPreview = undefined;
-      this.retainedDashPreview = undefined;
-      this.smashPreview = undefined;
-      this.victimPreviewMarkers = [];
+      this.input.resetForNewRun();
     }
     this.board.drawArena(snapshot, this.debugMode);
     this.projectSnapshot(snapshot);
 
-    this.refreshPointerPreview();
+    this.input.refreshPreview();
   }
 
   updateSnapshot(snapshot: WorldSnapshot): void {
@@ -341,7 +279,7 @@ export class PixiGameRenderer {
       this.board.drawArena(snapshot, this.debugMode);
     }
     this.projectSnapshot(snapshot);
-    this.refreshPointerPreview();
+    this.input.refreshPreview();
   }
 
   setDebugMode(enabled: boolean): void {
@@ -356,7 +294,7 @@ export class PixiGameRenderer {
   private projectSnapshot(snapshot: WorldSnapshot): void {
     this.board.drawReservations(snapshot);
     this.board.drawTelegraphs(snapshot);
-    this.projectPlayerFacing(snapshot);
+    this.input.noteSnapshotMotion(snapshot);
 
     const liveIds = new Set(snapshot.entities.map((entity) => entity.id));
     for (const [id, view] of this.entityViews) {
@@ -392,12 +330,13 @@ export class PixiGameRenderer {
         view.body.tint = entityColor(entity);
       }
       if (this.host && entity.kind === "player" && view.sprite) {
+        const playerFacing = this.input.playerFacing;
         if (view.sprite.pose === "idle") {
-          view.sprite.setFacing(this.playerFacing);
+          view.sprite.setFacing(playerFacing);
         }
         view.body.tint = 0xffffff;
         this.app.canvas.dataset.playerProfile = view.sprite.profileId;
-        this.app.canvas.dataset.playerFacing = `${this.playerFacing.x},${this.playerFacing.y}`;
+        this.app.canvas.dataset.playerFacing = `${playerFacing.x},${playerFacing.y}`;
         this.app.canvas.dataset.playerAnimation ??= "idle";
       } else if (this.host && entity.kind === "player") {
         delete this.app.canvas.dataset.playerProfile;
@@ -448,132 +387,12 @@ export class PixiGameRenderer {
     }
   }
 
-  private projectPlayerFacing(snapshot: WorldSnapshot): void {
-    let motionKey: string | undefined;
-    let motionFrom: Cell | undefined;
-    let motionTo: Cell | undefined;
-    for (const event of snapshot.lastEvents) {
-      if (event.type === "actor_moved" && event.entityId === "player") {
-        motionKey = `move:${event.from.x},${event.from.y}:${event.to.x},${event.to.y}`;
-        motionFrom = event.from;
-        motionTo = event.to;
-      } else if (event.type === "player_dashed" && event.actorId === "player") {
-        motionKey = `dash:${event.from.x},${event.from.y}:${event.to.x},${event.to.y}`;
-        motionFrom = event.from;
-        motionTo = event.to;
-      }
-    }
-    if (!motionKey || motionKey === this.projectedPlayerMotionKey || !motionFrom || !motionTo) {
-      return;
-    }
-    this.projectedPlayerMotionKey = motionKey;
-    this.playerFacingLocked = true;
-    const direction = {
-      x: Math.sign(motionTo.x - motionFrom.x),
-      y: Math.sign(motionTo.y - motionFrom.y),
-    };
-    if (Math.abs(direction.x) + Math.abs(direction.y) === 1) {
-      this.playerFacing = direction;
-    }
-  }
-
   setPointerMode(mode: PointerMode): void {
-    if (this.pointerMode === mode) {
-      return;
-    }
-    this.pointerMode = mode;
-    this.dashPreview = undefined;
-    this.retainedDashPreview = undefined;
-    this.smashPreview = undefined;
-    this.refreshPointerPreview();
+    this.input.setPointerMode(mode);
   }
 
   bindPointerInput(binding: PointerInputBinding): () => void {
-    this.pointerCleanup?.();
-
-    const canvas = this.app.canvas;
-    const onPointerMove = (event: PointerEvent) => {
-      const nextPointerCell = this.pointerToCell(event);
-      if (nextPointerCell && this.pointerCell && sameCell(nextPointerCell, this.pointerCell)) {
-        return;
-      }
-      this.pointerCell = nextPointerCell;
-      this.refreshPointerPreview(true);
-    };
-    const onPointerLeave = () => {
-      this.pointerCell = undefined;
-      this.attackPreview = undefined;
-      this.dashPreview = undefined;
-      this.retainedDashPreview = undefined;
-      this.smashPreview = undefined;
-      this.victimPreviewMarkers = [];
-      if (this.snapshot?.armedSmashTarget) {
-        this.refreshPointerPreview();
-      } else {
-        this.clearPointerPreview();
-      }
-    };
-    const onClick = (event: MouseEvent) => {
-      if (event.button !== 0 || !binding.canInteract()) {
-        return;
-      }
-      this.refreshPointerPreview();
-      if (this.snapshot?.armedSmashTarget) {
-        if (!this.smashPreview?.accepted) {
-          return;
-        }
-        event.preventDefault();
-        void binding.onPrimaryClick({ kind: "smash", target: this.smashPreview.target });
-        return;
-      }
-      if (this.pointerMode === "attack") {
-        if (!this.attackPreview?.accepted) {
-          return;
-        }
-        event.preventDefault();
-        this.lastAim = this.attackPreview.direction;
-        void binding.onPrimaryClick({ kind: "attack", direction: this.attackPreview.direction });
-        return;
-      }
-      if (this.activeMobility() === "dash") {
-        if (!this.dashPreview?.accepted) {
-          return;
-        }
-        event.preventDefault();
-        this.lastAim = this.dashPreview.direction;
-        void binding.onPrimaryClick({
-          kind: "dash",
-          direction: this.dashPreview.direction,
-          distance: this.dashDistance,
-        });
-        return;
-      }
-      if (!this.smashPreview?.accepted) {
-        return;
-      }
-      event.preventDefault();
-      void binding.onPrimaryClick({ kind: "smash", target: this.smashPreview.target });
-    };
-
-    canvas.addEventListener("pointermove", onPointerMove);
-    canvas.addEventListener("pointerleave", onPointerLeave);
-    canvas.addEventListener("click", onClick);
-
-    let active = true;
-    const cleanup = () => {
-      if (!active) {
-        return;
-      }
-      active = false;
-      canvas.removeEventListener("pointermove", onPointerMove);
-      canvas.removeEventListener("pointerleave", onPointerLeave);
-      canvas.removeEventListener("click", onClick);
-      if (this.pointerCleanup === cleanup) {
-        this.pointerCleanup = undefined;
-      }
-    };
-    this.pointerCleanup = cleanup;
-    return cleanup;
+    return this.input.bind(binding);
   }
 
   getEntityView(id: EntityId): Container | undefined {
@@ -712,93 +531,6 @@ export class PixiGameRenderer {
     return cellToPixels(cell);
   }
 
-  private pointerToCell(event: PointerEvent): Cell | undefined {
-    const rect = this.app.canvas.getBoundingClientRect();
-    return screenPointToCell(
-      { x: event.clientX, y: event.clientY },
-      rect,
-      this.app.screen.width,
-      this.app.screen.height,
-    );
-  }
-
-  private refreshPointerPreview(allowFacingUpdate = false): void {
-    if (!this.snapshot) {
-      this.attackPreview = undefined;
-      this.dashPreview = undefined;
-      this.retainedDashPreview = undefined;
-      this.smashPreview = undefined;
-      this.victimPreviewMarkers = [];
-      this.clearPointerPreview();
-      return;
-    }
-
-    const player = this.snapshot.entities.find(
-      (entity) => entity.id === "player" && entity.phase === "alive",
-    );
-    if (!player) {
-      this.attackPreview = undefined;
-      this.dashPreview = undefined;
-      this.smashPreview = undefined;
-      this.victimPreviewMarkers = [];
-      this.clearPointerPreview();
-      return;
-    }
-
-    this.attackPreview = undefined;
-    this.dashPreview = undefined;
-    this.smashPreview = undefined;
-    this.victimPreviewMarkers = [];
-
-    if (this.snapshot.armedSmashTarget) {
-      if (allowFacingUpdate) {
-        this.setPlayerFacing(
-          resolveAimDirection(this.snapshot.armedSmashTarget, player.cell, this.lastAim),
-        );
-      }
-      this.smashPreview = previewSmash(this.snapshot, player.id, this.snapshot.armedSmashTarget);
-      this.victimPreviewMarkers = previewSmashVictimMarkers(this.smashPreview);
-      this.drawPointerPreview();
-      return;
-    }
-
-    if (!this.pointerCell) {
-      this.clearPointerPreview();
-      return;
-    }
-
-    const direction = resolveAimDirection(this.pointerCell, player.cell, this.lastAim);
-    if (allowFacingUpdate) {
-      this.setPlayerFacing(direction);
-    }
-
-    if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
-      this.attackPreview = previewAttack(this.snapshot, player.id, direction);
-      this.victimPreviewMarkers = previewAttackVictimMarkers(this.attackPreview);
-      this.drawPointerPreview();
-      return;
-    }
-
-    const mobility = this.activeMobility();
-    const range = player.mobility?.range ?? 3;
-    if (mobility === "dash") {
-      this.dashDistance = resolveAimDistance(this.pointerCell, player.cell, range);
-      this.dashPreview = previewDash(this.snapshot, player.id, direction, this.dashDistance);
-      this.victimPreviewMarkers = previewDashVictimMarkers(this.dashPreview);
-      if (this.dashPreview.accepted) {
-        this.retainedDashPreview = this.dashPreview;
-      }
-    } else {
-      this.smashPreview = previewSmash(
-        this.snapshot,
-        player.id,
-        clampSmashTarget(this.pointerCell, player.cell, range),
-      );
-      this.victimPreviewMarkers = previewSmashVictimMarkers(this.smashPreview);
-    }
-    this.drawPointerPreview();
-  }
-
   private drawPointerPreview(): void {
     this.pointerPreviewLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
     if (!this.host) {
@@ -815,11 +547,11 @@ export class PixiGameRenderer {
     delete canvas.dataset.smashPreviewCell;
     delete canvas.dataset.smashPreviewValid;
     delete canvas.dataset.smashArmed;
-    canvas.dataset.pointerMode = this.pointerMode;
-    canvas.dataset.selectedMobility = this.activeMobility();
+    canvas.dataset.pointerMode = this.input.pointerMode;
+    canvas.dataset.selectedMobility = this.input.activeMobility();
 
-    if (this.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
-      const preview = this.attackPreview;
+    if (this.input.pointerMode === "attack" && !this.snapshot?.armedSmashTarget) {
+      const preview = this.input.attackPreview;
       if (!preview?.accepted) {
         this.drawVictimMarkers();
         return;
@@ -837,8 +569,8 @@ export class PixiGameRenderer {
       return;
     }
 
-    if (this.activeMobility() === "smash" || this.snapshot?.armedSmashTarget) {
-      const preview = this.smashPreview;
+    if (this.input.activeMobility() === "smash" || this.snapshot?.armedSmashTarget) {
+      const preview = this.input.smashPreview;
       canvas.dataset.smashPreviewValid = String(Boolean(preview?.accepted));
       canvas.dataset.smashArmed = String(Boolean(this.snapshot?.armedSmashTarget));
       if (!preview) {
@@ -875,8 +607,8 @@ export class PixiGameRenderer {
       return;
     }
 
-    const preview = this.dashPreview;
-    const retainedPreview = this.retainedDashPreview;
+    const preview = this.input.dashPreview;
+    const retainedPreview = this.input.retainedDashPreview;
     canvas.dataset.mobilityPreviewValid = String(Boolean(preview?.accepted));
     canvas.dataset.mobilityPreviewRetained = String(Boolean(!preview?.accepted && retainedPreview));
     const visiblePreview = preview?.accepted ? preview : retainedPreview;
@@ -911,7 +643,7 @@ export class PixiGameRenderer {
 
   private drawVictimMarkers(): void {
     const canvas = this.app.canvas;
-    const markers = this.victimPreviewMarkers;
+    const markers = this.input.victimPreviewMarkers;
     const kills = markers.filter((marker) => marker.outcome === "kill");
     const displacements = markers.filter(
       (marker) => (marker.outcome === "knockback" || marker.outcome === "water") && marker.to,
@@ -1029,12 +761,6 @@ export class PixiGameRenderer {
     delete canvas.dataset.previewDisplacements;
     delete canvas.dataset.previewTerminal;
     delete canvas.dataset.previewBlocked;
-  }
-
-  private activeMobility(): MobilityKind {
-    return (
-      this.snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash"
-    );
   }
 
   private createEntityView(entity: EntityState): EntityView {
