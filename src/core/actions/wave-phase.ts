@@ -5,7 +5,8 @@ import type {
   WaveProgressionProfile,
 } from "../content/wave-schema";
 import type { CombatEvent } from "../events/combat-events";
-import { sameCell, type Cell, type EntityId } from "../model/types";
+import { sameCell, type Cell, type EntityId, type EntityState } from "../model/types";
+import type { RandomStreams } from "../random/random-streams";
 import { classifyArtifactEffect, generateSingleCardOffer } from "../rewards/reward-offers";
 import type { WaveWorldView } from "../waves/wave-inputs";
 import { planGroupCells } from "../waves/enemy-spawn-planner";
@@ -17,7 +18,31 @@ import {
   type QueueMember,
   type SlotState,
 } from "../waves/wave-scheduler";
-import type { SpawnEntityInput, World } from "../world/world";
+import type { GridBoard, RunBuild, SpawnEntityInput, WaveRuntime, WorldView } from "../world/world";
+
+/**
+ * The capability handle the wave phase and reward selection receive instead of
+ * the whole `World` (hardening spec d): the read-only {@link WorldView}, the
+ * `board`/`waves`/`run` subsystems it drives, the `random` streams, `spawn`, and
+ * the player-stat mutators reward selection applies. It pairs with the authored
+ * {@link WavePhaseContext} content projection. The player-stat mutators
+ * (`setNormalAttackDamage` etc.) live here for now; the A6 audit assigns them to
+ * the character/Viking artifact work, not to a further World split. `World`
+ * satisfies this structurally, so `action-resolver` passes a `World` directly.
+ */
+export interface WavePhaseWorld extends WorldView {
+  readonly board: GridBoard;
+  readonly waves: WaveRuntime;
+  readonly run: RunBuild;
+  readonly random: RandomStreams;
+  spawn(input: SpawnEntityInput): EntityState;
+  setNormalAttackDamage(id: EntityId, damage: number): void;
+  setMobilityDamage(id: EntityId, damage: number): void;
+  setMobilityCooldownConfig(id: EntityId, cooldown: number): void;
+  setMobilityRange(id: EntityId, range: number): void;
+  raiseMaxHealth(id: EntityId, amount: number): void;
+  recordEvents(events: readonly CombatEvent[]): void;
+}
 
 export interface WaveEnemySpawnRequest {
   readonly id: EntityId;
@@ -71,7 +96,7 @@ function parseWaveEntityId(id: string): { waveNumber: number; slotIndex: number 
 
 /** Refreshes every slot's living-enemy attribution from currently living, id-tagged entities. */
 function refreshLivingCounts(
-  world: World,
+  world: WavePhaseWorld,
   waveNumber: number,
   slots: readonly SlotState[],
 ): readonly SlotState[] {
@@ -90,7 +115,7 @@ function refreshLivingCounts(
 }
 
 /** Recomputed fresh at each call site; never cached, so a same-tick spawn is always reflected. */
-function hasLivingWaveEnemy(world: World, waveNumber: number): boolean {
+function hasLivingWaveEnemy(world: WavePhaseWorld, waveNumber: number): boolean {
   return world.listActiveEntities().some((entity) => {
     if (entity.kind !== "enemy") {
       return false;
@@ -100,21 +125,21 @@ function hasLivingWaveEnemy(world: World, waveNumber: number): boolean {
   });
 }
 
-function buildWaveWorldView(world: World, playerCell: Cell): WaveWorldView {
+function buildWaveWorldView(world: WavePhaseWorld, playerCell: Cell): WaveWorldView {
   return {
     width: world.arena.width,
     height: world.arena.height,
     playerCell,
     livingEnemyCount: world.listActiveEntities().filter((entity) => entity.kind === "enemy").length,
-    isArenaLegal: (cell) => world.isLegalCell(cell),
-    isOccupied: (cell) => world.isOccupied(cell),
-    isReserved: (cell) => world.isReserved(cell),
+    isArenaLegal: (cell) => world.board.isLegalCell(cell),
+    isOccupied: (cell) => world.board.isOccupied(cell),
+    isReserved: (cell) => world.board.isReserved(cell),
   };
 }
 
 /** A repair view additionally treats already-claimed replacement cells as occupied. */
 function buildRepairView(
-  world: World,
+  world: WavePhaseWorld,
   playerCell: Cell,
   extraOccupied: readonly Cell[],
 ): WaveWorldView {
@@ -127,15 +152,19 @@ function buildRepairView(
 }
 
 function isSpawnCellStillLegal(
-  world: World,
+  world: WavePhaseWorld,
   playerCell: Cell,
   cell: Cell,
   ownerId: string,
 ): boolean {
-  if (!world.isLegalCell(cell) || world.isOccupied(cell) || sameCell(cell, playerCell)) {
+  if (
+    !world.board.isLegalCell(cell) ||
+    world.board.isOccupied(cell) ||
+    sameCell(cell, playerCell)
+  ) {
     return false;
   }
-  const reservation = world.reservationAt(cell);
+  const reservation = world.board.reservationAt(cell);
   return !reservation || reservation.ownerId === ownerId;
 }
 
@@ -156,7 +185,7 @@ interface RepairResult {
  * dropping, preserving all-or-nothing admission.
  */
 function repairBatchCells(
-  world: World,
+  world: WavePhaseWorld,
   playerCell: Cell,
   ownerId: string,
   members: readonly QueueMember[],
@@ -194,7 +223,7 @@ interface SpawnCounter {
 }
 
 function spawnAssignments(
-  world: World,
+  world: WavePhaseWorld,
   context: WavePhaseContext,
   waveNumber: number,
   slotIndex: number,
@@ -248,7 +277,7 @@ function withRequeuedMembers(
 
 /** Resolves an expired pending batch: repair, release, spawn survivors, requeue the rest. */
 function resolveExpiredBatch(
-  world: World,
+  world: WavePhaseWorld,
   context: WavePhaseContext,
   playerCell: Cell,
   waveNumber: number,
@@ -269,8 +298,8 @@ function resolveExpiredBatch(
     random,
   );
 
-  world.releaseReservation(ownerId);
-  world.clearTelegraph(ownerId);
+  world.board.releaseReservation(ownerId);
+  world.board.clearTelegraph(ownerId);
 
   const spawns = spawnAssignments(
     world,
@@ -281,14 +310,14 @@ function resolveExpiredBatch(
     counter,
     assignments,
   );
-  world.clearPendingSpawnBatch();
+  world.waves.clearPendingSpawnBatch();
 
-  const runtime = world.waveRuntime!;
+  const runtime = world.waves.state!;
   const slots =
     requeued.length > 0
       ? withRequeuedMembers(runtime.slots, batch.slotIndex, requeued, spawns.length > 0)
       : withClearedQueue(runtime.slots, batch.slotIndex, spawns.length > 0);
-  world.setWave(waveNumber, slots);
+  world.waves.setWave(waveNumber, slots);
 
   if (spawns.length > 0) {
     events.push({ type: "wave_group_spawned", waveNumber, slotIndex: batch.slotIndex, spawns });
@@ -308,8 +337,11 @@ function resolveExpiredBatch(
  * wave runtime is installed. Throws if a wave runtime is installed with no context — a silently
  * frozen schedule is worse than a loud construction error.
  */
-export function resolveWavePhase(world: World, context?: WavePhaseContext): WavePhaseResult {
-  const runtime = world.waveRuntime;
+export function resolveWavePhase(
+  world: WavePhaseWorld,
+  context?: WavePhaseContext,
+): WavePhaseResult {
+  const runtime = world.waves.state;
   if (!runtime) {
     return { events: [], victoryReady: false };
   }
@@ -334,14 +366,17 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
   const counter: SpawnCounter = { value: 0 };
 
   // Step 1: refresh living-enemy attribution before any eligibility check reads it.
-  world.setWave(runtime.waveNumber, refreshLivingCounts(world, runtime.waveNumber, runtime.slots));
+  world.waves.setWave(
+    runtime.waveNumber,
+    refreshLivingCounts(world, runtime.waveNumber, runtime.slots),
+  );
 
   // Step 2: resolve the pending warning, if any.
-  const pendingBatch = world.waveRuntime!.pendingBatch;
+  const pendingBatch = world.waves.state!.pendingBatch;
   if (pendingBatch) {
-    const decremented = world.decrementPendingSpawnBatchWarning()!;
+    const decremented = world.waves.decrementPendingSpawnBatchWarning()!;
     if (decremented.remainingTicks > 0) {
-      world.setTelegraph({
+      world.board.setTelegraph({
         sourceId: spawnOwnerId(runtime.waveNumber, decremented.slotIndex),
         phase: "spawning",
         cells: decremented.cells,
@@ -364,9 +399,9 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
 
   // Step 3: admit the next atomic batch, if headroom and placement allow it.
   let admittedSomething = false;
-  const afterExpiry = world.waveRuntime!;
+  const afterExpiry = world.waves.state!;
   const eligibleSlots = evaluateSlotEligibility(wave, afterExpiry.slots);
-  world.setWave(runtime.waveNumber, eligibleSlots);
+  world.waves.setWave(runtime.waveNumber, eligibleSlots);
   const livingEnemyCount = world
     .listActiveEntities()
     .filter((entity) => entity.kind === "enemy").length;
@@ -403,7 +438,7 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
           counter,
           assignments,
         );
-        world.setWave(
+        world.waves.setWave(
           runtime.waveNumber,
           withClearedQueue(eligibleSlots, admittedBatch.slotIndex, spawns.length > 0),
         );
@@ -417,7 +452,7 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
         }
       } else {
         const ownerId = spawnOwnerId(runtime.waveNumber, admittedBatch.slotIndex);
-        const decision = world.requestReservation({
+        const decision = world.board.requestReservation({
           ownerId,
           purpose: "spawn",
           cells: placement.cells,
@@ -427,14 +462,14 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
             `Spawn reservation for ${ownerId} must be granted with no arbitration losses.`,
           );
         }
-        world.setTelegraph({
+        world.board.setTelegraph({
           sourceId: ownerId,
           phase: "spawning",
           cells: placement.cells,
           remainingTicks: admittedBatch.warningTicks,
         });
-        world.installPendingSpawnBatch(admittedBatch, placement.cells);
-        world.setWave(
+        world.waves.installPendingSpawnBatch(admittedBatch, placement.cells);
+        world.waves.setWave(
           runtime.waveNumber,
           withClearedQueue(eligibleSlots, admittedBatch.slotIndex, false),
         );
@@ -465,7 +500,7 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
   // Step 4: advance the wave once every queue is drained, nothing is pending, and no living
   // enemy of this wave remains. Recomputed live, never from the (possibly stale) refreshed slots.
   if (!admittedSomething) {
-    const current = world.waveRuntime!;
+    const current = world.waves.state!;
     const noQueues = current.slots.every((slot) => slot.remainingQueue.length === 0);
     const noPending = !current.pendingBatch;
     if (noQueues && noPending && !hasLivingWaveEnemy(world, runtime.waveNumber)) {
@@ -478,19 +513,19 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
 
       const offer = generateSingleCardOffer({
         artifacts: context.offerableArtifacts ?? [],
-        build: world.runBuild,
+        build: world.run.state,
         waveNumber: runtime.waveNumber,
         playerMobilityKind: player.mobility?.kind ?? null,
         draw: () => world.random.get("rewards").nextUnit(),
       });
       if (offer) {
-        world.installPendingRewardOffer(offer);
+        world.run.installPendingRewardOffer(offer);
         events.push({ type: "reward_offered", waveNumber: offer.waveNumber, cards: offer.cards });
         return { events, victoryReady: false };
       }
 
       const nextSlots = createInitialSlotStates(nextWave, context.groups, nextWaveNumber, random);
-      world.setWave(nextWaveNumber, nextSlots);
+      world.waves.setWave(nextWaveNumber, nextSlots);
       events.push({ type: "wave_started", waveNumber: nextWaveNumber });
     }
   }
@@ -505,11 +540,11 @@ export function resolveWavePhase(world: World, context?: WavePhaseContext): Wave
  * Never runs the accepted-player-action path, the enemy phase, or presentation.
  */
 export function resolveRewardSelection(
-  world: World,
+  world: WavePhaseWorld,
   artifactId: string,
   context: WavePhaseContext,
 ): RewardSelectionResolution {
-  const offer = world.pendingRewardOffer;
+  const offer = world.run.pendingRewardOffer;
   if (!offer) {
     return { accepted: false, reason: "No reward selection is pending.", events: [] };
   }
@@ -527,7 +562,7 @@ export function resolveRewardSelection(
     return { accepted: false, reason: "Unsupported artifact effect.", events: [] };
   }
 
-  world.clearPendingRewardOffer();
+  world.run.clearPendingRewardOffer();
 
   const player = world.listEntities().find((entity) => entity.kind === "player");
   let trigger: ArtifactTrigger | undefined;
@@ -568,7 +603,7 @@ export function resolveRewardSelection(
 
   // Apply the selected card's authored effect exactly once: the card already carries its
   // resulting stack count, so this records that stack plus any acquired trigger in one write.
-  world.applyRewardSelection(artifactId, card.resultingStackCount, trigger);
+  world.run.applyRewardSelection(artifactId, card.resultingStackCount, trigger);
 
   const events: CombatEvent[] = [
     { type: "reward_selected", artifactId, stackCount: card.resultingStackCount },
@@ -579,7 +614,7 @@ export function resolveRewardSelection(
   if (nextWave) {
     const random = () => world.random.get("waves").nextUnit();
     const nextSlots = createInitialSlotStates(nextWave, context.groups, nextWaveNumber, random);
-    world.setWave(nextWaveNumber, nextSlots);
+    world.waves.setWave(nextWaveNumber, nextSlots);
     events.push({ type: "wave_started", waveNumber: nextWaveNumber });
   }
 
