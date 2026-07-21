@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import type { MobilityKind } from "@core/model/types";
 import { requireScenario, scenarios } from "@harness/scenario-registry";
 import { GameHud } from "@ui/hud/game-hud";
 import { MilestoneOverlay } from "@ui/milestone-overlay";
 import { RewardOverlay } from "@ui/reward-overlay";
 import { SemanticMirror } from "@ui/semantic-mirror";
+import { SettingsPanel } from "@ui/settings/settings-panel";
 import { TestbedPanel } from "@ui/testbed-panel";
 import { useGameSession } from "./use-game-session";
 
@@ -17,9 +18,9 @@ function scenarioFromUrl(): string {
 
 export function TestbedApp() {
   const initialScenario = useMemo(() => requireScenario(scenarioFromUrl()), []);
-  const [debugMode, setDebugMode] = useState(false);
-  const session = useGameSession({ initialScenario, debugApi: true, debugMode });
+  const session = useGameSession({ initialScenario, debugApi: true });
   const { scenario, snapshot, busy, runtimeRef } = session;
+  const debugMode = session.settings.showDebugOverlay;
   const commandsEnabled = scenario.commandsEnabled !== false;
   const pendingReward = snapshot?.pendingReward;
   const pendingMilestone = snapshot?.pendingMilestone;
@@ -46,6 +47,14 @@ export function TestbedApp() {
         </div>
         <p>Pure TypeScript rules · Pixi presentation · React testbed · Playwright hooks</p>
       </header>
+
+      <SettingsPanel
+        open={session.settingsOpen}
+        onOpenChange={session.setSettingsOpen}
+        showDebugOverlay={session.settings.showDebugOverlay}
+        onShowDebugOverlayChange={session.setShowDebugOverlay}
+        onRestart={session.reset}
+      />
 
       <div className="workspace">
         <section className="game-column" aria-label="Game viewport">
@@ -91,7 +100,7 @@ export function TestbedApp() {
             outcome={snapshot.outcome}
             inspection={scenario.inspection}
             onScenarioChange={changeScenario}
-            onDebugModeChange={setDebugMode}
+            onDebugModeChange={session.setShowDebugOverlay}
             onReset={session.reset}
           />
         ) : (

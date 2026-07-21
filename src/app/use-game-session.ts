@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { previewAttack } from "@core/actions/action-preview";
 import type { Cell, MilestoneChoice, WorldSnapshot } from "@core/model/types";
+import { createLocalStorageSettingsStorage } from "@platform/settings-storage";
 import type { TestScenario } from "@harness/types";
 import type { PointerCommit, PointerMode } from "@presentation/pixi/pixi-game-renderer";
 import { GameRuntime } from "@runtime/game-runtime";
+import { SettingsStore, type GameSettings } from "@runtime/settings-store";
 import { useKeyboardInput } from "@ui/input/use-keyboard-input";
 
 export interface GameSessionOptions {
@@ -14,8 +16,6 @@ export interface GameSessionOptions {
    * API and the full scenario registry out of the production bundle.
    */
   debugApi: boolean;
-  /** Forwarded to the renderer's debug overlay; command flow is unaffected. */
-  debugMode: boolean;
 }
 
 export interface GameSession {
@@ -26,26 +26,45 @@ export interface GameSession {
   busy: boolean;
   pointerMode: PointerMode;
   interactive: boolean;
+  settings: GameSettings;
+  settingsOpen: boolean;
+  setSettingsOpen: (open: boolean) => void;
+  setShowDebugOverlay: (value: boolean) => void;
   loadScenario: (scenario: TestScenario) => void;
   reset: () => void;
   selectReward: (artifactId: string) => Promise<void>;
   selectMilestoneDecision: (choice: MilestoneChoice) => Promise<void>;
 }
 
-export function useGameSession({ initialScenario, debugApi, debugMode }: GameSessionOptions): GameSession {
+export function useGameSession({ initialScenario, debugApi }: GameSessionOptions): GameSession {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const runtimeRef = useRef<GameRuntime | undefined>(undefined);
+  const settingsStoreRef = useRef<SettingsStore | undefined>(undefined);
+  if (!settingsStoreRef.current) {
+    settingsStoreRef.current = new SettingsStore(createLocalStorageSettingsStorage());
+  }
+  const settingsStore = settingsStoreRef.current;
   const [scenario, setScenario] = useState(initialScenario);
   const [snapshot, setSnapshot] = useState<WorldSnapshot>();
   const [busy, setBusy] = useState(false);
   const [pointerMode, setPointerMode] = useState<PointerMode>("attack");
+  const [settings, setSettings] = useState<GameSettings>(() => settingsStore.get());
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const commandsEnabled = scenario.commandsEnabled !== false;
   const encounterRunning = snapshot?.outcome === "running";
   const pendingReward = snapshot?.pendingReward;
   const pendingMilestone = snapshot?.pendingMilestone;
   // React disabling is supplementary; the runtime's own command serialization already rejects a
-  // command while a reward selection or milestone decision is pending (see resolveCommand).
-  const interactive = commandsEnabled && encounterRunning && !pendingReward && !pendingMilestone;
+  // command while a reward selection or milestone decision is pending (see resolveCommand). The
+  // settings panel joins this gate so gameplay input is inert while it is open.
+  const interactive = commandsEnabled && encounterRunning && !pendingReward && !pendingMilestone && !settingsOpen;
+
+  useEffect(() => settingsStore.subscribe(setSettings), [settingsStore]);
+
+  const setShowDebugOverlay = useCallback(
+    (value: boolean) => settingsStore.set({ showDebugOverlay: value }),
+    [settingsStore],
+  );
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -236,7 +255,14 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
     if (!runtime || !snapshot) {
       return;
     }
-    runtime.renderer.setDebugMode(debugMode);
+    runtime.renderer.setDebugMode(settings.showDebugOverlay);
+  }, [settings.showDebugOverlay, snapshot]);
+
+  useEffect(() => {
+    const runtime = runtimeRef.current;
+    if (!runtime || !snapshot) {
+      return;
+    }
     runtime.renderer.setPointerMode(pointerMode);
     return runtime.renderer.bindPointerInput({
       canInteract: () => interactive,
@@ -251,7 +277,7 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
       },
       onCancel: () => cancelArmedSmash(),
     });
-  }, [attack, cancelArmedSmash, dash, debugMode, interactive, pointerMode, smash, snapshot]);
+  }, [attack, cancelArmedSmash, dash, interactive, pointerMode, smash, snapshot]);
 
   return {
     canvasHostRef,
@@ -261,6 +287,10 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
     busy,
     pointerMode,
     interactive,
+    settings,
+    settingsOpen,
+    setSettingsOpen,
+    setShowDebugOverlay,
     loadScenario,
     reset,
     selectReward,

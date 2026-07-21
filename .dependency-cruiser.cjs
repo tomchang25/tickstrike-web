@@ -66,8 +66,10 @@ module.exports = {
     {
       name: "app-imports-within-its-measured-set",
       severity: "error",
+      comment:
+        "app is the composition/bootstrap layer: it wires platform adapters into runtime-owned ports. The app -> platform edge was added for the settings persistence seam (port_11 child 05) and is the sanctioned wiring point port_12/port_14 reuse.",
       from: { path: "^src/app/" },
-      to: { path: "^src/", pathNot: "^src/(app|core|harness|presentation|runtime|ui)/" },
+      to: { path: "^src/", pathNot: "^src/(app|core|harness|platform|presentation|runtime|ui)/" },
     },
     {
       name: "platform-and-shared-are-leaves",

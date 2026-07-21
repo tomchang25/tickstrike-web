@@ -301,6 +301,119 @@ button:disabled {
   color: #72d4ff;
 }
 
+.settings-gear {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 40;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0.5px solid #333b4c;
+  border-radius: 10px;
+  background: rgb(23 26 34 / 92%);
+  color: #cfe3f5;
+  font-size: 1.1rem;
+  cursor: pointer;
+  place-items: center;
+}
+
+.settings-gear:hover {
+  border-color: #4a6488;
+}
+
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  padding: 16px;
+  background: rgb(12 14 19 / 78%);
+  place-items: center;
+}
+
+.settings-dialog {
+  width: min(340px, 100%);
+  padding: 16px 18px;
+  border: 0.5px solid #38506a;
+  border-radius: 12px;
+  background: #12151c;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.settings-header h2 {
+  margin: 0;
+  color: #72d4ff;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+}
+
+.settings-close {
+  padding: 0 6px;
+  border: none;
+  background: none;
+  color: #8e99aa;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  color: #e6ebf2;
+}
+
+.settings-restart-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.settings-restart,
+.settings-restart-confirm {
+  padding: 7px 12px;
+  border: 0.5px solid #38506a;
+  border-radius: 8px;
+  background: rgb(32 38 52 / 92%);
+  color: #cfe3f5;
+  cursor: pointer;
+}
+
+.settings-restart-confirm {
+  border-color: #7a3b4a;
+  color: #ffb3c0;
+}
+
+.settings-restart-warning {
+  color: #d6a95c;
+  font-size: 0.85rem;
+}
+
+.settings-restart-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-restart-actions button {
+  flex: 1;
+  padding: 7px 12px;
+  border: 0.5px solid #333b4c;
+  border-radius: 8px;
+  background: rgb(23 26 34 / 92%);
+  color: #cfe3f5;
+  cursor: pointer;
+}
+
 .terminal-banner .primary-command {
   margin-top: 8px;
 }

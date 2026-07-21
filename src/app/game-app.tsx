@@ -5,6 +5,7 @@ import { GameHud } from "@ui/hud/game-hud";
 import { MilestoneOverlay } from "@ui/milestone-overlay";
 import { RewardOverlay } from "@ui/reward-overlay";
 import { SemanticMirror } from "@ui/semantic-mirror";
+import { SettingsPanel } from "@ui/settings/settings-panel";
 import { useGameSession } from "./use-game-session";
 
 function requireHomeScenario() {
@@ -19,13 +20,20 @@ const HOME_SCENARIO = requireHomeScenario();
 
 export function GameApp() {
   const initialScenario = HOME_SCENARIO;
-  const session = useGameSession({ initialScenario, debugApi: true, debugMode: false });
+  const session = useGameSession({ initialScenario, debugApi: true });
   const { snapshot, busy, runtimeRef } = session;
   const pendingReward = snapshot?.pendingReward;
   const pendingMilestone = snapshot?.pendingMilestone;
 
   return (
     <main className="game-shell">
+      <SettingsPanel
+        open={session.settingsOpen}
+        onOpenChange={session.setSettingsOpen}
+        showDebugOverlay={session.settings.showDebugOverlay}
+        onShowDebugOverlayChange={session.setShowDebugOverlay}
+        onRestart={session.reset}
+      />
       <div className="game-stage">
         <h1 className="game-title">Tickstrike</h1>
         <div className="canvas-frame" data-testid="game-canvas-host">
