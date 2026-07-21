@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "src/harness/scenarios/**/*.scenario.ts",
+    "test/unit/**/*.test.ts",
+    "test/e2e/**/*.spec.ts",
+    "vite.config.ts",
+    "playwright.config.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "test/**/*.ts"],
+  "ignoreDependencies": ["@swc/core"]
+}

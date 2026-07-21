@@ -29,6 +29,7 @@ Convert the guardrails that currently live only in documents into machine-enforc
 
 ## Deferred (deliberately no spec now)
 
+- **knip burn-down to zero, then gate**: spec a landed knip in report mode (`npm run check:unused`), not in `check`. The baseline is ~74 items, most of which are deliberate extension surface awaiting their consumer, not dead code — `RunBuild`/`WaveRuntime`/`CombatOperations`/`GridBoard` (spec d consumes them), `defineEnemyFeature`/`EnemyFeature`/`GenericEnemyPresenter` (character featurization mirrors them), the schema type aliases (still exported for authoring). Deleting them now fights that work. The burn-down is per-item judgment: for each finding, either delete a genuine orphan or give the export its intended consumer. Separately, confirm whether the Tauri desktop shell needs `@tauri-apps/api` before removing it (port_12 packaging may). Flip `check:unused` into `check` only once the baseline reaches zero.
 - **`exactOptionalPropertyTypes` / `noImplicitOverride` / app-level `verbatimModuleSyntax`**: turning on `exactOptionalPropertyTypes` will force rewrites of the `restTicks: undefined`-style assignments in freshly landed A6 code. Do it as one dedicated commit after CI is live, never bundled with other work.
 - **Type-aware lint rules** (e.g. `no-floating-promises`): wait for oxlint's type-aware support to mature, or add a minimal typescript-eslint CI job later. Not worth a second lint toolchain today.
 - **`test/e2e/testbed.spec.ts` split** (1,285 lines): fold into port_11 when the e2e surface is next touched.

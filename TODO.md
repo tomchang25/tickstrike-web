@@ -44,6 +44,8 @@ One line, no rationale, no backing document.
 
 - [model_ownership] Move the wave queue, slot, and admitted-batch shapes into `core/model/types.ts` so the model vocabulary stops importing `core/waves/` and the type cycle disappears
 - [boundary_tooling] Raise the `no-circular` rule to error and drop the swc parser once dependency-cruiser supports TypeScript 7 and can classify type-only imports again
+- [dead_code] Burn the `npm run check:unused` baseline to zero then add it to `check` - [ref plans/engineering_hardening.md]
+- [desktop_deps] Confirm whether the Tauri shell needs `@tauri-apps/api` before removing it as unused
 
 ---
 
