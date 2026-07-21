@@ -186,6 +186,7 @@ test("switching between water scenarios reconciles the reused entity's presentat
 test("Charge owns sequential Player motion before reconciling the final cell", async ({ page }) => {
   await page.goto("/debug?scenario=charge-enemy");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
 
@@ -237,7 +238,9 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
       throw new Error("Settled Charge bounds are unavailable.");
     }
     const rect = canvas.getBoundingClientRect();
-    return Math.round(bounds.x + bounds.width / 2 - (rect.left + (3.5 / 12) * rect.width));
+    // Absolute pixel offset from the final cell's center; Math.abs also folds Math.round's -0 into 0
+    // so a sub-pixel-negative-but-centered result still satisfies the strict toBe(0) below.
+    return Math.abs(Math.round(bounds.x + bounds.width / 2 - (rect.left + (3.5 / 12) * rect.width)));
   });
   expect(settled).toBe(0);
 
@@ -324,6 +327,7 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   await page.goto("/debug?scenario=empty-arena");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
