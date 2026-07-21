@@ -19,6 +19,7 @@ import {
   type EncounterOutcome,
   type GuardRuntime,
   isTerminalPhase,
+  type PendingMilestoneDecision,
   type PendingRewardOffer,
   type PendingSpawnBatch,
   type Reservation,
@@ -390,6 +391,10 @@ export class World implements WorldView {
 
   get pendingRewardOffer(): PendingRewardOffer | undefined {
     return this.run.pendingRewardOffer;
+  }
+
+  get pendingMilestoneDecision(): PendingMilestoneDecision | undefined {
+    return this.waves.pendingMilestoneDecision;
   }
 
   /** Installs a reward offer, pausing command acceptance until it is selected. */
@@ -932,6 +937,7 @@ export class World implements WorldView {
       waveRuntime: this.waveRuntime,
       runBuild: this.runBuild,
       pendingReward: this.pendingRewardOffer,
+      pendingMilestone: this.pendingMilestoneDecision,
       seed: this.seed,
       lastEvents: this.lastEvents.map((event) => structuredClone(event)),
     };

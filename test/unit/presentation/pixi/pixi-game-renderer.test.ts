@@ -35,6 +35,7 @@ function snapshot(
     waveRuntime: undefined,
     runBuild: { stacks: {}, triggers: [] },
     pendingReward: undefined,
+    pendingMilestone: undefined,
     seed: 1,
     lastEvents: [],
   };

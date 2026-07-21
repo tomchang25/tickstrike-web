@@ -1,7 +1,14 @@
 import type { ArtifactDefinition, ArtifactTrigger } from "../content/artifact-schema";
 import type { SpawnGroupDefinition, WaveDefinition, WaveProgressionProfile } from "../content/wave-schema";
 import type { CombatEvent } from "../events/combat-events";
-import { sameCell, type Cell, type EntityId, type EntityState } from "../model/types";
+import {
+  sameCell,
+  type Cell,
+  type EncounterOutcome,
+  type EntityId,
+  type EntityState,
+  type MilestoneChoice,
+} from "../model/types";
 import type { RandomStreams } from "../random/random-streams";
 import { classifyArtifactEffect, generateRewardOffer } from "../rewards/reward-offers";
 import type { WaveWorldView } from "../waves/wave-inputs";
@@ -38,6 +45,7 @@ export interface WavePhaseWorld extends WorldView {
   setMobilityRange(id: EntityId, range: number): void;
   raiseMaxHealth(id: EntityId, amount: number): void;
   recordEvents(events: readonly CombatEvent[]): void;
+  updateEncounterOutcome(waveGate?: { readonly victoryReady: boolean }): EncounterOutcome | undefined;
 }
 
 export interface WaveEnemySpawnRequest {
@@ -63,6 +71,12 @@ export interface WavePhaseContext {
   buildEnemySpawnInput(request: WaveEnemySpawnRequest): SpawnEntityInput;
   /** Reward candidates offerable at a cleared wave. Omitted or empty means rewards never pause. */
   readonly offerableArtifacts?: readonly ArtifactDefinition[];
+  /**
+   * The final authored wave number. Clearing it pauses the run for an End Run / Continue Endless
+   * decision instead of advancing. Omitted means the run never reaches a milestone and every clear
+   * advances or offers a reward exactly as before.
+   */
+  readonly milestoneWaveNumber?: number;
 }
 
 export interface WavePhaseResult {
@@ -71,6 +85,12 @@ export interface WavePhaseResult {
 }
 
 export interface RewardSelectionResolution {
+  readonly accepted: boolean;
+  readonly reason?: string;
+  readonly events: readonly CombatEvent[];
+}
+
+export interface MilestoneDecisionResolution {
   readonly accepted: boolean;
   readonly reason?: string;
   readonly events: readonly CombatEvent[];
@@ -447,6 +467,16 @@ export function resolveWavePhase(world: WavePhaseWorld, context?: WavePhaseConte
     const noPending = !current.pendingBatch;
     if (noQueues && noPending && !hasLivingWaveEnemy(world, runtime.waveNumber)) {
       events.push({ type: "wave_cleared", waveNumber: runtime.waveNumber });
+
+      // Clearing the final authored wave pauses for an End Run / Continue Endless decision instead
+      // of advancing or offering a reward. The milestone wave's own reward is deferred until a
+      // continue decision (see resolveMilestoneDecision), so it is not generated here.
+      if (context.milestoneWaveNumber !== undefined && runtime.waveNumber === context.milestoneWaveNumber) {
+        world.waves.installPendingMilestoneDecision({ waveNumber: runtime.waveNumber });
+        events.push({ type: "milestone_reached", waveNumber: runtime.waveNumber });
+        return { events, victoryReady: false };
+      }
+
       const nextWaveNumber = runtime.waveNumber + 1;
       const nextWave = context.waveFor(nextWaveNumber);
       if (!nextWave) {
@@ -542,6 +572,68 @@ export function resolveRewardSelection(
   const events: CombatEvent[] = [{ type: "reward_selected", artifactId, stackCount: card.resultingStackCount }];
 
   const nextWaveNumber = offer.waveNumber + 1;
+  const nextWave = context.waveFor(nextWaveNumber);
+  if (nextWave) {
+    const random = () => world.random.get("waves").nextUnit();
+    const nextSlots = createInitialSlotStates(nextWave, context.groups, nextWaveNumber, random);
+    world.waves.setWave(nextWaveNumber, nextSlots);
+    events.push({ type: "wave_started", waveNumber: nextWaveNumber });
+  }
+
+  world.recordEvents(events);
+  return { accepted: true, events };
+}
+
+/**
+ * Resolves the milestone pause the wave phase installs when the final authored wave clears. Runs as
+ * its own serialized boundary like {@link resolveRewardSelection}: never the accepted-player-action
+ * path, the enemy phase, the wave phase, or presentation.
+ *
+ * `end-run` finalizes the run as a victory through the world's own outcome authority. `continue-endless`
+ * opens the milestone wave's reward offer — rejoining the normal reward flow, which starts the next
+ * (endless) wave on selection — or, with no offerable reward, starts the next wave immediately.
+ */
+export function resolveMilestoneDecision(
+  world: WavePhaseWorld,
+  choice: MilestoneChoice,
+  context: WavePhaseContext,
+): MilestoneDecisionResolution {
+  const pending = world.waves.pendingMilestoneDecision;
+  if (!pending) {
+    return { accepted: false, reason: "No milestone decision is pending.", events: [] };
+  }
+  if (choice !== "end-run" && choice !== "continue-endless") {
+    return { accepted: false, reason: "Unknown milestone choice.", events: [] };
+  }
+
+  world.waves.clearPendingMilestoneDecision();
+  const events: CombatEvent[] = [{ type: "milestone_decided", waveNumber: pending.waveNumber, choice }];
+
+  if (choice === "end-run") {
+    const outcome = world.updateEncounterOutcome({ victoryReady: true });
+    if (outcome && outcome !== "running") {
+      events.push({ type: "encounter_ended", outcome });
+    }
+    world.recordEvents(events);
+    return { accepted: true, events };
+  }
+
+  const player = world.listEntities().find((entity) => entity.kind === "player");
+  const offer = generateRewardOffer({
+    artifacts: context.offerableArtifacts ?? [],
+    build: world.run.state,
+    waveNumber: pending.waveNumber,
+    playerMobilityKind: player?.mobility?.kind ?? null,
+    draw: () => world.random.get("rewards").nextUnit(),
+  });
+  if (offer) {
+    world.run.installPendingRewardOffer(offer);
+    events.push({ type: "reward_offered", waveNumber: offer.waveNumber, cards: offer.cards });
+    world.recordEvents(events);
+    return { accepted: true, events };
+  }
+
+  const nextWaveNumber = pending.waveNumber + 1;
   const nextWave = context.waveFor(nextWaveNumber);
   if (nextWave) {
     const random = () => world.random.get("waves").nextUnit();

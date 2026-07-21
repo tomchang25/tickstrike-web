@@ -216,6 +216,14 @@ export interface PendingRewardOffer {
   readonly cards: readonly RewardOfferCard[];
 }
 
+/** The player's decision when the final authored wave clears. */
+export type MilestoneChoice = "end-run" | "continue-endless";
+
+/** Installed when the final authored wave clears; blocks commands until a decision resolves. */
+export interface PendingMilestoneDecision {
+  readonly waveNumber: number;
+}
+
 export interface ArenaState {
   readonly width: number;
   readonly height: number;
@@ -237,6 +245,7 @@ export interface WorldSnapshot {
   readonly waveRuntime: WaveRuntimeState | undefined;
   readonly runBuild: RunBuildState;
   readonly pendingReward: PendingRewardOffer | undefined;
+  readonly pendingMilestone: PendingMilestoneDecision | undefined;
   readonly seed: number;
   readonly lastEvents: readonly import("../events/combat-events").CombatEvent[];
 }

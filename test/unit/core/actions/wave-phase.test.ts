@@ -10,11 +10,11 @@ import type {
   WaveProgressionProfile,
 } from "@core/content/wave-schema";
 import type { WavePhaseContext } from "@core/actions/wave-phase";
-import { resolveRewardSelection, resolveWavePhase } from "@core/actions/wave-phase";
+import { resolveMilestoneDecision, resolveRewardSelection, resolveWavePhase } from "@core/actions/wave-phase";
 import { createInitialSlotStates } from "@core/waves/wave-scheduler";
 import type { SpawnEntityInput, World } from "@core/world/world";
 import { World as WorldClass } from "@core/world/world";
-import type { TileKind } from "@core/model/types";
+import type { MilestoneChoice, TileKind } from "@core/model/types";
 
 const ZERO_CURVE: GrowthCurve = {
   standardCoefficient: 0,
@@ -81,6 +81,7 @@ function makeContext(
   groups: readonly SpawnGroupDefinition[],
   waves: readonly (WaveDefinition | undefined)[],
   offerableArtifacts?: readonly ArtifactDefinition[],
+  milestoneWaveNumber?: number,
 ): WavePhaseContext {
   return {
     groups,
@@ -88,6 +89,7 @@ function makeContext(
     waveFor: (waveNumber) => waves[waveNumber - 1],
     buildEnemySpawnInput: fakeSpawnInput,
     ...(offerableArtifacts ? { offerableArtifacts } : {}),
+    ...(milestoneWaveNumber !== undefined ? { milestoneWaveNumber } : {}),
   };
 }
 
@@ -646,6 +648,122 @@ describe("resolveWavePhase: pauses a clear on an eligible reward instead of adva
     expect(clearResult.events.map((event) => event.type)).toEqual(["wave_cleared", "wave_started"]);
     expect(world.pendingRewardOffer).toBeUndefined();
     expect(world.waveRuntime?.waveNumber).toBe(2);
+  });
+});
+
+describe("resolveWavePhase and resolveMilestoneDecision: milestone branch", () => {
+  const groups = [groupWithCount(1)];
+  const wave1: WaveDefinition = { id: "w1", populationCap: 5, slots: [slot({ warningTicks: 0 })] };
+  const wave2: WaveDefinition = { id: "w2", populationCap: 5, slots: [slot({ warningTicks: 0 })] };
+
+  /** Clears wave 1 to the milestone pause; wave 2 exists so a continue can start it. */
+  function clearToMilestone(
+    offerableArtifacts?: readonly ArtifactDefinition[],
+    normalAttackDamage?: number,
+  ): {
+    world: World;
+    context: WavePhaseContext;
+  } {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      ...(normalAttackDamage !== undefined ? { normalAttackDamage } : {}),
+    });
+    world.advanceTick();
+    installWave(world, wave1, groups);
+    const context = makeContext(groups, [wave1, wave2], offerableArtifacts, 1);
+
+    const spawnResult = resolveWavePhase(world, context);
+    const spawnedId = (spawnResult.events[0] as { spawns: readonly { entityId: string }[] }).spawns[0]!.entityId;
+    world.setPhase(spawnedId, "dead");
+    world.advanceTick();
+    return { world, context };
+  }
+
+  it("pauses on the milestone instead of advancing when the final authored wave clears", () => {
+    const { world, context } = clearToMilestone();
+    const clearResult = resolveWavePhase(world, context);
+
+    expect(clearResult.events.map((event) => event.type)).toEqual(["wave_cleared", "milestone_reached"]);
+    expect(clearResult.victoryReady).toBe(false);
+    expect(world.pendingMilestoneDecision).toEqual({ waveNumber: 1 });
+    // The pause wins over the still-authored wave 2: the wave number does not advance.
+    expect(world.waveRuntime?.waveNumber).toBe(1);
+  });
+
+  it("end-run finalizes the run as a victory with no further work", () => {
+    const { world, context } = clearToMilestone();
+    resolveWavePhase(world, context);
+
+    const decision = resolveMilestoneDecision(world, "end-run", context);
+    expect(decision.accepted).toBe(true);
+    expect(decision.events).toEqual([
+      { type: "milestone_decided", waveNumber: 1, choice: "end-run" },
+      { type: "encounter_ended", outcome: "victory" },
+    ]);
+    expect(world.outcome).toBe("victory");
+    expect(world.pendingMilestoneDecision).toBeUndefined();
+  });
+
+  it("continue-endless with no offerable reward starts the next endless wave", () => {
+    const { world, context } = clearToMilestone();
+    resolveWavePhase(world, context);
+
+    const decision = resolveMilestoneDecision(world, "continue-endless", context);
+    expect(decision.accepted).toBe(true);
+    expect(decision.events.map((event) => event.type)).toEqual(["milestone_decided", "wave_started"]);
+    expect(world.pendingMilestoneDecision).toBeUndefined();
+    expect(world.pendingRewardOffer).toBeUndefined();
+    expect(world.waveRuntime?.waveNumber).toBe(2);
+  });
+
+  it("continue-endless with an eligible reward opens the milestone wave's reward offer", () => {
+    const { world, context } = clearToMilestone([ATTACK_UP], 20);
+    resolveWavePhase(world, context);
+
+    const decision = resolveMilestoneDecision(world, "continue-endless", context);
+    expect(decision.events.map((event) => event.type)).toEqual(["milestone_decided", "reward_offered"]);
+    expect(world.pendingRewardOffer).toEqual({
+      waveNumber: 1,
+      cards: [{ artifactId: "attack_up", resultingStackCount: 1 }],
+    });
+    // The reward flow advances to wave 2 only when the reward is selected, not yet.
+    expect(world.waveRuntime?.waveNumber).toBe(1);
+  });
+
+  it("rejects a decision when no milestone is pending", () => {
+    const world = createTrainingArena();
+    spawnPlayer(world);
+    const context = makeContext(groups, [wave1], undefined, 1);
+
+    const result = resolveMilestoneDecision(world, "end-run", context);
+    expect(result.accepted).toBe(false);
+    expect(result.events).toEqual([]);
+    expect(world.outcome).toBe("running");
+  });
+
+  it("rejects an unknown choice without clearing the pause", () => {
+    const { world, context } = clearToMilestone();
+    resolveWavePhase(world, context);
+
+    const result = resolveMilestoneDecision(world, "bogus" as MilestoneChoice, context);
+    expect(result.accepted).toBe(false);
+    expect(world.pendingMilestoneDecision).toEqual({ waveNumber: 1 });
+  });
+
+  it("reproduces an identical snapshot from the same seed and the same continue decision", () => {
+    function runThroughContinue(): World {
+      const { world, context } = clearToMilestone();
+      resolveWavePhase(world, context);
+      resolveMilestoneDecision(world, "continue-endless", context);
+      return world;
+    }
+
+    expect(runThroughContinue().snapshot()).toEqual(runThroughContinue().snapshot());
   });
 });
 

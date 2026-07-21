@@ -913,3 +913,38 @@ describe("pending reward selection blocks commands", () => {
     expect(world.snapshot()).toEqual(before);
   });
 });
+
+describe("pending milestone decision blocks commands", () => {
+  it("rejects every command type without consuming a tick, an enemy phase, or a wave change", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 2, y: 2 },
+      hp: 100,
+      normalAttackDamage: 20,
+      mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 2 },
+    });
+    world.waves.installPendingMilestoneDecision({ waveNumber: 1 });
+    const before = world.snapshot();
+
+    const commands: readonly GameCommand[] = [
+      { type: "move", actorId: "player", direction: { x: 1, y: 0 } },
+      { type: "attack", actorId: "player", direction: { x: 1, y: 0 } },
+      { type: "dash", actorId: "player", direction: { x: 1, y: 0 } },
+      { type: "smash", actorId: "player", target: { x: 3, y: 2 } },
+    ];
+
+    for (const command of commands) {
+      const result = resolveCommand(world, command);
+      expect(result).toEqual({
+        accepted: false,
+        consumedTime: false,
+        reason: "A milestone decision is pending.",
+        events: [],
+      });
+    }
+    expect(world.snapshot()).toEqual(before);
+  });
+});

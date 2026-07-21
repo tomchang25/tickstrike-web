@@ -5,6 +5,7 @@ import type {
   DirectionalHitResult,
   EntityId,
   EncounterOutcome,
+  MilestoneChoice,
   Reservation,
   RewardOfferCard,
   Telegraph,
@@ -252,6 +253,15 @@ export type CombatEvent =
       readonly type: "reward_selected";
       readonly artifactId: string;
       readonly stackCount: number;
+    }
+  | {
+      readonly type: "milestone_reached";
+      readonly waveNumber: number;
+    }
+  | {
+      readonly type: "milestone_decided";
+      readonly waveNumber: number;
+      readonly choice: MilestoneChoice;
     };
 
 export interface DamageEvent {

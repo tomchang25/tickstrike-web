@@ -1,4 +1,4 @@
-import type { Cell, PendingSpawnBatch, WaveRuntimeState } from "../model/types";
+import type { Cell, PendingMilestoneDecision, PendingSpawnBatch, WaveRuntimeState } from "../model/types";
 import type { AdmittedBatch, QueueMember, SlotState } from "../waves/wave-scheduler";
 
 function cloneCell(cell: Cell): Cell {
@@ -37,9 +37,27 @@ function cloneWaveRuntimeState(state: WaveRuntimeState): WaveRuntimeState {
  */
 export class WaveRuntime {
   private current: WaveRuntimeState | undefined;
+  private pendingMilestone: PendingMilestoneDecision | undefined;
 
   get state(): WaveRuntimeState | undefined {
     return this.current ? cloneWaveRuntimeState(this.current) : undefined;
+  }
+
+  get pendingMilestoneDecision(): PendingMilestoneDecision | undefined {
+    return this.pendingMilestone ? { ...this.pendingMilestone } : undefined;
+  }
+
+  /** Installs the milestone pause, blocking command acceptance until a decision resolves. */
+  installPendingMilestoneDecision(decision: PendingMilestoneDecision): PendingMilestoneDecision {
+    if (this.pendingMilestone) {
+      throw new Error("A milestone decision is already pending.");
+    }
+    this.pendingMilestone = { ...decision };
+    return { ...this.pendingMilestone };
+  }
+
+  clearPendingMilestoneDecision(): void {
+    this.pendingMilestone = undefined;
   }
 
   /** Sets the current wave number and its latched per-slot state, preserving any pending batch. */

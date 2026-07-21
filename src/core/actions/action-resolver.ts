@@ -78,6 +78,14 @@ export function resolveCommand(world: World, command: GameCommand, waveContext?:
       events: [],
     };
   }
+  if (world.pendingMilestoneDecision) {
+    return {
+      accepted: false,
+      consumedTime: false,
+      reason: "A milestone decision is pending.",
+      events: [],
+    };
+  }
 
   const playerResult = resolvePlayerAction(world, command);
   if (!playerResult.accepted) {
