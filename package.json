@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
@@ -17,8 +18,8 @@
     "lint:fix": "oxlint --fix",
     "check:boundaries": "depcruise src --config .dependency-cruiser.cjs",
     "check:unused": "knip",
-    "golden:update": "node scripts/update-goldens.mjs",
-    "check": "npm run format:check && npm run lint && npm run check:boundaries && npm run test && npm run build",
+    "golden:update": "node dev/tools/update-goldens.mjs",
+    "verify": "npm run format:check && npm run typecheck && npm run lint && npm run check:boundaries && npm run test && npm run build",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"

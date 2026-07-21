@@ -61,7 +61,7 @@ Run browser acceptance:
 
 Run formatting, linting, unit tests, and production build:
 
-    npm run check
+    npm run verify
 
 ## Tauri
 
@@ -78,7 +78,7 @@ The starter sets `bundle.active` to `false`, so it focuses on producing and test
 ## Important folders
 
     assets/            General references and source material; never loaded directly at runtime
-    build/             Generated Web export from npm run build; ignored by Git
+    dist/              Generated Web export from npm run build; ignored by Git
     dev/               Project governance, formal docs, tools, and pinned game-devkit
     dev/docs/          Migration and scenario documentation
     TODO.md            Forward work tracker
@@ -97,8 +97,8 @@ The starter sets `bundle.active` to `false`, so it focuses on producing and test
 
 Every asset consumed by the game must be copied or exported into `src/content/<feature>/assets/` and imported by source code. Use `src/shared/assets/` only for demonstrated cross-feature ownership; the root `assets/` directory is for general references or editable source material.
 
-The canonical repository layout and placement rules live in `dev/standards/project_structure.md`.
-The formatting and control-flow conventions live in `dev/standards/code-style-standard.md`.
+The canonical repository layout is `dev/foundation/platforms/web-react/standards/project_structure_standard.md`; project deltas live in `dev/standards/project_structure.addendum.md`.
+The formatting and control-flow conventions live in `dev/standards/code_style_standard.md`.
 
 The shared Web development governance is pinned as a Git submodule at `dev/foundation/`. After cloning this repository, initialize it with:
 

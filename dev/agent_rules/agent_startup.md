@@ -12,7 +12,7 @@ Tickstrike Web ports Tickstrike from Godot to a Web-native React, PixiJS, and GS
 
 The original/reference Tickstrike implementation is available at `port-ref/tickstrike/` (`E:\IndieProjects\tickstrike-web\port-ref\tickstrike`). Read it when verifying ported behavior, content, navigation, or lifecycle semantics. It is reference material only: do not import it into the Web runtime or preserve Godot lifecycle patterns without an independently justified Web-native equivalent.
 
-The repository uses Node.js 22.12 or newer and npm. Runtime source and packaged assets live in `src/`, tests live in `test/`, project governance and tools live in `dev/`, general non-runtime source material lives in `assets/`, and Vite writes generated exports to ignored `build/`.
+The repository uses Node.js 22.12 or newer and npm. Runtime source and packaged assets live in `src/`, tests live in `test/`, project governance and tools live in `dev/`, general non-runtime source material lives in `assets/`, and Vite writes generated exports to ignored `dist/`.
 
 ## Required Operation Contracts
 
@@ -21,7 +21,7 @@ The repository uses Node.js 22.12 or newer and npm. Runtime source and packaged 
 
 ## Project-Local Discovery
 
-- Before changing TypeScript, TSX, formatter, or linter configuration, read `dev/standards/code-style-standard.md`.
+- Before changing TypeScript, TSX, formatter, or linter configuration, read `dev/standards/code_style_standard.md`.
 
 Before adding or changing an enemy, character, artifact, or any gameplay behavior/presentation — and before touching `enemy-phase`, `world`, `PresentationDirector`, or `PixiGameRenderer` — read `dev/standards/gameplay_feature_architecture.md`.
 
@@ -31,4 +31,4 @@ Before creating or changing fixed palette variants, generated recolour assets, o
 
 Before creating, changing, regenerating, or reviewing an offline pixel animation sheet, read `dev/standards/sprite_animation_asset_standard.md`, `dev/workflows/sprite_animation_authoring.md`, and `dev/skills/sprite_animation_authoring.md`.
 
-Read `dev/standards/project_structure.md` before adding, moving, or reorganizing source, tests, assets, build output, or project documentation. Read additional files under `dev/agent_rules/`, `dev/standards/`, `dev/workflows/`, `dev/skills/`, and applicable parts of `dev/docs/` when their trigger applies. Never read, search, cite, summarize, or use `dev/docs/reports/` as an agent source; those files are human-facing historical/report material and may be stale.
+Read `dev/foundation/platforms/web-react/standards/project_structure_standard.md` and `dev/standards/project_structure.addendum.md` before adding, moving, or reorganizing source, tests, assets, build output, or project documentation. Read additional files under `dev/agent_rules/`, `dev/standards/`, `dev/workflows/`, `dev/skills/`, and applicable parts of `dev/docs/` when their trigger applies. Never read, search, cite, summarize, or use `dev/docs/reports/` as an agent source; those files are human-facing historical/report material and may be stale.

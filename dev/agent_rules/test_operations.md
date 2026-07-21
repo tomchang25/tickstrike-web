@@ -30,7 +30,7 @@ Use Node.js 22.12 or newer with the npm lockfile. Run `npm install` when depende
 - `npm run build`: passes when TypeScript and Vite exit successfully and produce the Web export in `build/`.
 - `npm run test:e2e`: passes when Playwright starts or reuses the development server and every Chromium scenario passes. On browser launch failure, distinguish a missing browser installation from an application test failure.
 - `python test/unit/tools/sprite_animation_test.py`: passes when the deterministic sprite compiler produces 64x128 sheets with direction columns, validates manifests, creates optional previews, generates every current water target, and rejects a batch with an unknown effect before writing output.
-- `npm run check`: canonical non-browser verification; runs the format check, lint, unit tests, and production build.
+- `npm run verify`: canonical non-browser verification; runs the format check, lint, unit tests, and production build.
 
 Use the default command timeout for unit and build checks. Browser checks may use Playwright's configured test and server timeouts; do not replace readiness with arbitrary sleeps.
 
@@ -54,6 +54,6 @@ Counts that differ between runs of unchanged source are a defect to investigate,
 
 Report every layer actually run, the source state tested, the pass/fail result, any expected noise that affected interpretation, and every verification gap or manual-only boundary.
 
-`npm run check` excludes browser acceptance. Its passing says nothing about `npm run test:e2e`; report the two separately and never let one stand in for the other.
+`npm run verify` excludes browser acceptance. Its passing says nothing about `npm run test:e2e`; report the two separately and never let one stand in for the other.
 
 Never run two browser acceptance suites at once. Both drive the same development server on the port `vite.config.ts` pins with `strictPort`, so concurrent runs fight over it and produce counts that describe neither run.

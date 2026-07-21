@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { requireScenario } from "@harness/scenario-registry";
-import { GameRuntime } from "@runtime/GameRuntime";
+import { GameRuntime } from "@runtime/game-runtime";
 
 describe("GameRuntime command and presentation ordering", () => {
   it("queues the next command until the previous presentation settles", async () => {

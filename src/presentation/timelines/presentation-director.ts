@@ -6,7 +6,7 @@ import {
   enemyPresentationLabel,
   type DetachedEntityView,
   type PixiGameRenderer,
-} from "../pixi/PixiGameRenderer";
+} from "../pixi/pixi-game-renderer";
 import { getEnemyPresenter, type EnemyPresenterContext } from "./enemy-presenters";
 
 const MOVE_DURATION = 0.26;

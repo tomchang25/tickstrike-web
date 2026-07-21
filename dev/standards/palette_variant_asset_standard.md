@@ -58,7 +58,7 @@ Every generated palette variant must pass all of the following before implementa
 - The runtime asset is imported by the owning presentation module and selected through a profile mapping rather than an ad hoc entity-type branch spread across timelines.
 - Unit coverage proves the profile selects the intended derivative and preserves frame selection across facing and visual states.
 - Browser coverage proves the rendered result is visible, the authored palette identity is distinct, state feedback settles without restoring the source palette, and reset or scenario replacement leaves no stale visual.
-- `npm run check` and the relevant Playwright suite pass.
+- `npm run verify` and the relevant Playwright suite pass.
 
 Do not treat an image viewer preview as runtime validation. Indexed PNG, colour profile, alpha, premultiplication, and renderer upload differences can produce a preview that does not match the Pixi result.
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { contentInspection } from "@harness/content-inspection";
 import { requireScenario } from "@harness/scenario-registry";
-import { GameRuntime } from "@runtime/GameRuntime";
+import { GameRuntime } from "@runtime/game-runtime";
 
 describe("content catalog inspection scenario", () => {
   it("derives representative values from the canonical catalog", () => {

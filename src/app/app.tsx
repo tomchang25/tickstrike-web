@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Cell, MobilityKind, WorldSnapshot } from "@core/model/types";
 import { installDebugApi } from "@harness/debug-api";
 import { requireScenario, scenarios } from "@harness/scenario-registry";
-import { GameRuntime } from "@runtime/GameRuntime";
-import type { PointerCommit, PointerMode } from "@presentation/pixi/PixiGameRenderer";
-import { RewardOverlay } from "@ui/RewardOverlay";
-import { RunBuildHud } from "@ui/RunBuildHud";
-import { SemanticMirror } from "@ui/SemanticMirror";
-import { TestbedPanel } from "@ui/TestbedPanel";
+import { GameRuntime } from "@runtime/game-runtime";
+import type { PointerCommit, PointerMode } from "@presentation/pixi/pixi-game-renderer";
+import { RewardOverlay } from "@ui/reward-overlay";
+import { RunBuildHud } from "@ui/run-build-hud";
+import { SemanticMirror } from "@ui/semantic-mirror";
+import { TestbedPanel } from "@ui/testbed-panel";
 
 const DEFAULT_SCENARIO = "tick-arena";
 const MOVE_REPEAT_MS = 50;

@@ -6,7 +6,7 @@ This standard defines Tickstrike Web's durable TypeScript and TSX formatting and
 
 - Prettier is the canonical formatter. Use `npm run format` to apply it and `npm run format:check` to verify it without modifying files.
 - Oxlint is the canonical static style checker. Use `npm run lint` to verify and `npm run lint:fix` only for its safe automatic fixes.
-- `npm run check` runs formatting, linting, unit tests, and the production build. A change is not verified until its applicable checks pass.
+- `npm run verify` runs formatting, linting, unit tests, and the production build. A change is not verified until its applicable checks pass.
 - The root `.prettierignore` and `.oxlintrc.json` exclusions are intentional boundaries. Do not format or lint generated output, the pinned foundation, reference project, or human-only reports through these commands.
 
 ## Control Flow

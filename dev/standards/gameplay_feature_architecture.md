@@ -8,7 +8,7 @@ An enemy is described in exactly one feature module under `src/content/enemies/f
 
 Never add role or profile branching to `enemy-phase`, `world`, `PresentationDirector`, or `PixiGameRenderer`. These hubs hold no per-feature knowledge; features reach them only through the registries above.
 
-Registry-only access is machine-checked by `npm run check:boundaries`: outside each registry's own directory, only its `index.ts` may be imported, so reaching past a behavior, presenter, or feature registry fails `npm run check`. Keep this prose and `.dependency-cruiser.cjs` in step when the seams change.
+Registry-only access is machine-checked by `npm run check:boundaries`: outside each registry's own directory, only its `index.ts` may be imported, so reaching past a behavior, presenter, or feature registry fails `npm run verify`. Keep this prose and `.dependency-cruiser.cjs` in step when the seams change.
 
 The same pattern is planned for the character axis; see `dev/docs/plans/character_featurization_and_viking_split.md` before starting character-scoped work.
 

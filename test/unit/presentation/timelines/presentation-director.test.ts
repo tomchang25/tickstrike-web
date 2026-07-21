@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { gsap } from "gsap";
 import type { CombatEvent } from "@core/events/combat-events";
-import type { PixiGameRenderer } from "@presentation/pixi/PixiGameRenderer";
-import { PresentationDirector } from "@presentation/timelines/PresentationDirector";
-import { normalizeMotionEvents } from "@presentation/timelines/PresentationDirector";
+import type { PixiGameRenderer } from "@presentation/pixi/pixi-game-renderer";
+import { PresentationDirector } from "@presentation/timelines/presentation-director";
+import { normalizeMotionEvents } from "@presentation/timelines/presentation-director";
 
 function createRenderer() {
   const view = {

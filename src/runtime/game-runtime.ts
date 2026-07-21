@@ -5,8 +5,8 @@ import type { Cell, WorldSnapshot } from "@core/model/types";
 import type { World } from "@core/world/world";
 import type { TestScenario } from "@harness/types";
 import type { ContentInspection } from "@harness/content-inspection";
-import { PixiGameRenderer, type ScreenBounds } from "@presentation/pixi/PixiGameRenderer";
-import { PresentationDirector } from "@presentation/timelines/PresentationDirector";
+import { PixiGameRenderer, type ScreenBounds } from "@presentation/pixi/pixi-game-renderer";
+import { PresentationDirector } from "@presentation/timelines/presentation-director";
 
 export type RuntimeListener = (snapshot: WorldSnapshot) => void;
 

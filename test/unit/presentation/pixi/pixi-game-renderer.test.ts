@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EntityState, Telegraph, WorldSnapshot } from "@core/model/types";
-import { PixiGameRenderer } from "@presentation/pixi/PixiGameRenderer";
+import { PixiGameRenderer } from "@presentation/pixi/pixi-game-renderer";
 
 function snapshot(
   cell: { x: number; y: number },
