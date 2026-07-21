@@ -30,7 +30,6 @@ Nothing currently in progress.
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_09_rewards] Add deterministic reward selection and run-scoped build effects to the same arena - [ref plans/port_09_artifacts_rewards_and_run_build.md]
 - [port_10_run] Connect wave completion, rewards, death, restart, and the milestone branch through the same runtime - [ref plans/port_10_complete_run_lifecycle.md]
 - [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
 - [port_12_hardening] Harden assets, audio, responsive behavior, teardown, browser delivery, and Windows packaging for the same path - [ref plans/port_12_assets_audio_platform_and_release_hardening.md]

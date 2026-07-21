@@ -2,7 +2,7 @@
 
 Parent Plan: `port_09_artifacts_rewards_and_run_build.md`
 
-Status: Draft implementation spec
+Status: Done — shipped 2026-07-20; see the CHANGELOG "Rewards and Run Build" section.
 
 ## Goal
 

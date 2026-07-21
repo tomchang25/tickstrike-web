@@ -74,6 +74,11 @@ Rules:
 
 - 2026-07-20 - [port_08] Authored waves now schedule deterministic atomic spawn warnings and levelled enemies through the Tick Arena, with visible countdowns, terminal cleanup, and browser acceptance coverage
 
+### Rewards and Run Build
+
+- 2026-07-20 - [port_09] Clearing a wave now pauses the same arena on a reward offer that modifies the existing player and combat state through one resettable run build, covering normal and Mobility attack damage, cooldown, range, max health, and the Dash Guard Shredder and Execution triggers, with reset restoring the initial state
+- 2026-07-21 - [port_09] Reward offers now present up to three distinct cards, every third wave is a Major milestone with a two-stack Minor slot, and a live read-only build HUD shows the acquired artifacts and stack counts beside the arena
+
 ### Engineering Hardening
 
 - 2026-07-21 - [hardening] Layering, World-subsystem, and registry boundaries are now machine-enforced by dependency-cruiser inside `npm run check`, every pull request runs format, lint, boundaries, unit, build, and Chromium acceptance through GitHub Actions, and three committed golden scenarios fail CI on any determinism regression with a reviewable diff
