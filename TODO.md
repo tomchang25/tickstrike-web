@@ -23,7 +23,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > When every phase ships: archive the plan file and delete this line.
 
 - [input_feel] Fast-forward the previous turn's pending VFX when new input is enqueued and pace held-move at a fixed cadence so input stops waiting on animation tails - [ref plans/input_feel_vfx_fast_forward.implementation_spec.md]
-- [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime; children 01-03 shipped, children 04-05 remain - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
+- [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime; children 01-03a shipped, children 04-05 remain - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
 
 ---
 
