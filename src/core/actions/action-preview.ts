@@ -11,7 +11,6 @@ import {
   type WorldSnapshot,
 } from "../model/types";
 import { calculateDirectionalHit } from "../combat/directional-hit";
-import type { World } from "../world/world";
 
 export interface AttackPreview {
   readonly accepted: boolean;
@@ -63,7 +62,12 @@ export interface PreviewVictimMarker {
   readonly outcome: PreviewVictimOutcome;
 }
 
-type PreviewSource = World | WorldSnapshot;
+/** Previews read only a snapshot, so they accept one directly or anything that yields one. */
+export interface WorldSnapshotSource {
+  snapshot(): WorldSnapshot;
+}
+
+type PreviewSource = WorldSnapshotSource | WorldSnapshot;
 
 function snapshotOf(source: PreviewSource): WorldSnapshot {
   return "snapshot" in source ? source.snapshot() : source;
