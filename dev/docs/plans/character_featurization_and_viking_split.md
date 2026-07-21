@@ -1,7 +1,7 @@
 # Character Featurization and the Ninja / Viking Split
 
 > **Status**: Plan (design decisions recorded; child implementation specs to follow)
-> **Prerequisites**: A6 Step 3 (RunBuildState extraction) before the artifact work; coordinate visuals with [port_13](port_13_visual_parity_and_polish.md) and selection flow with [port_10](port_10_complete_run_lifecycle.md)
+> **Prerequisites**: A6 Step 3 (RunBuildState extraction) before the artifact work; coordinate visuals with [port_13](port_13_visual_parity_and_polish.md). Run-start selection flow coordinates with the shipped run lifecycle (port_10) and its UI shell (port_11).
 > **Related**: [gameplay_architecture_refactor.mega_plan.md](gameplay_architecture_refactor.mega_plan.md) — this plan applies the same feature/behavior/presenter pattern to the character axis
 
 ## Goal

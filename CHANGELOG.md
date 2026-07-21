@@ -83,3 +83,8 @@ Rules:
 
 - 2026-07-21 - [hardening] Layering, World-subsystem, and registry boundaries are now machine-enforced by dependency-cruiser inside `npm run check`, every pull request runs format, lint, boundaries, unit, build, and Chromium acceptance through GitHub Actions, and three committed golden scenarios fail CI on any determinism regression with a reviewable diff
 - 2026-07-21 - [hardening] `PixiGameRenderer` no longer owns pointer input, preview painting, or board painting, and the enemy, player, and wave resolution phases now receive narrow capability contexts instead of the whole `World`, freezing the facade as the default growth surface
+
+### Complete Run Lifecycle
+
+- 2026-07-21 - [port_10] The home page now plays a full authored run through the same deterministic runtime: clearing the final authored wave opens an End Run / Continue Endless milestone choice that either finalizes victory with restart or continues into the endless template, with the reward pause and restart cleanup preserved
+- 2026-07-21 - [port_10] The runtime now records every accepted command, reward, and milestone decision into a replayable per-run command log, so a seed and its log reproduce a run's final state through the same public entrances
