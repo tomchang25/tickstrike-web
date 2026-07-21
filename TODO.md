@@ -23,6 +23,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > When every phase ships: archive the plan file and delete this line.
 
 - [input_feel] Fast-forward the previous turn's pending VFX when new input is enqueued and pace held-move at a fixed cadence so input stops waiting on animation tails - [ref plans/input_feel_vfx_fast_forward.implementation_spec.md]
+- [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime; child 01 (e2e spec split) shipped, children 02-05 remain - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
 
 ---
 
@@ -30,7 +31,6 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_11_shell] Put production HUD, input, settings, and debug controls around the same runtime - [ref plans/port_11_production_ui_input_settings_and_debug_tools.md]
 - [port_12_hardening] Harden assets, audio, responsive behavior, teardown, browser delivery, and Windows packaging for the same path - [ref plans/port_12_assets_audio_platform_and_release_hardening.md]
 - [port_13_visual_parity] Audit port-ref and match the reference board, entities, feedback, HUD, and presentation quality - [ref plans/port_13_visual_parity_and_polish.md]
 
