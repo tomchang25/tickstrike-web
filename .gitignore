@@ -9,7 +9,7 @@ src-tauri/target/
 *.pyc
 .DS_Store
 port-ref/
+.vscode/settings.json
 
 /assets
 /tmp
-
