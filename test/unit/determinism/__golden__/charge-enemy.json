@@ -1,0 +1,2431 @@
+[
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 7,
+          "y": 3
+        },
+        "to": {
+          "x": 6,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "telegraph": {
+          "sourceId": "enemy-charge",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 1,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 6,
+          "y": 3
+        },
+        "to": {
+          "x": 5,
+          "y": 3
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "telegraph": {
+          "sourceId": "enemy-charge",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 2,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": -1,
+          "y": 0
+        },
+        "target": {
+          "x": 4,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 5,
+          "y": 3
+        }
+      },
+      {
+        "type": "charge_impact",
+        "enemyId": "enemy-charge",
+        "targetId": "player",
+        "cell": {
+          "x": 5,
+          "y": 3
+        },
+        "outcome": "normal"
+      },
+      {
+        "type": "player_damaged",
+        "playerId": "player",
+        "damage": {
+          "targetId": "player",
+          "damage": 8,
+          "hpBefore": 100,
+          "hpAfter": 92,
+          "killed": false
+        },
+        "hp": 92,
+        "maxHp": 100
+      },
+      {
+        "type": "entity_displaced",
+        "entityId": "enemy-side-blocker",
+        "from": {
+          "x": 8,
+          "y": 3
+        },
+        "to": {
+          "x": 8,
+          "y": 2
+        },
+        "cause": "charge_side_push"
+      },
+      {
+        "type": "entity_displaced",
+        "entityId": "player",
+        "from": {
+          "x": 5,
+          "y": 3
+        },
+        "to": {
+          "x": 4,
+          "y": 3
+        },
+        "cause": "charge_target_knockback"
+      },
+      {
+        "type": "charge_landed",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 9,
+          "y": 3
+        },
+        "to": {
+          "x": 5,
+          "y": 3
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "enemy-charge",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "world_advanced",
+        "tick": 3,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 4,
+          "y": 3
+        },
+        "to": {
+          "x": 3,
+          "y": 3
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 4,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 3,
+          "y": 3
+        },
+        "to": {
+          "x": 3,
+          "y": 2
+        }
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "enemy-charge"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 5,
+          "y": 3
+        },
+        "to": {
+          "x": 5,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 5,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "dash",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "dash",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_dashed",
+        "actorId": "player",
+        "from": {
+          "x": 3,
+          "y": 2
+        },
+        "to": {
+          "x": 3,
+          "y": 0
+        },
+        "path": [
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 3,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 5,
+          "y": 2
+        },
+        "to": {
+          "x": 5,
+          "y": 1
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 6,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 3,
+          "y": 0
+        },
+        "to": {
+          "x": 4,
+          "y": 0
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 5,
+          "y": 1
+        },
+        "to": {
+          "x": 6,
+          "y": 1
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 7,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": 1,
+          "y": 0
+        },
+        "target": {
+          "x": 5,
+          "y": 0
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 6,
+          "y": 1
+        },
+        "to": {
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 8,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 4,
+          "y": 0
+        },
+        "to": {
+          "x": 4,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 6,
+          "y": 0
+        },
+        "to": {
+          "x": 6,
+          "y": 1
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 9,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 4,
+          "y": 1
+        },
+        "to": {
+          "x": 3,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 5,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "telegraph": {
+          "sourceId": "enemy-charge",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 5,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 10,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 3,
+          "y": 1
+        },
+        "to": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 11,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": 0,
+          "y": -1
+        },
+        "target": {
+          "x": 3,
+          "y": -1
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 5,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 3,
+          "y": 1
+        }
+      },
+      {
+        "type": "charge_impact",
+        "enemyId": "enemy-charge",
+        "cell": {
+          "x": 3,
+          "y": 1
+        },
+        "outcome": "empty"
+      },
+      {
+        "type": "charge_landed",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 6,
+          "y": 1
+        },
+        "to": {
+          "x": 3,
+          "y": 1
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "enemy-charge",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "world_advanced",
+        "tick": 12,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": false,
+    "events": []
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 3,
+          "y": 0
+        },
+        "to": {
+          "x": 4,
+          "y": 0
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 13,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 4,
+          "y": 0
+        },
+        "to": {
+          "x": 5,
+          "y": 0
+        }
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "enemy-charge"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 3,
+          "y": 1
+        },
+        "to": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 14,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": 1,
+          "y": 0
+        },
+        "target": {
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 4,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 0
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "telegraph": {
+          "sourceId": "enemy-charge",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 4,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 0
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 15,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "dash",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "dash",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_dashed",
+        "actorId": "player",
+        "from": {
+          "x": 5,
+          "y": 0
+        },
+        "to": {
+          "x": 10,
+          "y": 0
+        },
+        "path": [
+          {
+            "x": 6,
+            "y": 0
+          },
+          {
+            "x": 7,
+            "y": 0
+          },
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 9,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "type": "world_advanced",
+        "tick": 16,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 0
+        },
+        "to": {
+          "x": 10,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 4,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 0
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 5,
+          "y": 0
+        }
+      },
+      {
+        "type": "charge_impact",
+        "enemyId": "enemy-charge",
+        "cell": {
+          "x": 5,
+          "y": 0
+        },
+        "outcome": "empty"
+      },
+      {
+        "type": "charge_landed",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 3,
+          "y": 0
+        },
+        "to": {
+          "x": 5,
+          "y": 0
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "enemy-charge",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "world_advanced",
+        "tick": 17,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 1
+        },
+        "to": {
+          "x": 10,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 18,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 2
+        },
+        "to": {
+          "x": 9,
+          "y": 2
+        }
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "enemy-charge"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 5,
+          "y": 0
+        },
+        "to": {
+          "x": 5,
+          "y": 1
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 19,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": -1,
+          "y": 0
+        },
+        "target": {
+          "x": 8,
+          "y": 2
+        },
+        "hit": {
+          "targetId": "enemy-side-blocker",
+          "damage": 20,
+          "hpBefore": 100,
+          "hpAfter": 80,
+          "killed": false,
+          "attackerId": "player"
+        }
+      },
+      {
+        "type": "enemy_damaged",
+        "enemyId": "enemy-side-blocker",
+        "hit": {
+          "targetId": "enemy-side-blocker",
+          "damage": 20,
+          "hpBefore": 100,
+          "hpAfter": 80,
+          "killed": false,
+          "attackerId": "player"
+        },
+        "hp": 80,
+        "maxHp": 100
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 5,
+          "y": 1
+        },
+        "to": {
+          "x": 5,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 20,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 9,
+          "y": 2
+        },
+        "to": {
+          "x": 9,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 5,
+          "y": 2
+        },
+        "to": {
+          "x": 5,
+          "y": 1
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 21,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 9,
+          "y": 1
+        },
+        "to": {
+          "x": 10,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 8,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 10,
+              "y": 1
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "telegraph": {
+          "sourceId": "enemy-charge",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 8,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 10,
+              "y": 1
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 22,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 1
+        },
+        "to": {
+          "x": 9,
+          "y": 1
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "telegraph": {
+          "sourceId": "enemy-charge",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 8,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 1
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 23,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": -1,
+          "y": 0
+        },
+        "target": {
+          "x": 8,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 8,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 1
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 9,
+          "y": 1
+        }
+      },
+      {
+        "type": "charge_impact",
+        "enemyId": "enemy-charge",
+        "targetId": "player",
+        "cell": {
+          "x": 9,
+          "y": 1
+        },
+        "outcome": "normal"
+      },
+      {
+        "type": "player_damaged",
+        "playerId": "player",
+        "damage": {
+          "targetId": "player",
+          "damage": 8,
+          "hpBefore": 92,
+          "hpAfter": 84,
+          "killed": false
+        },
+        "hp": 84,
+        "maxHp": 100
+      },
+      {
+        "type": "entity_displaced",
+        "entityId": "player",
+        "from": {
+          "x": 9,
+          "y": 1
+        },
+        "to": {
+          "x": 10,
+          "y": 1
+        },
+        "cause": "charge_target_knockback"
+      },
+      {
+        "type": "charge_landed",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 5,
+          "y": 1
+        },
+        "to": {
+          "x": 9,
+          "y": 1
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "enemy-charge",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "world_advanced",
+        "tick": 24,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 1
+        },
+        "to": {
+          "x": 10,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 25,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "dash",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "dash",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_dashed",
+        "actorId": "player",
+        "from": {
+          "x": 10,
+          "y": 2
+        },
+        "to": {
+          "x": 10,
+          "y": 6
+        },
+        "path": [
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "enemy-charge"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 9,
+          "y": 1
+        },
+        "to": {
+          "x": 10,
+          "y": 1
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 26,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 6
+        },
+        "to": {
+          "x": 10,
+          "y": 5
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 10,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 4
+            },
+            {
+              "x": 10,
+              "y": 5
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "telegraph": {
+          "sourceId": "enemy-charge",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 10,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 4
+            },
+            {
+              "x": 10,
+              "y": 5
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 27,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 5
+        },
+        "to": {
+          "x": 9,
+          "y": 5
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 28,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": -1,
+          "y": 0
+        },
+        "target": {
+          "x": 8,
+          "y": 5
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "enemy-charge",
+        "attack": {
+          "attackId": "charge",
+          "role": "charge",
+          "kind": "charge",
+          "cells": [
+            {
+              "x": 10,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 4
+            },
+            {
+              "x": 10,
+              "y": 5
+            }
+          ],
+          "damage": 8,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 10,
+          "y": 5
+        }
+      },
+      {
+        "type": "charge_impact",
+        "enemyId": "enemy-charge",
+        "cell": {
+          "x": 10,
+          "y": 5
+        },
+        "outcome": "empty"
+      },
+      {
+        "type": "charge_landed",
+        "enemyId": "enemy-charge",
+        "from": {
+          "x": 10,
+          "y": 1
+        },
+        "to": {
+          "x": 10,
+          "y": 5
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "enemy-charge",
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "enemy-charge",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "world_advanced",
+        "tick": 29,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "snapshot": {
+      "tick": 29,
+      "outcome": "running",
+      "arena": {
+        "width": 12,
+        "height": 7,
+        "terrain": [
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land"
+        ],
+        "tiles": [
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor"
+        ]
+      },
+      "playerCell": {
+        "x": 9,
+        "y": 5
+      },
+      "entities": [
+        {
+          "id": "player",
+          "kind": "player",
+          "archetype": "ninja",
+          "cell": {
+            "x": 9,
+            "y": 5
+          },
+          "footprint": [
+            {
+              "x": 9,
+              "y": 5
+            }
+          ],
+          "hp": 84,
+          "maxHp": 100,
+          "defense": 0,
+          "normalAttackDamage": 20,
+          "mobility": {
+            "kind": "dash",
+            "damage": 30,
+            "range": 5,
+            "cooldown": 4,
+            "staggerMultiplier": 2,
+            "remainingCooldown": 1,
+            "invulnerable": false
+          },
+          "phase": "alive"
+        },
+        {
+          "id": "enemy-charge",
+          "kind": "enemy",
+          "archetype": "charge",
+          "presentationId": "enemy.charge",
+          "cell": {
+            "x": 10,
+            "y": 5
+          },
+          "footprint": [
+            {
+              "x": 10,
+              "y": 5
+            }
+          ],
+          "hp": 150,
+          "maxHp": 150,
+          "defense": 0,
+          "guard": {
+            "id": "heavy",
+            "current": 64,
+            "max": 64,
+            "staggerDuration": 3,
+            "protectionDuration": 5,
+            "protectionMultiplier": 0.5
+          },
+          "enemyAction": {
+            "role": "charge",
+            "attackId": "charge",
+            "kind": "charge",
+            "damage": 8,
+            "warningTicks": 2,
+            "recoveryTicks": 2,
+            "offsets": [],
+            "chargeTuning": {
+              "maxRange": 5
+            }
+          },
+          "activity": "recovering",
+          "facing": {
+            "x": 0,
+            "y": 1
+          },
+          "phase": "alive",
+          "lastDecision": "attack",
+          "recoveryTicks": 2
+        },
+        {
+          "id": "enemy-side-blocker",
+          "kind": "enemy",
+          "archetype": "training-grunt",
+          "cell": {
+            "x": 8,
+            "y": 2
+          },
+          "footprint": [
+            {
+              "x": 8,
+              "y": 2
+            }
+          ],
+          "hp": 80,
+          "maxHp": 100,
+          "defense": 0,
+          "phase": "alive"
+        }
+      ],
+      "reservations": [],
+      "telegraphs": [],
+      "runBuild": {
+        "stacks": {},
+        "triggers": []
+      },
+      "seed": 3227524042,
+      "lastEvents": [
+        {
+          "type": "command_resolved",
+          "commandType": "attack",
+          "accepted": true,
+          "consumedTime": true
+        },
+        {
+          "type": "player_attacked",
+          "actorId": "player",
+          "direction": {
+            "x": -1,
+            "y": 0
+          },
+          "target": {
+            "x": 8,
+            "y": 5
+          }
+        },
+        {
+          "type": "enemy_attack_detonated",
+          "enemyId": "enemy-charge",
+          "attack": {
+            "attackId": "charge",
+            "role": "charge",
+            "kind": "charge",
+            "cells": [
+              {
+                "x": 10,
+                "y": 2
+              },
+              {
+                "x": 10,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 5
+              }
+            ],
+            "damage": 8,
+            "warningTicks": 0,
+            "recoveryTicks": 2
+          },
+          "target": {
+            "x": 10,
+            "y": 5
+          }
+        },
+        {
+          "type": "charge_impact",
+          "enemyId": "enemy-charge",
+          "cell": {
+            "x": 10,
+            "y": 5
+          },
+          "outcome": "empty"
+        },
+        {
+          "type": "charge_landed",
+          "enemyId": "enemy-charge",
+          "from": {
+            "x": 10,
+            "y": 1
+          },
+          "to": {
+            "x": 10,
+            "y": 5
+          }
+        },
+        {
+          "type": "telegraph_changed",
+          "sourceId": "enemy-charge",
+          "cleared": true
+        },
+        {
+          "type": "enemy_recovering",
+          "enemyId": "enemy-charge",
+          "recoveryTicks": 2
+        },
+        {
+          "type": "world_advanced",
+          "tick": 29,
+          "phases": [
+            "foundation",
+            "enemy"
+          ]
+        }
+      ]
+    }
+  }
+]

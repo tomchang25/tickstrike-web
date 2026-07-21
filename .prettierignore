@@ -9,3 +9,4 @@ playwright-report/
 port-ref/
 src-tauri/target/
 test-results/
+test/unit/determinism/__golden__/

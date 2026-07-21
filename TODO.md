@@ -46,6 +46,7 @@ One line, no rationale, no backing document.
 - [boundary_tooling] Raise the `no-circular` rule to error and drop the swc parser once dependency-cruiser supports TypeScript 7 and can classify type-only imports again
 - [dead_code] Burn the `npm run check:unused` baseline to zero then add it to `check` - [ref plans/engineering_hardening.md]
 - [desktop_deps] Confirm whether the Tauri shell needs `@tauri-apps/api` before removing it as unused
+- [determinism_golden] Add reward-selection coverage to the determinism golden by clearing a wave deterministically, or accept the `wave-phase.test.ts` coverage - [ref plans/engineering_hardening.md]
 
 ---
 

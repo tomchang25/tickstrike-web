@@ -1,0 +1,3654 @@
+[
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 6,
+          "y": 6
+        },
+        "to": {
+          "x": 5,
+          "y": 6
+        }
+      },
+      {
+        "type": "wave_group_warned",
+        "waveNumber": 1,
+        "slotIndex": 0,
+        "sourceId": "spawn:w1:s0",
+        "cells": [
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 4
+          }
+        ],
+        "warningTicks": 1
+      },
+      {
+        "type": "world_advanced",
+        "tick": 1,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 5,
+          "y": 6
+        },
+        "to": {
+          "x": 4,
+          "y": 6
+        }
+      },
+      {
+        "type": "wave_group_spawned",
+        "waveNumber": 1,
+        "slotIndex": 0,
+        "spawns": [
+          {
+            "entityId": "wave-1-slot-0-t2-0",
+            "cell": {
+              "x": 6,
+              "y": 5
+            },
+            "level": 1
+          },
+          {
+            "entityId": "wave-1-slot-0-t2-1",
+            "cell": {
+              "x": 4,
+              "y": 7
+            },
+            "level": 1
+          },
+          {
+            "entityId": "wave-1-slot-0-t2-2",
+            "cell": {
+              "x": 3,
+              "y": 4
+            },
+            "level": 1
+          }
+        ]
+      },
+      {
+        "type": "world_advanced",
+        "tick": 2,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": -1,
+          "y": 0
+        },
+        "target": {
+          "x": 3,
+          "y": 6
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 6,
+          "y": 5
+        },
+        "to": {
+          "x": 6,
+          "y": 6
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 4
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-1",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-1",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 4
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 3,
+          "y": 4
+        },
+        "to": {
+          "x": 3,
+          "y": 5
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 3,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 4,
+          "y": 6
+        },
+        "to": {
+          "x": 3,
+          "y": 6
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 5,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-0",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-0",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 5,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "attack": {
+          "attackId": "slash",
+          "role": "slash",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 2,
+              "y": 6
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-2",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-2",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 2,
+              "y": 6
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 4,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": false,
+    "events": []
+  },
+  {
+    "command": {
+      "type": "dash",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "dash",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_dashed",
+        "actorId": "player",
+        "from": {
+          "x": 3,
+          "y": 6
+        },
+        "to": {
+          "x": 3,
+          "y": 1
+        },
+        "path": [
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "type": "directional_hit",
+        "attackerId": "player",
+        "targetId": "wave-1-slot-0-t2-2",
+        "hit": {
+          "attackerId": "player",
+          "targetId": "wave-1-slot-0-t2-2",
+          "damage": 6,
+          "hpBefore": 100,
+          "hpAfter": 94,
+          "killed": false,
+          "angle": "front",
+          "baseDamage": 30,
+          "guardDamage": 4,
+          "guardBefore": 32,
+          "guardAfter": 28,
+          "hpDamage": 6,
+          "defenseAdjustedDamage": 6,
+          "guardBroken": false,
+          "staggerBurst": false,
+          "feedback": "guarded"
+        }
+      },
+      {
+        "type": "enemy_guard_damaged",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "damage": 4,
+        "guard": 28,
+        "maxGuard": 32
+      },
+      {
+        "type": "enemy_damaged",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "hit": {
+          "attackerId": "player",
+          "targetId": "wave-1-slot-0-t2-2",
+          "damage": 6,
+          "hpBefore": 100,
+          "hpAfter": 94,
+          "killed": false,
+          "angle": "front",
+          "baseDamage": 30,
+          "guardDamage": 4,
+          "guardBefore": 32,
+          "guardAfter": 28,
+          "hpDamage": 6,
+          "defenseAdjustedDamage": 6,
+          "guardBroken": false,
+          "staggerBurst": false,
+          "feedback": "guarded"
+        },
+        "hp": 94,
+        "maxHp": 100
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 4
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 3,
+          "y": 1
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-1",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-1",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 4
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "world_advanced",
+        "tick": 5,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 3,
+          "y": 1
+        },
+        "to": {
+          "x": 4,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 5,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 4,
+          "y": 1
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-0",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-0",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 5,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "attack": {
+          "attackId": "slash",
+          "role": "slash",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 2,
+              "y": 6
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 4,
+          "y": 1
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-2",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-2",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 2,
+              "y": 6
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "world_advanced",
+        "tick": 6,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": 1,
+          "y": 0
+        },
+        "target": {
+          "x": 5,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-1"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 4,
+          "y": 7
+        },
+        "to": {
+          "x": 4,
+          "y": 6
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 7,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 4,
+          "y": 1
+        },
+        "to": {
+          "x": 4,
+          "y": 2
+        }
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-0"
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-2"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 6,
+          "y": 6
+        },
+        "to": {
+          "x": 5,
+          "y": 6
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 4,
+          "y": 6
+        },
+        "to": {
+          "x": 4,
+          "y": 5
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 3,
+          "y": 5
+        },
+        "to": {
+          "x": 3,
+          "y": 4
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 8,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 4,
+          "y": 2
+        },
+        "to": {
+          "x": 3,
+          "y": 2
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 5,
+          "y": 6
+        },
+        "to": {
+          "x": 4,
+          "y": 6
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 4,
+          "y": 5
+        },
+        "to": {
+          "x": 3,
+          "y": 5
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 3,
+          "y": 4
+        },
+        "to": {
+          "x": 3,
+          "y": 3
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 9,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 3,
+          "y": 2
+        },
+        "to": {
+          "x": 3,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 4,
+          "y": 6
+        },
+        "to": {
+          "x": 3,
+          "y": 6
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 3,
+          "y": 5
+        },
+        "to": {
+          "x": 3,
+          "y": 4
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 3,
+          "y": 3
+        },
+        "to": {
+          "x": 3,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 10,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": 0,
+          "y": -1
+        },
+        "target": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 3,
+          "y": 6
+        },
+        "to": {
+          "x": 3,
+          "y": 5
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-1",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-1",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 1
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "attack": {
+          "attackId": "slash",
+          "role": "slash",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 2,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-2",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-2",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 2,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 11,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": false,
+    "events": []
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 3,
+          "y": 1
+        },
+        "to": {
+          "x": 4,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 3,
+          "y": 5
+        },
+        "to": {
+          "x": 4,
+          "y": 5
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 12,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 4,
+          "y": 1
+        },
+        "to": {
+          "x": 5,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 5,
+          "y": 1
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-1",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-1",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 1
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "attack": {
+          "attackId": "slash",
+          "role": "slash",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 2,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 5,
+          "y": 1
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-2",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-2",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 2,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 4,
+          "y": 5
+        },
+        "to": {
+          "x": 5,
+          "y": 5
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 13,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": 1,
+          "y": 0
+        },
+        "target": {
+          "x": 6,
+          "y": 1
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 5,
+          "y": 5
+        },
+        "to": {
+          "x": 5,
+          "y": 4
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 14,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "dash",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "dash",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_dashed",
+        "actorId": "player",
+        "from": {
+          "x": 5,
+          "y": 1
+        },
+        "to": {
+          "x": 10,
+          "y": 1
+        },
+        "path": [
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 10,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-1"
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-2"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 5,
+          "y": 4
+        },
+        "to": {
+          "x": 6,
+          "y": 4
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 3,
+          "y": 4
+        },
+        "to": {
+          "x": 4,
+          "y": 4
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 3,
+          "y": 2
+        },
+        "to": {
+          "x": 4,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 15,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 1
+        },
+        "to": {
+          "x": 10,
+          "y": 2
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 6,
+          "y": 4
+        },
+        "to": {
+          "x": 7,
+          "y": 4
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 4,
+          "y": 4
+        },
+        "to": {
+          "x": 5,
+          "y": 4
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 4,
+          "y": 2
+        },
+        "to": {
+          "x": 5,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 16,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 2
+        },
+        "to": {
+          "x": 10,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 7,
+          "y": 4
+        },
+        "to": {
+          "x": 7,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 5,
+          "y": 4
+        },
+        "to": {
+          "x": 6,
+          "y": 4
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 5,
+          "y": 2
+        },
+        "to": {
+          "x": 6,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 17,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 3
+        },
+        "to": {
+          "x": 9,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-0",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-0",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 6,
+          "y": 4
+        },
+        "to": {
+          "x": 6,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 6,
+          "y": 2
+        },
+        "to": {
+          "x": 7,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 18,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": -1,
+          "y": 0
+        },
+        "target": {
+          "x": 8,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-1",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-1",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 7,
+          "y": 2
+        },
+        "to": {
+          "x": 8,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 19,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 9,
+          "y": 3
+        },
+        "to": {
+          "x": 9,
+          "y": 2
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 9,
+          "y": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-0",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-0",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "attack": {
+          "attackId": "slash",
+          "role": "slash",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-2",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-2",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 20,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 9,
+          "y": 2
+        },
+        "to": {
+          "x": 10,
+          "y": 2
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 10,
+          "y": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-1",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-1",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "world_advanced",
+        "tick": 21,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 10,
+          "y": 2
+        },
+        "to": {
+          "x": 9,
+          "y": 2
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "attack": {
+          "attackId": "slash",
+          "role": "slash",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 9,
+          "y": 2
+        },
+        "hit": {
+          "targetId": "player",
+          "damage": 10,
+          "hpBefore": 100,
+          "hpAfter": 90,
+          "killed": false
+        }
+      },
+      {
+        "type": "player_damaged",
+        "playerId": "player",
+        "damage": {
+          "targetId": "player",
+          "damage": 10,
+          "hpBefore": 100,
+          "hpAfter": 90,
+          "killed": false
+        },
+        "hp": 90,
+        "maxHp": 100
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-2",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-2",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-0"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 7,
+          "y": 3
+        },
+        "to": {
+          "x": 7,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 22,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": -1,
+          "y": 0
+        },
+        "target": {
+          "x": 8,
+          "y": 2
+        },
+        "hit": {
+          "attackerId": "player",
+          "targetId": "wave-1-slot-0-t2-2",
+          "damage": 4,
+          "hpBefore": 94,
+          "hpAfter": 90,
+          "killed": false,
+          "angle": "front",
+          "baseDamage": 20,
+          "guardDamage": 4,
+          "guardBefore": 28,
+          "guardAfter": 24,
+          "hpDamage": 4,
+          "defenseAdjustedDamage": 4,
+          "guardBroken": false,
+          "staggerBurst": false,
+          "feedback": "guarded"
+        }
+      },
+      {
+        "type": "directional_hit",
+        "attackerId": "player",
+        "targetId": "wave-1-slot-0-t2-2",
+        "hit": {
+          "attackerId": "player",
+          "targetId": "wave-1-slot-0-t2-2",
+          "damage": 4,
+          "hpBefore": 94,
+          "hpAfter": 90,
+          "killed": false,
+          "angle": "front",
+          "baseDamage": 20,
+          "guardDamage": 4,
+          "guardBefore": 28,
+          "guardAfter": 24,
+          "hpDamage": 4,
+          "defenseAdjustedDamage": 4,
+          "guardBroken": false,
+          "staggerBurst": false,
+          "feedback": "guarded"
+        }
+      },
+      {
+        "type": "enemy_guard_damaged",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "damage": 4,
+        "guard": 24,
+        "maxGuard": 32
+      },
+      {
+        "type": "enemy_damaged",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "hit": {
+          "attackerId": "player",
+          "targetId": "wave-1-slot-0-t2-2",
+          "damage": 4,
+          "hpBefore": 94,
+          "hpAfter": 90,
+          "killed": false,
+          "angle": "front",
+          "baseDamage": 20,
+          "guardDamage": 4,
+          "guardBefore": 28,
+          "guardAfter": 24,
+          "hpDamage": 4,
+          "defenseAdjustedDamage": 4,
+          "guardBroken": false,
+          "staggerBurst": false,
+          "feedback": "guarded"
+        },
+        "hp": 90,
+        "maxHp": 100
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-1"
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 8,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 2
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-0",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-0",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 8,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 2
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 6,
+          "y": 3
+        },
+        "to": {
+          "x": 6,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 23,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 9,
+          "y": 2
+        },
+        "to": {
+          "x": 9,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-2"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 6,
+          "y": 2
+        },
+        "to": {
+          "x": 6,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "attack": {
+          "attackId": "slash",
+          "role": "slash",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-2",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-2",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "world_advanced",
+        "tick": 24,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "dash",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": 1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "dash",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_dashed",
+        "actorId": "player",
+        "from": {
+          "x": 9,
+          "y": 3
+        },
+        "to": {
+          "x": 9,
+          "y": 8
+        },
+        "path": [
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 8,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 2
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 9,
+          "y": 8
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-0",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-0",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 8,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 2
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 6,
+          "y": 3
+        },
+        "to": {
+          "x": 7,
+          "y": 3
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 25,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 9,
+          "y": 8
+        },
+        "to": {
+          "x": 9,
+          "y": 7
+        }
+      },
+      {
+        "type": "enemy_attack_detonated",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "attack": {
+          "attackId": "slash",
+          "role": "slash",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 0,
+          "recoveryTicks": 2
+        },
+        "target": {
+          "x": 9,
+          "y": 7
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-2",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-2",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            }
+          ]
+        },
+        "cleared": true
+      },
+      {
+        "type": "enemy_recovering",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "recoveryTicks": 2
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 7,
+          "y": 3
+        },
+        "to": {
+          "x": 8,
+          "y": 3
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 26,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "move",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "move",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "actor_moved",
+        "entityId": "player",
+        "from": {
+          "x": 9,
+          "y": 7
+        },
+        "to": {
+          "x": 8,
+          "y": 7
+        }
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-0"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 7,
+          "y": 2
+        },
+        "to": {
+          "x": 7,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "from": {
+          "x": 8,
+          "y": 3
+        },
+        "to": {
+          "x": 8,
+          "y": 4
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 27,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "command": {
+      "type": "attack",
+      "actorId": "player",
+      "direction": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    "accepted": true,
+    "events": [
+      {
+        "type": "command_resolved",
+        "commandType": "attack",
+        "accepted": true,
+        "consumedTime": true
+      },
+      {
+        "type": "player_attacked",
+        "actorId": "player",
+        "direction": {
+          "x": -1,
+          "y": 0
+        },
+        "target": {
+          "x": 7,
+          "y": 7
+        }
+      },
+      {
+        "type": "enemy_recovered",
+        "enemyId": "wave-1-slot-0-t2-2"
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-0",
+        "from": {
+          "x": 7,
+          "y": 3
+        },
+        "to": {
+          "x": 8,
+          "y": 3
+        }
+      },
+      {
+        "type": "enemy_attack_committed",
+        "enemyId": "wave-1-slot-0-t2-1",
+        "attack": {
+          "attackId": "thrust",
+          "role": "thrust",
+          "kind": "tile",
+          "cells": [
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 7
+            }
+          ],
+          "damage": 10,
+          "warningTicks": 2,
+          "recoveryTicks": 2
+        }
+      },
+      {
+        "type": "telegraph_changed",
+        "sourceId": "wave-1-slot-0-t2-1",
+        "telegraph": {
+          "sourceId": "wave-1-slot-0-t2-1",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 7
+            }
+          ]
+        },
+        "cleared": false
+      },
+      {
+        "type": "enemy_moved",
+        "enemyId": "wave-1-slot-0-t2-2",
+        "from": {
+          "x": 8,
+          "y": 2
+        },
+        "to": {
+          "x": 7,
+          "y": 2
+        }
+      },
+      {
+        "type": "world_advanced",
+        "tick": 28,
+        "phases": [
+          "foundation",
+          "enemy"
+        ]
+      }
+    ]
+  },
+  {
+    "snapshot": {
+      "tick": 28,
+      "outcome": "running",
+      "arena": {
+        "width": 12,
+        "height": 12,
+        "terrain": [
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea"
+        ],
+        "tiles": [
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water"
+        ]
+      },
+      "playerCell": {
+        "x": 8,
+        "y": 7
+      },
+      "entities": [
+        {
+          "id": "player",
+          "kind": "player",
+          "archetype": "ninja",
+          "cell": {
+            "x": 8,
+            "y": 7
+          },
+          "footprint": [
+            {
+              "x": 8,
+              "y": 7
+            }
+          ],
+          "hp": 90,
+          "maxHp": 100,
+          "defense": 0,
+          "normalAttackDamage": 20,
+          "mobility": {
+            "kind": "dash",
+            "damage": 30,
+            "range": 5,
+            "cooldown": 4,
+            "staggerMultiplier": 2,
+            "remainingCooldown": 1,
+            "invulnerable": false
+          },
+          "phase": "alive"
+        },
+        {
+          "id": "wave-1-slot-0-t2-0",
+          "kind": "enemy",
+          "archetype": "thrust_enemy",
+          "presentationId": "enemy.thrust",
+          "cell": {
+            "x": 8,
+            "y": 3
+          },
+          "footprint": [
+            {
+              "x": 8,
+              "y": 3
+            }
+          ],
+          "hp": 100,
+          "maxHp": 100,
+          "defense": 0,
+          "guard": {
+            "id": "small",
+            "current": 32,
+            "max": 32,
+            "staggerDuration": 3,
+            "protectionDuration": 5,
+            "protectionMultiplier": 0.5
+          },
+          "enemyAction": {
+            "role": "thrust",
+            "attackId": "thrust",
+            "kind": "tile",
+            "damage": 10,
+            "warningTicks": 2,
+            "recoveryTicks": 2,
+            "offsets": [
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 0
+              },
+              {
+                "x": 3,
+                "y": 0
+              }
+            ]
+          },
+          "activity": "ready",
+          "facing": {
+            "x": 1,
+            "y": 0
+          },
+          "phase": "alive",
+          "lastDecision": "move"
+        },
+        {
+          "id": "wave-1-slot-0-t2-1",
+          "kind": "enemy",
+          "archetype": "thrust_enemy",
+          "presentationId": "enemy.thrust",
+          "cell": {
+            "x": 8,
+            "y": 4
+          },
+          "footprint": [
+            {
+              "x": 8,
+              "y": 4
+            }
+          ],
+          "hp": 100,
+          "maxHp": 100,
+          "defense": 0,
+          "guard": {
+            "id": "small",
+            "current": 32,
+            "max": 32,
+            "staggerDuration": 3,
+            "protectionDuration": 5,
+            "protectionMultiplier": 0.5
+          },
+          "enemyAction": {
+            "role": "thrust",
+            "attackId": "thrust",
+            "kind": "tile",
+            "damage": 10,
+            "warningTicks": 2,
+            "recoveryTicks": 2,
+            "offsets": [
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 0
+              },
+              {
+                "x": 3,
+                "y": 0
+              }
+            ]
+          },
+          "activity": "telegraphing",
+          "facing": {
+            "x": 0,
+            "y": 1
+          },
+          "phase": "alive",
+          "lastDecision": "attack",
+          "committedAttack": {
+            "attackId": "thrust",
+            "role": "thrust",
+            "kind": "tile",
+            "cells": [
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 6
+              },
+              {
+                "x": 8,
+                "y": 7
+              }
+            ],
+            "damage": 10,
+            "warningTicks": 2,
+            "recoveryTicks": 2
+          }
+        },
+        {
+          "id": "wave-1-slot-0-t2-2",
+          "kind": "enemy",
+          "archetype": "slash_enemy",
+          "presentationId": "enemy.slash",
+          "cell": {
+            "x": 7,
+            "y": 2
+          },
+          "footprint": [
+            {
+              "x": 7,
+              "y": 2
+            }
+          ],
+          "hp": 90,
+          "maxHp": 100,
+          "defense": 0,
+          "guard": {
+            "id": "small",
+            "current": 24,
+            "max": 32,
+            "staggerDuration": 3,
+            "protectionDuration": 5,
+            "protectionMultiplier": 0.5
+          },
+          "enemyAction": {
+            "role": "slash",
+            "attackId": "slash",
+            "kind": "tile",
+            "damage": 10,
+            "warningTicks": 2,
+            "recoveryTicks": 2,
+            "offsets": [
+              {
+                "x": 1,
+                "y": -1
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "activity": "ready",
+          "facing": {
+            "x": -1,
+            "y": 0
+          },
+          "phase": "alive",
+          "lastDecision": "move"
+        }
+      ],
+      "reservations": [],
+      "telegraphs": [
+        {
+          "sourceId": "wave-1-slot-0-t2-1",
+          "phase": "warning",
+          "cells": [
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 7
+            }
+          ]
+        }
+      ],
+      "waveRuntime": {
+        "waveNumber": 1,
+        "slots": [
+          {
+            "remainingQueue": [],
+            "eligible": true,
+            "hasEverSpawned": true,
+            "livingCount": 3
+          }
+        ]
+      },
+      "runBuild": {
+        "stacks": {},
+        "triggers": []
+      },
+      "seed": 1475545,
+      "lastEvents": [
+        {
+          "type": "command_resolved",
+          "commandType": "attack",
+          "accepted": true,
+          "consumedTime": true
+        },
+        {
+          "type": "player_attacked",
+          "actorId": "player",
+          "direction": {
+            "x": -1,
+            "y": 0
+          },
+          "target": {
+            "x": 7,
+            "y": 7
+          }
+        },
+        {
+          "type": "enemy_recovered",
+          "enemyId": "wave-1-slot-0-t2-2"
+        },
+        {
+          "type": "enemy_moved",
+          "enemyId": "wave-1-slot-0-t2-0",
+          "from": {
+            "x": 7,
+            "y": 3
+          },
+          "to": {
+            "x": 8,
+            "y": 3
+          }
+        },
+        {
+          "type": "enemy_attack_committed",
+          "enemyId": "wave-1-slot-0-t2-1",
+          "attack": {
+            "attackId": "thrust",
+            "role": "thrust",
+            "kind": "tile",
+            "cells": [
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 6
+              },
+              {
+                "x": 8,
+                "y": 7
+              }
+            ],
+            "damage": 10,
+            "warningTicks": 2,
+            "recoveryTicks": 2
+          }
+        },
+        {
+          "type": "telegraph_changed",
+          "sourceId": "wave-1-slot-0-t2-1",
+          "telegraph": {
+            "sourceId": "wave-1-slot-0-t2-1",
+            "phase": "warning",
+            "cells": [
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 6
+              },
+              {
+                "x": 8,
+                "y": 7
+              }
+            ]
+          },
+          "cleared": false
+        },
+        {
+          "type": "enemy_moved",
+          "enemyId": "wave-1-slot-0-t2-2",
+          "from": {
+            "x": 8,
+            "y": 2
+          },
+          "to": {
+            "x": 7,
+            "y": 2
+          }
+        },
+        {
+          "type": "world_advanced",
+          "tick": 28,
+          "phases": [
+            "foundation",
+            "enemy"
+          ]
+        }
+      ]
+    }
+  }
+]
