@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import type { MobilityKind } from "@core/model/types";
 import { requireScenario, scenarios } from "@harness/scenario-registry";
+import { GameHud } from "@ui/hud/game-hud";
 import { MilestoneOverlay } from "@ui/milestone-overlay";
 import { RewardOverlay } from "@ui/reward-overlay";
-import { RunBuildHud } from "@ui/run-build-hud";
 import { SemanticMirror } from "@ui/semantic-mirror";
 import { TestbedPanel } from "@ui/testbed-panel";
 import { useGameSession } from "./use-game-session";
@@ -51,6 +51,7 @@ export function TestbedApp() {
         <section className="game-column" aria-label="Game viewport">
           <div className="canvas-frame" data-testid="game-canvas-host">
             <div ref={session.canvasHostRef} className="canvas-host" />
+            {snapshot ? <GameHud snapshot={snapshot} commandsEnabled={commandsEnabled} /> : null}
             {snapshot && snapshot.outcome !== "running" ? (
               <div
                 className={`terminal-banner terminal-banner-${snapshot.outcome}`}
@@ -75,12 +76,7 @@ export function TestbedApp() {
               <MilestoneOverlay decision={pendingMilestone} busy={busy} onDecide={session.selectMilestoneDecision} />
             ) : null}
           </div>
-          {snapshot ? <RunBuildHud build={snapshot.runBuild} /> : null}
-          <p className="hint">
-            {commandsEnabled
-              ? "WASD / arrows move · IJKL attack · Hold Alt + hover for selected Mobility"
-              : "Static inspection: gameplay commands disabled"}
-          </p>
+          {snapshot && !commandsEnabled ? <p className="hint">Static inspection: gameplay commands disabled</p> : null}
         </section>
 
         {snapshot ? (

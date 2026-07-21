@@ -1,9 +1,9 @@
 // The home shell imports its scenario module directly instead of the scenario registry:
 // the registry's import.meta.glob would pull every harness scenario into the production bundle.
 import { scenarios as runScenarios } from "@harness/scenarios/run.scenario";
+import { GameHud } from "@ui/hud/game-hud";
 import { MilestoneOverlay } from "@ui/milestone-overlay";
 import { RewardOverlay } from "@ui/reward-overlay";
-import { RunBuildHud } from "@ui/run-build-hud";
 import { SemanticMirror } from "@ui/semantic-mirror";
 import { useGameSession } from "./use-game-session";
 
@@ -30,6 +30,7 @@ export function GameApp() {
         <h1 className="game-title">Tickstrike</h1>
         <div className="canvas-frame" data-testid="game-canvas-host">
           <div ref={session.canvasHostRef} className="canvas-host" />
+          {snapshot ? <GameHud snapshot={snapshot} /> : null}
           {snapshot && snapshot.outcome !== "running" ? (
             <div
               className={`terminal-banner terminal-banner-${snapshot.outcome}`}
@@ -57,8 +58,6 @@ export function GameApp() {
             <MilestoneOverlay decision={pendingMilestone} busy={busy} onDecide={session.selectMilestoneDecision} />
           ) : null}
         </div>
-        {snapshot ? <RunBuildHud build={snapshot.runBuild} /> : null}
-        <p className="hint">WASD / arrows move · IJKL attack · Hold Alt + hover for selected Mobility</p>
       </div>
     </main>
   );

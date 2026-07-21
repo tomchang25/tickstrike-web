@@ -164,4 +164,16 @@ test("the home page plays the full authored run", async ({ page }) => {
   // it from the old tick-arena fixture, which ran no wave runtime.
   expect(state.waveRuntime?.waveNumber).toBe(1);
   expect(state.waveRuntime?.slots[0]?.remainingQueue).toHaveLength(3);
+
+  // The overlay HUD projects the loaded run: full player HP and the wave label.
+  const player = state.entities.find((entity) => entity.id === "player");
+  await expect(page.getByTestId("hud-player-hp")).toHaveText(`${player?.hp} / ${player?.maxHp}`);
+  await expect(page.getByTestId("hud-wave")).toHaveText("Wave 1");
+
+  // The Build button opens the artifacts overview and closes it again.
+  await expect(page.getByTestId("hud-build-overview")).toHaveCount(0);
+  await page.getByTestId("hud-build-button").click();
+  await expect(page.getByTestId("hud-build-overview")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("hud-build-overview")).toHaveCount(0);
 });

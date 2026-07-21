@@ -57,9 +57,9 @@ button:disabled {
 .game-stage {
   display: grid;
   gap: 12px;
-  /* Cap the square board by viewport height too (title + build + hint + padding ≈ 180px) so the
-     whole arena stays visible on short viewports instead of clipping. */
-  width: min(720px, calc(100vh - 180px), 100%);
+  /* The HUD is now an overlay on the board, so only the title sits outside it; cap the square board
+     by viewport height (title + padding ≈ 110px) so the whole arena stays visible on short viewports. */
+  width: min(720px, calc(100vh - 110px), 100%);
 }
 
 .game-title {
@@ -71,12 +71,234 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.game-stage .run-build-hud {
-  margin-top: 0;
+/* Overlay HUD: fills the canvas frame but lets gameplay clicks reach the board; only interactive
+   controls (Build button, build overview) re-enable pointer events. */
+.game-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-size: 0.75rem;
 }
 
-.game-stage .hint {
-  text-align: center;
+.hud-player {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  min-width: 150px;
+  padding: 8px 11px;
+  border: 0.5px solid rgb(120 140 170 / 32%);
+  border-radius: 10px;
+  background: rgb(18 21 28 / 82%);
+}
+
+.hud-hp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-label {
+  color: #8e99aa;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hud-bar {
+  flex: 1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #262b36;
+}
+
+.hud-bar-fill {
+  height: 100%;
+  background: #ff5c7a;
+}
+
+.hud-hp-value {
+  color: #e6ebf2;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-mobility {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.hud-chip {
+  padding: 2px 9px;
+  border: 0.5px solid #38506a;
+  border-radius: 999px;
+  background: #202634;
+  color: #72d4ff;
+}
+
+.hud-ready {
+  color: #7fd08a;
+}
+
+.hud-cooldown {
+  color: #d6a95c;
+}
+
+.hud-wave {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  padding: 4px 16px;
+  border: 0.5px solid rgb(120 140 170 / 32%);
+  border-radius: 999px;
+  background: rgb(18 21 28 / 82%);
+  color: #72d4ff;
+  letter-spacing: 0.06em;
+  transform: translateX(-50%);
+}
+
+.hud-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+}
+
+.hud-control-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-control-label {
+  color: #c3ccd8;
+}
+
+.hud-key {
+  padding: 2px 7px;
+  border: 0.5px solid #46536a;
+  border-radius: 5px;
+  background: #202634;
+  color: #dfeaf5;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+
+.hud-key[data-plus]::before {
+  margin-right: 6px;
+  color: #6b7787;
+  content: "+";
+}
+
+.hud-build {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-build .run-build-hud {
+  margin: 0;
+  padding: 6px 10px;
+  border: 0.5px solid rgb(120 140 170 / 32%);
+  border-radius: 10px;
+  background: rgb(18 21 28 / 82%);
+}
+
+.hud-build .run-build-title {
+  display: none;
+}
+
+.hud-build-button {
+  padding: 6px 11px;
+  border: 0.5px solid #38506a;
+  border-radius: 10px;
+  background: rgb(32 38 52 / 92%);
+  color: #cfe3f5;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hud-build-button:hover {
+  border-color: #4a6488;
+  background: rgb(40 48 66 / 95%);
+}
+
+.hud-build-overview-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  padding: 16px;
+  background: rgb(12 14 19 / 78%);
+  place-items: center;
+  pointer-events: auto;
+}
+
+.hud-build-overview {
+  width: min(320px, 100%);
+  padding: 14px 16px;
+  border: 0.5px solid #38506a;
+  border-radius: 12px;
+  background: #12151c;
+}
+
+.hud-build-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hud-build-overview-header h2 {
+  margin: 0;
+  color: #72d4ff;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+}
+
+.hud-build-overview-close {
+  padding: 0 6px;
+  border: none;
+  background: none;
+  color: #8e99aa;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hud-build-overview-empty {
+  margin: 0;
+  color: #8e99aa;
+}
+
+.hud-build-overview-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hud-build-overview-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 5px 9px;
+  border: 0.5px solid #2a3140;
+  border-radius: 8px;
+  background: #171a22;
+  color: #e6ebf2;
+}
+
+.hud-build-overview-stack {
+  color: #72d4ff;
 }
 
 .terminal-banner .primary-command {
