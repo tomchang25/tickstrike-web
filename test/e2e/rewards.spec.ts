@@ -8,12 +8,22 @@ declare global {
   }
 }
 
+const MAJOR_IDS = ["guard_shredder", "execution"];
+
 function requirePlayer(state: WorldSnapshot | undefined): EntityState {
   const player = state?.entities.find((entity) => entity.id === "player");
   if (!player) {
     throw new Error("Expected a player entity in the snapshot.");
   }
   return player;
+}
+
+async function readState(page: Page): Promise<WorldSnapshot> {
+  const state = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
+  if (!state) {
+    throw new Error("Expected a world snapshot from the debug API.");
+  }
+  return state;
 }
 
 /**
@@ -95,66 +105,7 @@ async function clearWaveForReward(page: Page): Promise<void> {
   });
 }
 
-interface EffectCase {
-  readonly artifactId: string;
-  readonly assert: (before: WorldSnapshot, after: WorldSnapshot) => void;
-}
-
-const EFFECT_CASES: readonly EffectCase[] = [
-  {
-    artifactId: "attack_up",
-    assert: (before, after) => {
-      expect(requirePlayer(after).normalAttackDamage).toBe(
-        (requirePlayer(before).normalAttackDamage ?? 0) + 10,
-      );
-    },
-  },
-  {
-    artifactId: "dash_attack_up",
-    assert: (before, after) => {
-      expect(requirePlayer(after).mobility?.damage).toBe(
-        (requirePlayer(before).mobility?.damage ?? 0) + 20,
-      );
-    },
-  },
-  {
-    artifactId: "mobility_cooldown_down",
-    assert: (before, after) => {
-      expect(requirePlayer(after).mobility?.cooldown).toBe(
-        (requirePlayer(before).mobility?.cooldown ?? 0) - 1,
-      );
-    },
-  },
-  {
-    artifactId: "mobility_range_up",
-    assert: (before, after) => {
-      expect(requirePlayer(after).mobility?.range).toBe(
-        (requirePlayer(before).mobility?.range ?? 0) + 1,
-      );
-    },
-  },
-  {
-    artifactId: "max_health_up",
-    assert: (before, after) => {
-      expect(requirePlayer(after).maxHp).toBe(requirePlayer(before).maxHp + 20);
-      expect(requirePlayer(after).hp).toBe(requirePlayer(before).hp + 20);
-    },
-  },
-  {
-    artifactId: "guard_shredder",
-    assert: (_before, after) => {
-      expect(after.runBuild.triggers).toContain("guard-shredder");
-    },
-  },
-  {
-    artifactId: "execution",
-    assert: (_before, after) => {
-      expect(after.runBuild.triggers).toContain("execution");
-    },
-  },
-];
-
-test("Every supported reward effect applies once through the same overlay, and reset clears them all", async ({
+test("Reward offers present three cards, a Major milestone, and a live build HUD, all cleared on reset", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -162,71 +113,99 @@ test("Every supported reward effect applies once through the same overlay, and r
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
-  const initial = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(initial?.tick).toBe(0);
-  expect(initial?.pendingReward).toBeUndefined();
-  expect(initial?.runBuild).toEqual({ stacks: {}, triggers: [] });
-  expect(initial?.waveRuntime).toMatchObject({ waveNumber: 1 });
+  const initial = await readState(page);
+  expect(initial.tick).toBe(0);
+  expect(initial.pendingReward).toBeUndefined();
+  expect(initial.runBuild).toEqual({ stacks: {}, triggers: [] });
+  expect(initial.waveRuntime).toMatchObject({ waveNumber: 1 });
   const basePlayer = requirePlayer(initial);
   expect(basePlayer.normalAttackDamage).toBeGreaterThan(0);
 
   const overlay = page.getByTestId("reward-overlay");
+  await expect(page.getByTestId("run-build-empty")).toBeVisible();
 
-  for (const [index, effectCase] of EFFECT_CASES.entries()) {
-    await clearWaveForReward(page);
-    const paused = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-
-    expect(paused?.pendingReward).toEqual({
-      waveNumber: index + 1,
-      cards: [{ artifactId: effectCase.artifactId, resultingStackCount: 1 }],
-    });
-
-    await expect(overlay).toBeVisible();
-    const card = page.getByTestId(`reward-card-${effectCase.artifactId}`);
-    await expect(card).toBeVisible();
-
-    if (index === 0) {
-      // Depth-check the pause guarantees once: a command and keyboard input are both inert.
-      const tickBeforeReject = paused?.tick;
-      await page.evaluate(async () => {
-        await window.__TICKSTRIKE__?.execute({
-          type: "move",
-          actorId: "player",
-          direction: { x: 0, y: 1 },
-        });
-      });
-      const afterRejected = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-      expect(afterRejected?.tick).toBe(tickBeforeReject);
-      expect(afterRejected?.pendingReward).toBeDefined();
-
-      await page.keyboard.press("d");
-      const afterKeyboard = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-      expect(afterKeyboard?.tick).toBe(tickBeforeReject);
-    }
-
-    await card.click();
-    await expect(overlay).toHaveCount(0);
-
-    const after = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-    expect(after?.pendingReward).toBeUndefined();
-    expect(after?.runBuild.stacks[effectCase.artifactId]).toBe(1);
-    if (!paused || !after) {
-      throw new Error("Expected snapshots before and after selection.");
-    }
-    effectCase.assert(paused, after);
+  // --- Wave 1: an ordinary offer of three distinct Minor cards at one stack, no Major ---
+  await clearWaveForReward(page);
+  const wave1 = await readState(page);
+  const offer1 = wave1.pendingReward;
+  expect(offer1?.waveNumber).toBe(1);
+  expect(offer1?.cards).toHaveLength(3);
+  expect(new Set(offer1?.cards.map((card) => card.artifactId)).size).toBe(3);
+  expect(offer1?.cards.every((card) => card.resultingStackCount === 1)).toBe(true);
+  expect(offer1?.cards.some((card) => MAJOR_IDS.includes(card.artifactId))).toBe(false);
+  await expect(overlay).toBeVisible();
+  for (const card of offer1?.cards ?? []) {
+    await expect(page.getByTestId(`reward-card-${card.artifactId}`)).toBeVisible();
   }
 
-  // Reset restores every acquired stack, trigger, and player field with no stale UI.
+  // The pause is real: a command and keyboard input are both inert while an offer is open.
+  const tickBeforeReject = wave1.tick;
+  await page.evaluate(async () => {
+    await window.__TICKSTRIKE__?.execute({
+      type: "move",
+      actorId: "player",
+      direction: { x: 0, y: 1 },
+    });
+  });
+  const afterRejected = await readState(page);
+  expect(afterRejected.tick).toBe(tickBeforeReject);
+  expect(afterRejected.pendingReward).toBeDefined();
+  await page.keyboard.press("d");
+  expect((await readState(page)).tick).toBe(tickBeforeReject);
+
+  const firstPick = offer1!.cards[0]!.artifactId;
+  await page.getByTestId(`reward-card-${firstPick}`).click();
+  await expect(overlay).toHaveCount(0);
+  const afterWave1 = await readState(page);
+  expect(afterWave1.pendingReward).toBeUndefined();
+  expect(afterWave1.runBuild.stacks[firstPick]).toBe(1);
+  await expect(page.getByTestId(`run-build-item-${firstPick}`)).toBeVisible();
+  await expect(page.getByTestId(`run-build-item-${firstPick}`)).toHaveAttribute("data-stack", "1");
+
+  // --- Wave 2: another ordinary Minor offer, still no Major ---
+  await clearWaveForReward(page);
+  const offer2 = (await readState(page)).pendingReward;
+  expect(offer2?.waveNumber).toBe(2);
+  expect(offer2?.cards.length).toBeGreaterThanOrEqual(1);
+  expect(offer2?.cards.some((card) => MAJOR_IDS.includes(card.artifactId))).toBe(false);
+  const secondPick = offer2!.cards[0]!.artifactId;
+  await page.getByTestId(`reward-card-${secondPick}`).click();
+  await expect(overlay).toHaveCount(0);
+  const buildBeforeMilestone = (await readState(page)).runBuild.stacks;
+
+  // --- Wave 3: a milestone offer with an eligible Major and a Minor two-stack card ---
+  await clearWaveForReward(page);
+  const offer3 = (await readState(page)).pendingReward;
+  expect(offer3?.waveNumber).toBe(3);
+  expect(offer3?.cards).toHaveLength(3);
+  const majorCard = offer3?.cards.find((card) => MAJOR_IDS.includes(card.artifactId));
+  expect(majorCard).toBeDefined();
+  // The non-Major milestone card grants two stacks over the pre-milestone build, whatever it lands on.
+  const minorCard = offer3?.cards.find((card) => !MAJOR_IDS.includes(card.artifactId));
+  expect(minorCard).toBeDefined();
+  expect(minorCard!.resultingStackCount).toBe(
+    (buildBeforeMilestone[minorCard!.artifactId] ?? 0) + 2,
+  );
+  await page.getByTestId(`reward-card-${majorCard!.artifactId}`).click();
+  await expect(overlay).toHaveCount(0);
+  const afterWave3 = await readState(page);
+  const expectedTrigger =
+    majorCard!.artifactId === "guard_shredder" ? "guard-shredder" : "execution";
+  expect(afterWave3.runBuild.triggers).toContain(expectedTrigger);
+  await expect(page.getByTestId(`run-build-item-${majorCard!.artifactId}`)).toBeVisible();
+
+  // --- Reset clears the build, HUD, and any open offer, and restores the player ---
   await page.getByRole("button", { name: "Reset scenario" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
-  const reset = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(reset?.pendingReward).toBeUndefined();
-  expect(reset?.runBuild).toEqual({ stacks: {}, triggers: [] });
+  const reset = await readState(page);
+  expect(reset.pendingReward).toBeUndefined();
+  expect(reset.runBuild).toEqual({ stacks: {}, triggers: [] });
   const resetPlayer = requirePlayer(reset);
   expect(resetPlayer.normalAttackDamage).toBe(basePlayer.normalAttackDamage);
   expect(resetPlayer.mobility).toEqual(basePlayer.mobility);
   expect(resetPlayer.maxHp).toBe(basePlayer.maxHp);
   expect(resetPlayer.hp).toBe(basePlayer.hp);
-  expect(reset?.waveRuntime).toMatchObject({ waveNumber: 1 });
-  await expect(page.getByTestId("reward-overlay")).toHaveCount(0);
+  expect(reset.waveRuntime).toMatchObject({ waveNumber: 1 });
+  await expect(overlay).toHaveCount(0);
+  await expect(page.getByTestId("run-build-empty")).toBeVisible();
 });

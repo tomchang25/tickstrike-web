@@ -48,39 +48,14 @@ const REWARD_GROUP: SpawnGroupDefinition = {
   entries: [{ enemyId: "reward-grunt", count: 1 }],
 };
 
-/** One supported artifact per wave, in the order Wave 1..N unlocks them. */
-const REWARD_ARTIFACT_ORDER = [
-  "attack_up",
-  "dash_attack_up",
-  "mobility_cooldown_down",
-  "mobility_range_up",
-  "max_health_up",
-  "guard_shredder",
-  "execution",
-] as const;
-
-function requireShippedArtifact(id: string): ArtifactDefinition {
-  const artifact = artifactCatalog.artifacts.find((candidate) => candidate.id === id);
-  if (!artifact) {
-    throw new Error(`Shipped artifact content is missing ${id}.`);
-  }
-  return artifact;
-}
-
 /**
- * Overrides each real shipped artifact's minimum wave to match its position in
- * `REWARD_ARTIFACT_ORDER` and caps every stack at one. Each successive wave clear's eligible pool
- * then always contains exactly one candidate — the one just unlocked, since every earlier one is
- * already capped — so the browser walkthrough is deterministic without depending on the exact
- * "rewards" stream draw. Authored name, description, magnitude, and effect are left untouched.
+ * The real shipped artifact catalog, unmodified. The generator filters this to its supported,
+ * Mobility-compatible, wave-eligible pool: five Minor channel artifacts from Wave 1 and the two
+ * Dash Major triggers (Guard Shredder, Execution) from Wave 2, so a Ninja run sees three-card
+ * ordinary Minor offers and, at Wave 3, a Major milestone offer. Deferred `speed_up`/`chain_dash`
+ * classify as unsupported and never appear.
  */
-const offerableArtifacts: readonly ArtifactDefinition[] = REWARD_ARTIFACT_ORDER.map(
-  (id, index) => ({
-    ...requireShippedArtifact(id),
-    minWave: index + 1,
-    maxStacks: 1,
-  }),
-);
+const offerableArtifacts: readonly ArtifactDefinition[] = artifactCatalog.artifacts;
 
 function buildRewardWave(waveNumber: number): WaveDefinition {
   return {
@@ -101,10 +76,10 @@ function buildRewardWave(waveNumber: number): WaveDefinition {
   };
 }
 
-// One trailing wave beyond the last supported artifact: a reward offer is only generated once a
-// next wave exists to resume into (an exhausted run otherwise declares victory immediately,
-// skipping the offer), so the final artifact needs this wave to pause on its own reward.
-const REWARD_WAVE_COUNT = REWARD_ARTIFACT_ORDER.length + 1;
+// Four waves cover an ordinary Minor offer on Waves 1 and 2 and the Wave 3 Major milestone offer;
+// a reward pauses a clear only when a next wave exists to resume into, so the milestone Wave 3
+// needs Wave 4 to pause on its own offer.
+const REWARD_WAVE_COUNT = 4;
 
 const REWARD_WAVES: readonly WaveDefinition[] = Array.from(
   { length: REWARD_WAVE_COUNT },

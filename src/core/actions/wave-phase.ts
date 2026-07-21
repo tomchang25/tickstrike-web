@@ -7,7 +7,7 @@ import type {
 import type { CombatEvent } from "../events/combat-events";
 import { sameCell, type Cell, type EntityId, type EntityState } from "../model/types";
 import type { RandomStreams } from "../random/random-streams";
-import { classifyArtifactEffect, generateSingleCardOffer } from "../rewards/reward-offers";
+import { classifyArtifactEffect, generateRewardOffer } from "../rewards/reward-offers";
 import type { WaveWorldView } from "../waves/wave-inputs";
 import { planGroupCells } from "../waves/enemy-spawn-planner";
 import {
@@ -511,7 +511,7 @@ export function resolveWavePhase(
         return { events, victoryReady: true };
       }
 
-      const offer = generateSingleCardOffer({
+      const offer = generateRewardOffer({
         artifacts: context.offerableArtifacts ?? [],
         build: world.run.state,
         waveNumber: runtime.waveNumber,

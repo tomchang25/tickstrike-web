@@ -5,6 +5,7 @@ import { requireScenario, scenarios } from "@harness/scenario-registry";
 import { GameRuntime } from "@runtime/GameRuntime";
 import type { PointerCommit, PointerMode } from "@presentation/pixi/PixiGameRenderer";
 import { RewardOverlay } from "@ui/RewardOverlay";
+import { RunBuildHud } from "@ui/RunBuildHud";
 import { SemanticMirror } from "@ui/SemanticMirror";
 import { TestbedPanel } from "@ui/TestbedPanel";
 
@@ -313,6 +314,7 @@ export function App() {
               <RewardOverlay offer={pendingReward} busy={busy} onSelect={selectReward} />
             ) : null}
           </div>
+          {snapshot ? <RunBuildHud build={snapshot.runBuild} /> : null}
           <p className="hint">
             {commandsEnabled
               ? "WASD / arrows move · IJKL attack · Hold Alt + hover for selected Mobility"

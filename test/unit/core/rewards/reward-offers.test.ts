@@ -4,12 +4,13 @@ import type { RunBuildState } from "@core/model/types";
 import {
   classifyArtifactEffect,
   createEmptyRunBuild,
-  generateSingleCardOffer,
+  generateRewardOffer,
   getArtifactStackCount,
   hasAcquiredTrigger,
   isArtifactEligible,
   isArtifactMobilityCompatible,
   isArtifactSupported,
+  isMilestoneWave,
   withAcquiredTrigger,
   withArtifactStackCount,
 } from "@core/rewards/reward-offers";
@@ -198,105 +199,186 @@ describe("run-build: eligibility", () => {
   });
 });
 
-describe("run-build: single-card offer generation", () => {
-  it("offers the sole eligible candidate at stack one", () => {
-    const offer = generateSingleCardOffer({
-      artifacts: [ATTACK_UP],
+const MINORS = [
+  ATTACK_UP,
+  DASH_ATTACK_UP,
+  MOBILITY_COOLDOWN_DOWN,
+  MOBILITY_RANGE_UP,
+  MAX_HEALTH_UP,
+] as const;
+const MAJORS = [GUARD_SHREDDER, EXECUTION] as const;
+
+/** A constant zero draw always takes the head of the remaining pool, i.e. content order. */
+const takeInOrder = () => 0;
+
+describe("reward offer: milestone cadence", () => {
+  it("treats every third completed wave as a milestone and nothing else", () => {
+    expect([1, 2, 3, 4, 5, 6, 9].map(isMilestoneWave)).toEqual([
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+    ]);
+    expect(isMilestoneWave(0)).toBe(false);
+  });
+});
+
+describe("reward offer: ordinary waves", () => {
+  it("offers three distinct Minor cards at one stack, in draw order", () => {
+    const offer = generateRewardOffer({
+      artifacts: [...MINORS, ...MAJORS],
       build: createEmptyRunBuild(),
-      waveNumber: 1,
+      waveNumber: 2,
       playerMobilityKind: "dash",
-      draw: () => 0,
+      draw: takeInOrder,
     });
     expect(offer).toEqual({
-      waveNumber: 1,
-      cards: [{ artifactId: "attack_up", resultingStackCount: 1 }],
+      waveNumber: 2,
+      cards: [
+        { artifactId: "attack_up", resultingStackCount: 1 },
+        { artifactId: "dash_attack_up", resultingStackCount: 1 },
+        { artifactId: "mobility_cooldown_down", resultingStackCount: 1 },
+      ],
     });
   });
 
-  it("offers the next stack count when some stacks are already owned", () => {
-    const build = withArtifactStackCount(createEmptyRunBuild(), "attack_up", 2);
-    const offer = generateSingleCardOffer({
-      artifacts: [ATTACK_UP],
-      build,
-      waveNumber: 3,
-      playerMobilityKind: "dash",
-      draw: () => 0,
-    });
-    expect(offer?.cards).toEqual([{ artifactId: "attack_up", resultingStackCount: 3 }]);
-  });
-
-  it("returns undefined once the sole candidate is capped, without installing an inert offer", () => {
-    const build = withArtifactStackCount(createEmptyRunBuild(), "attack_up", 3);
-    const offer = generateSingleCardOffer({
-      artifacts: [ATTACK_UP],
-      build,
-      waveNumber: 3,
-      playerMobilityKind: "dash",
-      draw: () => 0,
-    });
-    expect(offer).toBeUndefined();
-  });
-
-  it("returns undefined when no candidates are supplied", () => {
-    const offer = generateSingleCardOffer({
-      artifacts: [],
-      build: createEmptyRunBuild(),
-      waveNumber: 1,
-      playerMobilityKind: "dash",
-      draw: () => 0,
-    });
-    expect(offer).toBeUndefined();
-  });
-
-  it("excludes an ineligible candidate and offers only what remains", () => {
-    const offer = generateSingleCardOffer({
-      artifacts: [GUARD_SHREDDER, ATTACK_UP],
-      build: createEmptyRunBuild(),
-      waveNumber: 1,
-      playerMobilityKind: "dash",
-      draw: () => 0,
-    });
-    expect(offer?.cards).toEqual([{ artifactId: "attack_up", resultingStackCount: 1 }]);
-  });
-
-  it("excludes a Dash-only major from a Smash run's offer pool", () => {
-    const offer = generateSingleCardOffer({
-      artifacts: [GUARD_SHREDDER, ATTACK_UP],
+  it("never offers a Major on an ordinary wave, even when one is eligible", () => {
+    const offer = generateRewardOffer({
+      artifacts: MAJORS,
       build: createEmptyRunBuild(),
       waveNumber: 2,
-      playerMobilityKind: "smash",
-      draw: () => 0,
+      playerMobilityKind: "dash",
+      draw: takeInOrder,
     });
-    expect(offer?.cards).toEqual([{ artifactId: "attack_up", resultingStackCount: 1 }]);
+    expect(offer).toBeUndefined();
   });
 
-  it("never generates or grants speed_up or chain_dash, even if mistakenly offerable", () => {
-    const offer = generateSingleCardOffer({
+  it("renders only the available cards when fewer than three Minors are eligible", () => {
+    const offer = generateRewardOffer({
+      artifacts: [ATTACK_UP, DASH_ATTACK_UP],
+      build: createEmptyRunBuild(),
+      waveNumber: 2,
+      playerMobilityKind: "dash",
+      draw: takeInOrder,
+    });
+    expect(offer?.cards).toHaveLength(2);
+  });
+
+  it("carries the next stack count for a partly-owned Minor and excludes a capped one", () => {
+    const build = withArtifactStackCount(
+      withArtifactStackCount(createEmptyRunBuild(), "attack_up", 2),
+      "dash_attack_up",
+      3,
+    );
+    const offer = generateRewardOffer({
+      artifacts: [ATTACK_UP, DASH_ATTACK_UP, MOBILITY_COOLDOWN_DOWN],
+      build,
+      waveNumber: 2,
+      playerMobilityKind: "dash",
+      draw: takeInOrder,
+    });
+    expect(offer?.cards).toEqual([
+      { artifactId: "attack_up", resultingStackCount: 3 },
+      { artifactId: "mobility_cooldown_down", resultingStackCount: 1 },
+    ]);
+  });
+
+  it("never generates speed_up or chain_dash even when supplied", () => {
+    const offer = generateRewardOffer({
       artifacts: [SPEED_UP, CHAIN_DASH],
       build: createEmptyRunBuild(),
-      waveNumber: 5,
+      waveNumber: 2,
       playerMobilityKind: "dash",
-      draw: () => 0,
+      draw: takeInOrder,
     });
     expect(offer).toBeUndefined();
   });
+});
 
+describe("reward offer: milestone waves", () => {
+  it("fills slot one with a Minor at two stacks, then eligible Majors at one stack", () => {
+    const offer = generateRewardOffer({
+      artifacts: [...MINORS, ...MAJORS],
+      build: createEmptyRunBuild(),
+      waveNumber: 3,
+      playerMobilityKind: "dash",
+      draw: takeInOrder,
+    });
+    expect(offer).toEqual({
+      waveNumber: 3,
+      cards: [
+        { artifactId: "attack_up", resultingStackCount: 2 },
+        { artifactId: "guard_shredder", resultingStackCount: 1 },
+        { artifactId: "execution", resultingStackCount: 1 },
+      ],
+    });
+  });
+
+  it("falls back per empty Major slot to another distinct Minor at two stacks", () => {
+    const offer = generateRewardOffer({
+      artifacts: [...MINORS, GUARD_SHREDDER],
+      build: createEmptyRunBuild(),
+      waveNumber: 3,
+      playerMobilityKind: "dash",
+      draw: takeInOrder,
+    });
+    expect(offer).toEqual({
+      waveNumber: 3,
+      cards: [
+        { artifactId: "attack_up", resultingStackCount: 2 },
+        { artifactId: "guard_shredder", resultingStackCount: 1 },
+        { artifactId: "dash_attack_up", resultingStackCount: 2 },
+      ],
+    });
+  });
+
+  it("uses three distinct Minor two-stack cards when no Major is eligible (a Smash run)", () => {
+    const offer = generateRewardOffer({
+      artifacts: [...MINORS, ...MAJORS],
+      build: createEmptyRunBuild(),
+      waveNumber: 3,
+      playerMobilityKind: "smash",
+      draw: takeInOrder,
+    });
+    expect(offer?.cards).toEqual([
+      { artifactId: "attack_up", resultingStackCount: 2 },
+      { artifactId: "dash_attack_up", resultingStackCount: 2 },
+      { artifactId: "mobility_cooldown_down", resultingStackCount: 2 },
+    ]);
+  });
+
+  it("excludes a one-from-cap Minor from the two-stack pool rather than partially granting", () => {
+    const build = withArtifactStackCount(createEmptyRunBuild(), "max_health_up", 1);
+    const offer = generateRewardOffer({
+      artifacts: [MAX_HEALTH_UP],
+      build,
+      waveNumber: 3,
+      playerMobilityKind: "dash",
+      draw: takeInOrder,
+    });
+    expect(offer).toBeUndefined();
+  });
+});
+
+describe("reward offer: determinism", () => {
   it("is a pure function of its inputs: the same draw sequence yields the same offer", () => {
-    const build = createEmptyRunBuild();
-    const first = generateSingleCardOffer({
-      artifacts: [ATTACK_UP],
-      build,
-      waveNumber: 2,
-      playerMobilityKind: "dash",
-      draw: () => 0.4,
-    });
-    const second = generateSingleCardOffer({
-      artifacts: [ATTACK_UP],
-      build,
-      waveNumber: 2,
-      playerMobilityKind: "dash",
-      draw: () => 0.4,
-    });
+    const draws = [0.9, 0.1, 0.5, 0.2];
+    const makeDraw = () => {
+      let index = 0;
+      return () => draws[index++ % draws.length]!;
+    };
+    const input = {
+      artifacts: [...MINORS, ...MAJORS],
+      build: createEmptyRunBuild(),
+      waveNumber: 3,
+      playerMobilityKind: "dash" as const,
+    };
+    const first = generateRewardOffer({ ...input, draw: makeDraw() });
+    const second = generateRewardOffer({ ...input, draw: makeDraw() });
     expect(first).toEqual(second);
+    expect(first?.cards).toHaveLength(3);
   });
 });

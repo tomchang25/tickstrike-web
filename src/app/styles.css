@@ -213,6 +213,65 @@ header > p {
   text-transform: uppercase;
 }
 
+.reward-card-list {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.run-build-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #263447;
+  border-radius: 10px;
+  background: #10151d;
+}
+
+.run-build-title {
+  margin: 0;
+  color: #72d4ff;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.run-build-empty {
+  margin: 0;
+  color: #7f8ea1;
+  font-size: 0.8rem;
+}
+
+.run-build-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-build-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid #3b91b8;
+  border-radius: 999px;
+  background: #17222e;
+  font-size: 0.8rem;
+}
+
+.run-build-name {
+  color: #e6f1fa;
+}
+
+.run-build-stack {
+  color: #aeddf2;
+  font-variant-numeric: tabular-nums;
+}
+
 .semantic-mirror {
   position: absolute;
   width: 1px;

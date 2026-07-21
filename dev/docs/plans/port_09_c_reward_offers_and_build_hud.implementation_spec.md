@@ -2,7 +2,7 @@
 
 Parent Plan: `port_09_artifacts_rewards_and_run_build.md`
 
-Status: Draft implementation spec
+Status: Done — completed 2026-07-21; see Outcome.
 
 ## Goal
 
@@ -82,3 +82,13 @@ React renders the offer and a compact build HUD from snapshots. The HUD is read-
 2. Every visible card is selectable, grants its displayed stack count, and resumes the existing arena only after selection.
 3. The browser displays a compact acquired-build HUD that matches the canonical snapshot.
 4. No stale card, input handler, callback, or presentation work remains after selection, reset, or scenario replacement.
+
+## Outcome (completed 2026-07-21)
+
+`generateSingleCardOffer` was replaced by `generateRewardOffer` in `src/core/rewards/reward-offers.ts` (the offer-policy module the hardening rename moved off `run-build.ts`; the spec's stale coordinate was reverified per the Relational Context). Ordinary completed waves draw up to three distinct eligible Minor cards at one stack; milestone waves (`waveNumber % 3 === 0`) draw up to two eligible Majors at one stack with slot one always a Minor at two stacks and empty Major slots falling back to another distinct Minor at two stacks — Majors appear only at milestones, matching the reference `tick_run_controller._build_milestone_offer`. A one-from-cap Minor is excluded from the two-stack pool rather than partially granting; exclusivity-group de-duplication is implemented defensively (no shipped content uses groups yet). All draws come from the `"rewards"` stream; the number of draws is `min(count, poolSize)` per roll.
+
+`src/ui/RunBuildHud.tsx` renders the acquired build read-only from `snapshot.runBuild.stacks` (id-sorted, stack counts, empty state), composed in `App.tsx` below the canvas so it never covers the reward overlay. `src/core/model/types.ts` needed no change: `PendingRewardOffer.cards` was already a list and `WorldSnapshot.runBuild` already carried the build from Child A, so the predicted type change was unnecessary.
+
+The `rewards` harness fixture was redesigned: the Child A/B walkthrough capped every artifact at one stack to force one eligible candidate per wave, which is incompatible with the Minor/Major cadence (Majors would never reach a normal wave and Minor two-stacks are impossible at cap one). It now offers the real shipped catalog across four waves so a Ninja run sees three-card Minor offers on Waves 1–2 and a Major milestone on Wave 3. The browser spec asserts the three-card ordinary offer, the pause guarantees, per-selection HUD updates, the milestone Major-plus-two-stack-Minor shape, and full teardown on reset.
+
+Verified: `npm run check` (338 unit tests including the rewritten generator suite, plus lint, boundaries, and build), the `rewards` Playwright flow, and an `Empty arena` / `Smash scenario` layout-sanity pass confirming the new HUD did not disturb other scenarios. The determinism goldens do not reach a reward offer and stayed byte-identical.
