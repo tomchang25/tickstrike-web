@@ -225,3 +225,19 @@ test("window blur resets a stuck Mobility mode to Attack", async ({ page }) => {
   await expect(canvas).toHaveAttribute("data-pointer-mode", "attack");
   await page.keyboard.up("Alt");
 });
+
+test("a movement key attacks instead of moving when its direction has a target", async ({ page }) => {
+  await page.goto("/debug?scenario=smash-water");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
+  await expect(page.locator("html")).toHaveAttribute("data-keyboard-input-ready", "true");
+
+  // The player starts at 3,3 with enemy-center adjacent at 4,3; pressing right attacks it.
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "3");
+  await page.keyboard.press("d");
+  await expect(page.getByTestId("tick-value")).toHaveText("1");
+  await expect(page.getByTestId("event-log")).toContainText("player_attacked");
+  // The attack does not consume the move: the player stays put rather than stepping onto 4,3.
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "3");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
+});

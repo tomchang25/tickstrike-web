@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { previewAttack } from "@core/actions/action-preview";
 import type { Cell, MilestoneChoice, WorldSnapshot } from "@core/model/types";
 import type { TestScenario } from "@harness/types";
 import type { PointerCommit, PointerMode } from "@presentation/pixi/pixi-game-renderer";
@@ -201,10 +202,30 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
     await execute(() => runtime.cancelArmedSmash());
   }, [execute]);
 
+  // A movement key attacks instead of moving when its direction has an attack target; otherwise it
+  // moves. Re-decided against the current snapshot on every held-repeat step.
+  const moveOrAttack = useCallback(
+    async (direction: Cell) => {
+      const runtime = runtimeRef.current;
+      if (!interactive || !runtime) {
+        return;
+      }
+      const currentSnapshot = runtime.snapshot();
+      const player = currentSnapshot.entities.find((entity) => entity.id === "player");
+      const preview = player ? previewAttack(currentSnapshot, player.id, direction) : undefined;
+      if (preview?.accepted && preview.hasTarget) {
+        await attack(direction);
+      } else {
+        await move(direction);
+      }
+    },
+    [attack, interactive, move],
+  );
+
   useKeyboardInput({
     interactive,
     handlers: {
-      move,
+      moveOrAttack,
       attack,
       setMobilityActive: (active: boolean) => setPointerMode(active ? "mobility" : "attack"),
     },

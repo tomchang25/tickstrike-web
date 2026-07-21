@@ -8,7 +8,9 @@ import { ATTACK_KEYS, MOBILITY_MODIFIER_KEY, MOVE_KEYS, normalizeKey } from "./k
 const MOVE_REPEAT_MS = 260;
 
 export interface KeyboardInputHandlers {
-  move(direction: Cell): void;
+  /** WASD/arrow step: attacks when the direction has a target, otherwise moves. */
+  moveOrAttack(direction: Cell): void;
+  /** IJKL explicit Normal Attack. */
   attack(direction: Cell): void;
   setMobilityActive(active: boolean): void;
 }
@@ -65,13 +67,14 @@ export function useKeyboardInput({ interactive, handlers }: KeyboardInputOptions
         if (heldMovement.has(key)) {
           return;
         }
-        // Fire on a fixed cadence; move() keeps the interactive/runtime guards, and enqueueing a
-        // step while the previous turn still animates fast-forwards it rather than dropping it.
-        const repeatMove = () => {
-          handlersRef.current.move(moveDirection);
+        // Fire on a fixed cadence; moveOrAttack() keeps the interactive/runtime guards, and
+        // enqueueing a step while the previous turn still animates fast-forwards it rather than
+        // dropping it. Each step re-decides attack-vs-move against the current snapshot.
+        const repeatStep = () => {
+          handlersRef.current.moveOrAttack(moveDirection);
         };
-        repeatMove();
-        heldMovement.set(key, window.setInterval(repeatMove, MOVE_REPEAT_MS));
+        repeatStep();
+        heldMovement.set(key, window.setInterval(repeatStep, MOVE_REPEAT_MS));
         return;
       }
       const attackDirection = ATTACK_KEYS[key];
