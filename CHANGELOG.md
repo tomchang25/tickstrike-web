@@ -92,3 +92,4 @@ Rules:
 ### Production Shell
 
 - 2026-07-21 - [port_11] An armed Smash windup can now be cancelled without spending a Tick: the player returns to idle, no enemy or presentation work runs, and the cancel is recorded in the command log so a seed and its log still replay faithfully
+- 2026-07-21 - [port_11] Keyboard input now lives in a dedicated input feature that releases held movement and resets the pointer Mobility mode on focus loss, and right-clicking the arena cancels an armed Smash windup with the browser menu suppressed
