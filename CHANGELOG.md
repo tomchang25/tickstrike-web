@@ -88,3 +88,7 @@ Rules:
 
 - 2026-07-21 - [port_10] The home page now plays a full authored run through the same deterministic runtime: clearing the final authored wave opens an End Run / Continue Endless milestone choice that either finalizes victory with restart or continues into the endless template, with the reward pause and restart cleanup preserved
 - 2026-07-21 - [port_10] The runtime now records every accepted command, reward, and milestone decision into a replayable per-run command log, so a seed and its log reproduce a run's final state through the same public entrances
+
+### Production Shell
+
+- 2026-07-21 - [port_11] An armed Smash windup can now be cancelled without spending a Tick: the player returns to idle, no enemy or presentation work runs, and the cancel is recorded in the command log so a seed and its log still replay faithfully
