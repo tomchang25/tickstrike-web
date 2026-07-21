@@ -6,7 +6,7 @@ export interface GameSettings {
   readonly masterVolume: number;
   /** Effect-bus gain `0..1`. */
   readonly effectVolume: number;
-  /** Music-bus gain `0..1`. Wired structurally; no music source plays through it yet. */
+  /** Music-bus gain `0..1`; scales the looping background track. */
   readonly musicVolume: number;
 }
 

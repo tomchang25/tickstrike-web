@@ -10,6 +10,7 @@ interface FakeGain {
 
 class FakeSource {
   buffer: unknown = null;
+  loop = false;
   onended: (() => void) | null = null;
   started = false;
   stopped = false;
@@ -260,6 +261,79 @@ describe("AudioMixer", () => {
     // The limiter was cleared, so the previously saturated key may fire again.
     mixer.play({ buffer, limiterKey: "hit", maxPerWindow: 1, windowSec: 1 });
     expect(mixer.activeVoiceCount).toBe(1);
+  });
+
+  it("loops the background track on the music bus, apart from the effect voice tally", () => {
+    const { mixer, context, buffer } = createMixer();
+    mixer.unlock();
+
+    mixer.playMusic(buffer);
+
+    const source = at(context.sources, 0);
+    expect(source.loop).toBe(true);
+    expect(source.started).toBe(true);
+    expect(source.connectedTo).toBe(at(context.gains, MUSIC));
+    // The looping track is tracked apart from the bounded effect voices.
+    expect(mixer.activeVoiceCount).toBe(0);
+    expect(mixer.totalPlayed).toBe(0);
+  });
+
+  it("layers a per-track gain under the music bus when a music volume is given", () => {
+    const { mixer, context, buffer } = createMixer();
+    mixer.unlock();
+
+    mixer.playMusic(buffer, 0.5);
+
+    const voiceGain = at(context.gains, 3);
+    expect(voiceGain.gain.value).toBe(0.5);
+    expect(voiceGain.connectedTo).toBe(at(context.gains, MUSIC));
+    expect(at(context.sources, 0).connectedTo).toBe(voiceGain);
+  });
+
+  it("keeps the music playing across stopAll and replaces it on a new playMusic", () => {
+    const { mixer, context, buffer } = createMixer();
+    mixer.unlock();
+
+    mixer.playMusic(buffer);
+    mixer.play({ buffer });
+    mixer.stopAll();
+
+    // The effect voice stopped; the looping music source did not.
+    expect(at(context.sources, 0).stopped).toBe(false);
+    expect(at(context.sources, 1).stopped).toBe(true);
+
+    mixer.playMusic(buffer);
+    // Starting a new track stops the prior one and loops the replacement.
+    expect(at(context.sources, 0).stopped).toBe(true);
+    expect(at(context.sources, 2).loop).toBe(true);
+    expect(at(context.sources, 2).stopped).toBe(false);
+  });
+
+  it("stops the background track on stopMusic and on dispose", () => {
+    const { mixer, context, buffer } = createMixer();
+    mixer.unlock();
+
+    mixer.playMusic(buffer);
+    mixer.stopMusic();
+    expect(at(context.sources, 0).stopped).toBe(true);
+    // A second stop is a guarded no-op.
+    expect(() => mixer.stopMusic()).not.toThrow();
+
+    mixer.playMusic(buffer);
+    mixer.dispose();
+    expect(at(context.sources, 1).stopped).toBe(true);
+  });
+
+  it("ignores playMusic before unlock and after dispose", () => {
+    const { mixer, context, buffer } = createMixer();
+    mixer.playMusic(buffer);
+    expect(context.sources).toHaveLength(0);
+
+    mixer.unlock();
+    mixer.dispose();
+    mixer.playMusic(buffer);
+    // Neither the pre-unlock nor the post-dispose call ever reached a live context.
+    expect(context.sources).toHaveLength(0);
   });
 
   it("suspends and resumes only a matching context state", () => {

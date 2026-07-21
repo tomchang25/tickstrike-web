@@ -1,6 +1,6 @@
 import { RateLimiter } from "./rate-limiter";
 
-/** The two mixer buses. Master multiplies both; this child plays only through `effect`. */
+/** The two mixer buses. Master multiplies both; combat cues play through `effect`, the background loop through `music`. */
 export type AudioBus = "effect" | "music";
 
 export interface AudioMixerVolumes {
@@ -55,6 +55,7 @@ export class AudioMixer {
   private context: AudioContext | undefined;
   private masterGain: GainNode | undefined;
   private busGains: Record<AudioBus, GainNode> | undefined;
+  private musicSource: AudioBufferSourceNode | undefined;
 
   constructor(options: AudioMixerOptions = {}) {
     this.limiter = new RateLimiter({ now: options.now });
@@ -176,6 +177,47 @@ export class AudioMixer {
     source.start();
   }
 
+  /**
+   * Starts (or replaces) the looping background track on the music bus. Unlike {@link play}, the music
+   * source loops and is tracked apart from the bounded effect voices: it stays out of the active-voice
+   * count and the `totalPlayed` cue tally, and {@link stopAll} leaves it running so the loop is
+   * continuous across run boundaries. Only {@link stopMusic} and {@link dispose} end it. A no-op before
+   * unlock. A repeated call stops the prior track before starting the new one.
+   */
+  playMusic(buffer: AudioBuffer, volume?: number): void {
+    const context = this.context;
+    const busGains = this.busGains;
+    if (!context || !busGains) {
+      return;
+    }
+
+    this.stopMusic();
+
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(this.voiceDestination(context, busGains.music, volume));
+    this.musicSource = source;
+    source.start();
+  }
+
+  /** Stops and releases the looping background track, if any. No-op when no track is playing. */
+  stopMusic(): void {
+    const source = this.musicSource;
+    if (!source) {
+      return;
+    }
+
+    this.musicSource = undefined;
+    source.onended = null;
+    try {
+      source.stop();
+    } catch {
+      // A source that already ended throws on stop(); the disconnect below still releases it.
+    }
+    source.disconnect();
+  }
+
   /** Stops and releases every active voice and clears limiter history. Used at every run boundary. */
   stopAll(): void {
     for (const source of [...this.activeVoices]) {
@@ -192,8 +234,9 @@ export class AudioMixer {
     this.limiter.clear();
   }
 
-  /** Stops all voices and closes the context; the mixer returns to its pre-unlock state. */
+  /** Stops all voices and the music track and closes the context; the mixer returns to its pre-unlock state. */
   dispose(): void {
+    this.stopMusic();
     this.stopAll();
 
     const context = this.context;

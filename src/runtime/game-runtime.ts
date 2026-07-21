@@ -13,6 +13,7 @@ import type { TestScenario } from "@harness/types";
 import type { ContentInspection } from "@harness/content-inspection";
 import { AudioDirector } from "@presentation/audio/audio-director";
 import { AudioMixer } from "@presentation/audio/audio-mixer";
+import { MusicDirector } from "@presentation/audio/music-director";
 import { PixiGameRenderer, type ScreenBounds } from "@presentation/pixi/pixi-game-renderer";
 import { PresentationDirector } from "@presentation/timelines/presentation-director";
 import { cloneCommandLog, type RunCommandLog, type RunCommandLogEntry } from "./command-log";
@@ -24,6 +25,7 @@ export class GameRuntime {
   readonly presentation = new PresentationDirector(this.renderer);
   readonly audio = new AudioMixer();
   readonly audioDirector = new AudioDirector(this.audio);
+  readonly musicDirector = new MusicDirector(this.audio);
 
   private world: World | undefined;
   private scenario: TestScenario | undefined;
@@ -47,12 +49,14 @@ export class GameRuntime {
   }
 
   /**
-   * Unlocks the audio context on a user gesture and kicks the one-time cue load so buffers are ready
-   * before combat. Coordinates the runtime's two audio owners (mixer and director) from one seam.
+   * Unlocks the audio context on a user gesture, kicks the one-time cue load so buffers are ready
+   * before combat, and starts the looping background track. Coordinates the runtime's audio owners
+   * (mixer, cue director, and music director) from one seam.
    */
   unlockAudio(): void {
     this.audio.unlock();
     void this.audioDirector.load();
+    void this.musicDirector.start();
   }
 
   destroy(): void {
