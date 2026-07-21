@@ -27,18 +27,20 @@ export function GameApp() {
 
   return (
     <main className="game-shell">
-      <SettingsPanel
-        open={session.settingsOpen}
-        onOpenChange={session.setSettingsOpen}
-        showDebugOverlay={session.settings.showDebugOverlay}
-        onShowDebugOverlayChange={session.setShowDebugOverlay}
-        onRestart={session.reset}
-      />
       <div className="game-stage">
         <h1 className="game-title">Tickstrike</h1>
         <div className="canvas-frame" data-testid="game-canvas-host">
           <div ref={session.canvasHostRef} className="canvas-host" />
-          {snapshot ? <GameHud snapshot={snapshot} /> : null}
+          {snapshot ? (
+            <GameHud snapshot={snapshot} buildOpen={session.buildOpen} onBuildOpenChange={session.setBuildOpen} />
+          ) : null}
+          <SettingsPanel
+            open={session.settingsOpen}
+            onOpenChange={session.setSettingsOpen}
+            showDebugOverlay={session.settings.showDebugOverlay}
+            onShowDebugOverlayChange={session.setShowDebugOverlay}
+            onRestart={session.reset}
+          />
           {snapshot && snapshot.outcome !== "running" ? (
             <div
               className={`terminal-banner terminal-banner-${snapshot.outcome}`}

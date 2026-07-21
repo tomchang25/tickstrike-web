@@ -48,19 +48,25 @@ export function TestbedApp() {
         <p>Pure TypeScript rules · Pixi presentation · React testbed · Playwright hooks</p>
       </header>
 
-      <SettingsPanel
-        open={session.settingsOpen}
-        onOpenChange={session.setSettingsOpen}
-        showDebugOverlay={session.settings.showDebugOverlay}
-        onShowDebugOverlayChange={session.setShowDebugOverlay}
-        onRestart={session.reset}
-      />
-
       <div className="workspace">
         <section className="game-column" aria-label="Game viewport">
           <div className="canvas-frame" data-testid="game-canvas-host">
             <div ref={session.canvasHostRef} className="canvas-host" />
-            {snapshot ? <GameHud snapshot={snapshot} commandsEnabled={commandsEnabled} /> : null}
+            {snapshot ? (
+              <GameHud
+                snapshot={snapshot}
+                commandsEnabled={commandsEnabled}
+                buildOpen={session.buildOpen}
+                onBuildOpenChange={session.setBuildOpen}
+              />
+            ) : null}
+            <SettingsPanel
+              open={session.settingsOpen}
+              onOpenChange={session.setSettingsOpen}
+              showDebugOverlay={session.settings.showDebugOverlay}
+              onShowDebugOverlayChange={session.setShowDebugOverlay}
+              onRestart={session.reset}
+            />
             {snapshot && snapshot.outcome !== "running" ? (
               <div
                 className={`terminal-banner terminal-banner-${snapshot.outcome}`}

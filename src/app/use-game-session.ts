@@ -29,6 +29,8 @@ export interface GameSession {
   settings: GameSettings;
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
+  buildOpen: boolean;
+  setBuildOpen: (open: boolean) => void;
   setShowDebugOverlay: (value: boolean) => void;
   loadScenario: (scenario: TestScenario) => void;
   reset: () => void;
@@ -50,16 +52,37 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
   const [pointerMode, setPointerMode] = useState<PointerMode>("attack");
   const [settings, setSettings] = useState<GameSettings>(() => settingsStore.get());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [buildOpen, setBuildOpen] = useState(false);
   const commandsEnabled = scenario.commandsEnabled !== false;
   const encounterRunning = snapshot?.outcome === "running";
   const pendingReward = snapshot?.pendingReward;
   const pendingMilestone = snapshot?.pendingMilestone;
   // React disabling is supplementary; the runtime's own command serialization already rejects a
   // command while a reward selection or milestone decision is pending (see resolveCommand). The
-  // settings panel joins this gate so gameplay input is inert while it is open.
-  const interactive = commandsEnabled && encounterRunning && !pendingReward && !pendingMilestone && !settingsOpen;
+  // settings and build panels join this gate so gameplay input is inert while either is open.
+  const interactive =
+    commandsEnabled && encounterRunning && !pendingReward && !pendingMilestone && !settingsOpen && !buildOpen;
 
   useEffect(() => settingsStore.subscribe(setSettings), [settingsStore]);
+
+  // Escape is the single settings entry/exit: it closes whichever panel is open, does nothing while a
+  // reward or milestone decision is pending, and otherwise summons the settings panel.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+      if (settingsOpen) {
+        setSettingsOpen(false);
+      } else if (buildOpen) {
+        setBuildOpen(false);
+      } else if (!pendingReward && !pendingMilestone) {
+        setSettingsOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [settingsOpen, buildOpen, pendingReward, pendingMilestone]);
 
   const setShowDebugOverlay = useCallback(
     (value: boolean) => settingsStore.set({ showDebugOverlay: value }),
@@ -290,6 +313,8 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     settings,
     settingsOpen,
     setSettingsOpen,
+    buildOpen,
+    setBuildOpen,
     setShowDebugOverlay,
     loadScenario,
     reset,

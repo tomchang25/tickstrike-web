@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 export interface SettingsPanelProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -11,7 +9,7 @@ export interface SettingsPanelProps {
 /**
  * The settings gear and its dialog. Pure presentation driven by props: the session owns the open
  * state (so it can suppress gameplay input while the panel is open) and the settings values. The
- * debug-overlay toggle renders only in development builds; production shows the Restart action alone.
+ * debug-overlay toggle renders only in development builds; production shows the Back/Restart footer.
  */
 export function SettingsPanel({
   open,
@@ -52,18 +50,6 @@ interface SettingsDialogProps {
 }
 
 function SettingsDialog({ onClose, showDebugOverlay, onShowDebugOverlayChange, onRestart }: SettingsDialogProps) {
-  const [confirmingRestart, setConfirmingRestart] = useState(false);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
   return (
     <div className="settings-backdrop" onClick={onClose}>
       <div
@@ -74,56 +60,39 @@ function SettingsDialog({ onClose, showDebugOverlay, onShowDebugOverlayChange, o
         aria-label="Settings"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="settings-header">
-          <h2>Settings</h2>
-          <button type="button" className="settings-close" aria-label="Close settings" onClick={onClose}>
-            ×
-          </button>
-        </div>
+        <h2 className="settings-title">Settings</h2>
 
         {import.meta.env.DEV ? (
-          <label className="settings-row">
-            <input
-              type="checkbox"
-              data-testid="settings-debug-toggle"
-              checked={showDebugOverlay}
-              onChange={(event) => onShowDebugOverlayChange(event.target.checked)}
-            />
-            <span>Debug overlay</span>
-          </label>
+          <>
+            <hr className="settings-divider" />
+            <label className="settings-row">
+              <input
+                type="checkbox"
+                data-testid="settings-debug-toggle"
+                checked={showDebugOverlay}
+                onChange={(event) => onShowDebugOverlayChange(event.target.checked)}
+              />
+              <span>Debug mode</span>
+            </label>
+          </>
         ) : null}
 
-        <div className="settings-row settings-restart-row">
-          {confirmingRestart ? (
-            <>
-              <span className="settings-restart-warning">Restart the run? Progress is lost.</span>
-              <div className="settings-restart-actions">
-                <button
-                  type="button"
-                  className="settings-restart-confirm"
-                  data-testid="settings-restart-confirm"
-                  onClick={() => {
-                    onRestart();
-                    onClose();
-                  }}
-                >
-                  Restart
-                </button>
-                <button type="button" onClick={() => setConfirmingRestart(false)}>
-                  Cancel
-                </button>
-              </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="settings-restart"
-              data-testid="settings-restart"
-              onClick={() => setConfirmingRestart(true)}
-            >
-              Restart run
-            </button>
-          )}
+        <hr className="settings-divider" />
+        <div className="settings-footer">
+          <button type="button" className="settings-back" data-testid="settings-back" onClick={onClose}>
+            Back
+          </button>
+          <button
+            type="button"
+            className="settings-restart"
+            data-testid="settings-restart"
+            onClick={() => {
+              onRestart();
+              onClose();
+            }}
+          >
+            Restart
+          </button>
         </div>
       </div>
     </div>

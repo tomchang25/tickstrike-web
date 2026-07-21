@@ -15,6 +15,19 @@ test("the settings panel toggles the debug overlay and restarts the run", async 
   const canvas = page.getByTestId("game-canvas");
   await expect(canvas).toHaveAttribute("data-debug-mode", "false");
 
+  // Escape summons the settings panel when nothing else is open, and dismisses it again.
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("settings-panel")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("settings-panel")).toHaveCount(0);
+
+  // Escape over the build overview closes it without summoning settings.
+  await page.getByTestId("hud-build-button").click();
+  await expect(page.getByTestId("hud-build-overview")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("hud-build-overview")).toHaveCount(0);
+  await expect(page.getByTestId("settings-panel")).toHaveCount(0);
+
   // Open settings and toggle the debug overlay; the persisted setting drives the renderer.
   await page.getByTestId("settings-open").click();
   await expect(page.getByTestId("settings-panel")).toBeVisible();
@@ -36,7 +49,6 @@ test("the settings panel toggles the debug overlay and restarts the run", async 
 
   await page.getByTestId("settings-open").click();
   await page.getByTestId("settings-restart").click();
-  await page.getByTestId("settings-restart-confirm").click();
   await expect(page.getByTestId("settings-panel")).toHaveCount(0);
   await expect(page.getByTestId("tick-value")).toHaveText("0");
 });

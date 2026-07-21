@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { WorldSnapshot } from "@core/model/types";
 import { artifactCatalog } from "@content/artifact-catalog";
 import { RunBuildHud } from "@ui/run-build-hud";
@@ -7,6 +6,9 @@ export interface GameHudProps {
   readonly snapshot: WorldSnapshot;
   /** When false (testbed static-inspection scenarios), the control hints are hidden. */
   readonly commandsEnabled?: boolean;
+  /** The session owns the build-overview open state so a single Escape handler can coordinate panels. */
+  readonly buildOpen: boolean;
+  readonly onBuildOpenChange: (open: boolean) => void;
 }
 
 const CONTROL_HINTS: readonly { readonly label: string; readonly keys: readonly string[] }[] = [
@@ -26,8 +28,7 @@ function artifactName(artifactId: string): string {
  * runtime. The container is `pointer-events: none` so gameplay clicks reach the board; only the Build
  * button and the overview re-enable pointer events.
  */
-export function GameHud({ snapshot, commandsEnabled = true }: GameHudProps) {
-  const [buildOpen, setBuildOpen] = useState(false);
+export function GameHud({ snapshot, commandsEnabled = true, buildOpen, onBuildOpenChange }: GameHudProps) {
   const player = snapshot.entities.find((entity) => entity.id === "player");
   const wave = snapshot.waveRuntime?.waveNumber;
   const hpPercent = player && player.maxHp > 0 ? Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100)) : 0;
@@ -84,13 +85,13 @@ export function GameHud({ snapshot, commandsEnabled = true }: GameHudProps) {
           className="hud-build-button"
           data-testid="hud-build-button"
           aria-haspopup="dialog"
-          onClick={() => setBuildOpen(true)}
+          onClick={() => onBuildOpenChange(true)}
         >
           Build
         </button>
       </div>
 
-      {buildOpen ? <BuildOverview snapshot={snapshot} onClose={() => setBuildOpen(false)} /> : null}
+      {buildOpen ? <BuildOverview snapshot={snapshot} onClose={() => onBuildOpenChange(false)} /> : null}
     </div>
   );
 }
@@ -101,16 +102,6 @@ interface BuildOverviewProps {
 }
 
 function BuildOverview({ snapshot, onClose }: BuildOverviewProps) {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
   const held = Object.entries(snapshot.runBuild.stacks)
     .filter(([, count]) => count > 0)
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));

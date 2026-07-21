@@ -160,8 +160,8 @@ button:disabled {
 
 .hud-controls {
   position: absolute;
-  top: 10px;
   right: 10px;
+  bottom: 10px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -302,19 +302,19 @@ button:disabled {
 }
 
 .settings-gear {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 40;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  border: 0.5px solid #333b4c;
+  border: 0.5px solid rgb(120 140 170 / 32%);
   border-radius: 10px;
-  background: rgb(23 26 34 / 92%);
+  background: rgb(18 21 28 / 82%);
   color: #cfe3f5;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   cursor: pointer;
   place-items: center;
 }
@@ -324,9 +324,9 @@ button:disabled {
 }
 
 .settings-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 50;
+  z-index: 30;
   display: grid;
   padding: 16px;
   background: rgb(12 14 19 / 78%);
@@ -341,77 +341,50 @@ button:disabled {
   background: #12151c;
 }
 
-.settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.settings-header h2 {
+.settings-title {
   margin: 0;
   color: #72d4ff;
   font-size: 1rem;
   letter-spacing: 0.06em;
 }
 
-.settings-close {
-  padding: 0 6px;
+.settings-divider {
+  margin: 12px 0;
   border: none;
-  background: none;
-  color: #8e99aa;
-  font-size: 1.2rem;
-  line-height: 1;
-  cursor: pointer;
+  border-top: 0.5px solid rgb(120 140 170 / 28%);
 }
 
 .settings-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 10px;
   color: #e6ebf2;
 }
 
-.settings-restart-row {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-}
-
-.settings-restart,
-.settings-restart-confirm {
-  padding: 7px 12px;
-  border: 0.5px solid #38506a;
-  border-radius: 8px;
-  background: rgb(32 38 52 / 92%);
-  color: #cfe3f5;
-  cursor: pointer;
-}
-
-.settings-restart-confirm {
-  border-color: #7a3b4a;
-  color: #ffb3c0;
-}
-
-.settings-restart-warning {
-  color: #d6a95c;
-  font-size: 0.85rem;
-}
-
-.settings-restart-actions {
+.settings-footer {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.settings-restart-actions button {
-  flex: 1;
-  padding: 7px 12px;
+.settings-back,
+.settings-restart {
+  padding: 7px 14px;
   border: 0.5px solid #333b4c;
   border-radius: 8px;
   background: rgb(23 26 34 / 92%);
   color: #cfe3f5;
   cursor: pointer;
+}
+
+.settings-restart {
+  border-color: #7a3b4a;
+  color: #ffb3c0;
+}
+
+.settings-back:hover,
+.settings-restart:hover {
+  border-color: #4a6488;
 }
 
 .terminal-banner .primary-command {
