@@ -23,7 +23,6 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > When every phase ships: archive the plan file and delete this line.
 
 - [input_feel] Fast-forward the previous turn's pending VFX when new input is enqueued and pace held-move at a fixed cadence so input stops waiting on animation tails - [ref plans/input_feel_vfx_fast_forward.implementation_spec.md]
-- [port_12_audio] Deliver event-driven combat audio with safe unlock, volume, rate limits, and teardown on the same path - [ref plans/port_12_audio_delivery.md]
 
 ---
 

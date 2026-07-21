@@ -28,15 +28,22 @@ The mixer exposes three volume controls — Master, Effect, and Music — where 
 
 ### Child decomposition
 
-| Child | Focus                                                                                                     | Current document form                                                            |
-| ----- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 12.1  | Audio engine: WebAudio mixer, gesture unlock, Master/Effect/Music volume, and per-cue rate limiting       | Implementation spec: port_12_01_audio_engine.implementation_spec.md              |
-| 12.2  | Event-to-cue delivery: cue registry, reference SFX assets, and an audio director on the same event stream | Implementation spec: port_12_02_event_cue_delivery.implementation_spec.md        |
-| 12.3  | Teardown completeness and full-run verification of cue coverage and orphan-free stop                      | Implementation spec: port_12_03_teardown_and_verification.implementation_spec.md |
+| Child | Focus                                                                                                     | Current document form                                                 |
+| ----- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 12.1  | Audio engine: WebAudio mixer, gesture unlock, Master/Effect/Music volume, and per-cue rate limiting       | Shipped — port_12_01_audio_engine.implementation_spec.md              |
+| 12.2  | Event-to-cue delivery: cue registry, reference SFX assets, and an audio director on the same event stream | Shipped — port_12_02_event_cue_delivery.implementation_spec.md        |
+| 12.3  | Teardown completeness and full-run verification of cue coverage and orphan-free stop                      | Shipped — port_12_03_teardown_and_verification.implementation_spec.md |
 
 Recommended landing order is 12.1, 12.2, then 12.3.
 
 The reference's result-override SFX (execution, mobility-kill, and the guard-shredder artifact) are out of this plan's scope; they are parked in the standalone `audio_special_result_sfx.sketch.md`, deferred until the artifacts and special-kill effects are reworked.
+
+### Delivered (closeout note)
+
+Two decisions taken during execution deviate from the original text above and are recorded here rather than by rewriting it:
+
+- **Music now ships, superseding Non-Goal 1.** Looping background music plays through the music bus, and the settings panel adds a background-audio mute toggle. The Non-Goal 1 deferral of "a music source" was the separate decision it asked for, made by the project owner.
+- **The audible set is the reference cue set, narrowing Acceptance Criterion 1.** Attack, dash, smash, damage, guard chip, guard break, death, and reward events map to cues; movement, telegraph, stagger, and terminal transitions are intentionally silent because the reference authors no cue for them. The `audio-coverage` test enforces that every event type in a deterministic run is classified audible or intentionally silent, so the "no active event silently lacks a cue" intent of AC 1 holds for the delivered scope.
 
 ## Non-Goals
 

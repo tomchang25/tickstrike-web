@@ -96,3 +96,9 @@ Rules:
 - 2026-07-21 - [port_11] A movement key now performs a Normal Attack instead of moving when its direction holds an attack target, while the explicit IJKL attack keys and the Alt-plus-cursor Mobility mode are unchanged
 - 2026-07-21 - [port_11] Both shells now overlay a game-style HUD on the board — player HP and mobility, the current wave, control hints, and the run build with a Build button that opens an artifacts overview — without intercepting gameplay pointer input
 - 2026-07-21 - [port_11] Settings now persist in localStorage behind a platform storage adapter with a runtime-owned store, surfaced through a settings panel that carries a whole-run Restart and a development-only debug-overlay toggle while the production bundle still ships no debug code
+
+### Audio Delivery
+
+- 2026-07-22 - [port_12] Combat now plays the reference sound set from semantic events — attack, dash, smash, damage, guard chip, guard break, death, and reward cues, one per hit by priority — unlocked on the first user gesture, rate limited per cue, and stopped on reset, restart, visibility change, and teardown with no orphan source
+- 2026-07-22 - [port_12] A looping background music track plays through the mixer's music bus, started on the same gesture unlock and kept continuous across run boundaries
+- 2026-07-22 - [port_12] The settings panel now carries persisted Master, Effect, and Music volume sliders and a background-audio mute toggle that pauses audio while the tab is hidden

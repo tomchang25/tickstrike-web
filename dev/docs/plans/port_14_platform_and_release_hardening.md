@@ -18,7 +18,7 @@ Harden the same Tick Arena path for shipping: responsive behavior, application-s
 
 Release validation covers the supported Chromium browser and Windows desktop shell only. Other platforms remain unclaimed until separately tested and approved.
 
-Platform hardening owns the mechanism: viewport handling, preference APIs, lifecycle wiring, packaging, and idle detection. Whether the resulting visuals match the reference is owned by [port_13](port_13_visual_parity_and_polish.md); which audio cues fire is owned by [port_12](port_12_audio_delivery.md). This plan provides the lifecycle boundary that both hook their teardown into. It must not introduce a second runtime or alter deterministic gameplay rules.
+Platform hardening owns the mechanism: viewport handling, preference APIs, lifecycle wiring, packaging, and idle detection. Whether the resulting visuals match the reference is owned by [port_13](port_13_visual_parity_and_polish.md); which audio cues fire is owned by port_12 (audio delivery, shipped). This plan provides the lifecycle boundary that both hook their teardown into. It must not introduce a second runtime or alter deterministic gameplay rules.
 
 ## Non-Goals
 
