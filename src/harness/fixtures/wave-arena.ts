@@ -6,6 +6,7 @@ import { createInitialSlotStates } from "@core/waves/wave-scheduler";
 import { waveCatalog } from "@content/wave-catalog";
 import { buildEnemySpawnInput } from "@content/wave-enemy-spawn";
 import { actorCatalog } from "@content/actor-catalog";
+import { artifactCatalog } from "@content/artifact-catalog";
 
 export const WAVE_SCENARIO_SEED = "waves-foundation";
 
@@ -23,6 +24,18 @@ export const waveScenarioContext: WavePhaseContext = {
     return waveCatalog.demoWaves[waveNumber - 1] ?? waveCatalog.endlessTemplate;
   },
   buildEnemySpawnInput,
+};
+
+/**
+ * The full authored run the home page plays: the same wave setup plus the shipped reward pool and
+ * the milestone at the final authored wave, so clearing it opens the End Run / Continue Endless
+ * choice before the endless template. `waveScenarioContext` stays reward-free and milestone-free so
+ * the `waves` scenario and its determinism golden are unchanged.
+ */
+export const runScenarioContext: WavePhaseContext = {
+  ...waveScenarioContext,
+  offerableArtifacts: artifactCatalog.artifacts,
+  milestoneWaveNumber: waveCatalog.demoWaves.length,
 };
 
 /** The shipped arena and regular player with Wave 1 installed and no fixture enemies. */

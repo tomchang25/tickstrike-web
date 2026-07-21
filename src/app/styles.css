@@ -251,6 +251,17 @@ header > p {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
+.milestone-prompt {
+  margin: 0;
+  color: #b7c1d0;
+  font-size: 0.9rem;
+}
+
+.milestone-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .run-build-hud {
   display: flex;
   flex-wrap: wrap;

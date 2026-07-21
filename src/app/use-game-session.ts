@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import type { Cell, WorldSnapshot } from "@core/model/types";
+import type { Cell, MilestoneChoice, WorldSnapshot } from "@core/model/types";
 import type { TestScenario } from "@harness/types";
 import type { PointerCommit, PointerMode } from "@presentation/pixi/pixi-game-renderer";
 import { GameRuntime } from "@runtime/game-runtime";
@@ -29,6 +29,7 @@ export interface GameSession {
   loadScenario: (scenario: TestScenario) => void;
   reset: () => void;
   selectReward: (artifactId: string) => Promise<void>;
+  selectMilestoneDecision: (choice: MilestoneChoice) => Promise<void>;
 }
 
 export function useGameSession({ initialScenario, debugApi, debugMode }: GameSessionOptions): GameSession {
@@ -41,9 +42,10 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
   const commandsEnabled = scenario.commandsEnabled !== false;
   const encounterRunning = snapshot?.outcome === "running";
   const pendingReward = snapshot?.pendingReward;
+  const pendingMilestone = snapshot?.pendingMilestone;
   // React disabling is supplementary; the runtime's own command serialization already rejects a
-  // command while a reward selection is pending (see resolveCommand).
-  const interactive = commandsEnabled && encounterRunning && !pendingReward;
+  // command while a reward selection or milestone decision is pending (see resolveCommand).
+  const interactive = commandsEnabled && encounterRunning && !pendingReward && !pendingMilestone;
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -181,6 +183,17 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
     [execute, pendingReward],
   );
 
+  const selectMilestoneDecision = useCallback(
+    async (choice: MilestoneChoice) => {
+      const runtime = runtimeRef.current;
+      if (!runtime || !pendingMilestone) {
+        return;
+      }
+      await execute(() => runtime.selectMilestoneDecision(choice));
+    },
+    [execute, pendingMilestone],
+  );
+
   useEffect(() => {
     const heldMovement = new Map<string, number>();
     const onKeyDown = (event: KeyboardEvent) => {
@@ -294,5 +307,6 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
     loadScenario,
     reset,
     selectReward,
+    selectMilestoneDecision,
   };
 }

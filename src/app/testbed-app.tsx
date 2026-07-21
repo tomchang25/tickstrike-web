@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { MobilityKind } from "@core/model/types";
 import { requireScenario, scenarios } from "@harness/scenario-registry";
+import { MilestoneOverlay } from "@ui/milestone-overlay";
 import { RewardOverlay } from "@ui/reward-overlay";
 import { RunBuildHud } from "@ui/run-build-hud";
 import { SemanticMirror } from "@ui/semantic-mirror";
@@ -21,6 +22,7 @@ export function TestbedApp() {
   const { scenario, snapshot, busy, runtimeRef } = session;
   const commandsEnabled = scenario.commandsEnabled !== false;
   const pendingReward = snapshot?.pendingReward;
+  const pendingMilestone = snapshot?.pendingMilestone;
 
   const changeScenario = useCallback(
     (id: string) => {
@@ -69,6 +71,9 @@ export function TestbedApp() {
               />
             ) : null}
             {pendingReward ? <RewardOverlay offer={pendingReward} busy={busy} onSelect={session.selectReward} /> : null}
+            {pendingMilestone ? (
+              <MilestoneOverlay decision={pendingMilestone} busy={busy} onDecide={session.selectMilestoneDecision} />
+            ) : null}
           </div>
           {snapshot ? <RunBuildHud build={snapshot.runBuild} /> : null}
           <p className="hint">
