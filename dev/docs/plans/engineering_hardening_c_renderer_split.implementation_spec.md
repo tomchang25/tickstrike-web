@@ -61,3 +61,19 @@ Confirm the renderer core no longer references pointer state or painting interna
 2. All unit tests pass unmodified; all e2e tests pass unmodified (test hooks preserved).
 3. Golden determinism suite untouched and green (this spec must not affect core at all — a golden diff here means scope leaked).
 4. PresentationDirector required no changes.
+
+## Outcome (completed 2026-07-21)
+
+`PixiGameRenderer.ts` went from 1,349 lines to **606** across three extractions. The renderer core now owns only Pixi app/layer setup and asset loading, entity-view creation/reconciliation, detached terminal views and transients, position ownership, screen-bounds queries, and the player facing/animation dataset writes it applies on the sprite. Input state, preview painting, and board painting each live in exactly one collaborator, constructed by the renderer with narrow handles — mirroring how `World` composes its subsystems.
+
+### Execution order deviation
+
+Steps ran c3 → c1 → c2, not the spec's c1 → c2 → c3. `BoardPainter` (c3) was moved first because it is a pure mechanical drawing move (Sonnet-safe); `InputController` (c1) reshapes event wiring and was done next under the higher-tier model the spec calls for. The final shape is identical to the target either way — the painters and the input seam do not depend on each other, only on the renderer.
+
+### Handles each collaborator receives
+
+- **`BoardPainter`** (`board-painter.ts`) — `app`; the `gridLayer`, `reservationLayer`, `telegraphLayer`, and `telegraphLabelLayer` containers; and a `() => host` accessor. Draws arena tiles, the debug occupancy overlay, reservations, and telegraphs (+ labels) from a snapshot passed per call; the renderer keeps `debugMode` and passes it in.
+- **`InputController`** (`input-controller.ts`) — `app`; a `() => snapshot` accessor; and an `InputPresentationHooks` bundle (`applyFacing`, `drawPreview(model)`, `clearPreview`). Owns pointer mode, hovered cell, dash distance, aim memory, and the facing lock, plus the canvas listener lifecycle and click→commit resolution, and computes the `PointerPreviewModel` from core `action-preview`. Its `previewModel()` is the single seam between input decisions and preview drawing.
+- **`PreviewPainter`** (`preview-painter.ts`) — `app`; the `pointerPreviewLayer` container; a `() => host` accessor; and a `cellToPixels` function. Renders the attack/dash/smash preview and victim markers from the `PointerPreviewModel` and writes the asserted `data-*` datasets; it decides nothing.
+
+The renderer's public pointer API (`setPointerMode`, `bindPointerInput`, `setPlayerFacing`) is unchanged — each delegates to the InputController — and `PointerMode`/`PointerCommit`/`PointerInputBinding` are re-exported from the renderer, so `App.tsx` and `PresentationDirector` were untouched. Verified by `npm run check` (unit + build green, golden suite byte-identical) and the targeted pointer/smash Playwright scenarios; the full suite runs in CI.
