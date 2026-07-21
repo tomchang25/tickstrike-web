@@ -1,25 +1,35 @@
 import type { CombatEvent } from "@core/events/combat-events";
+import type { EntityId } from "@core/model/types";
 import type { AudioMixer } from "./audio-mixer";
 import { CueLibrary, type CueId } from "./cue-library";
 
 /**
- * The single map from a combat event type to its cue. Events without an entry are intentionally
- * silent (movement, telegraph, stagger, terminal transitions). `player_damaged` reuses the `damaged`
- * cue and the death aliases reuse `died`, matching the reference cue set rather than adding cues.
+ * Events that each play their own cue, one per matching event. Events without an entry here or in
+ * {@link HIT_FEEDBACK} are intentionally silent (movement, telegraph, stagger, terminal transitions).
+ * `player_damaged` reuses the `damaged` cue and the death aliases reuse `died`, matching the reference
+ * cue set rather than adding cues.
  */
 const EVENT_CUES: Partial<Record<CombatEvent["type"], CueId>> = {
   player_attacked: "action_whoosh",
   player_dashed: "action_whoosh",
   smash_armed: "smash_windup",
   smash_impact: "smash_impact",
-  enemy_damaged: "damaged",
   player_damaged: "damaged",
-  enemy_guard_damaged: "blocked",
-  enemy_guard_broken: "guard_break",
   enemy_died: "died",
   enemy_self_destructed: "died",
   enemy_crushed: "died",
   reward_selected: "pickup",
+};
+
+/**
+ * A single enemy hit emits several of these at once (a guard chip plus the damage, or a guard break
+ * plus the damage), so only the highest-priority one is allowed to sound per enemy per resolution.
+ * Lower `rank` wins: guard chip over guard break over plain damage.
+ */
+const HIT_FEEDBACK: Partial<Record<CombatEvent["type"], { readonly cue: CueId; readonly rank: number }>> = {
+  enemy_guard_damaged: { cue: "blocked", rank: 0 },
+  enemy_guard_broken: { cue: "guard_break", rank: 1 },
+  enemy_damaged: { cue: "damaged", rank: 2 },
 };
 
 export interface AudioDirectorOptions {
@@ -53,11 +63,28 @@ export class AudioDirector {
       void this.load();
     }
 
+    // The guard/damage family is collapsed to one winning cue per enemy; every other cue fires as it
+    // is seen. The winners are triggered after the pass so a later, higher-priority hit event on the
+    // same enemy can still take over.
+    const feedbackByEnemy = new Map<EntityId, { readonly cue: CueId; readonly rank: number }>();
     for (const event of events) {
+      const feedback = HIT_FEEDBACK[event.type];
+      if (feedback && "enemyId" in event) {
+        const best = feedbackByEnemy.get(event.enemyId);
+        if (!best || feedback.rank < best.rank) {
+          feedbackByEnemy.set(event.enemyId, feedback);
+        }
+        continue;
+      }
+
       const cueId = EVENT_CUES[event.type];
       if (cueId) {
         this.trigger(cueId);
       }
+    }
+
+    for (const feedback of feedbackByEnemy.values()) {
+      this.trigger(feedback.cue);
     }
   }
 

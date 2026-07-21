@@ -98,6 +98,43 @@ describe("AudioDirector", () => {
     });
   });
 
+  it("collapses a single enemy hit to one cue by priority", async () => {
+    const defs = [
+      definition("blocked", ["block"]),
+      definition("guard_break", ["break"]),
+      definition("damaged", ["hit"]),
+    ];
+
+    // A guard break emits the damage and the break together; only the break sounds.
+    const broke = await loadedDirector(defs);
+    broke.director.play([
+      { type: "enemy_damaged", enemyId: "e1", hit: {} as never, hp: 1, maxHp: 2 },
+      { type: "enemy_guard_broken", enemyId: "e1" },
+    ]);
+    expect(broke.plays.map((cue) => cue.limiterKey)).toEqual(["guard_break"]);
+
+    // A surviving guard chip emits the chip and the damage together; only the chip sounds.
+    const chipped = await loadedDirector(defs);
+    chipped.director.play([
+      { type: "enemy_guard_damaged", enemyId: "e1", damage: 1, guard: 1, maxGuard: 2 },
+      { type: "enemy_damaged", enemyId: "e1", hit: {} as never, hp: 1, maxHp: 2 },
+    ]);
+    expect(chipped.plays.map((cue) => cue.limiterKey)).toEqual(["blocked"]);
+  });
+
+  it("keeps a separate hit cue for each enemy in one resolution", async () => {
+    const defs = [definition("guard_break", ["break"]), definition("damaged", ["hit"])];
+    const { director, plays } = await loadedDirector(defs);
+
+    director.play([
+      { type: "enemy_damaged", enemyId: "e1", hit: {} as never, hp: 1, maxHp: 2 },
+      { type: "enemy_damaged", enemyId: "e2", hit: {} as never, hp: 1, maxHp: 2 },
+      { type: "enemy_guard_broken", enemyId: "e2" },
+    ]);
+
+    expect(plays.map((cue) => cue.limiterKey).sort()).toEqual(["damaged", "guard_break"]);
+  });
+
   it("stays silent for unmapped events", async () => {
     const { director, plays } = await loadedDirector([definition("action_whoosh", ["w1"])]);
 
