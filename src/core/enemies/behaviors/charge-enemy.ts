@@ -12,11 +12,11 @@ import {
   type EnemyMovementCandidate,
 } from "../../model/types";
 import type { CombatEvent } from "../../events/combat-events";
-import type { AttackResolutionTransaction, World } from "../../world/world";
+import type { AttackResolutionTransaction, WorldView } from "../../world/world";
 import { findEnemyPaths } from "../enemy-path-planner";
 import { CARDINAL_DIRECTIONS } from "../attack-geometry";
 import { damageEventsFor } from "../attack-resolution-events";
-import type { EnemyBehavior, EnemyDecisionContext } from "../enemy-behavior";
+import type { EnemyBehavior, EnemyDecisionContext, EnemyPhaseContext } from "../enemy-behavior";
 
 export interface ChargeDisplacementResult {
   readonly entityId: EntityId;
@@ -252,14 +252,14 @@ function chargeDetonationPolicy(
 
 /** Resolves a detonating Charge attack atomically; undefined when the enemy is not telegraphing. */
 export function resolveChargeAttack(
-  world: World,
+  context: EnemyPhaseContext,
   id: EntityId,
 ): ChargeAttackResolution | undefined {
-  return world.resolveCommittedAttackTransaction(id, chargeDetonationPolicy);
+  return context.resolveCommittedAttackTransaction(id, chargeDetonationPolicy);
 }
 
 function chargeResolutionEvents(
-  world: World,
+  world: WorldView,
   enemyId: EntityId,
   resolution: ChargeAttackResolution,
 ): CombatEvent[] {
@@ -337,12 +337,14 @@ function chargeResolutionEvents(
 
 /** Cardinal line-rush behavior: commits when a legal range path exists, otherwise repositions. */
 export const chargeEnemyBehavior: EnemyBehavior = {
-  retarget(world, enemy) {
-    const retarget = chargeLiveRetarget(enemy, world.playerCell, (cell) => world.isLegalCell(cell));
+  retarget(context, enemy) {
+    const retarget = chargeLiveRetarget(enemy, context.playerCell, (cell) =>
+      context.board.isLegalCell(cell),
+    );
     if (!retarget) {
       return [];
     }
-    const result = world.retargetCommittedAttack(enemy.id, retarget.path, retarget.facing);
+    const result = context.combat.retargetCommittedAttack(enemy.id, retarget.path, retarget.facing);
     if (result.changed && result.telegraph) {
       return [
         {
@@ -355,9 +357,9 @@ export const chargeEnemyBehavior: EnemyBehavior = {
     }
     return [];
   },
-  resolveAttack(world, enemyId) {
-    const resolution = resolveChargeAttack(world, enemyId);
-    return resolution ? chargeResolutionEvents(world, enemyId, resolution) : undefined;
+  resolveAttack(context, enemyId) {
+    const resolution = resolveChargeAttack(context, enemyId);
+    return resolution ? chargeResolutionEvents(context, enemyId, resolution) : undefined;
   },
   decide(context, action, playerCell) {
     const { enemy } = context;

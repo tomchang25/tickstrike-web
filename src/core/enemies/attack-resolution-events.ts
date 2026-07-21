@@ -1,10 +1,11 @@
 import type { CombatEvent } from "../events/combat-events";
 import type { DamageResult, EntityId, Telegraph } from "../model/types";
-import type { EnemyAttackResolution, World } from "../world/world";
+import type { EnemyAttackResolution, WorldView } from "../world/world";
+import type { EnemyPhaseContext } from "./enemy-behavior";
 
 /** Standard damage/death event pair for either target kind, read after damage was applied. */
 export function damageEventsFor(
-  world: World,
+  world: WorldView,
   attackerId: EntityId,
   targetId: EntityId,
   damage: DamageResult,
@@ -36,7 +37,7 @@ export function damageEventsFor(
 
 /** Detonation announcement plus any Player damage/death for a shared committed-attack resolution. */
 export function committedAttackDetonationEvents(
-  world: World,
+  world: WorldView,
   enemyId: EntityId,
   resolution: EnemyAttackResolution,
 ): CombatEvent[] {
@@ -71,15 +72,15 @@ export function committedAttackDetonationEvents(
  * enter recovery.
  */
 export function genericDetonationEvents(
-  world: World,
+  context: EnemyPhaseContext,
   enemyId: EntityId,
   telegraph: Telegraph | undefined,
 ): CombatEvent[] | undefined {
-  const resolution = world.resolveCommittedEnemyAttack(enemyId);
+  const resolution = context.combat.resolveCommittedEnemyAttack(enemyId);
   if (!resolution) {
     return undefined;
   }
-  const events = committedAttackDetonationEvents(world, enemyId, resolution);
+  const events = committedAttackDetonationEvents(context, enemyId, resolution);
   events.push({ type: "telegraph_changed", sourceId: enemyId, telegraph, cleared: true });
   events.push({
     type: "enemy_recovering",

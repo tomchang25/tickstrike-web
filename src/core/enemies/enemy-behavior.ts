@@ -7,7 +7,32 @@ import type {
   Telegraph,
 } from "../model/types";
 import type { CombatEvent } from "../events/combat-events";
-import type { World } from "../world/world";
+import type {
+  AttackResolutionTransaction,
+  CombatOperations,
+  GridBoard,
+  WorldView,
+} from "../world/world";
+
+/**
+ * The capability handle the enemy phase and its behavior hooks receive instead
+ * of the whole `World` (hardening spec d): the read-only {@link WorldView} plus
+ * the `board` and `combat` subsystems the combat cluster mutates, the
+ * `moveEntity` orchestration, and the world-owned attack-resolution transaction
+ * composer. A phase given this cannot reach waves, run, spawn, or armed-smash
+ * state. `World` satisfies it structurally, so `action-resolver` passes a
+ * `World` directly. Lives here, not in `actions/`, so the behavior hooks can
+ * name it without an actions -> enemies -> actions import cycle.
+ */
+export interface EnemyPhaseContext extends WorldView {
+  readonly board: GridBoard;
+  readonly combat: CombatOperations;
+  moveEntity(id: EntityId, to: Cell): void;
+  resolveCommittedAttackTransaction<T>(
+    id: EntityId,
+    policy: (transaction: AttackResolutionTransaction) => T | undefined,
+  ): T | undefined;
+}
 
 export type EnemyActionDecision =
   | { readonly type: "move"; readonly candidates: readonly EnemyMovementCandidate[] }
@@ -52,15 +77,15 @@ export interface EnemyBehavior {
    * Optional warning-time retarget for a telegraphing enemy. Runs every enemy
    * phase before the warning counter decrements; returns the emitted events.
    */
-  retarget?(world: World, enemy: EntityState): CombatEvent[];
+  retarget?(context: EnemyPhaseContext, enemy: EntityState): CombatEvent[];
   /**
    * Optional role-specific detonation replacing the shared resolution. Returns
    * the emitted events, or undefined when nothing resolved. Implementations
-   * mutate the world only through `world.resolveCommittedAttackTransaction`
+   * mutate the world only through `context.resolveCommittedAttackTransaction`
    * or the shared committed-attack resolution.
    */
   resolveAttack?(
-    world: World,
+    context: EnemyPhaseContext,
     enemyId: EntityId,
     telegraph: Telegraph | undefined,
   ): CombatEvent[] | undefined;

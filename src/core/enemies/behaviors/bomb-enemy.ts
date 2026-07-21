@@ -71,13 +71,13 @@ export function bombAreaCells(
 
 /** Fuse behavior: locks a self-centered blast when adjacent, otherwise closes in. */
 export const bombEnemyBehavior: EnemyBehavior = {
-  resolveAttack(world, enemyId, telegraph) {
-    const current = world.getEntity(enemyId);
-    const resolution = world.resolveCommittedEnemyAttack(enemyId);
+  resolveAttack(context, enemyId, telegraph) {
+    const current = context.getEntity(enemyId);
+    const resolution = context.combat.resolveCommittedEnemyAttack(enemyId);
     if (!resolution || !current) {
       return undefined;
     }
-    const events = committedAttackDetonationEvents(world, enemyId, resolution);
+    const events = committedAttackDetonationEvents(context, enemyId, resolution);
     if (resolution.attack.metadata?.selfDestruct) {
       events.push({ type: "enemy_self_destructed", enemyId, cell: current.cell });
       events.push({ type: "enemy_died", enemyId, attackerId: enemyId, cell: current.cell });

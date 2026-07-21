@@ -1,6 +1,6 @@
 import type { CombatEvent } from "../events/combat-events";
 import { sameCell, type EntityState } from "../model/types";
-import type { World } from "../world/world";
+import type { EnemyPhaseContext } from "../enemies/enemy-behavior";
 import {
   committedAttackFromDecision,
   decideEnemyAction,
@@ -9,8 +9,10 @@ import {
 import { getEnemyBehavior } from "../enemies/behaviors";
 import { genericDetonationEvents } from "../enemies/attack-resolution-events";
 
-function enabledEnemies(world: World): readonly EntityState[] {
-  return world
+export type { EnemyPhaseContext } from "../enemies/enemy-behavior";
+
+function enabledEnemies(context: EnemyPhaseContext): readonly EntityState[] {
+  return context
     .listEntities()
     .filter((entity) => entity.kind === "enemy" && entity.enemyAction !== undefined);
 }
@@ -30,8 +32,8 @@ interface PendingMovement {
   nextCandidate: number;
 }
 
-export function resolveEnemyPhase(world: World): CombatEvent[] {
-  const enemies = enabledEnemies(world);
+export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
+  const enemies = enabledEnemies(context);
   const readyAtStart = new Set(
     enemies
       .filter((enemy) => enemy.phase === "alive" && enemy.activity === "ready")
@@ -56,37 +58,37 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
   >();
 
   for (const enemy of enemies) {
-    const current = world.getEntity(enemy.id);
+    const current = context.getEntity(enemy.id);
     if (!current || current.phase !== "alive" || current.activity !== "telegraphing") {
       continue;
     }
 
     const behavior = current.enemyAction ? getEnemyBehavior(current.enemyAction.role) : undefined;
     if (behavior?.retarget) {
-      events.push(...behavior.retarget(world, current));
+      events.push(...behavior.retarget(context, current));
     }
 
-    const telegraph = world.getTelegraph(enemy.id);
-    const attack = world.decrementEnemyAttackWarning(enemy.id);
+    const telegraph = context.board.getTelegraph(enemy.id);
+    const attack = context.combat.decrementEnemyAttackWarning(enemy.id);
     if (!attack || attack.warningTicks > 0) {
       continue;
     }
 
     const resolved = behavior?.resolveAttack
-      ? behavior.resolveAttack(world, enemy.id, telegraph)
-      : genericDetonationEvents(world, enemy.id, telegraph);
+      ? behavior.resolveAttack(context, enemy.id, telegraph)
+      : genericDetonationEvents(context, enemy.id, telegraph);
     if (resolved) {
       events.push(...resolved);
     }
   }
 
-  events.push(...world.advanceEnemyStatuses());
+  events.push(...context.combat.advanceEnemyStatuses());
 
   for (const enemy of enemies) {
     if (!recoveringAtStart.has(enemy.id)) {
       continue;
     }
-    if (world.advanceEnemyRecovery(enemy.id)) {
+    if (context.combat.advanceEnemyRecovery(enemy.id)) {
       recoveredThisPhase.add(enemy.id);
       events.push({ type: "enemy_recovered", enemyId: enemy.id });
     }
@@ -96,30 +98,30 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
     if (!restingAtStart.has(enemy.id)) {
       continue;
     }
-    world.advanceEnemyRest(enemy.id);
+    context.combat.advanceEnemyRest(enemy.id);
   }
 
   for (const enemy of enemies) {
     if (!readyAtStart.has(enemy.id) && !recoveredThisPhase.has(enemy.id)) {
       continue;
     }
-    const current = world.getEntity(enemy.id);
+    const current = context.getEntity(enemy.id);
     if (!current || current.phase !== "alive" || current.activity !== "ready") {
       continue;
     }
     const decision = decideEnemyAction({
       enemy: current,
-      playerCell: world.playerCell,
-      isInside: (cell) => world.isInside(cell),
+      playerCell: context.playerCell,
+      isInside: (cell) => context.board.isInside(cell),
       canMove: (destination) =>
-        destination.x !== world.playerCell?.x || destination.y !== world.playerCell?.y
-          ? world.isWalkable(destination)
+        destination.x !== context.playerCell?.x || destination.y !== context.playerCell?.y
+          ? context.board.isWalkable(destination)
           : false,
       canPathThrough: (cell) =>
-        world.isLegalCell(cell) &&
-        (world.playerCell === undefined || !sameCell(cell, world.playerCell)),
-      canEndAt: (cell) => world.isWalkable(cell),
-      isLegalTerrain: (cell) => world.isLegalCell(cell),
+        context.board.isLegalCell(cell) &&
+        (context.playerCell === undefined || !sameCell(cell, context.playerCell)),
+      canEndAt: (cell) => context.board.isWalkable(cell),
+      isLegalTerrain: (cell) => context.board.isLegalCell(cell),
     });
     decisions.push({ enemy: current, decision });
   }
@@ -139,7 +141,7 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
     for (const pending of pendingMovements.values()) {
       while (
         pending.nextCandidate < pending.decision.candidates.length &&
-        !world.isWalkable(pending.decision.candidates[pending.nextCandidate]!.destination)
+        !context.board.isWalkable(pending.decision.candidates[pending.nextCandidate]!.destination)
       ) {
         pending.nextCandidate += 1;
       }
@@ -156,7 +158,7 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
       break;
     }
 
-    const reservations = world.requestMovementReservations(
+    const reservations = context.board.requestMovementReservations(
       claims.map((pending) => ({
         ownerId: pending.enemy.id,
         purpose: "movement" as const,
@@ -175,18 +177,18 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
 
     try {
       for (const pending of winners) {
-        const current = world.getEntity(pending.enemy.id);
+        const current = context.getEntity(pending.enemy.id);
         if (!current || current.phase !== "alive") {
           movementEvents.set(pending.enemy.id, { type: "enemy_waited", enemyId: pending.enemy.id });
           continue;
         }
         const candidate = pending.decision.candidates[pending.nextCandidate]!;
         const from = current.cell;
-        world.setEnemyFacing(current.id, candidate.facing);
-        world.setEnemyDecision(current.id, "move");
-        world.moveEntity(current.id, candidate.destination);
+        context.combat.setEnemyFacing(current.id, candidate.facing);
+        context.combat.setEnemyDecision(current.id, "move");
+        context.moveEntity(current.id, candidate.destination);
         if (current.enemyAction && getEnemyBehavior(current.enemyAction.role).restsAfterMove) {
-          world.setEnemyResting(current.id);
+          context.combat.setEnemyResting(current.id);
         }
         movementEvents.set(current.id, {
           type: "enemy_moved",
@@ -197,7 +199,7 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
       }
     } finally {
       for (const claim of claims) {
-        world.releaseReservation(claim.enemy.id);
+        context.board.releaseReservation(claim.enemy.id);
       }
     }
 
@@ -218,34 +220,34 @@ export function resolveEnemyPhase(world: World): CombatEvent[] {
         const movementEvent = movementEvents.get(enemy.id);
         if (movementEvent) {
           if (movementEvent.type === "enemy_waited") {
-            world.setEnemyDecision(enemy.id, "wait");
+            context.combat.setEnemyDecision(enemy.id, "wait");
           }
           events.push(movementEvent);
         }
         break;
       }
       case "attack": {
-        const cells = decision.cells.filter((cell) => world.isInside(cell));
+        const cells = decision.cells.filter((cell) => context.board.isInside(cell));
         if (cells.length === 0) {
-          world.setEnemyDecision(enemy.id, "wait");
+          context.combat.setEnemyDecision(enemy.id, "wait");
           events.push({ type: "enemy_waited", enemyId: enemy.id });
           break;
         }
-        world.setEnemyFacing(enemy.id, decision.facing);
-        world.setEnemyDecision(enemy.id, "attack");
-        const committed = world.commitEnemyAttack(
+        context.combat.setEnemyFacing(enemy.id, decision.facing);
+        context.combat.setEnemyDecision(enemy.id, "attack");
+        const committed = context.combat.commitEnemyAttack(
           enemy.id,
           committedAttackFromDecision({ ...decision, cells }),
         );
         events.push({ type: "enemy_attack_committed", enemyId: enemy.id, attack: committed });
-        const telegraph = world.getTelegraph(enemy.id);
+        const telegraph = context.board.getTelegraph(enemy.id);
         if (telegraph) {
           events.push({ type: "telegraph_changed", sourceId: enemy.id, telegraph, cleared: false });
         }
         break;
       }
       case "wait":
-        world.setEnemyDecision(enemy.id, "wait");
+        context.combat.setEnemyDecision(enemy.id, "wait");
         events.push({ type: "enemy_waited", enemyId: enemy.id });
         break;
     }
