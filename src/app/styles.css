@@ -57,7 +57,9 @@ button:disabled {
 .game-stage {
   display: grid;
   gap: 12px;
-  width: min(720px, 100%);
+  /* Cap the square board by viewport height too (title + build + hint + padding ≈ 180px) so the
+     whole arena stays visible on short viewports instead of clipping. */
+  width: min(720px, calc(100vh - 180px), 100%);
 }
 
 .game-title {
@@ -141,8 +143,11 @@ header > p {
 
 .canvas-host canvas {
   display: block;
-  width: 100%;
-  height: auto;
+  /* Pixi's autoDensity writes an inline pixel width/height on the canvas; override it so the board
+     scales to its frame instead of overflowing. Pointer aim already derives its scale from the
+     rendered rect, so a CSS-scaled canvas stays accurate. */
+  width: 100% !important;
+  height: auto !important;
 }
 
 .terminal-banner {
@@ -195,7 +200,7 @@ header > p {
 .reward-overlay-panel {
   display: grid;
   gap: 14px;
-  width: min(420px, 100%);
+  width: min(560px, 100%);
   padding: 20px;
   border: 1px solid #72d4ff;
   border-radius: 12px;
@@ -248,7 +253,16 @@ header > p {
 }
 
 .reward-card-list {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  /* One row of equal-width cards regardless of count; falls back to wrapping only when too narrow. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 520px) {
+  .reward-card-list {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr;
+  }
 }
 
 .milestone-prompt {
