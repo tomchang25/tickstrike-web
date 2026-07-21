@@ -3,7 +3,7 @@
 > **Parent**: [engineering_hardening.md](engineering_hardening.md)
 > **Prerequisite**: spec b (golden gate live). Independent of spec c.
 > **Suggested tier**: interface design (d1) is an Opus/Fable-class decision; the per-phase migrations (d2–d4) are mechanical once the shape is fixed — Sonnet-class, one phase per session.
-> **Status**: d1 done (2026-07-21) — capability surface landed, shapes recorded below. d2–d4 not started.
+> **Status**: Done (2026-07-21) — all steps landed; see Outcome.
 
 ## Goal
 
@@ -65,4 +65,24 @@ Add the rule to `dev/standards/gameplay_feature_architecture.md`: new capabiliti
 
 `world.ts` now exposes `board`/`combat`/`waves`/`run` as `public readonly` handles and declares `class World implements WorldView`, where `WorldView` is the read-model interface defined in the same file. No method was added to `World`; the change is a visibility widening plus one `implements` clause, so it is behavior-preserving by construction. `npm run check` passes (335 unit tests including the determinism goldens, plus the production build); the golden suite is byte-identical, confirming zero core behavior change.
 
-The per-phase context shapes and the two migration blast-radius notes (enemy behavior hooks in d2, preview retyping in d3) are recorded in the Design section above. Each context interface's `.ts` is deliberately deferred to its migration step so no interface lands without its consumer; `WorldView` is the only type landed now, and it has an immediate consumer in the `implements` clause. d2 (`enemy-phase` + its behavior hooks) is the next step and the highest-tier of the three migrations.
+The per-phase context shapes and the two migration blast-radius notes (enemy behavior hooks in d2, preview retyping in d3) are recorded in the Design section above. Each context interface's `.ts` is deliberately deferred to its migration step so no interface lands without its consumer; `WorldView` is the only type landed now, and it has an immediate consumer in the `implements` clause.
+
+### d2 — enemy-phase (completed 2026-07-21)
+
+`resolveEnemyPhase` now takes `EnemyPhaseContext` (defined in `enemy-behavior.ts` to avoid an `actions -> enemies -> actions` cycle), reaching the combat cluster and spatial reads through `context.board`/`context.combat` and orchestration through `context.moveEntity`/`context.resolveCommittedAttackTransaction`. The `retarget`/`resolveAttack` behavior hooks and the shared detonation helper migrated with it; the charge and bomb behaviors were the only implementers of those hooks (melee and ranged only have the already-narrow `decide`). Pure-read event helpers take `WorldView`. Because `World` satisfies `EnemyPhaseContext` structurally, `action-resolver` still passes a `World` unchanged.
+
+### d3 — player-actions (completed 2026-07-21)
+
+`resolvePlayerAction` and its helpers take `PlayerActionContext` (co-located in `player-actions.ts`). The preview functions were decoupled from `World` to a one-method `WorldSnapshotSource`, as the recorded design anticipated. No preview or hit logic changed.
+
+### d4 — wave-phase (completed 2026-07-21)
+
+`resolveWavePhase` and `resolveRewardSelection` take `WavePhaseWorld` (WorldView + `board`/`waves`/`run` + `random` + `spawn` + `recordEvents` + the reward player-stat mutators), paired with the unchanged authored `WavePhaseContext`. The `waves`/`run` handles expose the same cloning as the facade getters, so `world.waves.state` equals the old `world.waveRuntime` exactly.
+
+### d5 — facade freeze (completed 2026-07-21)
+
+The rule is in `dev/standards/gameplay_feature_architecture.md` under "Phase capability contexts (facade freeze)". As anticipated, it is a review rule: `check:boundaries` matches module imports and the phases legitimately import the view/subsystem types from `world/world`, so it cannot forbid importing the `World` class by symbol. The bar for a new `World` method is world-level orchestration spanning subsystems (`resolveCommittedAttackTransaction`).
+
+### Acceptance check
+
+No phase function takes `World`; each takes a context naming its capabilities (criterion 1). `World` gained zero methods across the whole spec — d1 only widened field visibility and added an `implements` clause; d2–d4 changed only the phase and behavior files (criterion 3). The determinism goldens stayed byte-identical at every step and the full unit suite plus targeted charge/bomb/ranged, dash/smash/move, and waves/reward e2e scenarios passed (criterion 2). The facade-freeze rule is documented with its review bar (criteria 3–4).
