@@ -295,6 +295,39 @@ describe("PresentationDirector combat feedback", () => {
     expect(director.isIdle).toBe(true);
   });
 
+  it("fast-forwards active timelines to their settled end state on demand", async () => {
+    const { renderer, view } = createRenderer();
+    const director = new PresentationDirector(renderer);
+    const events: CombatEvent[] = [
+      { type: "player_attacked", actorId: "player", direction: { x: 1, y: 0 }, target: { x: 6, y: 6 } },
+      { type: "actor_moved", entityId: "player", from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
+      { type: "enemy_died", enemyId: "enemy", attackerId: "player", cell: { x: 5, y: 6 } },
+    ];
+
+    director.captureTerminalViews(events);
+    const playing = director.play(events);
+    expect(director.isIdle).toBe(false);
+
+    director.finishActive();
+    await playing;
+
+    // Resolution came from completing the timelines, not from waiting out their duration.
+    expect(director.isIdle).toBe(true);
+    expect(renderer.releaseTransient).toHaveBeenCalledOnce();
+    expect(renderer.setPlayerAnimation).toHaveBeenLastCalledWith("idle");
+    expect(view.destroy).toHaveBeenCalledOnce();
+    expect(director.terminalViewCount).toBe(0);
+    expect(renderer.releasePosition).toHaveBeenCalledWith("player");
+  });
+
+  it("finishes active timelines with no residue and is a no-op when idle", () => {
+    const { renderer } = createRenderer();
+    const director = new PresentationDirector(renderer);
+
+    expect(() => director.finishActive()).not.toThrow();
+    expect(director.isIdle).toBe(true);
+  });
+
   it("does not show an impact when a committed attack misses", async () => {
     const { renderer } = createRenderer();
     const director = new PresentationDirector(renderer);

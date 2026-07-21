@@ -425,9 +425,19 @@ export class PresentationDirector {
     this.renderer.setPlayerAnimation("idle");
   }
 
-  finishImmediately(): void {
-    gsap.globalTimeline.timeScale(1000);
-    gsap.globalTimeline.timeScale(1);
+  /**
+   * Drives every in-flight timeline straight to its end state. Unlike {@link cancel}, this
+   * completes rather than kills: `totalProgress(1)` fires each timeline's remaining ordered
+   * callbacks, triggers its `onComplete`, and runs the same release path as natural completion
+   * (transients, motion reservations, tracked-promise resolution, terminal-view destruction).
+   * The runtime calls this when a new input is enqueued so pending VFX collapse to their
+   * settled frame instead of blocking the next command behind their full duration. A copy of
+   * the active set is iterated because completing a timeline deletes it from `activeTimelines`.
+   */
+  finishActive(): void {
+    for (const active of [...this.activeTimelines]) {
+      active.timeline.totalProgress(1);
+    }
   }
 
   private timelineDone(timeline: gsap.core.Timeline, afterComplete?: () => void): Promise<void> {

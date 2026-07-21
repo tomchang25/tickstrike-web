@@ -77,9 +77,30 @@ export class GameRuntime {
     if (!this.world) {
       return Promise.reject(new Error("No world loaded."));
     }
+    return this.submit<ActionResolution>((resolve, reject, generation) => ({
+      kind: "command",
+      command,
+      generation,
+      resolve,
+      reject,
+    }));
+  }
+
+  /**
+   * The single enqueue seam for every job kind. Pushes the built job, then collapses any in-flight
+   * presentation to its settled end state so this input is not serialized behind the previous turn's
+   * full VFX duration (see the `await presentationDone` in {@link drainCommands}). Fast-forward is a
+   * no-op when the presentation is already idle, so the first input of a quiet turn is unaffected.
+   */
+  private submit<T>(
+    makeJob: (resolve: (value: T) => void, reject: (reason: unknown) => void, generation: number) => QueuedJob,
+  ): Promise<T> {
     const generation = this.currentGeneration;
-    return new Promise<ActionResolution>((resolve, reject) => {
-      this.queuedCommands.push({ kind: "command", command, generation, resolve, reject });
+    return new Promise<T>((resolve, reject) => {
+      this.queuedCommands.push(makeJob(resolve, reject, generation));
+      if (!this.presentation.isIdle) {
+        this.presentation.finishActive();
+      }
       void this.drainCommands();
     });
   }
@@ -100,11 +121,13 @@ export class GameRuntime {
         events: [],
       });
     }
-    const generation = this.currentGeneration;
-    return new Promise<RewardSelectionResolution>((resolve, reject) => {
-      this.queuedCommands.push({ kind: "reward", artifactId, generation, resolve, reject });
-      void this.drainCommands();
-    });
+    return this.submit<RewardSelectionResolution>((resolve, reject, generation) => ({
+      kind: "reward",
+      artifactId,
+      generation,
+      resolve,
+      reject,
+    }));
   }
 
   /**
@@ -123,11 +146,13 @@ export class GameRuntime {
         events: [],
       });
     }
-    const generation = this.currentGeneration;
-    return new Promise<MilestoneDecisionResolution>((resolve, reject) => {
-      this.queuedCommands.push({ kind: "milestone", choice, generation, resolve, reject });
-      void this.drainCommands();
-    });
+    return this.submit<MilestoneDecisionResolution>((resolve, reject, generation) => ({
+      kind: "milestone",
+      choice,
+      generation,
+      resolve,
+      reject,
+    }));
   }
 
   /** A mutation-safe copy of the current run's accepted-input log. */

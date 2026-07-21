@@ -53,3 +53,27 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-mobility-invulnerable", "false");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
+
+test("a second input during the previous turn's VFX applies immediately and the board settles", async ({ page }) => {
+  await page.goto("/debug?scenario=empty-arena");
+
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
+
+  // Fire two moves back-to-back without awaiting the first: the second enqueues while the first
+  // move is still animating, exercising the enqueue-triggered fast-forward. Both must apply.
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
+    const first = api.execute({ type: "move", actorId: "player", direction: { x: 1, y: 0 } });
+    const second = api.execute({ type: "move", actorId: "player", direction: { x: 1, y: 0 } });
+    await Promise.all([first, second]);
+  });
+
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "8");
+  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+});

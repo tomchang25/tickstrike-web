@@ -4,7 +4,10 @@ import type { TestScenario } from "@harness/types";
 import type { PointerCommit, PointerMode } from "@presentation/pixi/pixi-game-renderer";
 import { GameRuntime } from "@runtime/game-runtime";
 
-const MOVE_REPEAT_MS = 50;
+// Held-direction movement steps at a fixed cadence — the movement-rate design parameter — rather
+// than being paced by animation length. It matches the presentation's move duration (0.26 s) so the
+// felt rate is unchanged, but enqueue-triggered fast-forward now trims any longer enemy VFX tail.
+const MOVE_REPEAT_MS = 260;
 
 export interface GameSessionOptions {
   initialScenario: TestScenario;
@@ -230,11 +233,9 @@ export function useGameSession({ initialScenario, debugApi, debugMode }: GameSes
         if (heldMovement.has(key)) {
           return;
         }
+        // Fire on a fixed cadence; move() keeps the interactive/runtime guards, and enqueueing a
+        // step while the previous turn still animates fast-forwards it rather than dropping it.
         const repeatMove = () => {
-          const runtime = runtimeRef.current;
-          if (!runtime || !runtime.isIdle) {
-            return;
-          }
           void move(direction);
         };
         repeatMove();

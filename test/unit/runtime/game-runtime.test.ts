@@ -30,6 +30,39 @@ describe("GameRuntime command and presentation ordering", () => {
     expect(runtime.snapshot().playerCell).toEqual({ x: 8, y: 6 });
   });
 
+  it("fast-forwards an in-flight presentation when the next command is enqueued", async () => {
+    const runtime = new GameRuntime();
+    runtime.loadScenario(requireScenario("empty-arena"));
+
+    let releaseFirstPresentation: (() => void) | undefined;
+    const firstPresentation = new Promise<void>((resolve) => {
+      releaseFirstPresentation = resolve;
+    });
+    let presentationCalls = 0;
+    vi.spyOn(runtime.presentation, "play").mockImplementation(() => {
+      presentationCalls += 1;
+      return presentationCalls === 1 ? firstPresentation : Promise.resolve();
+    });
+    // Report the first presentation as still playing, and complete it when fast-forwarded.
+    let firstIdle = true;
+    vi.spyOn(runtime.presentation, "isIdle", "get").mockImplementation(() => firstIdle);
+    const finishActive = vi.spyOn(runtime.presentation, "finishActive").mockImplementation(() => {
+      firstIdle = true;
+      releaseFirstPresentation?.();
+    });
+
+    const first = runtime.execute({ type: "move", actorId: "player", direction: { x: 1, y: 0 } });
+    await first;
+    // The first presentation is now in flight; the next input must not wait it out.
+    firstIdle = false;
+
+    const second = runtime.execute({ type: "move", actorId: "player", direction: { x: 1, y: 0 } });
+    await second;
+
+    expect(finishActive).toHaveBeenCalledOnce();
+    expect(runtime.snapshot().playerCell).toEqual({ x: 8, y: 6 });
+  });
+
   it("reserves motion owners before projecting the resolved snapshot", async () => {
     const runtime = new GameRuntime();
     runtime.loadScenario(requireScenario("empty-arena"));
