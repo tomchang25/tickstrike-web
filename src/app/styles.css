@@ -361,6 +361,15 @@ button:disabled {
   color: #e6ebf2;
 }
 
+.settings-volume {
+  justify-content: space-between;
+}
+
+.settings-volume input[type="range"] {
+  flex: 0 0 55%;
+  cursor: pointer;
+}
+
 .settings-footer {
   display: flex;
   align-items: center;

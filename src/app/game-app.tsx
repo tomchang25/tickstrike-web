@@ -39,6 +39,14 @@ export function GameApp() {
             onOpenChange={session.setSettingsOpen}
             showDebugOverlay={session.settings.showDebugOverlay}
             onShowDebugOverlayChange={session.setShowDebugOverlay}
+            volume={{
+              master: session.settings.masterVolume,
+              effect: session.settings.effectVolume,
+              music: session.settings.musicVolume,
+            }}
+            onMasterVolumeChange={session.setMasterVolume}
+            onEffectVolumeChange={session.setEffectVolume}
+            onMusicVolumeChange={session.setMusicVolume}
             onRestart={session.reset}
           />
           {snapshot && snapshot.outcome !== "running" ? (

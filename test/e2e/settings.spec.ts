@@ -52,3 +52,23 @@ test("the settings panel toggles the debug overlay and restarts the run", async 
   await expect(page.getByTestId("settings-panel")).toHaveCount(0);
   await expect(page.getByTestId("tick-value")).toHaveText("0");
 });
+
+test("the settings panel persists volume levels across reload", async ({ page }) => {
+  await page.goto("/debug?scenario=tick-arena");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+
+  await page.getByTestId("settings-open").click();
+  const master = page.getByTestId("settings-volume-master");
+  await expect(master).toBeVisible();
+  await expect(page.getByTestId("settings-volume-effect")).toBeVisible();
+  await expect(page.getByTestId("settings-volume-music")).toBeVisible();
+
+  // The stored value is a 0..1 fraction; the slider works in whole percent.
+  await master.fill("40");
+  await expect(master).toHaveValue("40");
+
+  await page.reload();
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await page.getByTestId("settings-open").click();
+  await expect(page.getByTestId("settings-volume-master")).toHaveValue("40");
+});

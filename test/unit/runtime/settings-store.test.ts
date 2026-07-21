@@ -1,5 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
-import { SettingsStore, type PersistedSettings, type SettingsStorage } from "@runtime/settings-store";
+import {
+  SettingsStore,
+  type GameSettings,
+  type PersistedSettings,
+  type SettingsStorage,
+} from "@runtime/settings-store";
+
+const DEFAULTS: GameSettings = {
+  showDebugOverlay: false,
+  masterVolume: 1,
+  effectVolume: 1,
+  musicVolume: 1,
+};
 
 function fakeStorage(initial?: PersistedSettings): { storage: SettingsStorage; saved: PersistedSettings[] } {
   const saved: PersistedSettings[] = [];
@@ -17,36 +29,65 @@ function fakeStorage(initial?: PersistedSettings): { storage: SettingsStorage; s
 describe("SettingsStore", () => {
   it("falls back to defaults when storage is empty", () => {
     const store = new SettingsStore(fakeStorage().storage);
-    expect(store.get()).toEqual({ showDebugOverlay: false });
+    expect(store.get()).toEqual(DEFAULTS);
   });
 
-  it("loads and merges a valid persisted payload over the defaults", () => {
+  it("loads and merges a valid v2 payload over the defaults", () => {
+    const { storage } = fakeStorage({
+      version: 2,
+      data: { showDebugOverlay: true, masterVolume: 0.5, effectVolume: 0.25, musicVolume: 0 },
+    });
+    const store = new SettingsStore(storage);
+    expect(store.get()).toEqual({
+      showDebugOverlay: true,
+      masterVolume: 0.5,
+      effectVolume: 0.25,
+      musicVolume: 0,
+    });
+  });
+
+  it("migrates a v1 payload forward, preserving the debug flag and defaulting the volumes", () => {
     const { storage } = fakeStorage({ version: 1, data: { showDebugOverlay: true } });
     const store = new SettingsStore(storage);
-    expect(store.get().showDebugOverlay).toBe(true);
+    expect(store.get()).toEqual({ ...DEFAULTS, showDebugOverlay: true });
   });
 
-  it("ignores a wrong-version or malformed payload and does not overwrite until an explicit set", () => {
-    const wrongVersion = fakeStorage({ version: 2, data: { showDebugOverlay: true } });
-    expect(new SettingsStore(wrongVersion.storage).get()).toEqual({ showDebugOverlay: false });
-    expect(wrongVersion.saved).toEqual([]);
+  it("clamps out-of-range volumes and defaults malformed ones", () => {
+    const { storage } = fakeStorage({
+      version: 2,
+      data: { showDebugOverlay: false, masterVolume: 2, effectVolume: -1, musicVolume: "loud" },
+    });
+    const store = new SettingsStore(storage);
+    expect(store.get()).toEqual({
+      showDebugOverlay: false,
+      masterVolume: 1,
+      effectVolume: 0,
+      musicVolume: 1,
+    });
+  });
 
-    const malformed = fakeStorage({ version: 1, data: { showDebugOverlay: "yes" } });
-    expect(new SettingsStore(malformed.storage).get()).toEqual({ showDebugOverlay: false });
+  it("ignores an unknown-version or malformed payload and does not overwrite until an explicit set", () => {
+    const unknownVersion = fakeStorage({ version: 3, data: { showDebugOverlay: true } });
+    expect(new SettingsStore(unknownVersion.storage).get()).toEqual(DEFAULTS);
+    expect(unknownVersion.saved).toEqual([]);
+
+    const malformed = fakeStorage({ version: 2, data: { showDebugOverlay: "yes" } });
+    expect(new SettingsStore(malformed.storage).get()).toEqual(DEFAULTS);
     expect(malformed.saved).toEqual([]);
   });
 
-  it("persists a versioned envelope and notifies subscribers on set", () => {
+  it("persists a v2 envelope and notifies subscribers on set", () => {
     const { storage, saved } = fakeStorage();
     const store = new SettingsStore(storage);
     const listener = vi.fn();
     store.subscribe(listener);
 
-    store.set({ showDebugOverlay: true });
+    store.set({ effectVolume: 0.4 });
 
-    expect(store.get().showDebugOverlay).toBe(true);
-    expect(saved).toEqual([{ version: 1, data: { showDebugOverlay: true } }]);
-    expect(listener).toHaveBeenCalledWith({ showDebugOverlay: true });
+    const expected: GameSettings = { ...DEFAULTS, effectVolume: 0.4 };
+    expect(store.get()).toEqual(expected);
+    expect(saved).toEqual([{ version: 2, data: expected }]);
+    expect(listener).toHaveBeenCalledWith(expected);
   });
 
   it("keeps working in memory when the storage adapter reports failure by no-op", () => {

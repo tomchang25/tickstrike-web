@@ -23,6 +23,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > When every phase ships: archive the plan file and delete this line.
 
 - [input_feel] Fast-forward the previous turn's pending VFX when new input is enqueued and pace held-move at a fixed cadence so input stops waiting on animation tails - [ref plans/input_feel_vfx_fast_forward.implementation_spec.md]
+- [port_12_audio] Deliver event-driven combat audio with safe unlock, volume, rate limits, and teardown on the same path - [ref plans/port_12_audio_delivery.md]
 
 ---
 
@@ -30,7 +31,6 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_12_audio] Deliver event-driven combat audio with safe unlock, volume, rate limits, and teardown on the same path - [ref plans/port_12_audio_delivery.md]
 - [port_13_visual_parity] Audit port-ref and match the reference board, entities, feedback, HUD, and presentation quality - [ref plans/port_13_visual_parity_and_polish.md]
 - [port_14_hardening] Harden responsive behavior, shell lifecycle, teardown, and browser/Windows packaging for the same path - [ref plans/port_14_platform_and_release_hardening.md]
 

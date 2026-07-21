@@ -11,6 +11,7 @@ import type { Cell, MilestoneChoice, Seed, WorldSnapshot } from "@core/model/typ
 import type { World } from "@core/world/world";
 import type { TestScenario } from "@harness/types";
 import type { ContentInspection } from "@harness/content-inspection";
+import { AudioMixer } from "@presentation/audio/audio-mixer";
 import { PixiGameRenderer, type ScreenBounds } from "@presentation/pixi/pixi-game-renderer";
 import { PresentationDirector } from "@presentation/timelines/presentation-director";
 import { cloneCommandLog, type RunCommandLog, type RunCommandLogEntry } from "./command-log";
@@ -20,6 +21,7 @@ export type RuntimeListener = (snapshot: WorldSnapshot) => void;
 export class GameRuntime {
   readonly renderer = new PixiGameRenderer();
   readonly presentation = new PresentationDirector(this.renderer);
+  readonly audio = new AudioMixer();
 
   private world: World | undefined;
   private scenario: TestScenario | undefined;
@@ -46,6 +48,7 @@ export class GameRuntime {
     this.invalidateWork("Runtime destroyed.");
     this.listeners.clear();
     this.renderer.destroy();
+    this.audio.dispose();
   }
 
   loadScenario(scenario: TestScenario): void {
@@ -356,6 +359,7 @@ export class GameRuntime {
   private invalidateWork(reason: string): void {
     this.currentGeneration += 1;
     this.presentation.cancel();
+    this.audio.stopAll();
     if (this.activeCommand) {
       this.activeCommand.reject(new Error(reason));
       this.activeCommand = undefined;

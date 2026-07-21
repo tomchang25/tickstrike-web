@@ -32,6 +32,9 @@ export interface GameSession {
   buildOpen: boolean;
   setBuildOpen: (open: boolean) => void;
   setShowDebugOverlay: (value: boolean) => void;
+  setMasterVolume: (value: number) => void;
+  setEffectVolume: (value: number) => void;
+  setMusicVolume: (value: number) => void;
   loadScenario: (scenario: TestScenario) => void;
   reset: () => void;
   selectReward: (artifactId: string) => Promise<void>;
@@ -88,6 +91,10 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     (value: boolean) => settingsStore.set({ showDebugOverlay: value }),
     [settingsStore],
   );
+
+  const setMasterVolume = useCallback((value: number) => settingsStore.set({ masterVolume: value }), [settingsStore]);
+  const setEffectVolume = useCallback((value: number) => settingsStore.set({ effectVolume: value }), [settingsStore]);
+  const setMusicVolume = useCallback((value: number) => settingsStore.set({ musicVolume: value }), [settingsStore]);
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -286,6 +293,39 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     if (!runtime || !snapshot) {
       return;
     }
+    runtime.audio.setVolumes({
+      master: settings.masterVolume,
+      effect: settings.effectVolume,
+      music: settings.musicVolume,
+    });
+  }, [settings.masterVolume, settings.effectVolume, settings.musicVolume, snapshot]);
+
+  // The browser audio context starts suspended; unlock it on the first user gesture. The listeners
+  // remove themselves once the runtime is mounted and unlocked, and on unmount. A gesture that lands
+  // before mount is a no-op and leaves the listeners in place for the next one.
+  useEffect(() => {
+    const unlock = () => {
+      const runtime = runtimeRef.current;
+      if (!runtime) {
+        return;
+      }
+      runtime.audio.unlock();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  useEffect(() => {
+    const runtime = runtimeRef.current;
+    if (!runtime || !snapshot) {
+      return;
+    }
     runtime.renderer.setPointerMode(pointerMode);
     return runtime.renderer.bindPointerInput({
       canInteract: () => interactive,
@@ -316,6 +356,9 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     buildOpen,
     setBuildOpen,
     setShowDebugOverlay,
+    setMasterVolume,
+    setEffectVolume,
+    setMusicVolume,
     loadScenario,
     reset,
     selectReward,

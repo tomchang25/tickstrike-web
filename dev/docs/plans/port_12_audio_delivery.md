@@ -20,9 +20,25 @@ Audio never decides whether a command hit, a Telegraph exists, an entity is dead
 
 This plan owns the audio delivery mechanism — the event-to-cue mapping, unlock, mixing, rate limiting, and teardown. Which visual events exist and when they fire is audited by [port_13](port_13_visual_parity_and_polish.md); this plan consumes that same event stream rather than redefining it. Platform-level lifecycle wiring (visibility, route, renderer teardown) is owned by [port_14](port_14_platform_and_release_hardening.md); audio teardown hooks into it.
 
+Audio is delivered through the WebAudio API with no added dependency, and its sound assets are the reference project's own SFX carried into this repository as runtime inputs owned by the audio feature.
+
+### Volume buses
+
+The mixer exposes three volume controls — Master, Effect, and Music — where Master multiplies both bus gains and therefore scales all audio. The Music bus is wired structurally (a `musicGain` node and a persisted Music volume control) so the mixer graph and settings surface are complete, but this plan plays no music content or music source through it. Introducing actual music playback remains a separate decision under Non-Goal 1.
+
+### Child decomposition
+
+| Child | Focus                                                                                                     | Current document form                                                          |
+| ----- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 12.1  | Audio engine: WebAudio mixer, gesture unlock, Master/Effect/Music volume, and per-cue rate limiting       | Implementation spec: port_12_01_audio_engine.implementation_spec.md            |
+| 12.2  | Event-to-cue delivery: cue registry, reference SFX assets, and an audio director on the same event stream | Plan child; create a verified implementation spec immediately before execution |
+| 12.3  | Teardown completeness and full-run verification of cue coverage and orphan-free stop                      | Plan child; create a verified implementation spec immediately before execution |
+
+Recommended landing order is 12.1, 12.2, then 12.3.
+
 ## Non-Goals
 
-1. Do not add music, ambience, or spatial audio without a separate decision.
+1. Do not add music content or a music source. The Music volume bus is wired as empty structure only; actual music, ambience, or spatial audio needs a separate decision.
 2. Do not let audio own, cache, or recompute any gameplay state.
 3. Do not assume autoplay or bypass the browser gesture unlock.
 
