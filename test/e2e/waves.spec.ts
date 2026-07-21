@@ -116,8 +116,9 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
       const playerIsThreatened = state.telegraphs.some((telegraph) =>
         telegraph.cells.some((cell) => sameCell(cell, player.cell)),
       );
-      if (playerIsThreatened && candidates.length > 0) {
-        await api.execute({ type: "move", actorId: "player", direction: candidates[0] });
+      const threatenedRetreat = candidates[0];
+      if (playerIsThreatened && threatenedRetreat) {
+        await api.execute({ type: "move", actorId: "player", direction: threatenedRetreat });
         continue;
       }
 
@@ -157,6 +158,9 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
       }
 
       const target = [...enemies].sort((a, b) => distance(a.cell, player.cell) - distance(b.cell, player.cell))[0];
+      if (!target) {
+        break;
+      }
       const toward = DIRECTIONS.filter((direction) =>
         direction.x !== 0 ? target.cell.x !== player.cell.x : target.cell.y !== player.cell.y,
       )
@@ -166,11 +170,11 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
           return distance(nextA, target.cell) - distance(nextB, target.cell);
         })
         .find((direction) => candidates.some((candidate) => sameCell(candidate, direction)));
-      await api.execute({
-        type: "move",
-        actorId: "player",
-        direction: toward ?? candidates[0] ?? DIRECTIONS[0],
-      });
+      const move = toward ?? candidates[0] ?? DIRECTIONS[0];
+      if (!move) {
+        break;
+      }
+      await api.execute({ type: "move", actorId: "player", direction: move });
     }
   });
 
