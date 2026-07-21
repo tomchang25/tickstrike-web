@@ -72,3 +72,20 @@ test("the settings panel persists volume levels across reload", async ({ page })
   await page.getByTestId("settings-open").click();
   await expect(page.getByTestId("settings-volume-master")).toHaveValue("40");
 });
+
+test("the background-audio mute toggle defaults on and persists across reload", async ({ page }) => {
+  await page.goto("/debug?scenario=tick-arena");
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+
+  await page.getByTestId("settings-open").click();
+  const toggle = page.getByTestId("settings-mute-background-toggle");
+  await expect(toggle).toBeChecked();
+
+  await toggle.uncheck();
+  await expect(toggle).not.toBeChecked();
+
+  await page.reload();
+  await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  await page.getByTestId("settings-open").click();
+  await expect(page.getByTestId("settings-mute-background-toggle")).not.toBeChecked();
+});

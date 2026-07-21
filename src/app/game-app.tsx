@@ -47,6 +47,8 @@ export function GameApp() {
             onMasterVolumeChange={session.setMasterVolume}
             onEffectVolumeChange={session.setEffectVolume}
             onMusicVolumeChange={session.setMusicVolume}
+            muteAudioInBackground={session.settings.muteAudioInBackground}
+            onMuteAudioInBackgroundChange={session.setMuteAudioInBackground}
             onRestart={session.reset}
           />
           {snapshot && snapshot.outcome !== "running" ? (

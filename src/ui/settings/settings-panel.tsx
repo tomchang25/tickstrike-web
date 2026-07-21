@@ -13,13 +13,16 @@ export interface SettingsPanelProps {
   readonly onMasterVolumeChange: (value: number) => void;
   readonly onEffectVolumeChange: (value: number) => void;
   readonly onMusicVolumeChange: (value: number) => void;
+  readonly muteAudioInBackground: boolean;
+  readonly onMuteAudioInBackgroundChange: (value: boolean) => void;
   readonly onRestart: () => void;
 }
 
 /**
  * The settings gear and its dialog. Pure presentation driven by props: the session owns the open
  * state (so it can suppress gameplay input while the panel is open) and the settings values. The
- * volume sliders always render; the debug-overlay toggle renders only in development builds.
+ * volume sliders and background-audio toggle always render; the debug-overlay toggle renders only in
+ * development builds.
  */
 export function SettingsPanel({
   open,
@@ -30,6 +33,8 @@ export function SettingsPanel({
   onMasterVolumeChange,
   onEffectVolumeChange,
   onMusicVolumeChange,
+  muteAudioInBackground,
+  onMuteAudioInBackgroundChange,
   onRestart,
 }: SettingsPanelProps) {
   return (
@@ -53,6 +58,8 @@ export function SettingsPanel({
           onMasterVolumeChange={onMasterVolumeChange}
           onEffectVolumeChange={onEffectVolumeChange}
           onMusicVolumeChange={onMusicVolumeChange}
+          muteAudioInBackground={muteAudioInBackground}
+          onMuteAudioInBackgroundChange={onMuteAudioInBackgroundChange}
           onRestart={onRestart}
         />
       ) : null}
@@ -68,6 +75,8 @@ interface SettingsDialogProps {
   readonly onMasterVolumeChange: (value: number) => void;
   readonly onEffectVolumeChange: (value: number) => void;
   readonly onMusicVolumeChange: (value: number) => void;
+  readonly muteAudioInBackground: boolean;
+  readonly onMuteAudioInBackgroundChange: (value: boolean) => void;
   readonly onRestart: () => void;
 }
 
@@ -79,6 +88,8 @@ function SettingsDialog({
   onMasterVolumeChange,
   onEffectVolumeChange,
   onMusicVolumeChange,
+  muteAudioInBackground,
+  onMuteAudioInBackgroundChange,
   onRestart,
 }: SettingsDialogProps) {
   return (
@@ -112,6 +123,16 @@ function SettingsDialog({
           value={volume.music}
           onChange={onMusicVolumeChange}
         />
+
+        <label className="settings-row">
+          <input
+            type="checkbox"
+            data-testid="settings-mute-background-toggle"
+            checked={muteAudioInBackground}
+            onChange={(event) => onMuteAudioInBackgroundChange(event.target.checked)}
+          />
+          <span>Mute audio in background</span>
+        </label>
 
         {import.meta.env.DEV ? (
           <>

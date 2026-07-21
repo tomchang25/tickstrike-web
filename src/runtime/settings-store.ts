@@ -1,4 +1,7 @@
-/** Player-facing settings owned by the runtime. v2 adds the three audio-mixer volumes. */
+/**
+ * Player-facing settings owned by the runtime. v2 adds the three audio-mixer volumes; v3 adds the
+ * background-audio mute preference.
+ */
 export interface GameSettings {
   /** Grid/reservation debug overlay; only toggleable in development shells. */
   readonly showDebugOverlay: boolean;
@@ -8,6 +11,8 @@ export interface GameSettings {
   readonly effectVolume: number;
   /** Music-bus gain `0..1`; scales the looping background track. */
   readonly musicVolume: number;
+  /** When true, audio suspends while the browser tab is hidden. */
+  readonly muteAudioInBackground: boolean;
 }
 
 const DEFAULT_SETTINGS: GameSettings = {
@@ -15,8 +20,10 @@ const DEFAULT_SETTINGS: GameSettings = {
   masterVolume: 1,
   effectVolume: 1,
   musicVolume: 1,
+  muteAudioInBackground: true,
 };
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
+const KNOWN_VERSIONS: ReadonlySet<number> = new Set([1, 2, SETTINGS_VERSION]);
 
 /** The versioned envelope a `SettingsStorage` persists. `data` is untyped bytes until the store validates it. */
 export interface PersistedSettings {
@@ -72,13 +79,14 @@ export class SettingsStore {
 
 /**
  * Merges a loaded envelope over the defaults, ignoring an absent, unknown-version, or malformed
- * payload. A v1 envelope migrates forward: its `showDebugOverlay` is preserved and the volumes added
- * in v2 default. The store persists the migrated shape at v2 on the next `set`.
+ * payload. Older envelopes migrate forward by field: a v1 payload keeps its `showDebugOverlay` and
+ * defaults the v2 volumes; a v1 or v2 payload defaults the v3 background-mute preference. The store
+ * persists the migrated shape at the current version on the next `set`.
  */
 function coerceSettings(persisted: PersistedSettings | undefined): GameSettings {
   if (
     !persisted ||
-    (persisted.version !== 1 && persisted.version !== SETTINGS_VERSION) ||
+    !KNOWN_VERSIONS.has(persisted.version) ||
     typeof persisted.data !== "object" ||
     persisted.data === null
   ) {
@@ -92,6 +100,10 @@ function coerceSettings(persisted: PersistedSettings | undefined): GameSettings 
     masterVolume: coerceVolume(record.masterVolume, DEFAULT_SETTINGS.masterVolume),
     effectVolume: coerceVolume(record.effectVolume, DEFAULT_SETTINGS.effectVolume),
     musicVolume: coerceVolume(record.musicVolume, DEFAULT_SETTINGS.musicVolume),
+    muteAudioInBackground:
+      typeof record.muteAudioInBackground === "boolean"
+        ? record.muteAudioInBackground
+        : DEFAULT_SETTINGS.muteAudioInBackground,
   };
 }
 

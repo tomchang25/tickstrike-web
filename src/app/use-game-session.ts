@@ -35,6 +35,7 @@ export interface GameSession {
   setMasterVolume: (value: number) => void;
   setEffectVolume: (value: number) => void;
   setMusicVolume: (value: number) => void;
+  setMuteAudioInBackground: (value: boolean) => void;
   loadScenario: (scenario: TestScenario) => void;
   reset: () => void;
   selectReward: (artifactId: string) => Promise<void>;
@@ -95,6 +96,10 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
   const setMasterVolume = useCallback((value: number) => settingsStore.set({ masterVolume: value }), [settingsStore]);
   const setEffectVolume = useCallback((value: number) => settingsStore.set({ effectVolume: value }), [settingsStore]);
   const setMusicVolume = useCallback((value: number) => settingsStore.set({ musicVolume: value }), [settingsStore]);
+  const setMuteAudioInBackground = useCallback(
+    (value: boolean) => settingsStore.set({ muteAudioInBackground: value }),
+    [settingsStore],
+  );
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -321,8 +326,11 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     };
   }, []);
 
-  // Pause audio while the tab is hidden and resume it on return. Separate from the input layer's own
-  // visibility handler; both suspend/resume are guarded no-ops before the context is unlocked.
+  // Pause audio while the tab is hidden and resume it on return, unless the player has opted to keep
+  // audio playing in the background. Resume stays unconditional: it is a guarded no-op when the
+  // context was never suspended, so it also recovers audio if the preference was turned off while
+  // hidden. Separate from the input layer's own visibility handler; both suspend/resume are guarded
+  // no-ops before the context is unlocked.
   useEffect(() => {
     const onVisibilityChange = () => {
       const runtime = runtimeRef.current;
@@ -330,14 +338,16 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
         return;
       }
       if (document.visibilityState === "hidden") {
-        runtime.audio.suspend();
+        if (settings.muteAudioInBackground) {
+          runtime.audio.suspend();
+        }
       } else {
         runtime.audio.resume();
       }
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, []);
+  }, [settings.muteAudioInBackground]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -377,6 +387,7 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     setMasterVolume,
     setEffectVolume,
     setMusicVolume,
+    setMuteAudioInBackground,
     loadScenario,
     reset,
     selectReward,

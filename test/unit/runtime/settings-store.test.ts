@@ -11,6 +11,7 @@ const DEFAULTS: GameSettings = {
   masterVolume: 1,
   effectVolume: 1,
   musicVolume: 1,
+  muteAudioInBackground: true,
 };
 
 function fakeStorage(initial?: PersistedSettings): { storage: SettingsStorage; saved: PersistedSettings[] } {
@@ -32,7 +33,28 @@ describe("SettingsStore", () => {
     expect(store.get()).toEqual(DEFAULTS);
   });
 
-  it("loads and merges a valid v2 payload over the defaults", () => {
+  it("loads and merges a valid v3 payload over the defaults", () => {
+    const { storage } = fakeStorage({
+      version: 3,
+      data: {
+        showDebugOverlay: true,
+        masterVolume: 0.5,
+        effectVolume: 0.25,
+        musicVolume: 0,
+        muteAudioInBackground: false,
+      },
+    });
+    const store = new SettingsStore(storage);
+    expect(store.get()).toEqual({
+      showDebugOverlay: true,
+      masterVolume: 0.5,
+      effectVolume: 0.25,
+      musicVolume: 0,
+      muteAudioInBackground: false,
+    });
+  });
+
+  it("migrates a v2 payload forward, keeping the volumes and defaulting the background-mute flag", () => {
     const { storage } = fakeStorage({
       version: 2,
       data: { showDebugOverlay: true, masterVolume: 0.5, effectVolume: 0.25, musicVolume: 0 },
@@ -43,19 +65,26 @@ describe("SettingsStore", () => {
       masterVolume: 0.5,
       effectVolume: 0.25,
       musicVolume: 0,
+      muteAudioInBackground: true,
     });
   });
 
-  it("migrates a v1 payload forward, preserving the debug flag and defaulting the volumes", () => {
+  it("migrates a v1 payload forward, preserving the debug flag and defaulting the later fields", () => {
     const { storage } = fakeStorage({ version: 1, data: { showDebugOverlay: true } });
     const store = new SettingsStore(storage);
     expect(store.get()).toEqual({ ...DEFAULTS, showDebugOverlay: true });
   });
 
-  it("clamps out-of-range volumes and defaults malformed ones", () => {
+  it("clamps out-of-range volumes and defaults malformed fields", () => {
     const { storage } = fakeStorage({
-      version: 2,
-      data: { showDebugOverlay: false, masterVolume: 2, effectVolume: -1, musicVolume: "loud" },
+      version: 3,
+      data: {
+        showDebugOverlay: false,
+        masterVolume: 2,
+        effectVolume: -1,
+        musicVolume: "loud",
+        muteAudioInBackground: "nope",
+      },
     });
     const store = new SettingsStore(storage);
     expect(store.get()).toEqual({
@@ -63,20 +92,21 @@ describe("SettingsStore", () => {
       masterVolume: 1,
       effectVolume: 0,
       musicVolume: 1,
+      muteAudioInBackground: true,
     });
   });
 
   it("ignores an unknown-version or malformed payload and does not overwrite until an explicit set", () => {
-    const unknownVersion = fakeStorage({ version: 3, data: { showDebugOverlay: true } });
+    const unknownVersion = fakeStorage({ version: 4, data: { showDebugOverlay: true } });
     expect(new SettingsStore(unknownVersion.storage).get()).toEqual(DEFAULTS);
     expect(unknownVersion.saved).toEqual([]);
 
-    const malformed = fakeStorage({ version: 2, data: { showDebugOverlay: "yes" } });
+    const malformed = fakeStorage({ version: 3, data: { showDebugOverlay: "yes" } });
     expect(new SettingsStore(malformed.storage).get()).toEqual(DEFAULTS);
     expect(malformed.saved).toEqual([]);
   });
 
-  it("persists a v2 envelope and notifies subscribers on set", () => {
+  it("persists a v3 envelope and notifies subscribers on set", () => {
     const { storage, saved } = fakeStorage();
     const store = new SettingsStore(storage);
     const listener = vi.fn();
@@ -86,8 +116,19 @@ describe("SettingsStore", () => {
 
     const expected: GameSettings = { ...DEFAULTS, effectVolume: 0.4 };
     expect(store.get()).toEqual(expected);
-    expect(saved).toEqual([{ version: 2, data: expected }]);
+    expect(saved).toEqual([{ version: 3, data: expected }]);
     expect(listener).toHaveBeenCalledWith(expected);
+  });
+
+  it("persists a toggled background-mute preference", () => {
+    const { storage, saved } = fakeStorage();
+    const store = new SettingsStore(storage);
+
+    store.set({ muteAudioInBackground: false });
+
+    const expected: GameSettings = { ...DEFAULTS, muteAudioInBackground: false };
+    expect(store.get()).toEqual(expected);
+    expect(saved).toEqual([{ version: 3, data: expected }]);
   });
 
   it("keeps working in memory when the storage adapter reports failure by no-op", () => {
