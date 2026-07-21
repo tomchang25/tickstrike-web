@@ -99,7 +99,7 @@ test("Reward offers present three cards, a Major milestone, and a live build HUD
   page,
 }) => {
   test.setTimeout(120_000);
-  await page.goto("/?scenario=rewards");
+  await page.goto("/debug?scenario=rewards");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 

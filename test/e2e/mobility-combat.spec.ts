@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("Dash uses directional Guard results and ignores a committed enemy hit during release", async ({ page }) => {
-  await page.goto("/?scenario=mobility-combat");
+  await page.goto("/debug?scenario=mobility-combat");
 
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");

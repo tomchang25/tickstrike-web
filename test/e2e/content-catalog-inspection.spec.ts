@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("content catalog inspection is visible and read-only", async ({ page }) => {
-  await page.goto("/?scenario=content-catalog-inspection");
+  await page.goto("/debug?scenario=content-catalog-inspection");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect(page.getByTestId("content-inspection")).toBeVisible();
@@ -42,7 +42,7 @@ test("content catalog inspection is visible and read-only", async ({ page }) => 
 });
 
 test("training scenario keeps its existing controls and hides inspection", async ({ page }) => {
-  await page.goto("/?scenario=smash-water");
+  await page.goto("/debug?scenario=smash-water");
 
   await expect(page.getByTestId("content-inspection")).toHaveCount(0);
   await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Smash");

@@ -9,7 +9,7 @@ declare global {
 
 test("Waves scenario warns, spawns, clears, and warns the next group in the same arena", async ({ page }) => {
   test.setTimeout(45_000);
-  await page.goto("/?scenario=waves");
+  await page.goto("/debug?scenario=waves");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 

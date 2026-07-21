@@ -47,6 +47,40 @@ button:disabled {
   opacity: 0.55;
 }
 
+.game-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.game-stage {
+  display: grid;
+  gap: 12px;
+  width: min(720px, 100%);
+}
+
+.game-title {
+  margin: 0;
+  color: #72d4ff;
+  font-size: 1.1rem;
+  letter-spacing: 0.24em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.game-stage .run-build-hud {
+  margin-top: 0;
+}
+
+.game-stage .hint {
+  text-align: center;
+}
+
+.terminal-banner .primary-command {
+  margin-top: 8px;
+}
+
 .app-shell {
   width: min(1180px, 100%);
   margin: 0 auto;

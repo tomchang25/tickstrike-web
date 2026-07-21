@@ -38,7 +38,7 @@ async function recordRetainedPresentations(page: import("@playwright/test").Page
 }
 
 test("Smash scenario completes through the browser harness", async ({ page }) => {
-  await page.goto("/?scenario=smash-water");
+  await page.goto("/debug?scenario=smash-water");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
@@ -132,7 +132,7 @@ for (const [scenario, profile] of [
   ["water-bomb", "enemy.bomb"],
 ] as const) {
   test(`${profile} plays its four-direction water sheet while drowning`, async ({ page }) => {
-    await page.goto(`/?scenario=${scenario}`);
+    await page.goto(`/debug?scenario=${scenario}`);
     const canvas = page.getByTestId("game-canvas");
     const box = await canvas.boundingBox();
     if (!box) {
@@ -174,7 +174,7 @@ for (const [scenario, profile] of [
 }
 
 test("switching between water scenarios reconciles the reused entity's presentation", async ({ page }) => {
-  await page.goto("/?scenario=water-ranged");
+  await page.goto("/debug?scenario=water-ranged");
   const canvas = page.getByTestId("game-canvas");
   await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-water:enemy\.ranged:/);
 
@@ -184,7 +184,7 @@ test("switching between water scenarios reconciles the reused entity's presentat
 });
 
 test("Charge owns sequential Player motion before reconciling the final cell", async ({ page }) => {
-  await page.goto("/?scenario=charge-enemy");
+  await page.goto("/debug?scenario=charge-enemy");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
@@ -260,7 +260,7 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
 });
 
 test("Charge retains its facing-direction telegraph when the Player moves aside", async ({ page }) => {
-  await page.goto("/?scenario=charge-enemy");
+  await page.goto("/debug?scenario=charge-enemy");
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
   await page.evaluate(async () => {
@@ -288,7 +288,7 @@ test("Charge retains its facing-direction telegraph when the Player moves aside"
 });
 
 test("Enemy navigation testbed exposes blocked and reserved grid cells", async ({ page }) => {
-  await page.goto("/?scenario=enemy-navigation");
+  await page.goto("/debug?scenario=enemy-navigation");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect(page.getByTestId("enemy-count")).toHaveText("20");
@@ -321,7 +321,7 @@ test("Enemy navigation testbed exposes blocked and reserved grid cells", async (
 });
 
 test("Empty arena presents the shipped board and deterministic start", async ({ page }) => {
-  await page.goto("/?scenario=empty-arena");
+  await page.goto("/debug?scenario=empty-arena");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
@@ -338,7 +338,7 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
 });
 
 test("Held movement queues steps and settles each player presentation in order", async ({ page }) => {
-  await page.goto("/?scenario=empty-arena");
+  await page.goto("/debug?scenario=empty-arena");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
@@ -380,7 +380,7 @@ test("Held movement queues steps and settles each player presentation in order",
 });
 
 test("Foundation arena resets its generation without stale presentation state", async ({ page }) => {
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-enemy-thrust")).toBeAttached();
@@ -425,7 +425,7 @@ test("Foundation arena resets its generation without stale presentation state", 
 });
 
 test("Tick Arena presents mobility controls without a Normal Attack panel", async ({ page }) => {
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
 
   await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Dash");
 
@@ -502,7 +502,7 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
 });
 
 test("Dash aimed at an enemy lands before it without dealing damage", async ({ page }) => {
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
 
   const canvas = page.getByTestId("game-canvas");
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
@@ -537,7 +537,7 @@ test("Dash aimed at an enemy lands before it without dealing damage", async ({ p
 });
 
 test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets cleanly", async ({ page }) => {
-  await page.goto("/?scenario=ranged-enemy");
+  await page.goto("/debug?scenario=ranged-enemy");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
@@ -632,7 +632,7 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
 });
 
 test("Pointer aiming previews attack and Mobility without advancing until click", async ({ page }) => {
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
 
   const canvas = page.getByTestId("game-canvas");
   const pointForCell = async (x: number, y: number) => {
@@ -679,7 +679,7 @@ test("Pointer aiming previews attack and Mobility without advancing until click"
 
 test("Tick Arena presents defeat and restarts cleanly after a committed hit", async ({ page }) => {
   test.setTimeout(30_000);
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
@@ -708,7 +708,7 @@ test("Tick Arena presents defeat and restarts cleanly after a committed hit", as
 
 test("Terminal presentation is cancelled before reset and scenario replacement", async ({ page }) => {
   test.setTimeout(30_000);
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
@@ -760,7 +760,7 @@ test("Terminal presentation is cancelled before reset and scenario replacement",
 
 test("Bomb commits from the adjacent ring, locks its footprint, and self-destructs on detonation", async ({ page }) => {
   test.setTimeout(30_000);
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
@@ -859,7 +859,7 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
 
 test("Bomb disarms when killed before its fuse resolves", async ({ page }) => {
   test.setTimeout(30_000);
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
@@ -953,7 +953,7 @@ test("Bomb disarms when killed before its fuse resolves", async ({ page }) => {
 
 test("Resetting mid-fuse clears Bomb's telegraph and returns it to a fresh idle state", async ({ page }) => {
   test.setTimeout(30_000);
-  await page.goto("/?scenario=tick-arena");
+  await page.goto("/debug?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
   const initialBomb = await page.evaluate(() =>
