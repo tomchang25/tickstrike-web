@@ -1,0 +1,56 @@
+{
+  "generator": "dev/tools/terrain/bake_terrain.py",
+  "cell_size": 64,
+  "sub_tile_size": 32,
+  "land_autotile": {
+    "file": "land-autotile.png",
+    "tile_size": 64,
+    "grid": [
+      4,
+      4
+    ],
+    "count": 16,
+    "mask_bits": {
+      "TL": 1,
+      "TR": 2,
+      "BL": 4,
+      "BR": 8
+    },
+    "index": "tile index equals the 4-corner land mask; atlas col = mask % 4, row = mask // 4"
+  },
+  "water": {
+    "file": "water.png",
+    "tile_size": 32
+  },
+  "grass_texture": {
+    "file": "grass-texture.png",
+    "tile_size": 32,
+    "count": 5,
+    "layout": "row"
+  },
+  "target_tone": [
+    172,
+    187,
+    57
+  ],
+  "tuft_soften": 0.55,
+  "sources": {
+    "field": {
+      "file": "TilesetField.png",
+      "sha256": "a519353dfdb4dfe8d2a1c67061be063056bbf0275eafa87ff711614e278c7261"
+    },
+    "floor": {
+      "file": "TilesetFloor.png",
+      "sha256": "e111065065edf806e7e893330086e68efc8755175d92f14d087b42d40a331e16"
+    },
+    "water": {
+      "file": "TilesetWater.png",
+      "sha256": "927e1fa1e793bb0398fdaad40cea22792c20f66703cdba80fb9462df7cbc275c"
+    }
+  },
+  "outputs": {
+    "land-autotile.png": "97724f3dc10c6ecfc2e8ecc412e6491f5d8620edd19ea13d89adfef57c9b8602",
+    "water.png": "0e6d24fcbb32f8633e0256f7d013c3ff6ab27e0e012ccb35156e4bc0c35dfc7a",
+    "grass-texture.png": "08791245529cacbf0cf85a2f6f047709907f54e48fb217079a54a4e3bf1b44f2"
+  }
+}

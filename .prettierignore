@@ -4,6 +4,7 @@ dev/docs/reports/
 dev/foundation/
 src/content/enemies/assets/*-4dir-x8.animation.json
 src/content/enemies/assets/*-4dir-x8.manifest.json
+src/presentation/pixi/assets/terrain/terrain-atlas.json
 node_modules/
 playwright-report/
 port-ref/

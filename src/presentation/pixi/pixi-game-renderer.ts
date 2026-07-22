@@ -14,6 +14,10 @@ import {
 import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animation-assets";
 import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
 import { enemySpriteSheetUrls } from "@content/enemies/features";
+import { TerrainPainter } from "./terrain-painter";
+import landAutotileUrl from "./assets/terrain/land-autotile.png";
+import waterTileUrl from "./assets/terrain/water.png";
+import grassTextureUrl from "./assets/terrain/grass-texture.png";
 
 export type { PointerCommit, PointerInputBinding, PointerMode } from "./input-controller";
 
@@ -135,6 +139,7 @@ function drawStatusBar(bar: Graphics, current: number, maximum: number, color: n
 export class PixiGameRenderer {
   readonly app = new Application();
   readonly worldLayer = new Container();
+  readonly terrainLayer = new Container();
   readonly gridLayer = new Container();
   readonly telegraphLayer = new Container();
   readonly pointerPreviewLayer = new Container();
@@ -151,6 +156,8 @@ export class PixiGameRenderer {
     this.telegraphLabelLayer,
     () => this.host,
   );
+
+  private readonly terrain = new TerrainPainter(this.terrainLayer);
 
   private readonly preview = new PreviewPainter(
     this.app,
@@ -210,11 +217,19 @@ export class PixiGameRenderer {
     );
     this.enemyWaterAnimations = Object.fromEntries(loadedWaterAnimations);
 
+    const [landAutotile, waterTile, grassTexture] = await Promise.all([
+      Assets.load<Texture>(landAutotileUrl),
+      Assets.load<Texture>(waterTileUrl),
+      Assets.load<Texture>(grassTextureUrl),
+    ]);
+    this.terrain.setAtlas(landAutotile, waterTile, grassTexture);
+
     this.app.canvas.dataset.testid = "game-canvas";
     this.app.canvas.setAttribute("aria-label", "Tickstrike arena");
     host.replaceChildren(this.app.canvas);
 
     this.worldLayer.addChild(
+      this.terrainLayer,
       this.gridLayer,
       this.reservationLayer,
       this.telegraphLayer,
@@ -263,6 +278,7 @@ export class PixiGameRenderer {
     if (snapshot.tick === 0) {
       this.input.resetForNewRun();
     }
+    this.terrain.render(snapshot);
     this.board.drawArena(snapshot, this.debugMode);
     this.projectSnapshot(snapshot);
 

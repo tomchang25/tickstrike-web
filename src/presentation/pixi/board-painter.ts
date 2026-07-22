@@ -24,14 +24,12 @@ export class BoardPainter {
   drawArena(snapshot: WorldSnapshot, debugMode: boolean): void {
     this.gridLayer.removeChildren().forEach((child) => child.destroy());
 
+    // Tile fills are painted by the terrain layer beneath; this layer keeps only the grid lines
+    // (over the terrain) and the debug occupancy overlay.
     for (let y = 0; y < snapshot.arena.height; y += 1) {
       for (let x = 0; x < snapshot.arena.width; x += 1) {
-        const index = y * snapshot.arena.width + x;
-        const tile = snapshot.arena.tiles[index];
-        const color = tile === "wall" ? 0x282d3a : tile === "water" ? 0x174f73 : 0x1a1e27;
         const tileView = new Graphics()
           .rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-          .fill(color)
           .stroke({ color: 0x343b4c, width: 1, alpha: 0.8 });
         this.gridLayer.addChild(tileView);
       }
