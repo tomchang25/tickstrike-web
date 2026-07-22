@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { TickstrikeDebugApi } from "../../src/harness/debug-api";
+import { canvasPointForCell } from "./canvas-geometry";
 
 declare global {
   interface Window {
@@ -53,9 +54,9 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
 
   const arena = await page.evaluate(() => window.__TICKSTRIKE__?.getState().arena);
-  expect(arena).toMatchObject({ width: 12, height: 12 });
-  expect(arena?.terrain.filter((terrain) => terrain === "land")).toHaveLength(100);
-  expect(arena?.terrain.filter((terrain) => terrain === "sea")).toHaveLength(44);
+  expect(arena).toMatchObject({ width: 18, height: 12 });
+  expect(arena?.terrain.filter((terrain) => terrain === "land")).toHaveLength(112);
+  expect(arena?.terrain.filter((terrain) => terrain === "sea")).toHaveLength(104);
 });
 
 test("Held movement queues steps and settles each player presentation in order", async ({ page }) => {
@@ -76,10 +77,8 @@ test("Held movement queues steps and settles each player presentation in order",
   if (!playerCell) {
     throw new Error("Player cell is unavailable.");
   }
-  await page.mouse.move(
-    canvasBox.x + ((playerCell.x + 0.5) / 12) * canvasBox.width,
-    canvasBox.y + ((playerCell.y - 2 + 0.5) / 12) * canvasBox.height,
-  );
+  const lockedPointer = canvasPointForCell(canvasBox, playerCell.x, playerCell.y - 2);
+  await page.mouse.move(lockedPointer.x, lockedPointer.y);
   await expect(canvas).toHaveAttribute("data-player-facing", "1,0");
   const tickBeforeRelease = await page.evaluate(() => window.__TICKSTRIKE__?.getState().tick ?? 0);
   await page.keyboard.up("ArrowRight");
@@ -93,10 +92,8 @@ test("Held movement queues steps and settles each player presentation in order",
   if (!state?.playerCell) {
     throw new Error("Player cell is unavailable after movement.");
   }
-  await page.mouse.move(
-    canvasBox.x + ((state.playerCell.x + 0.5) / 12) * canvasBox.width,
-    canvasBox.y + ((state.playerCell.y - 3 + 0.5) / 12) * canvasBox.height,
-  );
+  const facingUp = canvasPointForCell(canvasBox, state.playerCell.x, state.playerCell.y - 3);
+  await page.mouse.move(facingUp.x, facingUp.y);
   await expect(canvas).toHaveAttribute("data-player-facing", "0,-1");
 });
 
@@ -120,7 +117,7 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-facing-y", "0");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-telegraph", "false");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-committed-attack-count", "0");
-  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-width", "12");
+  await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-width", "18");
   await expect(page.getByTestId("semantic-mirror")).toHaveAttribute("data-height", "12");
   await expect(page.getByTestId("debug-mode")).not.toBeChecked();
   await expect(page.getByTestId("enemies-state")).toHaveCount(0);

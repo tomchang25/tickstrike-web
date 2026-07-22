@@ -1,4 +1,4 @@
-import { Application, Assets, Container, Graphics, Sprite, Text, type Texture } from "pixi.js";
+import { Application, Assets, Container, Graphics, Sprite, Text, TilingSprite, type Texture } from "pixi.js";
 import { type Cell, type EntityId, type EntityState, type WorldSnapshot } from "@core/model/types";
 import { CELL_SIZE } from "./pointer-aim";
 import { BoardPainter } from "./board-painter";
@@ -19,6 +19,8 @@ import landAutotileUrl from "./assets/terrain/land-autotile.png";
 import waterTileUrl from "./assets/terrain/water.png";
 import grassTextureUrl from "./assets/terrain/grass-texture.png";
 import terrainManifest from "./assets/terrain/terrain-atlas.json";
+import { BOARD_ORIGIN, COMPOSITION_HEIGHT, COMPOSITION_WIDTH } from "./arena-layout";
+import { loadArenaDecorations } from "./arena-decoration";
 
 export type { PointerCommit, PointerInputBinding, PointerMode } from "./input-controller";
 
@@ -150,9 +152,14 @@ function drawStatusBar(bar: Graphics, current: number, maximum: number, color: n
 
 export class PixiGameRenderer {
   readonly app = new Application();
+  readonly backgroundLayer = new Container();
   readonly worldLayer = new Container();
   readonly terrainLayer = new Container();
+  readonly waterReflectionLayer = new Container();
   readonly gridLayer = new Container();
+  readonly arenaDepthLayer = new Container();
+  readonly waterPropLayer = new Container();
+  readonly frameLayer = new Container();
   readonly telegraphLayer = new Container();
   readonly pointerPreviewLayer = new Container();
   readonly reservationLayer = new Container();
@@ -204,10 +211,8 @@ export class PixiGameRenderer {
   async mount(host: HTMLElement): Promise<void> {
     this.host = host;
     await this.app.init({
-      // Sized to the shipped 18x12 board at CELL_SIZE 64 so the full widescreen arena renders
-      // without clipping. Proper viewport-fit camera framing is owned by port_13 child 13.2c.
-      width: 18 * CELL_SIZE,
-      height: 12 * CELL_SIZE,
+      width: COMPOSITION_WIDTH,
+      height: COMPOSITION_HEIGHT,
       antialias: true,
       background: 0x11131a,
       resolution: window.devicePixelRatio || 1,
@@ -235,6 +240,19 @@ export class PixiGameRenderer {
       Assets.load<Texture>(grassTextureUrl),
     ]);
     this.terrain.setAtlas(landAutotile, waterTile, grassTexture, buildTerrainConfig());
+    waterTile.source.scaleMode = "nearest";
+    this.backgroundLayer.addChild(
+      new TilingSprite({ texture: waterTile, width: COMPOSITION_WIDTH, height: COMPOSITION_HEIGHT }),
+    );
+    await loadArenaDecorations(
+      {
+        waterReflection: this.waterReflectionLayer,
+        arenaDepth: this.arenaDepthLayer,
+        waterProp: this.waterPropLayer,
+        frame: this.frameLayer,
+      },
+      BOARD_ORIGIN,
+    );
 
     this.app.canvas.dataset.testid = "game-canvas";
     this.app.canvas.setAttribute("aria-label", "Tickstrike arena");
@@ -242,7 +260,11 @@ export class PixiGameRenderer {
 
     this.worldLayer.addChild(
       this.terrainLayer,
+      this.waterReflectionLayer,
       this.gridLayer,
+      this.arenaDepthLayer,
+      this.waterPropLayer,
+      this.frameLayer,
       this.reservationLayer,
       this.telegraphLayer,
       this.actorLayer,
@@ -250,7 +272,8 @@ export class PixiGameRenderer {
       this.pointerPreviewLayer,
       this.effectsLayer,
     );
-    this.app.stage.addChild(this.worldLayer);
+    this.worldLayer.position.set(BOARD_ORIGIN.x, BOARD_ORIGIN.y);
+    this.app.stage.addChild(this.backgroundLayer, this.worldLayer);
   }
 
   destroy(): void {

@@ -102,3 +102,7 @@ Rules:
 - 2026-07-22 - [port_12] Combat now plays the reference sound set from semantic events — attack, dash, smash, damage, guard chip, guard break, death, and reward cues, one per hit by priority — unlocked on the first user gesture, rate limited per cue, and stopped on reset, restart, visibility change, and teardown with no orphan source
 - 2026-07-22 - [port_12] A looping background music track plays through the mixer's music bus, started on the same gesture unlock and kept continuous across run boundaries
 - 2026-07-22 - [port_12] The settings panel now carries persisted Master, Effect, and Music volume sliders and a background-audio mute toggle that pauses audio while the tab is hidden
+
+### Layered Arena Presentation
+
+- 2026-07-22 - [port_13.2d] The arena now sits inside a world-space stone, rock, and green-tree frame, while its grass island has a south-facing masonry foundation, water contact shadow, and static reflection without changing gameplay geometry or pointer accuracy

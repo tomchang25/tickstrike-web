@@ -15,12 +15,19 @@ export interface ScreenPoint {
   readonly y: number;
 }
 
+export interface BoardViewport {
+  readonly origin: ScreenPoint;
+  readonly widthCells: number;
+  readonly heightCells: number;
+}
+
 export function screenPointToCell(
   point: ScreenPoint,
   rect: CanvasRect,
   screenWidth: number,
   screenHeight: number,
   cellSize = CELL_SIZE,
+  board?: BoardViewport,
 ): Cell | undefined {
   if (
     point.x < rect.left ||
@@ -33,8 +40,19 @@ export function screenPointToCell(
     return undefined;
   }
 
-  const x = Math.floor((((point.x - rect.left) / rect.width) * screenWidth) / cellSize);
-  const y = Math.floor((((point.y - rect.top) / rect.height) * screenHeight) / cellSize);
+  const canvasX = ((point.x - rect.left) / rect.width) * screenWidth;
+  const canvasY = ((point.y - rect.top) / rect.height) * screenHeight;
+  const localX = canvasX - (board?.origin.x ?? 0);
+  const localY = canvasY - (board?.origin.y ?? 0);
+  if (
+    board &&
+    (localX < 0 || localY < 0 || localX >= board.widthCells * cellSize || localY >= board.heightCells * cellSize)
+  ) {
+    return undefined;
+  }
+
+  const x = Math.floor(localX / cellSize);
+  const y = Math.floor(localY / cellSize);
   return { x, y };
 }
 

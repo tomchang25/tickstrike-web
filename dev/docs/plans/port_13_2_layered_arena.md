@@ -48,7 +48,7 @@ Landed in order because later slices draw on the geometry the first produces.
 | 13.2b     | Layered terrain rendering: dual-grid autotile, offline-baked same-tone grass, water base, ground scatter | Sketch: `port_13_2b_terrain_rendering.sketch.md`; terrain shipped, scatter pending                                |
 | 13.2b.1   | Multi-style terrain patch: per-corner random same-tone grass styles to remove the shore-ring seam        | Spec: `port_13_2b1_multi_style_terrain.implementation_spec.md`                                                    |
 | 13.2c     | Viewport fit: scale-to-fit + pixelated so the widescreen board fills the screen                          | Shipped — `port_13_2c_camera_framing.sketch.md` (viewport fit only; water margin + pointer offset moved to 13.2d) |
-| 13.2d     | Decorative outer frame + its world-space water margin and pointer offset                                 | Sketch: `port_13_2d_decorative_frame.sketch.md`                                                                   |
+| 13.2d     | Decorative outer frame + its world-space water margin and pointer offset                                 | Shipped - port_13_2d_decorative_frame.implementation_spec.md                                                      |
 | 13.2e     | Optional water surface ripple animation, reduced-motion-aware                                            | Deferred/optional; sketch created when activated                                                                  |
 
 ## Non-Goals

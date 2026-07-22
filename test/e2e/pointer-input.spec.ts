@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { TickstrikeDebugApi } from "../../src/harness/debug-api";
+import { canvasPointForCell, canvasPointForPixel } from "./canvas-geometry";
 
 declare global {
   interface Window {
@@ -50,10 +51,7 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   if (!box) {
     throw new Error("Game canvas has no layout box.");
   }
-  const dashTarget = {
-    x: box.x + ((9 + 0.5) / 12) * box.width,
-    y: box.y + ((6 + 0.5) / 12) * box.height,
-  };
+  const dashTarget = canvasPointForCell(box, 9, 6);
   await page.keyboard.down("Alt");
   await page.mouse.move(dashTarget.x, dashTarget.y);
   await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "9,6");
@@ -94,10 +92,7 @@ test("Dash aimed at an enemy lands before it without dealing damage", async ({ p
     throw new Error("Game canvas has no layout box.");
   }
 
-  const enemyTarget = {
-    x: box.x + ((8 + 0.5) / 12) * box.width,
-    y: box.y + ((6 + 0.5) / 12) * box.height,
-  };
+  const enemyTarget = canvasPointForCell(box, 8, 6);
   await page.keyboard.down("Alt");
   await page.mouse.move(enemyTarget.x, enemyTarget.y);
   await expect(canvas).toHaveAttribute("data-mobility-preview-cell", "7,6");
@@ -128,10 +123,7 @@ test("Pointer aiming previews attack and Mobility without advancing until click"
     if (!box) {
       throw new Error("Game canvas has no layout box.");
     }
-    return {
-      x: box.x + ((x + 0.5) / 12) * box.width,
-      y: box.y + ((y + 0.5) / 12) * box.height,
-    };
+    return canvasPointForCell(box, x, y);
   };
 
   const emptyAttackCell = await pointForCell(7, 6);
@@ -175,10 +167,7 @@ test("right-click cancels an armed Smash windup without advancing the Tick", asy
   if (!box) {
     throw new Error("Game canvas has no layout box.");
   }
-  const target = {
-    x: box.x + ((4 + 0.5) / 12) * box.width,
-    y: box.y + ((3 + 0.5) / 12) * box.height,
-  };
+  const target = canvasPointForCell(box, 4, 3);
 
   // Arm a Smash windup through the pointer Mobility mode.
   await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Smash");
@@ -209,10 +198,7 @@ test("window blur resets a stuck Mobility mode to Attack", async ({ page }) => {
   if (!box) {
     throw new Error("Game canvas has no layout box.");
   }
-  const cell = {
-    x: box.x + ((7 + 0.5) / 12) * box.width,
-    y: box.y + ((6 + 0.5) / 12) * box.height,
-  };
+  const cell = canvasPointForCell(box, 7, 6);
 
   // Hold Alt to enter Mobility mode.
   await page.keyboard.down("Alt");
@@ -240,4 +226,24 @@ test("a movement key attacks instead of moving when its direction has a target",
   // The attack does not consume the move: the player stays put rather than stepping onto 4,3.
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "3");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
+});
+
+test("the decorative margin does not produce pointer aim or commits", async ({ page }) => {
+  await page.goto("/debug?scenario=tick-arena");
+
+  const canvas = page.getByTestId("game-canvas");
+  const box = await canvas.boundingBox();
+  if (!box) {
+    throw new Error("Game canvas has no layout box.");
+  }
+
+  const boardCell = canvasPointForCell(box, 7, 6);
+  await page.mouse.move(boardCell.x, boardCell.y);
+  await expect(canvas).toHaveAttribute("data-attack-preview-cell", "7,6");
+
+  const leftMargin = canvasPointForPixel(box, 64, 256);
+  await page.mouse.move(leftMargin.x, leftMargin.y);
+  await expect(canvas).not.toHaveAttribute("data-attack-preview-cell");
+  await page.mouse.click(leftMargin.x, leftMargin.y);
+  await expect(page.getByTestId("tick-value")).toHaveText("0");
 });

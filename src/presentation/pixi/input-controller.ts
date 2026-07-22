@@ -14,6 +14,7 @@ import {
 } from "@core/actions/action-preview";
 import { cardinalDirection, sameCell, type Cell, type MobilityKind, type WorldSnapshot } from "@core/model/types";
 import { INITIAL_AIM, resolveAimDirection, resolveAimDistance, screenPointToCell } from "./pointer-aim";
+import { BOARD_ORIGIN } from "./arena-layout";
 
 export type PointerMode = "attack" | "mobility";
 export type PointerCommit =
@@ -346,11 +347,21 @@ export class InputController {
 
   private pointerToCell(event: PointerEvent): Cell | undefined {
     const rect = this.app.canvas.getBoundingClientRect();
+    const snapshot = this.snapshot();
+    if (!snapshot) {
+      return undefined;
+    }
     return screenPointToCell(
       { x: event.clientX, y: event.clientY },
       rect,
       this.app.screen.width,
       this.app.screen.height,
+      undefined,
+      {
+        origin: BOARD_ORIGIN,
+        widthCells: snapshot.arena.width,
+        heightCells: snapshot.arena.height,
+      },
     );
   }
 }

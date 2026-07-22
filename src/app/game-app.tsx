@@ -7,6 +7,7 @@ import { MilestoneOverlay } from "@ui/milestone-overlay";
 import { RewardOverlay } from "@ui/reward-overlay";
 import { SemanticMirror } from "@ui/semantic-mirror";
 import { SettingsPanel } from "@ui/settings/settings-panel";
+import { COMPOSITION_WIDTH } from "@presentation/pixi/arena-layout";
 import { useGameSession } from "./use-game-session";
 
 function requireHomeScenario() {
@@ -19,9 +20,6 @@ function requireHomeScenario() {
 
 const HOME_SCENARIO = requireHomeScenario();
 
-/** Board internal width (18 cells × 64px); matches the renderer canvas and the .game-hud design size. */
-const BOARD_PX = 1152;
-
 export function GameApp() {
   const initialScenario = HOME_SCENARIO;
   const session = useGameSession({ initialScenario, debugApi: true });
@@ -29,8 +27,8 @@ export function GameApp() {
   const pendingReward = snapshot?.pendingReward;
   const pendingMilestone = snapshot?.pendingMilestone;
 
-  // Scale the HUD in lockstep with the displayed board: --hud-scale = displayed board width / 1152.
-  // The frame's content width is the displayed board width (the canvas fills it), CSS-driven and
+  // Scale the HUD in lockstep with the displayed composition. The frame's content width is the
+  // displayed canvas width, CSS-driven and
   // available immediately, so it needs no canvas-mount timing and updates on every viewport resize.
   useEffect(() => {
     const frame = session.canvasHostRef.current?.parentElement;
@@ -39,7 +37,7 @@ export function GameApp() {
     }
     const apply = () => {
       if (frame.clientWidth > 0) {
-        frame.style.setProperty("--hud-scale", String(frame.clientWidth / BOARD_PX));
+        frame.style.setProperty("--hud-scale", String(frame.clientWidth / COMPOSITION_WIDTH));
       }
     };
     const observer = new ResizeObserver(apply);

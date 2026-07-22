@@ -31,4 +31,24 @@ describe("pointer aim", () => {
       screenPointToCell({ x: 394, y: 244 }, { left: 10, top: 20, width: 384, height: 384 }, 768, 768),
     ).toBeUndefined();
   });
+
+  it("subtracts the board origin inside an expanded composition", () => {
+    expect(
+      screenPointToCell({ x: 257, y: 193 }, { left: 0, top: 0, width: 704, height: 448 }, 1408, 896, 64, {
+        origin: { x: 128, y: 64 },
+        widthCells: 18,
+        heightCells: 12,
+      }),
+    ).toEqual({ x: 6, y: 5 });
+  });
+
+  it("rejects the decorative margin around the board", () => {
+    const board = { origin: { x: 128, y: 64 }, widthCells: 18, heightCells: 12 };
+    const rect = { left: 0, top: 0, width: 1408, height: 896 };
+
+    expect(screenPointToCell({ x: 64, y: 200 }, rect, 1408, 896, 64, board)).toBeUndefined();
+    expect(screenPointToCell({ x: 200, y: 32 }, rect, 1408, 896, 64, board)).toBeUndefined();
+    expect(screenPointToCell({ x: 1344, y: 200 }, rect, 1408, 896, 64, board)).toBeUndefined();
+    expect(screenPointToCell({ x: 200, y: 864 }, rect, 1408, 896, 64, board)).toBeUndefined();
+  });
 });

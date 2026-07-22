@@ -57,11 +57,8 @@ button:disabled {
 .game-stage {
   display: grid;
   gap: 12px;
-  /* The HUD overlays the board, so only the title sits outside it. The board is 3:2 (18×12 cells at
-     64px); size the stage by available viewport height (title + padding ≈ 120px, board width = height
-     × 1.5) so the widescreen arena fills the screen, capped by viewport width on narrow screens and by
-     a sane max so the pixel art never blows up absurdly on very large displays. */
-  width: min(calc((100vh - 120px) * 1.5), 100%, 1760px);
+  /* The 1408×896 world-space composition surrounds the 18×12 board with its decorative margin. */
+  width: min(calc((100vh - 120px) * 1.5714286), 100%, 1760px);
 }
 
 .game-title {
@@ -76,15 +73,14 @@ button:disabled {
 /* Overlay HUD: fills the canvas frame but lets gameplay clicks reach the board; only interactive
    controls (Build button, build overview) re-enable pointer events. */
 .game-hud {
-  /* The HUD is designed in the board's internal pixel space (1152×768 = 18×12 cells at 64px, matching
-     the renderer canvas) and scaled in lockstep with the displayed board via --hud-scale (set by a
-     ResizeObserver in GameApp = displayed board width / 1152). So the HUD zooms with the board and
+  /* The HUD is designed in the composition's internal 1408×896 pixel space and scaled in lockstep
+     with the displayed canvas via --hud-scale. So the HUD zooms with the arena and
      keeps a constant proportion across viewports, without rewriting its per-element pixel sizing. */
   position: absolute;
   top: 0;
   left: 0;
-  width: 1152px;
-  height: 768px;
+  width: 1408px;
+  height: 896px;
   transform: scale(var(--hud-scale, 1));
   transform-origin: top left;
   pointer-events: none;
@@ -477,7 +473,7 @@ header > p {
   /* Pixi's autoDensity writes an inline pixel width/height on the canvas; override it so the board
      scales to its frame instead of overflowing. Pointer aim already derives its scale from the
      rendered rect, so a CSS-scaled canvas stays accurate. `pixelated` keeps the upscale crisp: the
-     internal canvas is 1152×768 and the stage displays it larger, so the pixel art must not blur. */
+     internal canvas is 1408×896 and the stage displays it larger, so the pixel art must not blur. */
   width: 100% !important;
   height: auto !important;
   image-rendering: pixelated;

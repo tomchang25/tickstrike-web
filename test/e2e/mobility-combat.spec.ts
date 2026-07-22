@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { canvasPointForCell } from "./canvas-geometry";
 
 test("Dash uses directional Guard results and ignores a committed enemy hit during release", async ({ page }) => {
   await page.goto("/debug?scenario=mobility-combat");
@@ -10,9 +11,11 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
   if (!box) {
     throw new Error("Game canvas has no layout box.");
   }
-  await page.mouse.move(box.x + (2.5 / 12) * box.width, box.y + (3.5 / 12) * box.height);
+  const right = canvasPointForCell(box, 2, 3);
+  await page.mouse.move(right.x, right.y);
   await expect(canvas).toHaveAttribute("data-player-facing", "1,0");
-  await page.mouse.move(box.x + (1.5 / 12) * box.width, box.y + (1.5 / 12) * box.height);
+  const up = canvasPointForCell(box, 1, 1);
+  await page.mouse.move(up.x, up.y);
   await expect(canvas).toHaveAttribute("data-player-facing", "0,-1");
   await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Dash");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "1");
@@ -56,6 +59,7 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
 
 test("a second input during the previous turn's VFX applies immediately and the board settles", async ({ page }) => {
   await page.goto("/debug?scenario=empty-arena");
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");

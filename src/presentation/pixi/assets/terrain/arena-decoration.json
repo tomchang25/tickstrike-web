@@ -1,0 +1,86 @@
+{
+  "generator": "dev/tools/terrain/bake_decorative_frame.py",
+  "cell_size": 64,
+  "composition": {
+    "width": 1408,
+    "height": 896
+  },
+  "board_origin": {
+    "x": 128,
+    "y": 64
+  },
+  "board_size": {
+    "width": 1152,
+    "height": 768
+  },
+  "assets": {
+    "wall-top": {
+      "file": "wall-top.png",
+      "width": 1408,
+      "height": 58
+    },
+    "wall-bottom": {
+      "file": "wall-bottom.png",
+      "width": 1408,
+      "height": 48
+    },
+    "wall-left": {
+      "file": "wall-left.png",
+      "width": 51,
+      "height": 790
+    },
+    "wall-right": {
+      "file": "wall-right.png",
+      "width": 51,
+      "height": 790
+    },
+    "tree-green": {
+      "file": "tree-green.png",
+      "width": 96,
+      "height": 96
+    },
+    "tree-shadow": {
+      "file": "tree-shadow.png",
+      "width": 96,
+      "height": 48
+    },
+    "rock-grey": {
+      "file": "rock-grey.png",
+      "width": 48,
+      "height": 48
+    },
+    "rock-reflection": {
+      "file": "rock-reflection.png",
+      "width": 48,
+      "height": 16
+    },
+    "arena-south-face": {
+      "file": "arena-south-face.png",
+      "width": 896,
+      "height": 36
+    },
+    "arena-reflection": {
+      "file": "arena-reflection.png",
+      "width": 896,
+      "height": 20
+    }
+  },
+  "sources": {
+    "nature": {
+      "file": "TilesetNature.png",
+      "sha256": "51eedd957ad4ac88988d170aa83a42404ef8fdebff9e6753b6fe80841ab3d5bb"
+    }
+  },
+  "outputs": {
+    "wall-top.png": "8b68bea0deb2ca0f77defaf32526853182b8103aa0d6b4e1ad3a559f49a983cc",
+    "wall-bottom.png": "cdc53d35c2654e6c69ec3300fd793f8918f35ef35bf63d21d02cbcc1b4a50be0",
+    "wall-left.png": "155fabb08ee1db623b4e72fc75e9b872f6cda760041f961187df3000f6c7e5f8",
+    "wall-right.png": "ac49b2691209d1c02d33aa0a1760cb0b9d1d368387dd48e4c5896f258c8af930",
+    "tree-green.png": "eda38f6169a2c1813c034bede314e9925ca39fba3eb6d25495fa9a4fa9f0daaa",
+    "tree-shadow.png": "761c0ffaa3c0c27bab4e9005dc8c3a59bf845ee08f927cce16cd69a638884227",
+    "rock-grey.png": "f1abb514c2f6aff7d906bf9e376baa867c2942c093cb98342faa83e2fd4fc3f9",
+    "rock-reflection.png": "ef5c0ad3b8de6889e47456c0306fdac8831d5b6e58783ccfe98fbbba8c080d20",
+    "arena-south-face.png": "1dbdb3594d3b3869cbbcbe97ff0d3e93ee5385d3de8b7308ec75a049107665d7",
+    "arena-reflection.png": "1d44790658a212449f28ab0d181f47660618945a69c9305e9786a11760835338"
+  }
+}

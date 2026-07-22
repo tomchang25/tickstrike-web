@@ -1,0 +1,41 @@
+{
+  "placements": [
+    { "asset": "wall-top", "layer": "frame", "x": 0, "y": 0 },
+    { "asset": "wall-bottom", "layer": "frame", "x": 0, "y": 848 },
+    { "asset": "wall-left", "layer": "frame", "x": 0, "y": 58 },
+    { "asset": "wall-right", "layer": "frame", "x": 1357, "y": 58 },
+
+    { "asset": "arena-reflection", "layer": "water-reflection", "x": 256, "y": 734 },
+    { "asset": "arena-south-face", "layer": "arena-depth", "x": 256, "y": 696 },
+
+    { "asset": "tree-shadow", "layer": "water-reflection", "x": 1188, "y": 46 },
+    { "asset": "tree-shadow", "layer": "water-reflection", "x": 1264, "y": 52, "flipX": true },
+    { "asset": "tree-shadow", "layer": "water-reflection", "x": 1224, "y": 92, "flipX": true },
+    { "asset": "tree-shadow", "layer": "water-reflection", "x": 1302, "y": 96 },
+    { "asset": "tree-shadow", "layer": "water-reflection", "x": -2, "y": 810, "flipX": true },
+    { "asset": "tree-shadow", "layer": "water-reflection", "x": 68, "y": 828 },
+    { "asset": "tree-shadow", "layer": "water-reflection", "x": 132, "y": 866, "flipX": true },
+
+    { "asset": "rock-reflection", "layer": "water-reflection", "x": 62, "y": 204 },
+    { "asset": "rock-reflection", "layer": "water-reflection", "x": 1308, "y": 250 },
+    { "asset": "rock-reflection", "layer": "water-reflection", "x": 62, "y": 512 },
+    { "asset": "rock-reflection", "layer": "water-reflection", "x": 1310, "y": 614 },
+    { "asset": "rock-reflection", "layer": "water-reflection", "x": 194, "y": 176 },
+    { "asset": "rock-reflection", "layer": "water-reflection", "x": 1134, "y": 782 },
+
+    { "asset": "rock-grey", "layer": "water-prop", "x": 62, "y": 166 },
+    { "asset": "rock-grey", "layer": "water-prop", "x": 1308, "y": 212 },
+    { "asset": "rock-grey", "layer": "water-prop", "x": 62, "y": 474 },
+    { "asset": "rock-grey", "layer": "water-prop", "x": 1310, "y": 576 },
+    { "asset": "rock-grey", "layer": "water-prop", "x": 194, "y": 138 },
+    { "asset": "rock-grey", "layer": "water-prop", "x": 1134, "y": 744 },
+
+    { "asset": "tree-green", "layer": "frame", "x": 1168, "y": -8 },
+    { "asset": "tree-green", "layer": "frame", "x": 1244, "y": -2, "flipX": true },
+    { "asset": "tree-green", "layer": "frame", "x": 1204, "y": 38, "flipX": true },
+    { "asset": "tree-green", "layer": "frame", "x": 1282, "y": 42 },
+    { "asset": "tree-green", "layer": "frame", "x": -22, "y": 756, "flipX": true },
+    { "asset": "tree-green", "layer": "frame", "x": 48, "y": 774 },
+    { "asset": "tree-green", "layer": "frame", "x": 112, "y": 812, "flipX": true }
+  ]
+}

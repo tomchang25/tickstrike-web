@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { TickstrikeDebugApi } from "../../src/harness/debug-api";
+import { canvasPointForCell } from "./canvas-geometry";
 
 declare global {
   interface Window {
@@ -55,10 +56,7 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
     if (!box) {
       throw new Error("Game canvas has no layout box.");
     }
-    return {
-      x: box.x + ((x + 0.5) / 12) * box.width,
-      y: box.y + ((y + 0.5) / 12) * box.height,
-    };
+    return canvasPointForCell(box, x, y);
   };
 
   await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Smash");
@@ -138,10 +136,7 @@ for (const [scenario, profile] of [
     if (!box) {
       throw new Error("Game canvas has no layout box.");
     }
-    const target = {
-      x: box.x + (4.5 / 12) * box.width,
-      y: box.y + (3.5 / 12) * box.height,
-    };
+    const target = canvasPointForCell(box, 4, 3);
 
     await page.keyboard.down("Alt");
     await page.mouse.move(target.x, target.y);
