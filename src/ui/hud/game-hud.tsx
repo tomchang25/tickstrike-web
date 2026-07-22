@@ -1,6 +1,17 @@
 import type { WorldSnapshot } from "@core/model/types";
 import { artifactCatalog } from "@content/artifact-catalog";
 import { RunBuildHud } from "@ui/run-build-hud";
+import keyW from "./assets/input/KeyW.png";
+import keyA from "./assets/input/KeyA.png";
+import keyS from "./assets/input/KeyS.png";
+import keyD from "./assets/input/KeyD.png";
+import keyI from "./assets/input/KeyI.png";
+import keyJ from "./assets/input/KeyJ.png";
+import keyK from "./assets/input/KeyK.png";
+import keyL from "./assets/input/KeyL.png";
+import keyAlt from "./assets/input/KeyAlt.png";
+import mouseCursor from "./assets/input/Mouse.png";
+import mouseRight from "./assets/input/MouseButtonRight.png";
 
 export interface GameHudProps {
   readonly snapshot: WorldSnapshot;
@@ -11,11 +22,38 @@ export interface GameHudProps {
   readonly onBuildOpenChange: (open: boolean) => void;
 }
 
-const CONTROL_HINTS: readonly { readonly label: string; readonly keys: readonly string[] }[] = [
-  { label: "Move / Attack", keys: ["WASD"] },
-  { label: "Attack", keys: ["IJKL"] },
-  { label: "Mobility", keys: ["Alt", "cursor"] },
-  { label: "Cancel", keys: ["right-click"] },
+interface KeyHint {
+  readonly src: string;
+  readonly alt: string;
+}
+
+const CONTROL_HINTS: readonly { readonly label: string; readonly keys: readonly KeyHint[] }[] = [
+  {
+    label: "Move / Attack",
+    keys: [
+      { src: keyW, alt: "W" },
+      { src: keyA, alt: "A" },
+      { src: keyS, alt: "S" },
+      { src: keyD, alt: "D" },
+    ],
+  },
+  {
+    label: "Attack",
+    keys: [
+      { src: keyI, alt: "I" },
+      { src: keyJ, alt: "J" },
+      { src: keyK, alt: "K" },
+      { src: keyL, alt: "L" },
+    ],
+  },
+  {
+    label: "Mobility",
+    keys: [
+      { src: keyAlt, alt: "Alt" },
+      { src: mouseCursor, alt: "cursor" },
+    ],
+  },
+  { label: "Cancel", keys: [{ src: mouseRight, alt: "right-click" }] },
 ];
 
 function artifactName(artifactId: string): string {
@@ -68,11 +106,11 @@ export function GameHud({ snapshot, commandsEnabled = true, buildOpen, onBuildOp
           {CONTROL_HINTS.map((hint) => (
             <div key={hint.label} className="hud-control-row">
               <span className="hud-control-label">{hint.label}</span>
-              {hint.keys.map((key, index) => (
-                <span key={key} className="hud-key" data-plus={index > 0 ? "true" : undefined}>
-                  {key}
-                </span>
-              ))}
+              <span className="hud-key-group">
+                {hint.keys.map((key) => (
+                  <img key={key.alt} className="hud-key-sprite" src={key.src} alt={key.alt} />
+                ))}
+              </span>
             </div>
           ))}
         </section>

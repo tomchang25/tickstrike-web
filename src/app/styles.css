@@ -57,9 +57,11 @@ button:disabled {
 .game-stage {
   display: grid;
   gap: 12px;
-  /* The HUD is now an overlay on the board, so only the title sits outside it; cap the square board
-     by viewport height (title + padding ≈ 110px) so the whole arena stays visible on short viewports. */
-  width: min(720px, calc(100vh - 110px), 100%);
+  /* The HUD overlays the board, so only the title sits outside it. The board is 3:2 (18×12 cells at
+     64px); size the stage by available viewport height (title + padding ≈ 120px, board width = height
+     × 1.5) so the widescreen arena fills the screen, capped by viewport width on narrow screens and by
+     a sane max so the pixel art never blows up absurdly on very large displays. */
+  width: min(calc((100vh - 120px) * 1.5), 100%, 1760px);
 }
 
 .game-title {
@@ -74,8 +76,17 @@ button:disabled {
 /* Overlay HUD: fills the canvas frame but lets gameplay clicks reach the board; only interactive
    controls (Build button, build overview) re-enable pointer events. */
 .game-hud {
+  /* The HUD is designed in the board's internal pixel space (1152×768 = 18×12 cells at 64px, matching
+     the renderer canvas) and scaled in lockstep with the displayed board via --hud-scale (set by a
+     ResizeObserver in GameApp = displayed board width / 1152). So the HUD zooms with the board and
+     keeps a constant proportion across viewports, without rewriting its per-element pixel sizing. */
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 1152px;
+  height: 768px;
+  transform: scale(var(--hud-scale, 1));
+  transform-origin: top left;
   pointer-events: none;
   font-size: 0.75rem;
 }
@@ -166,6 +177,10 @@ button:disabled {
   flex-direction: column;
   gap: 5px;
   align-items: flex-end;
+  padding: 8px 11px;
+  border: 0.5px solid rgb(120 140 170 / 32%);
+  border-radius: 10px;
+  background: rgb(18 21 28 / 82%);
 }
 
 .hud-control-row {
@@ -178,20 +193,16 @@ button:disabled {
   color: #c3ccd8;
 }
 
-.hud-key {
-  padding: 2px 7px;
-  border: 0.5px solid #46536a;
-  border-radius: 5px;
-  background: #202634;
-  color: #dfeaf5;
-  font-size: 0.65rem;
-  letter-spacing: 0.04em;
+.hud-key-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
-.hud-key[data-plus]::before {
-  margin-right: 6px;
-  color: #6b7787;
-  content: "+";
+.hud-key-sprite {
+  height: 20px;
+  width: auto;
+  image-rendering: pixelated;
 }
 
 .hud-build {
@@ -317,6 +328,9 @@ button:disabled {
   font-size: 1.05rem;
   cursor: pointer;
   place-items: center;
+  /* Scale in lockstep with the HUD (both read --hud-scale from the canvas frame). */
+  transform: scale(var(--hud-scale, 1));
+  transform-origin: top right;
 }
 
 .settings-gear:hover {
@@ -462,9 +476,11 @@ header > p {
   display: block;
   /* Pixi's autoDensity writes an inline pixel width/height on the canvas; override it so the board
      scales to its frame instead of overflowing. Pointer aim already derives its scale from the
-     rendered rect, so a CSS-scaled canvas stays accurate. */
+     rendered rect, so a CSS-scaled canvas stays accurate. `pixelated` keeps the upscale crisp: the
+     internal canvas is 1152×768 and the stage displays it larger, so the pixel art must not blur. */
   width: 100% !important;
   height: auto !important;
+  image-rendering: pixelated;
 }
 
 .terminal-banner {

@@ -1,5 +1,6 @@
 // The home shell imports its scenario module directly instead of the scenario registry:
 // the registry's import.meta.glob would pull every harness scenario into the production bundle.
+import { useEffect } from "react";
 import { scenarios as runScenarios } from "@harness/scenarios/run.scenario";
 import { GameHud } from "@ui/hud/game-hud";
 import { MilestoneOverlay } from "@ui/milestone-overlay";
@@ -18,12 +19,34 @@ function requireHomeScenario() {
 
 const HOME_SCENARIO = requireHomeScenario();
 
+/** Board internal width (18 cells × 64px); matches the renderer canvas and the .game-hud design size. */
+const BOARD_PX = 1152;
+
 export function GameApp() {
   const initialScenario = HOME_SCENARIO;
   const session = useGameSession({ initialScenario, debugApi: true });
   const { snapshot, busy, runtimeRef } = session;
   const pendingReward = snapshot?.pendingReward;
   const pendingMilestone = snapshot?.pendingMilestone;
+
+  // Scale the HUD in lockstep with the displayed board: --hud-scale = displayed board width / 1152.
+  // The frame's content width is the displayed board width (the canvas fills it), CSS-driven and
+  // available immediately, so it needs no canvas-mount timing and updates on every viewport resize.
+  useEffect(() => {
+    const frame = session.canvasHostRef.current?.parentElement;
+    if (!frame) {
+      return;
+    }
+    const apply = () => {
+      if (frame.clientWidth > 0) {
+        frame.style.setProperty("--hud-scale", String(frame.clientWidth / BOARD_PX));
+      }
+    };
+    const observer = new ResizeObserver(apply);
+    observer.observe(frame);
+    apply();
+    return () => observer.disconnect();
+  }, [session.canvasHostRef]);
 
   return (
     <main className="game-shell">
