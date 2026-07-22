@@ -62,9 +62,9 @@ Preliminary parity work that is not yet owned by the ordered Main Plans. Use one
 
 ### Arena Terrain And Decoration Rework
 
-The shipped 13.2 terrain and decoration (through the 13.2d decorative frame) is a placeholder: it establishes the layered-arena structure but not the target art quality. Rework items, to be promoted into the port_13_2 plan (plans/port_13_2_layered_arena.md) once the approach is settled:
+The shipped 13.2 terrain and decoration (through the 13.2d decorative frame) is a placeholder: it establishes the layered-arena structure but not the target art quality. Rework items, to be promoted into the port_13_2 plan (plans/port_13_2_layered_arena.md) as they land:
 
-- Replace the shore transition with a better autotile or waterbank approach and matching assets (approach under discussion)
+- Shore transition: settled and in progress. The grass-shore autotile is replaced by a walled-contour treatment built from the Cainos wall pieces — 16px contour tracing with contiguous strips, exterior ring plus interior openings — validated pixel-perfect against the canonical sheet structures and approved in the /debug/wall testbed. Next step is the production arena tile rework on the real 14x8 island.
 - Add the water surface ripple as an animated sprite (existing deferred sub-child 13.2e)
 - Remake the objects sitting on the water surface
 - Remake the decorative outer frame
