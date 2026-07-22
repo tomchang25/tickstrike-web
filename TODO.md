@@ -52,6 +52,8 @@ One line, no rationale, no backing document.
 
 One line, no rationale, no backing document.
 
+- [e2e_regression] Fix 7 failing Playwright e2e specs on `port` (bomb-enemy, charge-enemy, harness-lifecycle, mobility-combat, pointer-input, rewards, settings) where the debug harness never exposes `window.__TICKSTRIKE__`/active-mobility and held-move facing settles wrong
+
 ---
 
 ## Port Draft
