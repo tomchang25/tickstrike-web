@@ -42,13 +42,14 @@ The core arena becomes 18 wide × 12 tall. Land is the 14×8 rectangle centered 
 
 Landed in order because later slices draw on the geometry the first produces.
 
-| Sub-child | Focus                                                                                                    | Document form                                            |
-| --------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| 13.2a     | Arena geometry: 18×12 grid, 14×8 island, 2-cell ring, spawn repositioning, golden regeneration           | Spec: `port_13_2a_arena_geometry.implementation_spec.md` |
-| 13.2b     | Layered terrain rendering: dual-grid autotile, offline-baked same-tone grass, water base, ground scatter | Sketch: `port_13_2b_terrain_rendering.sketch.md`         |
-| 13.2c     | Camera framing for the widescreen board (viewport fit, water margin, scale)                              | Sketch: `port_13_2c_camera_framing.sketch.md`            |
-| 13.2d     | Decorative outer frame (baked world-space sprite)                                                        | Sketch: `port_13_2d_decorative_frame.sketch.md`          |
-| 13.2e     | Optional water surface ripple animation, reduced-motion-aware                                            | Deferred/optional; sketch created when activated         |
+| Sub-child | Focus                                                                                                    | Document form                                                                      |
+| --------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 13.2a     | Arena geometry: 18×12 grid, 14×8 island, 2-cell ring, spawn repositioning, golden regeneration           | Spec: `port_13_2a_arena_geometry.implementation_spec.md`                           |
+| 13.2b     | Layered terrain rendering: dual-grid autotile, offline-baked same-tone grass, water base, ground scatter | Sketch: `port_13_2b_terrain_rendering.sketch.md`; terrain shipped, scatter pending |
+| 13.2b.1   | Multi-style terrain patch: per-corner random same-tone grass styles to remove the shore-ring seam        | Spec: `port_13_2b1_multi_style_terrain.implementation_spec.md`                     |
+| 13.2c     | Camera framing for the widescreen board (viewport fit, water margin, scale)                              | Sketch: `port_13_2c_camera_framing.sketch.md`                                      |
+| 13.2d     | Decorative outer frame (baked world-space sprite)                                                        | Sketch: `port_13_2d_decorative_frame.sketch.md`                                    |
+| 13.2e     | Optional water surface ripple animation, reduced-motion-aware                                            | Deferred/optional; sketch created when activated                                   |
 
 ## Non-Goals
 

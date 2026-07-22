@@ -14,10 +14,11 @@ import {
 import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animation-assets";
 import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
 import { enemySpriteSheetUrls } from "@content/enemies/features";
-import { TerrainPainter } from "./terrain-painter";
+import { TerrainPainter, type TerrainConfig } from "./terrain-painter";
 import landAutotileUrl from "./assets/terrain/land-autotile.png";
 import waterTileUrl from "./assets/terrain/water.png";
 import grassTextureUrl from "./assets/terrain/grass-texture.png";
+import terrainManifest from "./assets/terrain/terrain-atlas.json";
 
 export type { PointerCommit, PointerInputBinding, PointerMode } from "./input-controller";
 
@@ -51,6 +52,17 @@ function cellToPixels(cell: Cell): { x: number; y: number } {
   return {
     x: cell.x * CELL_SIZE + CELL_SIZE / 2,
     y: cell.y * CELL_SIZE + CELL_SIZE / 2,
+  };
+}
+
+/** Maps the bake manifest onto the painter's config. */
+function buildTerrainConfig(): TerrainConfig {
+  return {
+    variantCount: terrainManifest.land_autotile.variant_count,
+    overlayBuckets: terrainManifest.overlay.buckets,
+    overlayNoneBuckets: terrainManifest.overlay.none_buckets,
+    overlayRowBuckets: terrainManifest.overlay.row_buckets,
+    overlayRowSlots: terrainManifest.overlay.row_slots,
   };
 }
 
@@ -222,7 +234,7 @@ export class PixiGameRenderer {
       Assets.load<Texture>(waterTileUrl),
       Assets.load<Texture>(grassTextureUrl),
     ]);
-    this.terrain.setAtlas(landAutotile, waterTile, grassTexture);
+    this.terrain.setAtlas(landAutotile, waterTile, grassTexture, buildTerrainConfig());
 
     this.app.canvas.dataset.testid = "game-canvas";
     this.app.canvas.setAttribute("aria-label", "Tickstrike arena");
