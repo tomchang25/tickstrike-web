@@ -42,16 +42,26 @@ The result: the same deterministic runtime on a widescreen board, with every fix
 
 ## Files to Change
 
-| File                                                 | Change Size | Purpose                                                               |
-| ---------------------------------------------------- | ----------- | --------------------------------------------------------------------- |
-| `src/core/world/arena.ts`                            | Small       | Shipped dimensions 18×12 and the 14×8 centered land predicate         |
-| `src/harness/fixtures/shipped-arena.ts`              | Small       | Reposition player and five fixture-enemy spawns onto the new geometry |
-| `src/harness/fixtures/wave-arena.ts`                 | Small       | Move player spawn to the new center                                   |
-| `src/harness/fixtures/milestone-arena.ts`            | Small       | Move player spawn to the new center                                   |
-| `src/harness/fixtures/reward-arena.ts`               | Small       | Move player spawn to the new center                                   |
-| `test/unit/determinism/__golden__/charge-enemy.json` | Regenerated | Golden reflecting the new geometry                                    |
-| `test/unit/determinism/__golden__/rewards.json`      | Regenerated | Golden reflecting the new geometry                                    |
-| `test/unit/determinism/__golden__/waves.json`        | Regenerated | Golden reflecting the new geometry                                    |
+As built (differs from the pre-implementation plan below where noted):
+
+| File                                                  | Change Size | Purpose                                                                                                                  |
+| ----------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `src/core/world/arena.ts`                             | Small       | Shipped dimensions 18×12 and the 14×8 centered land predicate                                                            |
+| `src/harness/fixtures/wave-arena.ts`                  | Small       | Move player spawn to the new center (9,6)                                                                                |
+| `src/harness/fixtures/milestone-arena.ts`             | Small       | Move player spawn to the new center (9,6)                                                                                |
+| `src/harness/fixtures/reward-arena.ts`                | Small       | Move player spawn to the new center (9,6)                                                                                |
+| `test/unit/core/world/arena.test.ts`                  | Small       | Update the shipped-geometry assertions (dims, land/sea counts, bounds, iteration)                                        |
+| `test/unit/presentation/audio/audio-coverage.test.ts` | Small       | Classify the wave/reward lifecycle events the new run reaches as intentionally silent                                    |
+| `test/unit/determinism/__golden__/rewards.json`       | Regenerated | Golden reflecting the new geometry                                                                                       |
+| `test/unit/determinism/__golden__/waves.json`         | Regenerated | Golden reflecting the new geometry                                                                                       |
+| `src/presentation/pixi/pixi-game-renderer.ts`         | Small       | Size the canvas to the 18×12 board so the widescreen arena is not clipped (interim; proper viewport-fit camera is 13.2c) |
+
+As-built deviations from the plan:
+
+- `src/harness/fixtures/shipped-arena.ts` was **not** modified. Repositioning its debug combat formation (+3 x) had no behavioral value — the formation stays a valid, identical relative scenario on the larger board — but would have forced rewriting ~10 coordinate-coupled behavioral assertions in `action-resolver.test.ts` and `action-preview.test.ts`. The fixture's absolute origin is arbitrary; only the playable arenas (wave/milestone/reward) are centered.
+- `charge-enemy.json` did not change; its scenario does not depend on the moved geometry.
+- The regenerated `rewards`/`waves` goldens differ in combat outcome, not only coordinates: their fixed command logs, authored for the old geometry, now drive a different but fully deterministic run on the wider board (the waves run now reaches wave-clear → reward-offer → next-wave). Verified as a deterministic re-derivation (same event vocabulary, no crash), not a regression. Re-authoring those scenario command logs for the new geometry is a possible follow-up, out of scope here.
+- The renderer canvas-size change is the minimal fix to keep the main arena unclipped; proper viewport-fit framing remains child 13.2c.
 
 ## Execution Outline
 

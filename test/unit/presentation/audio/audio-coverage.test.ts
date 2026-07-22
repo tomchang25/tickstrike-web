@@ -37,6 +37,9 @@ const INTENTIONALLY_SILENT: ReadonlySet<CombatEvent["type"]> = new Set([
   "directional_hit",
   "wave_group_warned",
   "wave_group_spawned",
+  "wave_started",
+  "wave_cleared",
+  "reward_offered",
 ]);
 
 function loadGolden(name: string): readonly GoldenEntry[] {

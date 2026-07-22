@@ -119,7 +119,7 @@ export function createRewardArena(seed: Seed = REWARD_SCENARIO_SEED): World {
     id: "player",
     kind: "player",
     archetype: "ninja",
-    cell: { x: 6, y: 6 },
+    cell: { x: 9, y: 6 },
     hp: player.hp,
     normalAttackDamage: player.normalAttack.damage,
     mobility: {

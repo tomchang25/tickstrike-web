@@ -109,7 +109,7 @@ export function createMilestoneArena(seed: Seed = MILESTONE_SCENARIO_SEED): Worl
     id: "player",
     kind: "player",
     archetype: "ninja",
-    cell: { x: 6, y: 6 },
+    cell: { x: 9, y: 6 },
     hp: player.hp,
     normalAttackDamage: player.normalAttack.damage,
     mobility: {

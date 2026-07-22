@@ -6,7 +6,7 @@ export interface ArenaInput {
   readonly terrain: readonly TerrainKind[];
 }
 
-const SHIPPED_WIDTH = 12;
+const SHIPPED_WIDTH = 18;
 const SHIPPED_HEIGHT = 12;
 
 function cloneCell(cell: Cell): Cell {
@@ -147,7 +147,7 @@ export function createShippedArena(): Arena {
   const terrain: TerrainKind[] = [];
   for (let y = 0; y < SHIPPED_HEIGHT; y += 1) {
     for (let x = 0; x < SHIPPED_WIDTH; x += 1) {
-      terrain.push(x >= 1 && x <= 10 && y >= 1 && y <= 10 ? "land" : "sea");
+      terrain.push(x >= 2 && x <= 15 && y >= 2 && y <= 9 ? "land" : "sea");
     }
   }
   return new Arena({ width: SHIPPED_WIDTH, height: SHIPPED_HEIGHT, terrain });

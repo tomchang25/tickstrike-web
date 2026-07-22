@@ -185,8 +185,10 @@ export class PixiGameRenderer {
   async mount(host: HTMLElement): Promise<void> {
     this.host = host;
     await this.app.init({
-      width: 768,
-      height: 768,
+      // Sized to the shipped 18x12 board at CELL_SIZE 64 so the full widescreen arena renders
+      // without clipping. Proper viewport-fit camera framing is owned by port_13 child 13.2c.
+      width: 18 * CELL_SIZE,
+      height: 12 * CELL_SIZE,
       antialias: true,
       background: 0x11131a,
       resolution: window.devicePixelRatio || 1,

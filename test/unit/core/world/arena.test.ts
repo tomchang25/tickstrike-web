@@ -12,17 +12,17 @@ import { createShippedArena } from "@core/world/arena";
 import { createShippedArena as createShippedWorld } from "@harness/fixtures/shipped-arena";
 
 describe("shipped arena geometry", () => {
-  it("creates the twelve-by-twelve land rectangle and sea perimeter", () => {
+  it("creates the fourteen-by-eight land island and two-cell sea ring", () => {
     const arena = createShippedArena();
     const land = [...arena.iterateCells()].filter((cell) => arena.terrainAt(cell) === "land");
     const sea = [...arena.iterateCells()].filter((cell) => arena.terrainAt(cell) === "sea");
 
-    expect(arena.width).toBe(12);
+    expect(arena.width).toBe(18);
     expect(arena.height).toBe(12);
-    expect(land).toHaveLength(100);
-    expect(sea).toHaveLength(44);
-    expect(arena.terrainAt({ x: 6, y: 6 })).toBe("land");
-    expect(arena.isLegalCell({ x: 6, y: 6 })).toBe(true);
+    expect(land).toHaveLength(112);
+    expect(sea).toHaveLength(104);
+    expect(arena.terrainAt({ x: 9, y: 6 })).toBe("land");
+    expect(arena.isLegalCell({ x: 9, y: 6 })).toBe(true);
     expect(arena.isWalkable({ x: 0, y: 6 })).toBe(false);
   });
 
@@ -31,7 +31,7 @@ describe("shipped arena geometry", () => {
 
     expect(arena.isInBounds({ x: 0, y: 0 })).toBe(true);
     expect(arena.isInBounds({ x: -1, y: 0 })).toBe(false);
-    expect(arena.isInBounds({ x: 12, y: 0 })).toBe(false);
+    expect(arena.isInBounds({ x: 18, y: 0 })).toBe(false);
     expect(arena.terrainAt({ x: -1, y: 0 })).toBeUndefined();
     expect(arena.isLegalCell({ x: -1, y: 0 })).toBe(false);
     expect(arena.tileAt({ x: -1, y: 0 })).toBe("wall");
@@ -46,8 +46,8 @@ describe("shipped arena geometry", () => {
       { x: 2, y: 0 },
     ]);
     expect([...arena.iterateCells()].slice(-2)).toEqual([
-      { x: 10, y: 11 },
-      { x: 11, y: 11 },
+      { x: 16, y: 11 },
+      { x: 17, y: 11 },
     ]);
   });
 
@@ -94,7 +94,7 @@ describe("shipped arena geometry", () => {
     });
 
     expect(player.cell).toEqual({ x: 6, y: 6 });
-    expect(world.snapshot().arena).toMatchObject({ width: 12, height: 12 });
-    expect(world.snapshot().arena.terrain.filter((terrain) => terrain === "land")).toHaveLength(100);
+    expect(world.snapshot().arena).toMatchObject({ width: 18, height: 12 });
+    expect(world.snapshot().arena.terrain.filter((terrain) => terrain === "land")).toHaveLength(112);
   });
 });

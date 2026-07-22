@@ -20,11 +20,11 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 6,
+          "x": 9,
           "y": 6
         },
         "to": {
-          "x": 5,
+          "x": 8,
           "y": 6
         }
       },
@@ -36,8 +36,8 @@
           {
             "entityId": "wave-1-slot-0-t1-0",
             "cell": {
-              "x": 3,
-              "y": 9
+              "x": 10,
+              "y": 8
             },
             "level": 1
           }
@@ -74,11 +74,11 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 5,
+          "x": 8,
           "y": 6
         },
         "to": {
-          "x": 4,
+          "x": 7,
           "y": 6
         }
       },
@@ -117,7 +117,7 @@
           "y": 0
         },
         "target": {
-          "x": 3,
+          "x": 6,
           "y": 6
         }
       },
@@ -152,11 +152,11 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 4,
+          "x": 7,
           "y": 6
         },
         "to": {
-          "x": 3,
+          "x": 6,
           "y": 6
         }
       },
@@ -191,11 +191,11 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 3,
+          "x": 6,
           "y": 6
         },
         "to": {
-          "x": 3,
+          "x": 6,
           "y": 5
         }
       },
@@ -230,29 +230,25 @@
         "type": "player_dashed",
         "actorId": "player",
         "from": {
-          "x": 3,
+          "x": 6,
           "y": 5
         },
         "to": {
-          "x": 3,
-          "y": 1
+          "x": 6,
+          "y": 2
         },
         "path": [
           {
-            "x": 3,
+            "x": 6,
             "y": 4
           },
           {
-            "x": 3,
+            "x": 6,
             "y": 3
           },
           {
-            "x": 3,
+            "x": 6,
             "y": 2
-          },
-          {
-            "x": 3,
-            "y": 1
           }
         ]
       },
@@ -287,12 +283,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 3,
-          "y": 1
+          "x": 6,
+          "y": 2
         },
         "to": {
-          "x": 4,
-          "y": 1
+          "x": 7,
+          "y": 2
         }
       },
       {
@@ -330,8 +326,8 @@
           "y": 0
         },
         "target": {
-          "x": 5,
-          "y": 1
+          "x": 8,
+          "y": 2
         }
       },
       {
@@ -365,12 +361,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 4,
-          "y": 1
+          "x": 7,
+          "y": 2
         },
         "to": {
-          "x": 4,
-          "y": 2
+          "x": 7,
+          "y": 3
         }
       },
       {
@@ -404,12 +400,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 4,
-          "y": 2
+          "x": 7,
+          "y": 3
         },
         "to": {
-          "x": 3,
-          "y": 2
+          "x": 6,
+          "y": 3
         }
       },
       {
@@ -443,12 +439,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 3,
-          "y": 2
+          "x": 6,
+          "y": 3
         },
         "to": {
-          "x": 3,
-          "y": 1
+          "x": 6,
+          "y": 2
         }
       },
       {
@@ -486,8 +482,8 @@
           "y": -1
         },
         "target": {
-          "x": 3,
-          "y": 0
+          "x": 6,
+          "y": 1
         }
       },
       {
@@ -533,12 +529,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 3,
-          "y": 1
+          "x": 6,
+          "y": 2
         },
         "to": {
-          "x": 4,
-          "y": 1
+          "x": 7,
+          "y": 2
         }
       },
       {
@@ -572,12 +568,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 4,
-          "y": 1
+          "x": 7,
+          "y": 2
         },
         "to": {
-          "x": 5,
-          "y": 1
+          "x": 8,
+          "y": 2
         }
       },
       {
@@ -615,8 +611,8 @@
           "y": 0
         },
         "target": {
-          "x": 6,
-          "y": 1
+          "x": 9,
+          "y": 2
         }
       },
       {
@@ -650,33 +646,33 @@
         "type": "player_dashed",
         "actorId": "player",
         "from": {
-          "x": 5,
-          "y": 1
+          "x": 8,
+          "y": 2
         },
         "to": {
-          "x": 10,
-          "y": 1
+          "x": 13,
+          "y": 2
         },
         "path": [
           {
-            "x": 6,
-            "y": 1
-          },
-          {
-            "x": 7,
-            "y": 1
-          },
-          {
-            "x": 8,
-            "y": 1
-          },
-          {
             "x": 9,
-            "y": 1
+            "y": 2
           },
           {
             "x": 10,
-            "y": 1
+            "y": 2
+          },
+          {
+            "x": 11,
+            "y": 2
+          },
+          {
+            "x": 12,
+            "y": 2
+          },
+          {
+            "x": 13,
+            "y": 2
           }
         ]
       },
@@ -711,12 +707,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 10,
-          "y": 1
+          "x": 13,
+          "y": 2
         },
         "to": {
-          "x": 10,
-          "y": 2
+          "x": 13,
+          "y": 3
         }
       },
       {
@@ -750,12 +746,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 10,
-          "y": 2
+          "x": 13,
+          "y": 3
         },
         "to": {
-          "x": 10,
-          "y": 3
+          "x": 13,
+          "y": 4
         }
       },
       {
@@ -789,12 +785,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 10,
-          "y": 3
+          "x": 13,
+          "y": 4
         },
         "to": {
-          "x": 9,
-          "y": 3
+          "x": 12,
+          "y": 4
         }
       },
       {
@@ -832,8 +828,8 @@
           "y": 0
         },
         "target": {
-          "x": 8,
-          "y": 3
+          "x": 11,
+          "y": 4
         }
       },
       {
@@ -867,12 +863,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 9,
-          "y": 3
+          "x": 12,
+          "y": 4
         },
         "to": {
-          "x": 9,
-          "y": 2
+          "x": 12,
+          "y": 3
         }
       },
       {
@@ -906,12 +902,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 9,
-          "y": 2
+          "x": 12,
+          "y": 3
         },
         "to": {
-          "x": 10,
-          "y": 2
+          "x": 13,
+          "y": 3
         }
       },
       {
@@ -945,12 +941,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 10,
-          "y": 2
+          "x": 13,
+          "y": 3
         },
         "to": {
-          "x": 9,
-          "y": 2
+          "x": 12,
+          "y": 3
         }
       },
       {
@@ -988,8 +984,8 @@
           "y": 0
         },
         "target": {
-          "x": 8,
-          "y": 2
+          "x": 11,
+          "y": 3
         }
       },
       {
@@ -1023,12 +1019,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 9,
-          "y": 2
+          "x": 12,
+          "y": 3
         },
         "to": {
-          "x": 9,
-          "y": 3
+          "x": 12,
+          "y": 4
         }
       },
       {
@@ -1062,33 +1058,33 @@
         "type": "player_dashed",
         "actorId": "player",
         "from": {
-          "x": 9,
-          "y": 3
+          "x": 12,
+          "y": 4
         },
         "to": {
-          "x": 9,
-          "y": 8
+          "x": 12,
+          "y": 9
         },
         "path": [
           {
-            "x": 9,
-            "y": 4
-          },
-          {
-            "x": 9,
+            "x": 12,
             "y": 5
           },
           {
-            "x": 9,
+            "x": 12,
             "y": 6
           },
           {
-            "x": 9,
+            "x": 12,
             "y": 7
           },
           {
-            "x": 9,
+            "x": 12,
             "y": 8
+          },
+          {
+            "x": 12,
+            "y": 9
           }
         ]
       },
@@ -1123,12 +1119,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 9,
-          "y": 8
+          "x": 12,
+          "y": 9
         },
         "to": {
-          "x": 9,
-          "y": 7
+          "x": 12,
+          "y": 8
         }
       },
       {
@@ -1162,12 +1158,12 @@
         "type": "actor_moved",
         "entityId": "player",
         "from": {
-          "x": 9,
-          "y": 7
+          "x": 12,
+          "y": 8
         },
         "to": {
-          "x": 8,
-          "y": 7
+          "x": 11,
+          "y": 8
         }
       },
       {
@@ -1205,9 +1201,62 @@
           "y": 0
         },
         "target": {
-          "x": 7,
-          "y": 7
+          "x": 10,
+          "y": 8
+        },
+        "hit": {
+          "targetId": "wave-1-slot-0-t1-0",
+          "damage": 20,
+          "hpBefore": 1,
+          "hpAfter": 0,
+          "killed": true,
+          "attackerId": "player"
         }
+      },
+      {
+        "type": "enemy_damaged",
+        "enemyId": "wave-1-slot-0-t1-0",
+        "hit": {
+          "targetId": "wave-1-slot-0-t1-0",
+          "damage": 20,
+          "hpBefore": 1,
+          "hpAfter": 0,
+          "killed": true,
+          "attackerId": "player"
+        },
+        "hp": 0,
+        "maxHp": 1
+      },
+      {
+        "type": "enemy_died",
+        "enemyId": "wave-1-slot-0-t1-0",
+        "attackerId": "player",
+        "cell": {
+          "x": 10,
+          "y": 8
+        }
+      },
+      {
+        "type": "wave_cleared",
+        "waveNumber": 1
+      },
+      {
+        "type": "reward_offered",
+        "waveNumber": 1,
+        "cards": [
+          {
+            "artifactId": "max_health_up",
+            "resultingStackCount": 1
+          },
+          {
+            "artifactId": "attack_up",
+            "resultingStackCount": 1
+          },
+          {
+            "artifactId": "mobility_cooldown_down",
+            "resultingStackCount": 1
+          }
+        ]
       },
       {
         "type": "world_advanced",
@@ -1220,11 +1269,26 @@
     ]
   },
   {
+    "reward": "max_health_up",
+    "accepted": true,
+    "events": [
+      {
+        "type": "reward_selected",
+        "artifactId": "max_health_up",
+        "stackCount": 1
+      },
+      {
+        "type": "wave_started",
+        "waveNumber": 2
+      }
+    ]
+  },
+  {
     "snapshot": {
       "tick": 29,
       "outcome": "running",
       "arena": {
-        "width": 12,
+        "width": 18,
         "height": 12,
         "terrain": [
           "sea",
@@ -1240,40 +1304,29 @@
           "sea",
           "sea",
           "sea",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
           "sea",
           "sea",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
           "sea",
           "sea",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
-          "land",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
           "sea",
           "sea",
           "land",
@@ -1286,6 +1339,12 @@
           "land",
           "land",
           "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
           "sea",
           "sea",
           "land",
@@ -1298,6 +1357,12 @@
           "land",
           "land",
           "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
           "sea",
           "sea",
           "land",
@@ -1310,6 +1375,12 @@
           "land",
           "land",
           "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
           "sea",
           "sea",
           "land",
@@ -1322,6 +1393,12 @@
           "land",
           "land",
           "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
           "sea",
           "sea",
           "land",
@@ -1334,6 +1411,12 @@
           "land",
           "land",
           "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
           "sea",
           "sea",
           "land",
@@ -1346,6 +1429,12 @@
           "land",
           "land",
           "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
           "sea",
           "sea",
           "land",
@@ -1358,6 +1447,53 @@
           "land",
           "land",
           "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "land",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
+          "sea",
           "sea",
           "sea",
           "sea",
@@ -1386,40 +1522,29 @@
           "water",
           "water",
           "water",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
           "water",
           "water",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
           "water",
           "water",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
-          "floor",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
           "water",
           "water",
           "floor",
@@ -1432,6 +1557,12 @@
           "floor",
           "floor",
           "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
           "water",
           "water",
           "floor",
@@ -1444,6 +1575,12 @@
           "floor",
           "floor",
           "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
           "water",
           "water",
           "floor",
@@ -1456,6 +1593,12 @@
           "floor",
           "floor",
           "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
           "water",
           "water",
           "floor",
@@ -1468,6 +1611,12 @@
           "floor",
           "floor",
           "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
           "water",
           "water",
           "floor",
@@ -1480,6 +1629,12 @@
           "floor",
           "floor",
           "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
           "water",
           "water",
           "floor",
@@ -1492,6 +1647,12 @@
           "floor",
           "floor",
           "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
           "water",
           "water",
           "floor",
@@ -1504,6 +1665,53 @@
           "floor",
           "floor",
           "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "water",
+          "water",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "floor",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
           "water",
           "water",
           "water",
@@ -1520,8 +1728,8 @@
         ]
       },
       "playerCell": {
-        "x": 8,
-        "y": 7
+        "x": 11,
+        "y": 8
       },
       "entities": [
         {
@@ -1529,17 +1737,17 @@
           "kind": "player",
           "archetype": "ninja",
           "cell": {
-            "x": 8,
-            "y": 7
+            "x": 11,
+            "y": 8
           },
           "footprint": [
             {
-              "x": 8,
-              "y": 7
+              "x": 11,
+              "y": 8
             }
           ],
-          "hp": 100,
-          "maxHp": 100,
+          "hp": 120,
+          "maxHp": 120,
           "defense": 0,
           "normalAttackDamage": 20,
           "mobility": {
@@ -1552,71 +1760,42 @@
             "invulnerable": false
           },
           "phase": "alive"
-        },
-        {
-          "id": "wave-1-slot-0-t1-0",
-          "kind": "enemy",
-          "archetype": "reward-grunt",
-          "cell": {
-            "x": 3,
-            "y": 9
-          },
-          "footprint": [
-            {
-              "x": 3,
-              "y": 9
-            }
-          ],
-          "hp": 1,
-          "maxHp": 1,
-          "defense": 0,
-          "phase": "alive"
         }
       ],
       "reservations": [],
       "telegraphs": [],
       "waveRuntime": {
-        "waveNumber": 1,
+        "waveNumber": 2,
         "slots": [
           {
-            "remainingQueue": [],
-            "eligible": true,
-            "hasEverSpawned": true,
-            "livingCount": 1
+            "remainingQueue": [
+              {
+                "enemyId": "reward-grunt",
+                "level": 2
+              }
+            ],
+            "eligible": false,
+            "hasEverSpawned": false,
+            "livingCount": 0
           }
         ]
       },
       "runBuild": {
-        "stacks": {},
+        "stacks": {
+          "max_health_up": 1
+        },
         "triggers": []
       },
       "seed": 2550409423,
       "lastEvents": [
         {
-          "type": "command_resolved",
-          "commandType": "attack",
-          "accepted": true,
-          "consumedTime": true
+          "type": "reward_selected",
+          "artifactId": "max_health_up",
+          "stackCount": 1
         },
         {
-          "type": "player_attacked",
-          "actorId": "player",
-          "direction": {
-            "x": -1,
-            "y": 0
-          },
-          "target": {
-            "x": 7,
-            "y": 7
-          }
-        },
-        {
-          "type": "world_advanced",
-          "tick": 29,
-          "phases": [
-            "foundation",
-            "enemy"
-          ]
+          "type": "wave_started",
+          "waveNumber": 2
         }
       ]
     }
