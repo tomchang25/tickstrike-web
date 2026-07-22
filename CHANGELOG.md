@@ -106,3 +106,4 @@ Rules:
 ### Layered Arena Presentation
 
 - 2026-07-22 - [port_13.2d] The arena now sits inside a world-space stone, rock, and green-tree frame, while its grass island has a south-facing masonry foundation, water contact shadow, and static reflection without changing gameplay geometry or pointer accuracy
+- 2026-07-22 - [port_13.2] The arena terrain now renders the walled contour from the land mask — borderless floor tiles, an exterior rim ring whose south brick face occludes actors on the southern land row, and inner-face openings for enclosed water rectangles — baked from the Cainos wall sheet and replacing the dual-grid grass autotile, the drawn south face, and its static reflection
