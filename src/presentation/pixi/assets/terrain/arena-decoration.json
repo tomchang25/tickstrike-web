@@ -53,16 +53,6 @@
       "file": "rock-reflection.png",
       "width": 48,
       "height": 16
-    },
-    "arena-south-face": {
-      "file": "arena-south-face.png",
-      "width": 896,
-      "height": 36
-    },
-    "arena-reflection": {
-      "file": "arena-reflection.png",
-      "width": 896,
-      "height": 20
     }
   },
   "sources": {
@@ -79,8 +69,6 @@
     "tree-green.png": "eda38f6169a2c1813c034bede314e9925ca39fba3eb6d25495fa9a4fa9f0daaa",
     "tree-shadow.png": "761c0ffaa3c0c27bab4e9005dc8c3a59bf845ee08f927cce16cd69a638884227",
     "rock-grey.png": "f1abb514c2f6aff7d906bf9e376baa867c2942c093cb98342faa83e2fd4fc3f9",
-    "rock-reflection.png": "ef5c0ad3b8de6889e47456c0306fdac8831d5b6e58783ccfe98fbbba8c080d20",
-    "arena-south-face.png": "1dbdb3594d3b3869cbbcbe97ff0d3e93ee5385d3de8b7308ec75a049107665d7",
-    "arena-reflection.png": "1d44790658a212449f28ab0d181f47660618945a69c9305e9786a11760835338"
+    "rock-reflection.png": "ef5c0ad3b8de6889e47456c0306fdac8831d5b6e58783ccfe98fbbba8c080d20"
   }
 }

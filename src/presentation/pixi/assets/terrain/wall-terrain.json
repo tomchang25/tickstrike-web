@@ -1,0 +1,35 @@
+{
+  "generator": "dev/tools/terrain/bake_wall_terrain.py",
+  "unit": 16,
+  "floor_tile": 32,
+  "exterior_origin": {
+    "x": 0,
+    "y": 0
+  },
+  "interior_origin": {
+    "x": 96,
+    "y": 0
+  },
+  "grass_variants": {
+    "y": 128,
+    "count": 16
+  },
+  "flower_variants": {
+    "y": 160,
+    "count": 16
+  },
+  "sources": {
+    "TX Tileset Wall.png": {
+      "sha256": "9c32a07a940e23352dd43a92f724480fedf0cd43edd530219d6e29801e9cc2bb"
+    },
+    "grass.png": {
+      "sha256": "1c8ad1c123e30afecb394e6e32a8df1dfae00bee1195c6b57b26bf77ed3bfb3a"
+    },
+    "flower.png": {
+      "sha256": "ad38c0b5e6482eaa324dded47520797c18d40482bfdf412ec428399ffa5c4258"
+    }
+  },
+  "outputs": {
+    "wall-terrain.png": "7784cf06e2dec6dd58aa889bbb8be9fff4874df3468d4a33f601d6bbda000b37"
+  }
+}

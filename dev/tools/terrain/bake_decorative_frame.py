@@ -19,12 +19,17 @@ COMPOSITION_WIDTH = 22 * CELL
 COMPOSITION_HEIGHT = 14 * CELL
 BOARD_ORIGIN = (2 * CELL, CELL)
 BOARD_SIZE = (18 * CELL, 12 * CELL)
-ARENA_WIDTH = 14 * CELL
-ARENA_FACE_HEIGHT = 36
-ARENA_REFLECTION_HEIGHT = 20
 
 MANIFEST_FILE = "arena-decoration.json"
-LEGACY_FILES = ("decorative-frame.png", "decorative-frame.json", "land-depth.png")
+# The arena south face and its static reflection moved to the walled-contour
+# terrain painter (bake_wall_terrain.py); their old baked outputs are retired.
+LEGACY_FILES = (
+    "decorative-frame.png",
+    "decorative-frame.json",
+    "land-depth.png",
+    "arena-south-face.png",
+    "arena-reflection.png",
+)
 ASSET_FILES = {
     "wall-top": "wall-top.png",
     "wall-bottom": "wall-bottom.png",
@@ -34,8 +39,6 @@ ASSET_FILES = {
     "tree-shadow": "tree-shadow.png",
     "rock-grey": "rock-grey.png",
     "rock-reflection": "rock-reflection.png",
-    "arena-south-face": "arena-south-face.png",
-    "arena-reflection": "arena-reflection.png",
 }
 
 WATER_SHADOW = (44, 104, 108, 105)
@@ -136,62 +139,6 @@ def clean_canopy(canopy: Image.Image) -> Image.Image:
     return cleaned
 
 
-def build_arena_south_face() -> Image.Image:
-    face = Image.new("RGBA", (ARENA_WIDTH, ARENA_FACE_HEIGHT), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(face)
-    body = (82, 137, 134, 255)
-    body_light = (105, 158, 151, 255)
-    body_dark = (55, 108, 110, 255)
-    lip = (177, 205, 183, 255)
-    lip_light = (205, 222, 196, 255)
-
-    draw.polygon([(8, 0), (ARENA_WIDTH - 9, 0), (ARENA_WIDTH - 5, 5), (4, 5)], fill=lip)
-    draw.line((10, 0, ARENA_WIDTH - 11, 0), fill=lip_light, width=2)
-    draw.polygon(
-        [(4, 6), (ARENA_WIDTH - 5, 6), (ARENA_WIDTH - 9, 31), (8, 31)],
-        fill=body,
-    )
-    draw.line((6, 17, ARENA_WIDTH - 7, 17), fill=body_dark, width=2)
-
-    widths = (54, 62, 48, 70, 58)
-    for row, (start, top, bottom) in enumerate(((-17, 6, 16), (13, 18, 30))):
-        x = start
-        index = row
-        while x < ARENA_WIDTH:
-            width = widths[index % len(widths)]
-            boundary = x + width
-            if 8 < boundary < ARENA_WIDTH - 8:
-                draw.line((boundary, top, boundary, bottom), fill=body_dark, width=2)
-                draw.line((boundary + 3, top + 3, min(boundary + 15, ARENA_WIDTH - 9), top + 5), fill=body_light, width=2)
-            x = boundary
-            index += 1
-
-    draw.polygon([(4, 6), (10, 8), (10, 30), (8, 31)], fill=body_dark)
-    draw.polygon(
-        [(ARENA_WIDTH - 5, 6), (ARENA_WIDTH - 11, 8), (ARENA_WIDTH - 11, 30), (ARENA_WIDTH - 9, 31)],
-        fill=body_dark,
-    )
-    draw.rectangle((8, 31, ARENA_WIDTH - 9, 35), fill=WALL_DEEP)
-    return face
-
-
-def build_arena_reflection() -> Image.Image:
-    reflection = Image.new("RGBA", (ARENA_WIDTH, ARENA_REFLECTION_HEIGHT), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(reflection)
-    colors = ((40, 100, 105, 92), (91, 157, 158, 70), (53, 120, 124, 58))
-    rows = ((1, 17, 58), (7, 43, 42), (14, 11, 35))
-    for row, (y, start, base_length) in enumerate(rows):
-        x = start
-        segment = 0
-        while x < ARENA_WIDTH - 12:
-            length = base_length + ((segment * 17 + row * 11) % 29)
-            end = min(x + length, ARENA_WIDTH - 12)
-            draw.line((x, y, end, y), fill=colors[row], width=2 if row < 2 else 1)
-            x = end + 18 + ((segment * 13 + row * 7) % 31)
-            segment += 1
-    return reflection
-
-
 def build_decoration_assets(nature: Image.Image) -> dict[str, Image.Image]:
     walls = Image.new("RGBA", (COMPOSITION_WIDTH, COMPOSITION_HEIGHT), (0, 0, 0, 0))
     draw_top_wall(walls)
@@ -214,8 +161,6 @@ def build_decoration_assets(nature: Image.Image) -> dict[str, Image.Image]:
         "tree-shadow": canopy_shadow(tree),
         "rock-grey": rock,
         "rock-reflection": rock_reflection,
-        "arena-south-face": build_arena_south_face(),
-        "arena-reflection": build_arena_reflection(),
     }
 
 

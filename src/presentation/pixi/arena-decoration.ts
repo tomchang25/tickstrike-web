@@ -7,8 +7,6 @@ import treeGreenUrl from "./assets/terrain/tree-green.png";
 import treeShadowUrl from "./assets/terrain/tree-shadow.png";
 import rockGreyUrl from "./assets/terrain/rock-grey.png";
 import rockReflectionUrl from "./assets/terrain/rock-reflection.png";
-import arenaSouthFaceUrl from "./assets/terrain/arena-south-face.png";
-import arenaReflectionUrl from "./assets/terrain/arena-reflection.png";
 import decorationLayout from "./assets/terrain/arena-decoration-layout.json" with { type: "json" };
 
 const assetUrls = {
@@ -20,8 +18,6 @@ const assetUrls = {
   "tree-shadow": treeShadowUrl,
   "rock-grey": rockGreyUrl,
   "rock-reflection": rockReflectionUrl,
-  "arena-south-face": arenaSouthFaceUrl,
-  "arena-reflection": arenaReflectionUrl,
 } as const;
 
 type DecorationAssetId = keyof typeof assetUrls;

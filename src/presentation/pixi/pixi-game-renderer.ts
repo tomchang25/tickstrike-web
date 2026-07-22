@@ -15,10 +15,9 @@ import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animatio
 import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
 import { enemySpriteSheetUrls } from "@content/enemies/features";
 import { TerrainPainter, type TerrainConfig } from "./terrain-painter";
-import landAutotileUrl from "./assets/terrain/land-autotile.png";
+import wallTerrainUrl from "./assets/terrain/wall-terrain.png";
 import waterTileUrl from "./assets/terrain/water.png";
-import grassTextureUrl from "./assets/terrain/grass-texture.png";
-import terrainManifest from "./assets/terrain/terrain-atlas.json";
+import wallTerrainManifest from "./assets/terrain/wall-terrain.json";
 import { BOARD_ORIGIN, COMPOSITION_HEIGHT, COMPOSITION_WIDTH } from "./arena-layout";
 import { loadArenaDecorations } from "./arena-decoration";
 
@@ -60,11 +59,10 @@ function cellToPixels(cell: Cell): { x: number; y: number } {
 /** Maps the bake manifest onto the painter's config. */
 function buildTerrainConfig(): TerrainConfig {
   return {
-    variantCount: terrainManifest.land_autotile.variant_count,
-    overlayBuckets: terrainManifest.overlay.buckets,
-    overlayNoneBuckets: terrainManifest.overlay.none_buckets,
-    overlayRowBuckets: terrainManifest.overlay.row_buckets,
-    overlayRowSlots: terrainManifest.overlay.row_slots,
+    exteriorOrigin: wallTerrainManifest.exterior_origin,
+    interiorOrigin: wallTerrainManifest.interior_origin,
+    grassVariants: wallTerrainManifest.grass_variants,
+    flowerVariants: wallTerrainManifest.flower_variants,
   };
 }
 
@@ -155,6 +153,7 @@ export class PixiGameRenderer {
   readonly backgroundLayer = new Container();
   readonly worldLayer = new Container();
   readonly terrainLayer = new Container();
+  readonly terrainOverlayLayer = new Container();
   readonly waterReflectionLayer = new Container();
   readonly gridLayer = new Container();
   readonly arenaDepthLayer = new Container();
@@ -176,7 +175,7 @@ export class PixiGameRenderer {
     () => this.host,
   );
 
-  private readonly terrain = new TerrainPainter(this.terrainLayer);
+  private readonly terrain = new TerrainPainter(this.terrainLayer, this.terrainOverlayLayer);
 
   private readonly preview = new PreviewPainter(
     this.app,
@@ -234,12 +233,11 @@ export class PixiGameRenderer {
     );
     this.enemyWaterAnimations = Object.fromEntries(loadedWaterAnimations);
 
-    const [landAutotile, waterTile, grassTexture] = await Promise.all([
-      Assets.load<Texture>(landAutotileUrl),
+    const [wallTerrain, waterTile] = await Promise.all([
+      Assets.load<Texture>(wallTerrainUrl),
       Assets.load<Texture>(waterTileUrl),
-      Assets.load<Texture>(grassTextureUrl),
     ]);
-    this.terrain.setAtlas(landAutotile, waterTile, grassTexture, buildTerrainConfig());
+    this.terrain.setAtlas(wallTerrain, waterTile, buildTerrainConfig());
     waterTile.source.scaleMode = "nearest";
     this.backgroundLayer.addChild(
       new TilingSprite({ texture: waterTile, width: COMPOSITION_WIDTH, height: COMPOSITION_HEIGHT }),
@@ -268,6 +266,9 @@ export class PixiGameRenderer {
       this.reservationLayer,
       this.telegraphLayer,
       this.actorLayer,
+      // The island's south wall lip occludes actors standing on the southern
+      // land row, so the terrain overlay stacks directly above the actors.
+      this.terrainOverlayLayer,
       this.telegraphLabelLayer,
       this.pointerPreviewLayer,
       this.effectsLayer,
