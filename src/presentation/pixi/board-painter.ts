@@ -25,9 +25,13 @@ export class BoardPainter {
     this.gridLayer.removeChildren().forEach((child) => child.destroy());
 
     // Tile fills are painted by the terrain layer beneath; this layer keeps only the grid lines
-    // (over the terrain) and the debug occupancy overlay.
+    // (over the terrain) and the debug occupancy overlay. Only land cells carry
+    // grid lines — open water is not playable space and stays clean.
     for (let y = 0; y < snapshot.arena.height; y += 1) {
       for (let x = 0; x < snapshot.arena.width; x += 1) {
+        if (snapshot.arena.tiles[y * snapshot.arena.width + x] !== "floor") {
+          continue;
+        }
         const tileView = new Graphics()
           .rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
           .stroke({ color: 0x343b4c, width: 1, alpha: 0.8 });

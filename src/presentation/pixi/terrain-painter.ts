@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture, TilingSprite } from "pixi.js";
+import { Container, Graphics, Rectangle, Sprite, Texture, TilingSprite } from "pixi.js";
 import type { WorldSnapshot } from "@core/model/types";
 import { CELL_SIZE } from "./pointer-aim";
 
@@ -32,6 +32,55 @@ import { CELL_SIZE } from "./pointer-aim";
 const UNIT = 16; // wall piece unit
 const FLOOR_TILE = 32; // borderless floor tile; one cell holds 2x2 of them
 const FLOWER_PERCENT = 8;
+
+// Static reflection treatment: the wall's front face vertically mirrored into
+// the water below it, pushed toward the water hue and made translucent. A 1px
+// light waterline separates the wall foot from its mirror image.
+const REFLECTION_TINT = 0x8fc8e0;
+// Vertical compression of the mirror image (water is seen at an angle). 0.75
+// keeps every 16px source row an integer 12px on screen, so piece offsets stay
+// on the pixel grid; drop to 0.5 if the row-skip sampling reads as noise.
+const REFLECTION_SQUASH = 1.5;
+// Continuous fade from the waterline outward, applied as a gradient alpha mask
+// over the whole mirror image so there are no per-row banding seams.
+// [position 0..1, opacity] stops along the reflection's height.
+const REFLECTION_FADE_STOPS: readonly (readonly [number, number])[] = [
+  [0, 0.85],
+  [0.65, 0.4],
+  [1, 0.1],
+];
+const WATERLINE_COLOR = 0xe8f6f8;
+const WATERLINE_ALPHA = 0.65;
+
+interface PlaceOptions {
+  readonly flipY?: boolean;
+  readonly alpha?: number;
+  readonly tint?: number;
+  /** Vertical scale applied together with flipY. */
+  readonly squashY?: number;
+}
+
+const REFLECTED: PlaceOptions = { flipY: true, squashY: REFLECTION_SQUASH, tint: REFLECTION_TINT };
+
+let reflectionFade: Texture | undefined;
+
+/** Lazy 1x64 white gradient texture carrying the fade stops in its alpha channel. */
+function reflectionFadeTexture(): Texture {
+  if (!reflectionFade) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 64;
+    const context = canvas.getContext("2d")!;
+    const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+    for (const [offset, alpha] of REFLECTION_FADE_STOPS) {
+      gradient.addColorStop(offset, `rgba(255,255,255,${alpha})`);
+    }
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 1, canvas.height);
+    reflectionFade = Texture.from(canvas);
+  }
+  return reflectionFade;
+}
 
 /** Baked-manifest data the painter needs; see `wall-terrain.json`. */
 export interface TerrainConfig {
@@ -175,8 +224,9 @@ export class TerrainPainter {
   }
 
   clear(): void {
-    this.layer.removeChildren().forEach((child) => child.destroy());
-    this.overlayLayer.removeChildren().forEach((child) => child.destroy());
+    // Reflection groups are nested containers, so destruction must be deep.
+    this.layer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.overlayLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
   }
 
   private paintFloor(width: number, height: number, isLand: (x: number, y: number) => boolean): void {
@@ -232,6 +282,20 @@ export class TerrainPainter {
     this.tileStrip(pieces.bottomStrip, x0 + UNIT, y0 + (h - 1) * UNIT, (w - 2) * UNIT, overlay);
     this.place(pieces.bottomW, x0, y0 + (h - 1) * UNIT, overlay);
     this.place(pieces.bottomE, x0 + (w - 1) * UNIT, y0 + (h - 1) * UNIT, overlay);
+
+    // Static reflection: the front face mirrored into the water, nearest rows
+    // first — bottom trim, then the brick face — under a continuous fade mask.
+    // The base layer keeps it under grid lines, actors, and the wall overlay.
+    const waterY = y0 + h * UNIT;
+    const reflection = this.beginReflection(x0, waterY, w * UNIT, 3 * UNIT * REFLECTION_SQUASH);
+    this.tileStrip(pieces.bottomStrip, x0 + UNIT, waterY, (w - 2) * UNIT, reflection, REFLECTED);
+    this.place(pieces.bottomW, x0, waterY, reflection, REFLECTED);
+    this.place(pieces.bottomE, x0 + (w - 1) * UNIT, waterY, reflection, REFLECTED);
+    const faceY = waterY + UNIT * REFLECTION_SQUASH;
+    this.tileStrip(pieces.faceStrip, x0 + UNIT, faceY, (w - 2) * UNIT, reflection, REFLECTED);
+    this.place(pieces.faceW, x0, faceY, reflection, REFLECTED);
+    this.place(pieces.faceE, x0 + (w - 1) * UNIT, faceY, reflection, REFLECTED);
+    this.waterline(x0, waterY, w * UNIT);
   }
 
   /** Rim lanes hugging the opening from the land side, inner face hanging in. */
@@ -260,16 +324,75 @@ export class TerrainPainter {
       (w - 2) * UNIT - faceLeft.frame.width,
     );
     this.tileStrip(pieces.bottomStrip, x0 + UNIT, y0 + (h - 1) * UNIT, (w - 2) * UNIT);
+
+    // Static reflection of the inner face in the pool, cropped to the water
+    // left between the face bottom and the bottom rim lane.
+    const faceBottom = y0 + (1 + faceRows) * UNIT;
+    const poolHeight = (h - 1) * UNIT - (1 + faceRows) * UNIT;
+    const reflectionHeight = Math.min(faceRows * UNIT, poolHeight);
+    if (reflectionHeight > 0) {
+      const runWidth = (w - 2) * UNIT;
+      const reflectedLeft = cropBottom(cropFaceRows(pieces.faceLeft, faceRows), reflectionHeight);
+      const reflectedMid = cropBottom(cropFaceRows(pieces.faceMid, faceRows), reflectionHeight);
+      const reflection = this.beginReflection(x0 + UNIT, faceBottom, runWidth, reflectionHeight * REFLECTION_SQUASH);
+      this.place(reflectedLeft, x0 + UNIT, faceBottom, reflection, REFLECTED);
+      this.tileStrip(
+        reflectedMid,
+        x0 + UNIT + reflectedLeft.frame.width,
+        faceBottom,
+        runWidth - reflectedLeft.frame.width,
+        reflection,
+        REFLECTED,
+      );
+      this.waterline(x0 + UNIT, faceBottom, runWidth);
+    }
   }
 
-  private place(texture: Texture, x: number, y: number, target: Container = this.layer): void {
+  /**
+   * Starts a mirror-image group: a container in the base layer whose alpha
+   * comes entirely from a vertical gradient mask spanning the given rectangle,
+   * so the fade toward open water is continuous instead of per-row banded.
+   */
+  private beginReflection(x: number, y: number, width: number, height: number): Container {
+    const reflection = new Container();
+    const fade = new Sprite(reflectionFadeTexture());
+    fade.position.set(x, y);
+    fade.width = width;
+    fade.height = height;
+    reflection.mask = fade;
+    this.layer.addChild(reflection, fade);
+    return reflection;
+  }
+
+  private place(texture: Texture, x: number, y: number, target: Container = this.layer, opts?: PlaceOptions): void {
     const sprite = new Sprite(texture);
-    sprite.position.set(x, y);
+    if (opts?.flipY) {
+      // A negative scale renders upward from the anchor, so the position drops
+      // by the rendered sprite height to keep the same covered rectangle.
+      const squash = opts.squashY ?? 1;
+      sprite.scale.y = -squash;
+      sprite.position.set(x, y + texture.frame.height * squash);
+    } else {
+      sprite.position.set(x, y);
+    }
+    if (opts?.alpha !== undefined) {
+      sprite.alpha = opts.alpha;
+    }
+    if (opts?.tint !== undefined) {
+      sprite.tint = opts.tint;
+    }
     target.addChild(sprite);
   }
 
   /** Repeats a contiguous strip horizontally, cropping the final repeat. */
-  private tileStrip(strip: Texture, x: number, y: number, width: number, target: Container = this.layer): void {
+  private tileStrip(
+    strip: Texture,
+    x: number,
+    y: number,
+    width: number,
+    target: Container = this.layer,
+    opts?: PlaceOptions,
+  ): void {
     let cursor = 0;
     while (cursor < width) {
       const chunk = Math.min(strip.frame.width, width - cursor);
@@ -280,10 +403,26 @@ export class TerrainPainter {
               source: strip.source,
               frame: new Rectangle(strip.frame.x, strip.frame.y, chunk, strip.frame.height),
             });
-      this.place(texture, x + cursor, y, target);
+      this.place(texture, x + cursor, y, target, opts);
       cursor += chunk;
     }
   }
+
+  private waterline(x: number, y: number, width: number): void {
+    const line = new Graphics().rect(x, y, width, 1).fill({ color: WATERLINE_COLOR, alpha: WATERLINE_ALPHA });
+    this.layer.addChild(line);
+  }
+}
+
+/** Keeps a texture's bottom `height` pixels — the rows nearest the water, which lead a mirrored image. */
+function cropBottom(texture: Texture, height: number): Texture {
+  if (height >= texture.frame.height) {
+    return texture;
+  }
+  return new Texture({
+    source: texture.source,
+    frame: new Rectangle(texture.frame.x, texture.frame.y + texture.frame.height - height, texture.frame.width, height),
+  });
 }
 
 /** Bottom-aligned crop so a shortened inner face keeps its authored bottom edge. */
