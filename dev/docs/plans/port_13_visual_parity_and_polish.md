@@ -20,7 +20,7 @@ Close the remaining visual and presentation gap between the Web Tick Arena and t
 
 Port 13 starts with a reference audit rather than asset implementation. The audit must inspect the reference project's actual source and packaged dependencies, including:
 
-- Arena composition: the 12 by 12 board, the 10 by 10 starting land region, land and water layers, tile transitions, edge treatment, decorative props, camera framing, and grid readability.
+- Arena composition: the reference 12 by 12 board and 10 by 10 land region are the audited baseline. By product decision the Web target diverges to a widescreen 18 by 12 grid holding a 14 by 8 centered land island with a 2-cell water ring, plus land and water layers, tile transitions, edge treatment, decorative props, camera framing, and grid readability. The board-shape change is a core geometry change, not presentation alone.
 - Entity surface: Ninja, Viking, Thrust, Slash, Ranged, Charge, Bomb, Mode, and Mode Boss identity, directional views, animation states, shadows, health or Guard indicators, and terminal states.
 - Combat feedback: aim previews, attack cells, locked Telegraphs, movement trails, projectile or charge feedback, impacts, Guard break, Stagger, damage numbers, drowning, and spawn warnings.
 - Shell surface: player resource bars, wave state, artifact strip, reward cards, build inspection, demo completion, death/restart results, settings, and debug affordances.
@@ -37,17 +37,34 @@ The audit separates four decisions for every reference item: preserve as parity 
 
 Every priority must retain the same deterministic scenario and semantic event stream. Visual timing may be tuned independently, but it must not alter command acceptance, damage, occupancy, Telegraph lifetime, Tick advancement, or terminal cleanup.
 
+### Locked pre-audit decisions
+
+The following product decisions were resolved in conversation before the audit and enter the parity matrix as pre-approved rows. Child 13.1 records them; it must not reopen them.
+
+1. Externally approved polished pixel-game references set the quality bar for arena framing, edge decoration, and color composition; the reference project remains the only parity source for behavior, layout, and timing.
+2. The ranged enemy currently renders visibly larger than the other small enemies and its side-facing frames are too thin to read. Child 13.3 rescales it to the shared small-enemy presentation scale and replaces its base sheet with a programmatically drafted redraw; every redrawn base sheet requires human visual approval before it ships.
+3. Every enemy role receives a Mobility-kill terminal animation in which the body is cut in half, authored per direction through the offline sprite animation pipeline as a recipe over that role's existing base sheet. This lands in child 13.4 on the existing terminal animation lifecycle.
+4. The knockback-into-water drowning animation is already shipped for every current enemy role; the audit records it as satisfied rather than re-scoping it.
+5. Chain Dash lightning and Speed-funded free-Dash aura effects are excluded from the parity target and tracked as a future draft, because Chain Dash itself is deferred content awaiting its route rework.
+6. The wave reward choice surface is placeholder quality and is rebuilt in child 13.5. All other shipped HUD surfaces are audited but pre-decided as preserve-as-is for the parity target; restyling them is out of scope for this plan.
+
 ### Child decomposition
 
-| Child | Focus                                               | Current document form                                                          |
-| ----- | --------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 13.1  | Reference inventory and parity matrix               | Plan child; create a verified implementation spec immediately before execution |
-| 13.2  | Layered arena and tile presentation                 | Plan child; create a sketch before implementation                              |
-| 13.3  | Player and enemy visual profiles                    | Plan child; create a sketch before implementation                              |
-| 13.4  | Combat feedback, audio, and terminal presentation   | Plan child; create a sketch before implementation                              |
-| 13.5  | HUD, responsive layout, and visual regression gates | Plan child; create a verified implementation spec immediately before execution |
+| Child | Focus                                                          | Current document form                                                                                                                                                                  |
+| ----- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 13.1  | Reference inventory and parity matrix                          | Shipped — port_13_01_reference_inventory_and_parity_matrix.implementation_spec.md; acceptance targets live in [port_13_reference_parity_matrix.md](port_13_reference_parity_matrix.md) |
+| 13.2  | Layered arena and tile presentation                            | Sub-plan: [port_13_2_layered_arena.md](port_13_2_layered_arena.md) (children 13.2a–13.2e)                                                                                              |
+| 13.3  | Player and enemy visual profiles                               | Plan child; create a sketch before implementation                                                                                                                                      |
+| 13.4  | Combat feedback, audio, and terminal presentation              | Plan child; create a sketch before implementation                                                                                                                                      |
+| 13.5  | Reward surface, responsive layout, and visual regression gates | Plan child; create a verified implementation spec immediately before execution                                                                                                         |
 
 Recommended landing order is 13.1, 13.2, 13.3, 13.4, then 13.5. Child 13.1 may update the scope and acceptance targets of later children, but it must not introduce a second runtime or alter deterministic gameplay rules.
+
+Child 13.2 is promoted to its own sub-plan, [port_13_2_layered_arena.md](port_13_2_layered_arena.md), because it carries five ordered sub-children (13.2a geometry as a spec; 13.2b terrain, 13.2c camera, 13.2d decorative frame as sketches; 13.2e optional water animation). That sub-plan owns the arena design detail, the validated terrain look, and the sub-child landing order.
+
+Interior obstacle cells (water-obstacle and rock-obstacle, with attack-passability and drown semantics) are a new gameplay feature, not part of 13.2; they are tracked under the Future Draft Stable-Base Obstacles item and land the clean 14×8 island first.
+
+The parity matrix owns the observable acceptance target for every audited surface across children 13.2–13.5. Four post-audit product decisions recorded there raise several targets above literal reproduction: telegraph danger cells use authored sprite markers rather than tile-color fills, entities gain a shared-node drop shadow, a decorative outer frame is added, and all combat feedback is authored as sprite animation or industry-grade VFX rather than a port of the reference's grey-box tweens.
 
 ## Non-Goals
 

@@ -112,6 +112,10 @@ Evaluate curse offer APIs, terrain mutation APIs, music and UI-audio capabilitie
 
 Expand Dash and Smash with additional Mobility-specific Major effects after Ninja and Viking parity proves class eligibility and runtime seams. Future effects must remain tied to the active class Mobility rather than restoring generic payload replacement.
 
+### Mobility Dash Effect Layer
+
+Add the Chain Dash lightning effect and the Speed-funded free-Dash aura effect as a presentation layer only after the Chain Dash route rework and the future Speed action model settle what those actions are; port 13 visual parity ships without them.
+
 ### Chain Dash Route Rework
 
 Keep `chain_dash` as validated but unavailable authored content until its replacement is designed. The approved direction is a player-directed multi-target Dash route that automatically resolves Slash-style Dash hits from A to B to C, never targets the same enemy twice within one route, and defines its route selection, legality, timing, cooldown, interruption, preview, and presentation rules before implementation. The reference cooldown-clear and prepared free-action behavior remains deferred with the future Speed action model.
@@ -131,6 +135,8 @@ Explore three-choice run mutators and a persistent pressure enemy after the core
 ### Stable-Base Obstacles And Defensive Structures
 
 Explore obstacle cells, Corrupt Land, Fortified Land, Tower, and Archer Tower on top of the stable arena only after obstacle placement, connectivity, spawn weighting, ownership, and deadlock prevention are designed.
+
+Two interior-obstacle cell types are already specified for when this lands (from the port_13 arena discussion): a water-obstacle cell blocks movement, lets attacks pass through, and drowns a knocked-back victim; a rock-obstacle cell blocks movement and attacks and cannot be drowned into. Both require the core terrain model to grow past land/sea, attack resolution to respect attack-blocking terrain, enemy navigation to route around obstacles, and a placement/connectivity/deadlock design. The port_13 14×8 island ships clean without them.
 
 ### Spawn Telegraph Forced Displacement
 
