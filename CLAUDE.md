@@ -10,6 +10,8 @@ If `dev/foundation/` is missing or uninitialized, stop and request `git submodul
 
 This file is the root entry point for Claude-style agents that discover `CLAUDE.md`. All project rules, standards triggers, and discovery contracts live in `dev/agent_rules/agent_startup.md` and the files it references.
 
+Do not use the Claude Browser `javascript_tool` (`mcp__Claude_Browser__javascript_tool`). It is locked: using it requires both (1) a verification need that unit tests and Playwright e2e genuinely cannot cover, and (2) the user's explicit permission granted in the current conversation. The tool has a history of hanging sessions; prefer unit tests, targeted Playwright runs, browser screenshots, and console/network readers.
+
 ## Model-Tier Notes
 
 Match the model tier to the failure mode of the task, not its size:
