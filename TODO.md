@@ -68,6 +68,7 @@ The shipped 13.2 terrain and decoration (through the 13.2d decorative frame) is 
 - Remake the objects sitting on the water surface
 - Remake the decorative outer frame
 - Remake the tree shadows
+- Rework the north, west, and east arena borders so they preserve full grid-cell dimensions without reading as a raised enclosure; keep the south wall's platform-depth perspective
 
 ---
 

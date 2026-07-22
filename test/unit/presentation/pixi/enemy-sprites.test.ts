@@ -30,6 +30,8 @@ describe("small enemy sprite profiles", () => {
     expect(presentation.profileId).toBe("enemy.thrust");
     expect(presentation.palette).toBe("green");
     expect(presentation.pose).toBe("idle");
+    expect(presentation.body.anchor).toMatchObject({ x: 0.5, y: 0.875 });
+    expect(presentation.body.position.y).toBe(18);
     expect(presentation.body.texture.frame).toMatchObject({ x: 0, y: 0, width: 16, height: 16 });
 
     presentation.setFacing({ x: -1, y: 0 });
@@ -106,6 +108,8 @@ describe("small enemy sprite profiles", () => {
 
     expect(presentation.facing).toEqual({ x: -1, y: 0 });
     expect(presentation.waterFrame).toBe(7);
+    expect(presentation.body.anchor).toMatchObject({ x: 0.5, y: 0.5 });
+    expect(presentation.body.position.y).toBe(0);
     expect(presentation.body.texture.frame).toMatchObject({ x: 32, y: 112, width: 16, height: 16 });
   });
 });

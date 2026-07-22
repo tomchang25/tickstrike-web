@@ -49,12 +49,18 @@ export interface ScreenBounds {
   readonly height: number;
 }
 
+/** The logical centre used by entity roots, effects, and cell annotations. */
 function cellToPixels(cell: Cell): { x: number; y: number } {
   return {
     x: cell.x * CELL_SIZE + CELL_SIZE / 2,
     y: cell.y * CELL_SIZE + CELL_SIZE / 2,
   };
 }
+
+// Actor feet sit 16px below the root, inset 2 art px and seated 2 screen px.
+// A 16px frame at 3.5x scale therefore spans -31..+25 around the root and its
+// geometric centre sits 3px above it; satellite UI hangs from that centre.
+const BODY_CENTER_Y = -3;
 
 /** Maps the bake manifest onto the painter's config. */
 function buildTerrainConfig(): TerrainConfig {
@@ -160,6 +166,7 @@ export class PixiGameRenderer {
   readonly waterPropLayer = new Container();
   readonly frameLayer = new Container();
   readonly telegraphLayer = new Container();
+  readonly pointerGroundLayer = new Container();
   readonly pointerPreviewLayer = new Container();
   readonly reservationLayer = new Container();
   readonly actorLayer = new Container();
@@ -179,6 +186,7 @@ export class PixiGameRenderer {
 
   private readonly preview = new PreviewPainter(
     this.app,
+    this.pointerGroundLayer,
     this.pointerPreviewLayer,
     () => this.host,
     (cell) => cellToPixels(cell),
@@ -265,15 +273,28 @@ export class PixiGameRenderer {
       this.frameLayer,
       this.reservationLayer,
       this.telegraphLayer,
-      this.actorLayer,
-      // The island's south wall lip occludes actors standing on the southern
-      // land row, so the terrain overlay stacks directly above the actors.
+      // Pointer cell markers are floor paint: actors standing in a marked
+      // cell cover the marker's lower edge instead of being sliced by it.
+      this.pointerGroundLayer,
+      // The south wall trim draws above cell markers and below actors. Its lip
+      // begins at the arena edge, leaving the southern cells at full height.
       this.terrainOverlayLayer,
+      this.actorLayer,
       this.telegraphLabelLayer,
+      // Victim outcome markers (kill cross, knockback arrows) annotate the
+      // actors themselves, so they stay above the actor layer.
       this.pointerPreviewLayer,
       this.effectsLayer,
     );
     this.worldLayer.position.set(BOARD_ORIGIN.x, BOARD_ORIGIN.y);
+    // Presenters tween roots every frame, so the depth key follows the animated
+    // position rather than only the latest snapshot projection.
+    this.actorLayer.sortableChildren = true;
+    this.app.ticker.add(() => {
+      for (const child of this.actorLayer.children) {
+        child.zIndex = child.y;
+      }
+    });
     this.app.stage.addChild(this.backgroundLayer, this.worldLayer);
   }
 
@@ -393,10 +414,16 @@ export class PixiGameRenderer {
       }
       view.root.alpha = 1;
       view.root.scale.set(1);
-      drawStatusBar(view.hpBar, entity.hp, entity.maxHp, 0xff5c7a, entity.kind === "enemy" ? -42 : -34);
+      drawStatusBar(
+        view.hpBar,
+        entity.hp,
+        entity.maxHp,
+        0xff5c7a,
+        BODY_CENTER_Y + (entity.kind === "enemy" ? -42 : -34),
+      );
       view.guardBar.visible = Boolean(entity.guard);
       if (entity.guard) {
-        drawStatusBar(view.guardBar, entity.guard.current, entity.guard.max, 0x72d4ff, -36);
+        drawStatusBar(view.guardBar, entity.guard.current, entity.guard.max, 0x72d4ff, BODY_CENTER_Y - 36);
       }
       view.label.text =
         (entity.kind === "player" && view.sprite) || view.enemyPresentation ? "" : entity.kind === "player" ? "P" : "E";
@@ -404,7 +431,7 @@ export class PixiGameRenderer {
       view.facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
       view.facingMarker.text = facingGlyph(entity.facing);
       if (entity.facing) {
-        view.facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
+        view.facingMarker.position.set(entity.facing.x * 31, BODY_CENTER_Y + entity.facing.y * 31);
       }
       view.debugLabel.visible = this.debugMode && entity.kind === "enemy";
       view.debugLabel.text = debugStateLabel(entity);
@@ -604,6 +631,7 @@ export class PixiGameRenderer {
       },
     });
     label.anchor.set(0.5);
+    label.position.set(0, -4);
     label.visible = entity.kind !== "player" ? !enemyPresentation : !playerSprite;
 
     const debugLabel = new Text({
@@ -616,7 +644,7 @@ export class PixiGameRenderer {
       },
     });
     debugLabel.anchor.set(0.5);
-    debugLabel.position.set(0, -32);
+    debugLabel.position.set(0, BODY_CENTER_Y - 32);
     debugLabel.visible = this.debugMode && entity.kind === "enemy";
 
     const statusLabel = new Text({
@@ -629,7 +657,7 @@ export class PixiGameRenderer {
       },
     });
     statusLabel.anchor.set(0.5);
-    statusLabel.position.set(0, 29);
+    statusLabel.position.set(0, BODY_CENTER_Y + 29);
     statusLabel.visible = entity.kind === "enemy" && Boolean(combatStatusLabel(entity));
 
     const facingMarker = new Text({
@@ -644,7 +672,7 @@ export class PixiGameRenderer {
     facingMarker.anchor.set(0.5);
     facingMarker.visible = entity.kind === "enemy" && Boolean(entity.facing);
     if (entity.facing) {
-      facingMarker.position.set(entity.facing.x * 31, entity.facing.y * 31);
+      facingMarker.position.set(entity.facing.x * 31, BODY_CENTER_Y + entity.facing.y * 31);
     }
 
     root.addChild(

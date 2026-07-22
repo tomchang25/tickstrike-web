@@ -14,6 +14,8 @@ describe("character sprite profiles", () => {
     expect(sprite?.pose).toBe("idle");
     expect(sprite?.facing).toEqual({ x: 1, y: 0 });
     expect(sprite?.body.scale.x).toBe(3.5);
+    expect(sprite?.body.anchor).toMatchObject({ x: 0.5, y: 0.875 });
+    expect(sprite?.body.position.y).toBe(18);
     expect(sprite?.root.children.length).toBe(2);
   });
 

@@ -6,8 +6,10 @@ import type { PointerPreviewModel } from "./input-controller";
 
 /**
  * Draws the pointer preview — attack marker, dash path/landing, smash area, and
- * the predicted victim markers — into a renderer-owned layer from the preview
- * model the {@link InputController} already computed. It decides nothing: the
+ * the predicted victim markers — into renderer-owned layers from the preview
+ * model the {@link InputController} already computed. Cell markers are floor
+ * paint in the ground layer (below actors); victim outcome markers annotate the
+ * actors and go into the overlay layer above them. It decides nothing: the
  * model carries the accepted flags and geometry, and this painter only renders
  * them and writes the asserted `data-*` datasets. The `data-*` strings must stay
  * byte-for-byte identical; the browser suite asserts them.
@@ -15,13 +17,15 @@ import type { PointerPreviewModel } from "./input-controller";
 export class PreviewPainter {
   constructor(
     private readonly app: Application,
-    private readonly layer: Container,
+    private readonly groundLayer: Container,
+    private readonly victimLayer: Container,
     private readonly host: () => HTMLElement | undefined,
     private readonly cellToPixels: (cell: Cell) => { x: number; y: number },
   ) {}
 
   draw(model: PointerPreviewModel): void {
-    this.layer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.groundLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.victimLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
     if (!this.host()) {
       // An unmounted renderer has no canvas to draw on or tag, matching clear().
       return;
@@ -51,7 +55,7 @@ export class PreviewPainter {
         .rect(target.x * CELL_SIZE + 7, target.y * CELL_SIZE + 7, CELL_SIZE - 14, CELL_SIZE - 14)
         .fill({ color, alpha: preview.hasTarget ? 0.16 : 0.08 })
         .stroke({ color, width: 4, alpha: 0.95 });
-      this.layer.addChild(marker);
+      this.groundLayer.addChild(marker);
       canvas.dataset.attackPreviewCell = `${target.x},${target.y}`;
       canvas.dataset.attackTarget = preview.hasTarget ? "enemy" : "empty";
       this.drawVictimMarkers(model.victims);
@@ -73,19 +77,19 @@ export class PreviewPainter {
             color: preview.accepted ? 0x72d4ff : 0x8791a4,
             alpha: preview.accepted ? 0.2 : 0.12,
           });
-        this.layer.addChild(marker);
+        this.groundLayer.addChild(marker);
       }
       const center = preview.target;
       const centerMarker = new Graphics()
         .rect(center.x * CELL_SIZE + 5, center.y * CELL_SIZE + 5, CELL_SIZE - 10, CELL_SIZE - 10)
         .stroke({ color: preview.accepted ? 0x72d4ff : 0xff6b6b, width: 5, alpha: 0.95 });
-      this.layer.addChild(centerMarker);
+      this.groundLayer.addChild(centerMarker);
       if (preview.accepted) {
         const virtualPlayer = new Graphics()
           .circle(center.x * CELL_SIZE + CELL_SIZE / 2, center.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE * 0.28)
           .fill({ color: 0xf4fbff, alpha: 0.38 })
           .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
-        this.layer.addChild(virtualPlayer);
+        this.groundLayer.addChild(virtualPlayer);
       }
       canvas.dataset.smashPreviewCell = `${center.x},${center.y}`;
       this.drawVictimMarkers(model.victims);
@@ -106,7 +110,7 @@ export class PreviewPainter {
       const marker = new Graphics()
         .rect(cell.x * CELL_SIZE + 10, cell.y * CELL_SIZE + 10, CELL_SIZE - 20, CELL_SIZE - 20)
         .fill({ color: 0x72d4ff, alpha: 0.22 });
-      this.layer.addChild(marker);
+      this.groundLayer.addChild(marker);
     }
 
     const landing = visiblePreview.landing;
@@ -117,13 +121,14 @@ export class PreviewPainter {
       .circle(landing.x * CELL_SIZE + CELL_SIZE / 2, landing.y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE * 0.28)
       .fill({ color: 0xf4fbff, alpha: 0.38 })
       .stroke({ color: 0x72d4ff, width: 3, alpha: 0.8 });
-    this.layer.addChild(landingMarker, virtualPlayer);
+    this.groundLayer.addChild(landingMarker, virtualPlayer);
     canvas.dataset.mobilityPreviewCell = `${landing.x},${landing.y}`;
     this.drawVictimMarkers(model.victims);
   }
 
   clear(): void {
-    this.layer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.groundLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.victimLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
     if (!this.host()) {
       return;
     }
@@ -163,7 +168,7 @@ export class PreviewPainter {
     for (const marker of markers) {
       const from = this.cellToPixels(marker.from);
       if (marker.outcome === "kill") {
-        this.layer.addChild(
+        this.victimLayer.addChild(
           new Graphics()
             .circle(from.x, from.y, 25)
             .fill({ color: 0x11131a, alpha: 0.82 })
@@ -178,7 +183,7 @@ export class PreviewPainter {
       }
 
       if (marker.outcome === "crush") {
-        this.layer.addChild(
+        this.victimLayer.addChild(
           new Graphics()
             .rect(marker.from.x * CELL_SIZE + 7, marker.from.y * CELL_SIZE + 7, CELL_SIZE - 14, CELL_SIZE - 14)
             .fill({ color: 0xff8c42, alpha: 0.28 })
@@ -188,7 +193,7 @@ export class PreviewPainter {
       }
 
       if (marker.outcome === "blocked") {
-        this.layer.addChild(
+        this.victimLayer.addChild(
           new Graphics()
             .circle(from.x, from.y, 13)
             .fill({ color: 0x11131a, alpha: 0.76 })
@@ -207,7 +212,7 @@ export class PreviewPainter {
       const length = Math.hypot(directionX, directionY) || 1;
       const unitX = directionX / length;
       const unitY = directionY / length;
-      this.layer.addChild(
+      this.victimLayer.addChild(
         new Graphics()
           .circle(from.x, from.y, 10)
           .fill({ color: 0x11131a, alpha: 0.72 })

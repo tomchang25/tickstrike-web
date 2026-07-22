@@ -24,20 +24,42 @@ export class BoardPainter {
   drawArena(snapshot: WorldSnapshot, debugMode: boolean): void {
     this.gridLayer.removeChildren().forEach((child) => child.destroy());
 
-    // Tile fills are painted by the terrain layer beneath; this layer keeps only the grid lines
-    // (over the terrain) and the debug occupancy overlay. Only land cells carry
-    // grid lines — open water is not playable space and stays clean.
+    // Tile fills are painted by the terrain layer beneath. Shared edges are
+    // drawn once so interior lines do not darken from overlapping cell strokes.
+    // The south wall lip is the arena's front boundary, so no grid stroke is
+    // drawn over it.
+    const isFloor = (x: number, y: number): boolean =>
+      x >= 0 && y >= 0 && x < snapshot.arena.width && y < snapshot.arena.height
+        ? snapshot.arena.tiles[y * snapshot.arena.width + x] === "floor"
+        : false;
+    const gridLines = new Graphics();
+    let hasGridLines = false;
     for (let y = 0; y < snapshot.arena.height; y += 1) {
       for (let x = 0; x < snapshot.arena.width; x += 1) {
-        if (snapshot.arena.tiles[y * snapshot.arena.width + x] !== "floor") {
+        if (!isFloor(x, y)) {
           continue;
         }
-        const tileView = new Graphics()
-          .rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-          .stroke({ color: 0x343b4c, width: 1, alpha: 0.8 });
-        this.gridLayer.addChild(tileView);
+
+        const left = x * CELL_SIZE;
+        const top = y * CELL_SIZE;
+        const right = left + CELL_SIZE;
+        const bottom = top + CELL_SIZE;
+        gridLines.moveTo(left, top).lineTo(right, top).moveTo(left, top).lineTo(left, bottom);
+        if (!isFloor(x + 1, y)) {
+          gridLines.moveTo(right, top).lineTo(right, bottom);
+        }
+        if (y + 1 < snapshot.arena.height && !isFloor(x, y + 1)) {
+          gridLines.moveTo(left, bottom).lineTo(right, bottom);
+        }
+        hasGridLines = true;
       }
     }
+    if (hasGridLines) {
+      this.gridLayer.addChild(gridLines.stroke({ color: 0x343b4c, width: 1, alpha: 0.8 }));
+    } else {
+      gridLines.destroy();
+    }
+
     if (debugMode) {
       this.drawDebugGridState(snapshot);
     } else if (this.host()) {

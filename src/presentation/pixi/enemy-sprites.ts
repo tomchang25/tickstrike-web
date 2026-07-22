@@ -42,6 +42,16 @@ export interface EnemyPresentation {
 
 const FRAME_SIZE = 16;
 const SPRITE_SCALE = 3.5;
+// The art's ground line: the visual feet sit this many art pixels above the
+// frame's bottom edge (the rows below are the body's front face).
+const FOOT_INSET = 2;
+const FOOT_ANCHOR_Y = (FRAME_SIZE - FOOT_INSET) / FRAME_SIZE;
+// Land frames stand in the lower quarter of the logical cell so their full
+// frame does not cross the grid line behind them.
+const GROUND_OFFSET_Y = 16;
+// Cosmetic seat: pulls the drawn body down so it sits inside its own cell.
+// The root stays at the logical cell centre and remains the depth-sort key.
+const SEAT_OFFSET_Y = 2;
 const DEFAULT_FACING: Cell = { x: 0, y: 1 };
 const BASE_TINT = 0xffffff;
 const DAMAGE_TINT = 0xcc3333;
@@ -132,7 +142,10 @@ class SmallEnemyPresentation implements EnemyPresentation {
     }
 
     this.body = new Sprite(frameAt(directionColumn(DEFAULT_FACING), POSE_ROWS.idle));
-    this.body.anchor.set(0.5);
+    // Feet anchor: land frames stand their visual feet on the cell's
+    // lower-quarter ground contact; `applyFrame` switches layout per frame set.
+    this.body.anchor.set(0.5, FOOT_ANCHOR_Y);
+    this.body.position.y = GROUND_OFFSET_Y + SEAT_OFFSET_Y;
     this.body.scale.set(this.spriteScale);
     this.body.tint = BASE_TINT;
     this.root.label = profileId;
@@ -368,10 +381,14 @@ class SmallEnemyPresentation implements EnemyPresentation {
 
   private applyFrame(): void {
     const column = directionColumn(this.currentFacing);
-    this.body.texture =
-      this.currentWaterFrame === undefined || !this.waterFrameAt
-        ? this.frameAt(column, POSE_ROWS[this.currentPose])
-        : this.waterFrameAt(column, this.currentWaterFrame);
+    const inWater = this.currentWaterFrame !== undefined && this.waterFrameAt !== undefined;
+    // Land frames are feet-anchored in the lower quarter; authored water frames
+    // return to cell-centred alignment so the splash art stays on the waterline.
+    this.body.anchor.set(0.5, inWater ? 0.5 : FOOT_ANCHOR_Y);
+    this.body.position.y = inWater ? 0 : GROUND_OFFSET_Y + SEAT_OFFSET_Y;
+    this.body.texture = inWater
+      ? this.waterFrameAt!(column, this.currentWaterFrame!)
+      : this.frameAt(column, POSE_ROWS[this.currentPose]);
   }
 
   setEnteredWaterFrame(frame: number): void {

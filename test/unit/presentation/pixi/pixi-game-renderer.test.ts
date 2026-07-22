@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EntityState, Telegraph, WorldSnapshot } from "@core/model/types";
 import { PixiGameRenderer } from "@presentation/pixi/pixi-game-renderer";
+import { CELL_SIZE } from "@presentation/pixi/pointer-aim";
 
 function snapshot(
   cell: { x: number; y: number },
@@ -107,6 +108,35 @@ describe("PixiGameRenderer position ownership", () => {
     renderer.releasePosition("player");
     expect(view.position).toMatchObject(destinationPixels);
     expect(renderer.positionOwnerCount).toBe(0);
+  });
+});
+
+describe("PixiGameRenderer arena grid", () => {
+  it("draws shared floor edges without a horizontal stroke over the south wall lip", () => {
+    const renderer = new PixiGameRenderer();
+    renderer.sync(snapshot({ x: 1, y: 1 }));
+
+    expect(renderer.gridLayer.children).toHaveLength(1);
+    const grid = renderer.gridLayer.children[0] as unknown as {
+      context: {
+        instructions: readonly {
+          data: {
+            path: { instructions: readonly { action: string; data: readonly number[] }[] };
+          };
+        }[];
+      };
+    };
+    const path = grid.context.instructions[0]?.data.path.instructions ?? [];
+    const segments = path.flatMap((instruction, index) => {
+      const next = path[index + 1];
+      return instruction.action === "moveTo" && next?.action === "lineTo"
+        ? [{ from: instruction.data, to: next.data }]
+        : [];
+    });
+    const southY = 4 * CELL_SIZE;
+
+    expect(segments.some(({ from, to }) => from[1] === southY && to[1] === southY && from[0] !== to[0])).toBe(false);
+    expect(segments.some(({ from, to }) => from[1] === southY - CELL_SIZE && to[1] === southY - CELL_SIZE)).toBe(true);
   });
 });
 

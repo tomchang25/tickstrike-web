@@ -252,13 +252,15 @@ export class TerrainPainter {
     }
   }
 
-  /** Rim ring inside the region's edges plus the south face hanging below it. */
+  /** Rim ring inside the region's edges plus the south face hanging below the floor. */
   private paintExteriorRing(region: Region): void {
     const pieces = this.exterior!;
     const x0 = region.minX * CELL_SIZE;
     const y0 = region.minY * CELL_SIZE;
     const w = (region.maxX - region.minX + 1) * (CELL_SIZE / UNIT);
-    const h = (region.maxY - region.minY + 1) * (CELL_SIZE / UNIT) + 3;
+    // One extra unit keeps the full southern cell on the floor: the ledge
+    // starts exactly at the arena edge and the wall face hangs below it.
+    const h = (region.maxY - region.minY + 1) * (CELL_SIZE / UNIT) + 4;
     const ledgeRow = h - 4;
     this.tileStrip(pieces.nStrip, x0 + UNIT, y0, (w - 2) * UNIT);
     this.place(pieces.nw, x0, y0);
@@ -269,9 +271,9 @@ export class TerrainPainter {
       this.place(pieces.east[(r - 1) % pieces.east.length]!, x0 + (w - 1) * UNIT, y0 + r * UNIT);
     }
     // The whole south treatment (ledge lip, brick face, bottom trim) is the
-    // island's front wall: an actor standing on the southern land row stands
-    // behind that lip, so these rows paint into the overlay layer the renderer
-    // stacks above actors.
+    // island's front wall. It paints into the overlay layer the renderer
+    // stacks above cell markers but below actors. The lip starts immediately
+    // after the full-height southern cells and forms the floor's front edge.
     const overlay = this.overlayLayer;
     this.tileStrip(pieces.ledgeStrip, x0 + UNIT, y0 + ledgeRow * UNIT, (w - 2) * UNIT, overlay);
     this.place(pieces.ledgeW, x0, y0 + ledgeRow * UNIT, overlay);
