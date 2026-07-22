@@ -60,7 +60,16 @@ One line, no rationale, no backing document.
 
 Preliminary parity work that is not yet owned by the ordered Main Plans. Use one `###` heading per idea. Promote actionable work into the applicable Main Plan as a child rather than creating an independent TODO line.
 
-No unplanned port drafts. The ordered parity scope is owned by the twelve Main Plans under the Tickstrike Full Port Roadmap.
+### Arena Terrain And Decoration Rework
+
+The shipped 13.2 terrain and decoration (through the 13.2d decorative frame) is a placeholder: it establishes the layered-arena structure but not the target art quality. Rework items, to be promoted into the port_13_2 plan (plans/port_13_2_layered_arena.md) once the approach is settled:
+
+- Replace the shore transition with a better autotile or waterbank approach and matching assets (approach under discussion)
+- Add the water surface ripple as an animated sprite (existing deferred sub-child 13.2e)
+- Remake the objects sitting on the water surface
+- Remake the decorative outer frame
+- Remake the tree shadows
+- Add water reflections, which are currently missing entirely
 
 ---
 
