@@ -43,7 +43,6 @@ export const rangedEnemyFeature = defineEnemyFeature({
     id: "enemy.ranged",
     sheet: { key: "eye", url: sheetUrl },
     palette: "eye",
-    scale: 5,
   },
   waterAnimation: {
     sheetUrl: waterSheetUrl,

@@ -1,7 +1,5 @@
 import type { AttackDefinition, EnemyDefinition } from "@core/content/actor-schema";
 
-export const DEFAULT_ENEMY_SPRITE_SCALE = 3.5;
-
 /** Base sprite sheet for an enemy: a registry key plus the bundled asset URL. */
 export interface EnemySpriteSheetAsset {
   readonly key: string;
@@ -13,7 +11,6 @@ export interface EnemyPresentationProfile {
   /** Key into the sheet registry derived from all features. */
   readonly sheet: string;
   readonly palette: string;
-  readonly scale: number;
 }
 
 export interface EnemyWaterAnimationAsset {
@@ -43,7 +40,6 @@ export interface EnemyFeatureInput {
     readonly id: string;
     readonly sheet: EnemySpriteSheetAsset;
     readonly palette: string;
-    readonly scale?: number;
   };
   readonly waterAnimation?: EnemyWaterAnimationAsset;
 }
@@ -61,7 +57,6 @@ export function defineEnemyFeature(input: EnemyFeatureInput): EnemyFeature {
       id: input.presentation.id,
       sheet: input.presentation.sheet.key,
       palette: input.presentation.palette,
-      scale: input.presentation.scale ?? DEFAULT_ENEMY_SPRITE_SCALE,
     },
     spriteSheet: input.presentation.sheet,
     ...(input.waterAnimation ? { waterAnimation: input.waterAnimation } : {}),

@@ -1,11 +1,14 @@
-import { Container, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
+import { Container, Rectangle, Sprite, Texture } from "pixi.js";
 import type { Cell } from "@core/model/types";
+import { ENTITY_FRAME_SIZE, createEntityPresentationRig, type EntityPresentationRig } from "./entity-presentation-rig";
+import { resolveEntityPresentationProfile } from "./entity-presentation-profiles";
 
 export type PlayerSpritePose = "idle" | "move" | "dash";
 
 export interface PlayerSprite {
   readonly profileId: string;
   readonly root: Container;
+  readonly rig: EntityPresentationRig;
   readonly body: Sprite;
   readonly facing: Cell;
   readonly pose: PlayerSpritePose;
@@ -15,22 +18,9 @@ export interface PlayerSprite {
 
 const NINJA_PROFILE_ID = "character.ninja";
 const DEFAULT_FACING: Cell = { x: 1, y: 0 };
-const FRAME_SIZE = 16;
 const BODY_IDLE_ROW = 0;
 const BODY_MOVE_ROWS = [1, 2, 3, 2] as const;
 const BODY_DASH_ROW = 1;
-const SPRITE_SCALE = 3.5;
-// The art's ground line: the visual feet sit this many art pixels above the
-// frame's bottom edge (the rows below are the body's front face).
-const FOOT_INSET = 2;
-const FOOT_ANCHOR_Y = (FRAME_SIZE - FOOT_INSET) / FRAME_SIZE;
-// Place the ground contact in the lower quarter of the logical cell. At the
-// standard scale the full frame then fits inside the cell instead of crossing
-// a grid line.
-const GROUND_OFFSET_Y = 16;
-// Cosmetic seat: pulls the drawn body down so it sits inside its own cell.
-// The root stays at the logical cell centre and remains the depth-sort key.
-const SEAT_OFFSET_Y = 2;
 const BODY_DIRECTION_COLUMNS = {
   down: 0,
   up: 1,
@@ -60,12 +50,14 @@ function directionColumn(direction: Cell): number {
 function frameTexture(sheet: Texture, column: number, row: number): Texture {
   return new Texture({
     source: sheet.source,
-    frame: new Rectangle(column * FRAME_SIZE, row * FRAME_SIZE, FRAME_SIZE, FRAME_SIZE),
+    frame: new Rectangle(column * ENTITY_FRAME_SIZE, row * ENTITY_FRAME_SIZE, ENTITY_FRAME_SIZE, ENTITY_FRAME_SIZE),
   });
 }
 
 function createNinjaSprite(sheet: Texture): PlayerSprite {
-  const root = new Container();
+  const profile = resolveEntityPresentationProfile(NINJA_PROFILE_ID);
+  const rig = createEntityPresentationRig(profile);
+  const root = rig.root;
   root.label = NINJA_PROFILE_ID;
   let currentFacing = { ...DEFAULT_FACING };
   let currentPose: PlayerSpritePose = "idle";
@@ -84,16 +76,11 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
     return frame;
   };
 
-  const groundY = GROUND_OFFSET_Y + SEAT_OFFSET_Y;
-  const shadow = new Graphics().ellipse(0, groundY, 20, 6).fill({ color: 0x05070b, alpha: 0.48 });
   const body = new Sprite(frameAt(directionColumn(DEFAULT_FACING), BODY_IDLE_ROW));
-  // Feet anchor: the visual feet stand on the cell's lower-quarter ground
-  // contact, seated a few pixels down for the authored frame.
-  body.anchor.set(0.5, FOOT_ANCHOR_Y);
-  body.position.y = groundY;
-  body.scale.set(SPRITE_SCALE);
+  body.anchor.set(profile.bodyFoot.x / ENTITY_FRAME_SIZE, profile.bodyFoot.y / ENTITY_FRAME_SIZE);
+  body.scale.set(profile.bodyScale);
 
-  root.addChild(shadow, body);
+  rig.actorRoot.addChild(body);
 
   const setFacing = (facing: Cell): void => {
     const direction = isCardinal(facing) ? facing : DEFAULT_FACING;
@@ -117,6 +104,7 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
   return {
     profileId: NINJA_PROFILE_ID,
     root,
+    rig,
     body,
     get facing() {
       return { ...currentFacing };
@@ -129,9 +117,12 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
   };
 }
 
-export function createPlayerSprite(profileId: string): PlayerSprite | undefined {
-  if (profileId === NINJA_PROFILE_ID && ninjaSpriteSheet) {
-    return createNinjaSprite(ninjaSpriteSheet);
+export function createPlayerSprite(
+  profileId: string,
+  sheet: Texture | undefined = ninjaSpriteSheet,
+): PlayerSprite | undefined {
+  if (profileId === NINJA_PROFILE_ID && sheet) {
+    return createNinjaSprite(sheet);
   }
   return undefined;
 }

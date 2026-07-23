@@ -83,6 +83,15 @@ export class GameRuntime {
     this.loadScenario(this.scenario);
   }
 
+  /** Refreshes dev-authored presentation profiles without changing deterministic world state. */
+  refreshEntityPresentationProfiles(): boolean {
+    if (!this.isIdle) {
+      return false;
+    }
+    this.renderer.refreshEntityPresentationProfiles();
+    return true;
+  }
+
   execute(command: GameCommand): Promise<ActionResolution> {
     if (this.scenario?.commandsEnabled === false) {
       return Promise.resolve({

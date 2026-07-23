@@ -70,6 +70,22 @@ The shipped 13.2 layered arena, including the subsequent walled-contour shore, s
 - Remake the tree shadows
 - Rework the north, west, and east arena borders so they preserve full grid-cell dimensions without reading as a raised enclosure; keep the south wall's platform-depth perspective
 
+### Smash Jump And Ground Shadow Response
+
+Add the Viking Smash body motion after its authored player presentation exists and the landing timing is approved:
+
+- Lift only `actorRoot` during the jump so the shared shadow stays on `groundRoot`
+- Animate shadow scale and alpha independently to communicate height and landing weight
+- Synchronize the landing compression and ground response with the committed Smash impact without changing gameplay timing
+
+### Data-Driven Animated Entity Presentation
+
+Extend the entity presentation profile catalog only after Port 13's shared authored frame playback has landed and its body/weapon synchronization contract is stable:
+
+- Add animation identifiers, direction mapping, frame durations, loop or finite playback, and cleanup semantics without embedding Pixi or GSAP objects in profile data
+- Decide whether animation-level or frame-level body-foot anchors are necessary from the approved sheets rather than predicting the schema in advance
+- Keep jump, water, terminal, body, weapon, and shadow channels explicit so one animation transform does not silently move every presentation layer
+
 ---
 
 ## Future Draft
@@ -103,6 +119,10 @@ Add save-backed Coin, Ninja-clear Viking unlock, Main Menu character selection, 
 ### Runtime Structure Reorganization
 
 Reassess source ownership and consolidate arena-owned entities, grid, combat, and presentation while keeping only proven portable infrastructure shared. This is a future architecture evaluation, not a reason to reproduce the Godot folder or scene structure.
+
+### Unified Debug Tool Hub
+
+Reorganize the development-only tools behind one shared `/debug` shell with discoverable navigation to `/debug/game`, `/debug/wall`, `/debug/entity`, and later tools. Share only the route catalog, header, responsive shell, and dev-only guard; keep each Pixi tool's mount, state, validation, and cleanup owned by that tool.
 
 ### Data-Oriented Gameplay Model
 

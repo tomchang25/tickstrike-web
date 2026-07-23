@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "general": {
+    "groundY": 20,
+    "bodyFoot": {
+      "x": 8,
+      "y": 15
+    },
+    "bodyScale": 3.5,
+    "shadow": {
+      "offsetX": 0,
+      "offsetY": 2,
+      "radiusX": 20,
+      "radiusY": 5,
+      "color": 329483,
+      "alpha": 0.48
+    }
+  },
+  "profiles": {
+    "enemy.ranged": {
+      "bodyScale": 3
+    },
+    "enemy.bomb": {
+      "bodyFoot": {
+        "x": 7.5
+      }
+    }
+  }
+}

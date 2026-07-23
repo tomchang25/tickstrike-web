@@ -1,6 +1,7 @@
 import { Texture } from "pixi.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createPlayerSprite, setNinjaSpriteSheet } from "@presentation/pixi/character-sprites";
+import { resolveEntityPresentationProfile } from "@presentation/pixi/entity-presentation-profiles";
 
 beforeEach(() => setNinjaSpriteSheet(Texture.WHITE));
 afterEach(() => setNinjaSpriteSheet(undefined));
@@ -8,15 +9,19 @@ afterEach(() => setNinjaSpriteSheet(undefined));
 describe("character sprite profiles", () => {
   it("creates the authored Ninja profile with an idle pose and default facing", () => {
     const sprite = createPlayerSprite("character.ninja");
+    const profile = resolveEntityPresentationProfile("character.ninja");
 
     expect(sprite).toBeDefined();
     expect(sprite?.profileId).toBe("character.ninja");
     expect(sprite?.pose).toBe("idle");
     expect(sprite?.facing).toEqual({ x: 1, y: 0 });
-    expect(sprite?.body.scale.x).toBe(3.5);
-    expect(sprite?.body.anchor).toMatchObject({ x: 0.5, y: 0.875 });
-    expect(sprite?.body.position.y).toBe(18);
-    expect(sprite?.root.children.length).toBe(2);
+    expect(sprite?.body.scale.x).toBe(profile.bodyScale);
+    expect(sprite?.body.anchor).toMatchObject({ x: profile.bodyFoot.x / 16, y: profile.bodyFoot.y / 16 });
+    expect(sprite?.body.position.y).toBe(0);
+    expect(sprite?.rig.groundRoot.position.y).toBe(profile.groundY);
+    expect(sprite?.root.children).toEqual([sprite?.rig.groundRoot]);
+    expect(sprite?.rig.groundRoot.children).toEqual([sprite?.rig.shadow, sprite?.rig.actorRoot]);
+    expect(sprite?.rig.actorRoot.children).toEqual([sprite?.body]);
   });
 
   it("projects cardinal facing and a transient dash pose without a core state", () => {

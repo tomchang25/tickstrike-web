@@ -351,6 +351,19 @@ export class PixiGameRenderer {
     this.input.refreshPreview();
   }
 
+  /** Rebuilds live entity views after the dev presentation catalog changes. */
+  refreshEntityPresentationProfiles(): void {
+    if (!this.snapshot) {
+      return;
+    }
+    for (const view of this.entityViews.values()) {
+      view.root.destroy({ children: true });
+    }
+    this.entityViews.clear();
+    this.positionOwners.clear();
+    this.projectSnapshot(this.snapshot);
+  }
+
   setDebugMode(enabled: boolean): void {
     this.debugMode = enabled;
     this.app.canvas.dataset.debugMode = String(enabled);

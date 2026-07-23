@@ -2,6 +2,8 @@ import { Container, Rectangle, Sprite, Texture } from "pixi.js";
 import { gsap } from "gsap";
 import type { Cell, EntityState } from "@core/model/types";
 import { enemyPresentationProfiles, type EnemyPresentationProfile } from "@content/enemies/features";
+import { ENTITY_FRAME_SIZE, createEntityPresentationRig, type EntityPresentationRig } from "./entity-presentation-rig";
+import { resolveEntityPresentationProfile, type EntityPresentationProfile } from "./entity-presentation-profiles";
 
 export type EnemySpritePose = "idle" | "move" | "prepareAttack" | "commitCue";
 export type EnemySpritePalette = string;
@@ -18,12 +20,14 @@ export interface EnemyPresentation {
   readonly profileId: string;
   readonly palette: EnemySpritePalette;
   readonly root: Container;
+  readonly rig: EntityPresentationRig;
   readonly body: Sprite;
   readonly pose: EnemySpritePose;
   readonly facing: Cell;
   readonly waterFrame: number | undefined;
   readonly waterFrameDurationsMs: readonly number[];
   setFacing(facing: Cell): void;
+  setPose(pose: EnemySpritePose): void;
   sync(entity: Pick<EntityState, "activity" | "facing" | "phase">): void;
   playMove(): gsap.core.Timeline;
   playPrepareAttack(): gsap.core.Timeline;
@@ -40,18 +44,6 @@ export interface EnemyPresentation {
   reset(): void;
 }
 
-const FRAME_SIZE = 16;
-const SPRITE_SCALE = 3.5;
-// The art's ground line: the visual feet sit this many art pixels above the
-// frame's bottom edge (the rows below are the body's front face).
-const FOOT_INSET = 2;
-const FOOT_ANCHOR_Y = (FRAME_SIZE - FOOT_INSET) / FRAME_SIZE;
-// Land frames stand in the lower quarter of the logical cell so their full
-// frame does not cross the grid line behind them.
-const GROUND_OFFSET_Y = 16;
-// Cosmetic seat: pulls the drawn body down so it sits inside its own cell.
-// The root stays at the logical cell centre and remains the depth-sort key.
-const SEAT_OFFSET_Y = 2;
 const DEFAULT_FACING: Cell = { x: 0, y: 1 };
 const BASE_TINT = 0xffffff;
 const DAMAGE_TINT = 0xcc3333;
@@ -97,7 +89,7 @@ function directionColumn(direction: Cell): number {
 function frameTexture(sheet: Texture, column: number, row: number): Texture {
   return new Texture({
     source: sheet.source,
-    frame: new Rectangle(column * FRAME_SIZE, row * FRAME_SIZE, FRAME_SIZE, FRAME_SIZE),
+    frame: new Rectangle(column * ENTITY_FRAME_SIZE, row * ENTITY_FRAME_SIZE, ENTITY_FRAME_SIZE, ENTITY_FRAME_SIZE),
   });
 }
 
@@ -116,7 +108,8 @@ function sideRotation(facing: Cell, amount: number): number {
 }
 
 class SmallEnemyPresentation implements EnemyPresentation {
-  readonly root = new Container();
+  readonly root: Container;
+  readonly rig: EntityPresentationRig;
   readonly body: Sprite;
   private currentFacing = { ...DEFAULT_FACING };
   private currentPose: EnemySpritePose = "idle";
@@ -125,6 +118,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
   private actionTimeline: gsap.core.Timeline | undefined;
   private tintTimeline: gsap.core.Timeline | undefined;
   private blinkTimeline: gsap.core.Timeline | undefined;
+  private readonly layoutProfile: EntityPresentationProfile;
 
   constructor(
     readonly profileId: string,
@@ -132,7 +126,6 @@ class SmallEnemyPresentation implements EnemyPresentation {
     sheet: Texture,
     private readonly waterAnimation: EnemyWaterAnimation | undefined,
     private readonly onChange?: () => void,
-    private readonly spriteScale = SPRITE_SCALE,
   ) {
     sheet.source.scaleMode = "nearest";
     const frameAt = this.createFrameSelector(sheet);
@@ -141,15 +134,18 @@ class SmallEnemyPresentation implements EnemyPresentation {
       this.waterFrameAt = this.createFrameSelector(waterAnimation.sheet);
     }
 
+    this.layoutProfile = resolveEntityPresentationProfile(profileId);
+    this.rig = createEntityPresentationRig(this.layoutProfile);
+    this.root = this.rig.root;
     this.body = new Sprite(frameAt(directionColumn(DEFAULT_FACING), POSE_ROWS.idle));
-    // Feet anchor: land frames stand their visual feet on the cell's
-    // lower-quarter ground contact; `applyFrame` switches layout per frame set.
-    this.body.anchor.set(0.5, FOOT_ANCHOR_Y);
-    this.body.position.y = GROUND_OFFSET_Y + SEAT_OFFSET_Y;
-    this.body.scale.set(this.spriteScale);
+    this.body.anchor.set(
+      this.layoutProfile.bodyFoot.x / ENTITY_FRAME_SIZE,
+      this.layoutProfile.bodyFoot.y / ENTITY_FRAME_SIZE,
+    );
+    this.body.scale.set(this.layoutProfile.bodyScale);
     this.body.tint = BASE_TINT;
     this.root.label = profileId;
-    this.root.addChild(this.body);
+    this.rig.actorRoot.addChild(this.body);
 
     this.frameAt = frameAt;
   }
@@ -183,15 +179,15 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.actionTimeline?.kill();
     this.actionTimeline = undefined;
     this.root.position.set(0, 0);
-    this.root.rotation = 0;
+    this.rig.actorRoot.rotation = 0;
     this.setFacing(entity.facing ?? DEFAULT_FACING);
 
     if (entity.phase === "alive" && entity.activity === "telegraphing") {
       this.setPose("prepareAttack");
-      this.root.scale.set(PREPARE_SCALE.x, PREPARE_SCALE.y);
+      this.rig.actorRoot.scale.set(PREPARE_SCALE.x, PREPARE_SCALE.y);
     } else {
       this.setPose("idle");
-      this.root.scale.set(1, 1);
+      this.rig.actorRoot.scale.set(1, 1);
     }
 
     this.isStaggered = entity.phase === "alive" && entity.activity === "staggered";
@@ -204,8 +200,8 @@ class SmallEnemyPresentation implements EnemyPresentation {
     const timeline = this.startAction("move");
     const forward = forwardFor(this.currentFacing);
     this.root.position.set(-forward.x * 2, -forward.y * 2);
-    this.root.rotation = sideRotation(this.currentFacing, 0.08);
-    this.root.scale.set(1.05, 0.95);
+    this.rig.actorRoot.rotation = sideRotation(this.currentFacing, 0.08);
+    this.rig.actorRoot.scale.set(1.05, 0.95);
     timeline.to(
       this.root.position,
       {
@@ -217,7 +213,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
       0,
     );
     timeline.to(
-      this.root.scale,
+      this.rig.actorRoot.scale,
       {
         x: 1,
         y: 1,
@@ -226,7 +222,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
       },
       0,
     );
-    timeline.to(this.root, { rotation: 0, duration: 0.1, ease: "power2.out" }, 0);
+    timeline.to(this.rig.actorRoot, { rotation: 0, duration: 0.1, ease: "power2.out" }, 0);
     timeline.call(() => {
       this.root.position.set(0, 0);
       this.setPose("idle");
@@ -239,7 +235,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
 
   playPrepareAttack(): gsap.core.Timeline {
     const timeline = this.startAction("prepareAttack");
-    timeline.to(this.root.scale, {
+    timeline.to(this.rig.actorRoot.scale, {
       x: PREPARE_SCALE.x,
       y: PREPARE_SCALE.y,
       duration: 0.12,
@@ -250,14 +246,14 @@ class SmallEnemyPresentation implements EnemyPresentation {
 
   playAttackCommit(): gsap.core.Timeline {
     const timeline = this.startAction("commitCue");
-    this.root.scale.set(PREPARE_SCALE.x, PREPARE_SCALE.y);
-    timeline.to(this.root.scale, {
+    this.rig.actorRoot.scale.set(PREPARE_SCALE.x, PREPARE_SCALE.y);
+    timeline.to(this.rig.actorRoot.scale, {
       x: COMMIT_SCALE.x,
       y: COMMIT_SCALE.y,
       duration: 0.06,
       ease: "power2.out",
     });
-    timeline.to(this.root.scale, {
+    timeline.to(this.rig.actorRoot.scale, {
       x: 1,
       y: 1,
       duration: 0.09,
@@ -350,8 +346,8 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.actionTimeline = undefined;
     this.stopBlink();
     this.root.position.set(0, 0);
-    this.root.rotation = 0;
-    this.root.scale.set(1, 1);
+    this.rig.actorRoot.rotation = 0;
+    this.rig.actorRoot.scale.set(1, 1);
     this.setPose("idle");
   }
 
@@ -373,7 +369,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
     return timeline;
   }
 
-  private setPose(pose: EnemySpritePose): void {
+  setPose(pose: EnemySpritePose): void {
     this.currentPose = pose;
     this.applyFrame();
     this.onChange?.();
@@ -382,10 +378,14 @@ class SmallEnemyPresentation implements EnemyPresentation {
   private applyFrame(): void {
     const column = directionColumn(this.currentFacing);
     const inWater = this.currentWaterFrame !== undefined && this.waterFrameAt !== undefined;
+    this.rig.shadow.visible = !inWater;
     // Land frames are feet-anchored in the lower quarter; authored water frames
     // return to cell-centred alignment so the splash art stays on the waterline.
-    this.body.anchor.set(0.5, inWater ? 0.5 : FOOT_ANCHOR_Y);
-    this.body.position.y = inWater ? 0 : GROUND_OFFSET_Y + SEAT_OFFSET_Y;
+    this.body.anchor.set(
+      this.layoutProfile.bodyFoot.x / ENTITY_FRAME_SIZE,
+      inWater ? 0.5 : this.layoutProfile.bodyFoot.y / ENTITY_FRAME_SIZE,
+    );
+    this.rig.actorRoot.position.y = inWater ? -this.layoutProfile.groundY : 0;
     this.body.texture = inWater
       ? this.waterFrameAt!(column, this.currentWaterFrame!)
       : this.frameAt(column, POSE_ROWS[this.currentPose]);
@@ -425,7 +425,5 @@ export function createEnemyPresentation(
   onChange?: () => void,
 ): EnemyPresentation | undefined {
   const profile = getEnemyPresentationProfile(profileId);
-  return profile
-    ? new SmallEnemyPresentation(profile.id, profile.palette, sheet, waterAnimation, onChange, profile.scale)
-    : undefined;
+  return profile ? new SmallEnemyPresentation(profile.id, profile.palette, sheet, waterAnimation, onChange) : undefined;
 }

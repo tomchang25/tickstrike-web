@@ -11,7 +11,18 @@ const WallTestbedApp = import.meta.env.DEV
   ? lazy(() => import("./wall-testbed-app").then((module) => ({ default: module.WallTestbedApp })))
   : undefined;
 
+const EntityPresentationLabApp = import.meta.env.DEV
+  ? lazy(() => import("./entity-presentation-lab-app").then((module) => ({ default: module.EntityPresentationLabApp })))
+  : undefined;
+
 export function App() {
+  if (EntityPresentationLabApp && window.location.pathname === "/debug/entity") {
+    return (
+      <Suspense fallback={null}>
+        <EntityPresentationLabApp />
+      </Suspense>
+    );
+  }
   if (WallTestbedApp && window.location.pathname === "/debug/wall") {
     return (
       <Suspense fallback={null}>

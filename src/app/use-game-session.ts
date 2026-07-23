@@ -4,6 +4,10 @@ import type { Cell, MilestoneChoice, WorldSnapshot } from "@core/model/types";
 import { createLocalStorageSettingsStorage } from "@platform/settings-storage";
 import type { TestScenario } from "@harness/types";
 import type { PointerCommit, PointerMode } from "@presentation/pixi/pixi-game-renderer";
+import {
+  parseEntityPresentationProfileCatalog,
+  setRuntimeEntityPresentationProfileCatalog,
+} from "@presentation/pixi/entity-presentation-profiles";
 import { GameRuntime } from "@runtime/game-runtime";
 import { SettingsStore, type GameSettings } from "@runtime/settings-store";
 import { useKeyboardInput } from "@ui/input/use-keyboard-input";
@@ -68,6 +72,27 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     commandsEnabled && encounterRunning && !pendingReward && !pendingMilestone && !settingsOpen && !buildOpen;
 
   useEffect(() => settingsStore.subscribe(setSettings), [settingsStore]);
+
+  useEffect(() => {
+    if (!import.meta.hot) {
+      return;
+    }
+    const refreshProfiles = async () => {
+      try {
+        const response = await fetch("/__debug/entity-presentation-profile-catalog");
+        if (!response.ok) {
+          return;
+        }
+        setRuntimeEntityPresentationProfileCatalog(parseEntityPresentationProfileCatalog(await response.json()));
+        runtimeRef.current?.refreshEntityPresentationProfiles();
+      } catch {
+        // The dev authoring panel reports endpoint failures to its own user. A stale
+        // gameplay preview is safer than taking down an active session here.
+      }
+    };
+    import.meta.hot.on("entity-presentation-catalog-updated", refreshProfiles);
+    return () => import.meta.hot?.off("entity-presentation-catalog-updated", refreshProfiles);
+  }, []);
 
   // Escape is the single settings entry/exit: it closes whichever panel is open, does nothing while a
   // reward or milestone decision is pending, and otherwise summons the settings panel.
