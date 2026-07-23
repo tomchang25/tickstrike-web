@@ -23,8 +23,17 @@ export interface PlayerSprite {
   readonly body: Sprite;
   readonly facing: Cell;
   readonly pose: PlayerSpritePose;
+  /** Dash afterimage cadence in ms from the action catalog; Infinity when afterimage is off. */
+  readonly afterimageIntervalMs: number;
   setFacing(facing: Cell): void;
   setPose(pose: PlayerSpritePose): void;
+  /**
+   * Spawns one fading body+weapon afterimage clone into `layer` at the moving container's current
+   * position `at` (the rig root's position in the Lab, the entity view's position in the runtime).
+   * The clone reproduces the live body/weapon frame, offsets, scale, and the catalog tint/fade, so
+   * both drivers share one afterimage appearance. The caller owns cadence (using `afterimageIntervalMs`).
+   */
+  spawnAfterimage(layer: Container, at: { readonly x: number; readonly y: number }): void;
 }
 
 const NINJA_PROFILE_ID = "character.ninja";
@@ -282,6 +291,47 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
     renderPose(pose, currentFacing);
   };
 
+  // Clones the live body (and visible weapon) into `layer` at the moving container position `at`,
+  // adding the rig's ground offset and each layer's authored offset so the trail matches on-screen.
+  const spawnAfterimage = (layer: Container, at: { readonly x: number; readonly y: number }): void => {
+    const afterimage = currentAction().execute.afterimage;
+    if (!afterimage?.enabled) {
+      return;
+    }
+    const groundY = profile.groundY;
+    const ghosts: Sprite[] = [];
+    const bodyGhost = new Sprite(body.texture);
+    bodyGhost.anchor.set(body.anchor.x, body.anchor.y);
+    bodyGhost.scale.set(body.scale.x, body.scale.y);
+    bodyGhost.position.set(at.x + body.position.x, at.y + groundY + body.position.y);
+    bodyGhost.tint = afterimage.tint;
+    bodyGhost.alpha = 0.5;
+    layer.addChild(bodyGhost);
+    ghosts.push(bodyGhost);
+    if (weapon.visible) {
+      const weaponGhost = new Sprite(weapon.texture);
+      weaponGhost.anchor.set(0.5, 0.5);
+      weaponGhost.scale.set(weapon.scale.x, weapon.scale.y);
+      weaponGhost.position.set(at.x + weapon.position.x, at.y + groundY + weapon.position.y);
+      weaponGhost.tint = afterimage.tint;
+      weaponGhost.alpha = 0.55;
+      layer.addChild(weaponGhost);
+      ghosts.push(weaponGhost);
+    }
+    for (const ghost of ghosts) {
+      gsap.to(ghost, {
+        alpha: 0,
+        duration: afterimage.fadeSec,
+        ease: "power1.out",
+        onComplete: () => {
+          if (!ghost.destroyed) {
+            ghost.destroy();
+          }
+        },
+      });
+    }
+  };
+
   setFacing(DEFAULT_FACING);
   setPose("idle");
 
@@ -296,8 +346,12 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
     get pose() {
       return currentPose;
     },
+    get afterimageIntervalMs() {
+      return currentAction().execute.afterimage?.intervalMs ?? Number.POSITIVE_INFINITY;
+    },
     setFacing,
     setPose,
+    spawnAfterimage,
   };
 }
 

@@ -216,6 +216,8 @@ export class PixiGameRenderer {
   private snapshot: WorldSnapshot | undefined;
   private playerPose: PlayerSpritePose = "idle";
   private pointerMode: PointerMode = "attack";
+  private afterimageTick: (() => void) | undefined;
+  private afterimageAccum = 0;
   private debugMode = false;
   private enemySpriteSheets: Readonly<Record<string, Texture>> = {};
   private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
@@ -347,8 +349,44 @@ export class PixiGameRenderer {
     // Only idle and the prepare aim stance re-face to the cursor; move, dash, attack, and the held
     // dashLand finishing pose keep their committed facing until a command forces a new one.
     this.input.setFacingLocked(effective !== "idle" && effective !== "prepare");
+    // The dash draw-cut leaves an afterimage trail; every other pose clears it.
+    if (effective === "dash") {
+      this.startPlayerAfterimage();
+    } else {
+      this.stopPlayerAfterimage();
+    }
     if (this.host) {
       this.app.canvas.dataset.playerAnimation = effective;
+    }
+  }
+
+  // Spawns the shared PlayerSprite afterimage into the static actor layer while the dash motion (a
+  // moving entity view) is in flight, on the catalog-authored cadence. The clone lives in
+  // `actorLayer` so it stays put as the player continues; the sprite owns the appearance.
+  private startPlayerAfterimage(): void {
+    this.stopPlayerAfterimage();
+    const view = this.entityViews.get("player");
+    const sprite = view?.sprite;
+    const root = view?.root;
+    if (!sprite || !root) {
+      return;
+    }
+    this.afterimageAccum = 0;
+    const tick = () => {
+      this.afterimageAccum += this.app.ticker.deltaMS;
+      if (this.afterimageAccum >= sprite.afterimageIntervalMs) {
+        this.afterimageAccum = 0;
+        sprite.spawnAfterimage(this.actorLayer, { x: root.position.x, y: root.position.y });
+      }
+    };
+    this.app.ticker.add(tick);
+    this.afterimageTick = tick;
+  }
+
+  private stopPlayerAfterimage(): void {
+    if (this.afterimageTick) {
+      this.app.ticker.remove(this.afterimageTick);
+      this.afterimageTick = undefined;
     }
   }
 
