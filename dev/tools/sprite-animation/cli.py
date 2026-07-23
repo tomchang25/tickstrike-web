@@ -8,7 +8,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from PIL import Image, __version__ as pillow_version
+from PIL import Image, ImageOps, __version__ as pillow_version
 
 from compiler import (
     DIRECTIONS,
@@ -63,10 +63,15 @@ def build_metadata(target: str, effect: str, config: dict, sheet: Image.Image) -
             "column_order": list(DIRECTIONS),
             "row_role": "animation_frame",
         },
-        "timing": {"frame_durations_ms": config["frame_durations_ms"], "loop": False},
+        "timing": {"frame_durations_ms": config["frame_durations_ms"], "loop": config["loop"]},
         "anchor": config["anchor"],
         "overflow_policy": config["overflow_policy"],
         "effect_coordinate_space": config["effect_coordinate_space"],
+        "left_right_policy": (
+            "mirror_right_to_left"
+            if config.get("mirror_left_from_right", False)
+            else "direction_authored"
+        ),
         "end_state": config["end_state"],
         "recipe_status": config["recipe_status"],
         "alpha": "binary 0/255",
@@ -92,6 +97,8 @@ def generate_target(
         ]
         for direction in DIRECTIONS
     }
+    if config.get("mirror_left_from_right", False):
+        frames["left"] = [ImageOps.mirror(frame) for frame in frames["right"]]
     sheet = compose_sheet(frames)
     checks = validate_sheet(sheet, config)
 

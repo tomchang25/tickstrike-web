@@ -23,7 +23,7 @@ Do not swap Down and Up. Do not transpose generated x8 sheets into 128x64. A 4-d
 
 ## Effect Construction
 
-Start from the source frame selected for each output frame. Keep actor geometry, effect geometry, effect visibility, and effect motion distinct. Use each direction's own source geometry. Whole-sheet flips are not a substitute for direction-specific effect logic.
+Start from the source frame selected for each output frame. Keep actor geometry, effect geometry, effect visibility, and effect motion distinct. Unless a request explicitly requires direction-specific left/right art, author the right-facing frames and generate the left-facing frames as exact horizontal mirrors. Use each direction's own source geometry when that explicit asymmetry exists; a flip must not erase required direction-specific effect logic.
 
 For water effects, keep the actor, submerged tint, water surface, splashes, and bubbles conceptually separate. Do not use regular checkerboard deletion to hide a submerged actor; use the water surface, clipping, and intentional effect pixels instead.
 

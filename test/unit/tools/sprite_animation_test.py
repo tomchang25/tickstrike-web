@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 CLI = REPOSITORY_ROOT / "dev/tools/sprite-animation/cli.py"
@@ -47,6 +47,7 @@ class SpriteAnimationToolTest(unittest.TestCase):
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
             self.assertEqual(metadata["output_layout"]["column_order"], ["down", "up", "left", "right"])
             self.assertEqual(metadata["output_layout"]["row_role"], "animation_frame")
+            self.assertFalse(metadata["timing"]["loop"])
 
             validated = self.run_cli(
                 "validate",
@@ -94,6 +95,45 @@ class SpriteAnimationToolTest(unittest.TestCase):
             self.assertTrue(
                 (preview / "ranged_enemy-entered_water-4dir-x8-contact-sheet-x8.png").is_file()
             )
+
+    def test_prepare_animation_declares_looping_timing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory)
+            generated = self.run_cli(
+                "generate",
+                "--target",
+                "bomb_enemy",
+                "--effect",
+                "self_destruct_prepare",
+                "--output",
+                str(output),
+            )
+            self.assertEqual(generated.returncode, 0, generated.stderr)
+            metadata_path = output / "bomb_enemy-self_destruct_prepare-4dir-x8.animation.json"
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            self.assertTrue(metadata["timing"]["loop"])
+
+    def test_charge_execute_mirrors_right_frames_into_left(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory)
+            generated = self.run_cli(
+                "generate",
+                "--target",
+                "charge_enemy",
+                "--effect",
+                "charge_execute",
+                "--output",
+                str(output),
+            )
+            self.assertEqual(generated.returncode, 0, generated.stderr)
+            sheet_path = output / "charge_enemy-charge_execute-4dir-x8.png"
+            with Image.open(sheet_path) as opened_sheet:
+                sheet = opened_sheet.convert("RGBA")
+                for row in range(8):
+                    top = row * 16
+                    left = sheet.crop((32, top, 48, top + 16))
+                    right = sheet.crop((48, top, 64, top + 16))
+                    self.assertEqual(left.tobytes(), ImageOps.mirror(right).tobytes())
 
     def test_missing_effect_does_not_substitute_another_recipe(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:

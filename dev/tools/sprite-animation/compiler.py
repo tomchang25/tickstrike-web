@@ -85,6 +85,10 @@ def validate_config(config: dict) -> None:
     frame_count = config.get("frames_per_direction")
     if frame_count != 8:
         raise ValueError("This pipeline currently requires exactly eight frames per direction.")
+    if not isinstance(config.get("loop"), bool):
+        raise ValueError("loop must be a boolean.")
+    if "mirror_left_from_right" in config and not isinstance(config["mirror_left_from_right"], bool):
+        raise ValueError("mirror_left_from_right must be a boolean.")
     if len(config.get("source_pose_sequence", [])) != frame_count:
         raise ValueError("source_pose_sequence must contain one source pose per output frame.")
     if len(config.get("frame_durations_ms", [])) != frame_count:

@@ -2,6 +2,7 @@
   "schema_version": 1,
   "id": "lantern_douse",
   "frames_per_direction": 8,
+  "loop": false,
   "source_pose_sequence": [0, 1, 2, 3, 2, 1, 0, 0],
   "frame_durations_ms": [100, 80, 90, 120, 140, 160, 200, 320],
   "anchor": { "type": "bottom_center", "x": 8, "y": 15 },

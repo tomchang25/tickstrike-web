@@ -15,12 +15,20 @@
     "charge_enemy": {
       "family": "skull",
       "source": "src/content/enemies/assets/skull-sprite-sheet.png",
-      "effects": { "entered_water": "skull_extinguish" }
+      "effects": {
+        "entered_water": "skull_extinguish",
+        "charge_prepare": "skull_charge_prepare",
+        "charge_execute": "skull_charge_execute"
+      }
     },
     "bomb_enemy": {
       "family": "lantern",
       "source": "src/content/enemies/assets/lantern-red-sprite-sheet.png",
-      "effects": { "entered_water": "lantern_douse" }
+      "effects": {
+        "entered_water": "lantern_douse",
+        "self_destruct_prepare": "lantern_self_destruct_prepare",
+        "self_destruct_execute": "lantern_self_destruct_execute"
+      }
     },
     "ranged_enemy": {
       "family": "eye",

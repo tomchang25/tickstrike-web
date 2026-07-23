@@ -17,6 +17,8 @@ When a recipe is missing, create a draft config and implementation. Preserve all
 
 When a recipe already exists, change the config when only timing, source poses, offsets, or other declared parameters differ. Change the recipe implementation only when the visual behavior itself changes. Do not promote a draft recipe without explicit human approval.
 
+Unless the request explicitly requires different left- and right-facing art, author the right-facing frames and generate the left-facing frames as exact horizontal mirrors. Do not independently transform both sides when symmetry is the intended result.
+
 ## Generation
 
 Generate to an explicit staging directory, normally below ignored `tmp/`:
