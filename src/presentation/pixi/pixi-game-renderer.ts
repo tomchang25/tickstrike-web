@@ -1,4 +1,5 @@
 import { Application, Assets, Container, Graphics, Sprite, Text, TilingSprite, type Texture } from "pixi.js";
+import { gsap } from "gsap";
 import { sameCell, type Cell, type EntityId, type EntityState, type WorldSnapshot } from "@core/model/types";
 import { CELL_SIZE } from "./pointer-aim";
 import { BoardPainter } from "./board-painter";
@@ -19,6 +20,7 @@ import {
 } from "./enemy-sprites";
 import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animation-assets";
 import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
+import ninjaAttackSheetUrl from "@content/characters/assets/ninja/attack-sprite-sheet.png";
 import ninjaBattoBaseUrl from "@content/characters/assets/ninja/batto/ninja-batto-base.png";
 import ninjaSlashEndUrl from "@content/characters/assets/ninja/batto/ninja-slash-end.png";
 import ninjaKatanaSlashUrl from "@content/characters/assets/ninja/batto/katana-slash.png";
@@ -218,6 +220,7 @@ export class PixiGameRenderer {
   private pointerMode: PointerMode = "attack";
   private afterimageTick: (() => void) | undefined;
   private afterimageAccum = 0;
+  private attackReset: gsap.core.Tween | undefined;
   private debugMode = false;
   private enemySpriteSheets: Readonly<Record<string, Texture>> = {};
   private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
@@ -241,14 +244,15 @@ export class PixiGameRenderer {
       autoDensity: true,
     });
     setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
-    const [battoBase, slashEnd, katanaSlash, katanaBattoStart, katanaBattoEnd] = await Promise.all([
+    const [battoBase, slashEnd, attack, katanaSlash, katanaBattoStart, katanaBattoEnd] = await Promise.all([
       Assets.load<Texture>(ninjaBattoBaseUrl),
       Assets.load<Texture>(ninjaSlashEndUrl),
+      Assets.load<Texture>(ninjaAttackSheetUrl),
       Assets.load<Texture>(ninjaKatanaSlashUrl),
       Assets.load<Texture>(ninjaKatanaBattoStartUrl),
       Assets.load<Texture>(ninjaKatanaBattoEndUrl),
     ]);
-    setNinjaBattoSheets({ battoBase, slashEnd, katanaSlash, katanaBattoStart, katanaBattoEnd });
+    setNinjaBattoSheets({ battoBase, slashEnd, attack, katanaSlash, katanaBattoStart, katanaBattoEnd });
     const loadedEnemySpriteSheets = await Promise.all(
       Object.entries(enemySpriteSheetUrls).map(async ([sheetKey, url]) => [sheetKey, await Assets.load<Texture>(url)]),
     );
@@ -322,6 +326,9 @@ export class PixiGameRenderer {
   }
 
   destroy(): void {
+    this.attackReset?.kill();
+    this.attackReset = undefined;
+    this.stopPlayerAfterimage();
     this.input.unbind();
     this.preview.clear();
     this.entityViews.clear();
@@ -354,6 +361,14 @@ export class PixiGameRenderer {
       this.startPlayerAfterimage();
     } else {
       this.stopPlayerAfterimage();
+    }
+    // The attack body animation plays to completion independent of the impact VFX, then settles to
+    // idle on its own — the impact timeline no longer cuts it short.
+    this.attackReset?.kill();
+    this.attackReset = undefined;
+    if (effective === "attack") {
+      const duration = player?.sprite?.attackDurationSec ?? 0.24;
+      this.attackReset = gsap.delayedCall(duration, () => this.setPlayerAnimation("idle"));
     }
     if (this.host) {
       this.app.canvas.dataset.playerAnimation = effective;

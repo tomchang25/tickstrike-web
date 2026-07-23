@@ -25,6 +25,8 @@ export interface PlayerSprite {
   readonly pose: PlayerSpritePose;
   /** Dash afterimage cadence in ms from the action catalog; Infinity when afterimage is off. */
   readonly afterimageIntervalMs: number;
+  /** Total duration of the normal-attack body animation in seconds (for settling back to idle). */
+  readonly attackDurationSec: number;
   setFacing(facing: Cell): void;
   setPose(pose: PlayerSpritePose): void;
   /**
@@ -38,6 +40,7 @@ export interface PlayerSprite {
 
 const NINJA_PROFILE_ID = "character.ninja";
 const NINJA_ACTION_ID = "ninja.batto_dash";
+const NINJA_ATTACK_ACTION_ID = "ninja.normal_attack";
 const WEAPON_FRAME_SIZE = 64;
 const DEFAULT_FACING: Cell = { x: 1, y: 0 };
 const BODY_IDLE_ROW = 0;
@@ -55,6 +58,7 @@ const BODY_DIRECTION_COLUMNS = {
 export interface NinjaBattoSheets {
   readonly battoBase?: Texture;
   readonly slashEnd?: Texture;
+  readonly attack?: Texture;
   readonly katanaSlash?: Texture;
   readonly katanaBattoStart?: Texture;
   readonly katanaBattoEnd?: Texture;
@@ -108,6 +112,7 @@ function resolveSheet(sheetKey: string): { texture: Texture; frame: number } | u
   const bodyKeys: Record<string, Texture | undefined> = {
     battoBase: ninjaBattoSheets.battoBase,
     slashEnd: ninjaBattoSheets.slashEnd,
+    attack: ninjaBattoSheets.attack,
   };
   if (sheetKey in bodyKeys) {
     const texture = bodyKeys[sheetKey];
@@ -127,9 +132,17 @@ function resolveSheet(sheetKey: string): { texture: Texture; frame: number } | u
 
 function createNinjaSprite(sheet: Texture): PlayerSprite {
   const profile = resolveEntityPresentationProfile(NINJA_PROFILE_ID);
-  // Resolve the action fresh on every render so a live catalog refresh (dev Action Lab Apply)
-  // takes effect without recreating the sprite.
+  // Resolve the actions fresh on every render so a live catalog refresh (dev Action Lab Apply)
+  // takes effect without recreating the sprite. Dash states come from the batto action; the normal
+  // attack is its own action and is resolved defensively (its catalog entry may be absent).
   const currentAction = () => resolveActionPresentation(NINJA_ACTION_ID);
+  const attackAction = () => {
+    try {
+      return resolveActionPresentation(NINJA_ATTACK_ACTION_ID);
+    } catch {
+      return undefined;
+    }
+  };
   const rig = createEntityPresentationRig(profile);
   const root = rig.root;
   root.label = NINJA_PROFILE_ID;
@@ -138,6 +151,7 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
   let moveFrameIndex = 0;
   let currentMoveRow: number = BODY_MOVE_ROWS[0] ?? BODY_IDLE_ROW;
   let breathingTween: gsap.core.Tween | undefined;
+  let attackTween: gsap.core.Timeline | undefined;
   const frames = new Map<string, Texture>();
   sheet.source.scaleMode = "nearest";
 
@@ -187,7 +201,7 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
 
   const startBreathing = (): void => {
     stopBreathing();
-    const breathing = currentAction().prepare.breathing;
+    const breathing = currentAction().prepare?.breathing;
     if (!breathing) {
       return;
     }
@@ -199,6 +213,39 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
       yoyo: true,
       repeat: -1,
     });
+  };
+
+  const stopAttack = (): void => {
+    attackTween?.kill();
+    attackTween = undefined;
+  };
+
+  // Plays the authored directional attack body animation once. Falls back to the legacy single
+  // body-sheet attack frame when the attack sheet or frames are unavailable.
+  const playAttack = (direction: Cell): void => {
+    stopAttack();
+    body.position.set(0, 0);
+    weapon.visible = false;
+    const state = attackAction()?.attack;
+    const dir = actionDirection(direction);
+    const column = BODY_DIRECTION_COLUMNS[dir];
+    const frames = state?.bodyFrames;
+    if (!state || !frames || frames.length === 0 || !resolveSheet(state.bodySheet)) {
+      body.texture = bodyFrameFromSheet(column, BODY_ATTACK_ROW);
+      return;
+    }
+    const sheetKey = state.bodySheet;
+    const timeline = gsap.timeline();
+    for (const frame of frames) {
+      timeline.call(() => {
+        const texture = sheetFrame(sheetKey, column, frame.row);
+        if (texture && !body.destroyed) {
+          body.texture = texture;
+        }
+      });
+      timeline.to({}, { duration: Math.max(0.01, frame.holdSec) });
+    }
+    attackTween = timeline;
   };
 
   // Renders one authored batto state for the given facing. Returns false when the required batto
@@ -235,16 +282,19 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
     if (pose !== "prepare") {
       stopBreathing();
     }
+    if (pose !== "attack") {
+      stopAttack();
+    }
     const action = currentAction();
     switch (pose) {
       case "prepare":
-        if (applyBattoState(action.prepare, direction)) {
+        if (action.prepare && applyBattoState(action.prepare, direction)) {
           startBreathing();
           return;
         }
         break;
       case "dash":
-        if (applyBattoState(action.execute, direction)) {
+        if (action.execute && applyBattoState(action.execute, direction)) {
           return;
         }
         // Fallback: legacy body-sheet dash frame with no weapon.
@@ -253,7 +303,7 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
         body.texture = bodyFrameFromSheet(column, BODY_DASH_ROW);
         return;
       case "dashLand":
-        if (applyBattoState(action.end, direction)) {
+        if (action.end && applyBattoState(action.end, direction)) {
           return;
         }
         break;
@@ -263,10 +313,8 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
         body.texture = bodyFrameFromSheet(column, currentMoveRow);
         return;
       case "attack":
-        // Normal-attack body pose; the batto weapon layer is dash-only, so no weapon here.
-        body.position.set(0, 0);
-        weapon.visible = false;
-        body.texture = bodyFrameFromSheet(column, BODY_ATTACK_ROW);
+        // Directional normal-attack body animation; the batto weapon layer is dash-only.
+        playAttack(direction);
         return;
       default:
         break;
@@ -294,7 +342,7 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
   // Clones the live body (and visible weapon) into `layer` at the moving container position `at`,
   // adding the rig's ground offset and each layer's authored offset so the trail matches on-screen.
   const spawnAfterimage = (layer: Container, at: { readonly x: number; readonly y: number }): void => {
-    const afterimage = currentAction().execute.afterimage;
+    const afterimage = currentAction().execute?.afterimage;
     if (!afterimage?.enabled) {
       return;
     }
@@ -347,7 +395,14 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
       return currentPose;
     },
     get afterimageIntervalMs() {
-      return currentAction().execute.afterimage?.intervalMs ?? Number.POSITIVE_INFINITY;
+      return currentAction().execute?.afterimage?.intervalMs ?? Number.POSITIVE_INFINITY;
+    },
+    get attackDurationSec() {
+      const frames = attackAction()?.attack?.bodyFrames;
+      if (!frames || frames.length === 0) {
+        return 0.24;
+      }
+      return frames.reduce((total, frame) => total + frame.holdSec, 0);
     },
     setFacing,
     setPose,

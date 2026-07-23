@@ -161,6 +161,8 @@ export class PresentationDirector {
       switch (event.type) {
         case "player_attacked": {
           this.renderer.setPlayerFacing(event.direction, true);
+          // The attack body animation plays to completion and settles to idle on its own (renderer
+          // timed); the impact VFX below must not cut it short by forcing idle on its completion.
           this.renderer.setPlayerAnimation("attack");
           const effect = this.renderer.createImpact(event.target);
           animations.push(
@@ -169,10 +171,7 @@ export class PresentationDirector {
                 .timeline()
                 .fromTo(effect.scale, { x: 0.35, y: 0.35 }, { x: 1.8, y: 1.8, duration: 0.14 })
                 .to(effect, { alpha: 0, duration: 0.1 }, "<0.06"),
-              () => {
-                this.renderer.releaseTransient(effect);
-                this.renderer.setPlayerAnimation("idle");
-              },
+              () => this.renderer.releaseTransient(effect),
             ),
           );
           break;

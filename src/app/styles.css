@@ -1319,3 +1319,19 @@ header > p {
   border-radius: 8px;
   padding: 8px;
 }
+
+.action-lab-timing {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  border-top: 1px solid #2b3346;
+  padding-top: 8px;
+}
+
+.action-lab-timing-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8ea3c4;
+}

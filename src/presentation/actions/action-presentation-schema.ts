@@ -15,6 +15,12 @@ export interface ActionVec2 {
 
 export type ActionDirectionalOffset = Readonly<Record<ActionDirection, ActionVec2>>;
 
+/** One frame of a directional body animation: the sheet row and how long it holds. */
+export interface ActionBodyFrame {
+  readonly row: number;
+  readonly holdSec: number;
+}
+
 export interface ActionBreathing {
   readonly amplitudeX: number;
   readonly amplitudeY: number;
@@ -42,22 +48,27 @@ export interface ActionStatePresentation {
   readonly bodySheet: string;
   readonly bodyRow: number;
   readonly bodyOffset: ActionDirectionalOffset;
+  /** When present, a directional body animation played from `bodySheet` instead of the single bodyRow. */
+  readonly bodyFrames?: readonly ActionBodyFrame[];
   readonly weapon?: ActionWeaponLayer;
   readonly breathing?: ActionBreathing;
   readonly motion?: ActionMotion;
   readonly afterimage?: ActionAfterimage;
 }
 
-export const ACTION_STATE_KEYS = ["idle", "prepare", "execute", "end"] as const;
+export const ACTION_STATE_KEYS = ["idle", "prepare", "execute", "end", "attack"] as const;
 export type ActionStateKey = (typeof ACTION_STATE_KEYS)[number];
 
 export interface ActionPresentation {
   readonly label: string;
   readonly profileId: string;
-  readonly idle: ActionStatePresentation;
-  readonly prepare: ActionStatePresentation;
-  readonly execute: ActionStatePresentation;
-  readonly end: ActionStatePresentation;
+  // States are optional: each action defines only the ones it uses (the dash lifecycle vs a normal
+  // attack), and the lab shows exactly the present states.
+  readonly idle?: ActionStatePresentation;
+  readonly prepare?: ActionStatePresentation;
+  readonly execute?: ActionStatePresentation;
+  readonly end?: ActionStatePresentation;
+  readonly attack?: ActionStatePresentation;
 }
 
 export interface ActionPresentationCatalog {
@@ -193,17 +204,38 @@ function parseWeapon(value: unknown, path: string): ActionWeaponLayer {
   };
 }
 
+function parseBodyFrames(value: unknown, path: string): readonly ActionBodyFrame[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${path} must be an array.`);
+  }
+  if (value.length === 0) {
+    throw new Error(`${path} must contain at least one frame.`);
+  }
+  return value.map((frame, index) => {
+    const record = requireRecord(frame, `${path}[${index}]`);
+    rejectUnknownKeys(record, ["row", "holdSec"], `${path}[${index}]`);
+    const holdSec = requireNumber(record.holdSec, `${path}[${index}].holdSec`);
+    if (holdSec <= 0) {
+      throw new Error(`${path}[${index}].holdSec must be greater than zero.`);
+    }
+    return { row: requireNumber(record.row, `${path}[${index}].row`), holdSec };
+  });
+}
+
 function parseState(value: unknown, path: string): ActionStatePresentation {
   const record = requireRecord(value, path);
   rejectUnknownKeys(
     record,
-    ["bodySheet", "bodyRow", "bodyOffset", "weapon", "breathing", "motion", "afterimage"],
+    ["bodySheet", "bodyRow", "bodyOffset", "bodyFrames", "weapon", "breathing", "motion", "afterimage"],
     path,
   );
   return {
     bodySheet: requireString(record.bodySheet, `${path}.bodySheet`),
     bodyRow: requireNumber(record.bodyRow, `${path}.bodyRow`),
     bodyOffset: parseDirectionalOffset(record.bodyOffset, `${path}.bodyOffset`),
+    ...(record.bodyFrames === undefined
+      ? {}
+      : { bodyFrames: parseBodyFrames(record.bodyFrames, `${path}.bodyFrames`) }),
     ...(record.weapon === undefined ? {} : { weapon: parseWeapon(record.weapon, `${path}.weapon`) }),
     ...(record.breathing === undefined ? {} : { breathing: parseBreathing(record.breathing, `${path}.breathing`) }),
     ...(record.motion === undefined ? {} : { motion: parseMotion(record.motion, `${path}.motion`) }),
@@ -215,14 +247,15 @@ function parseState(value: unknown, path: string): ActionStatePresentation {
 
 function parseAction(value: unknown, path: string): ActionPresentation {
   const record = requireRecord(value, path);
-  rejectUnknownKeys(record, ["label", "profileId", "idle", "prepare", "execute", "end"], path);
+  rejectUnknownKeys(record, ["label", "profileId", "idle", "prepare", "execute", "end", "attack"], path);
   return {
     label: requireString(record.label, `${path}.label`),
     profileId: requireString(record.profileId, `${path}.profileId`),
-    idle: parseState(record.idle, `${path}.idle`),
-    prepare: parseState(record.prepare, `${path}.prepare`),
-    execute: parseState(record.execute, `${path}.execute`),
-    end: parseState(record.end, `${path}.end`),
+    ...(record.idle === undefined ? {} : { idle: parseState(record.idle, `${path}.idle`) }),
+    ...(record.prepare === undefined ? {} : { prepare: parseState(record.prepare, `${path}.prepare`) }),
+    ...(record.execute === undefined ? {} : { execute: parseState(record.execute, `${path}.execute`) }),
+    ...(record.end === undefined ? {} : { end: parseState(record.end, `${path}.end`) }),
+    ...(record.attack === undefined ? {} : { attack: parseState(record.attack, `${path}.attack`) }),
   };
 }
 

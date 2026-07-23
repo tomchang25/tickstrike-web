@@ -5,6 +5,7 @@ export {
   ACTION_DIRECTIONS,
   ACTION_STATE_KEYS,
   parseActionPresentationCatalog,
+  type ActionBodyFrame,
   type ActionDirection,
   type ActionDirectionalOffset,
   type ActionPresentation,

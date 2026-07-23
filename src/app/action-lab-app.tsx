@@ -87,11 +87,15 @@ export function ActionLabApp() {
   const [status, setStatus] = useState("");
 
   const actionIds = useMemo(() => Object.keys(catalog.actions), [catalog]);
+  const presentStates = useMemo(() => ACTION_STATE_KEYS.filter((key) => Boolean(draft?.[key])), [draft]);
   const activeState = draft?.[inspectState];
   const weaponAvailable = Boolean(activeState?.weapon);
   const layer: OffsetLayer = weaponAvailable ? inspectLayer : "body";
   const activeOffset =
     layer === "weapon" ? activeState?.weapon?.offset[inspectDirection] : activeState?.bodyOffset[inspectDirection];
+  const attackFrames = activeState?.bodyFrames;
+  const motion = activeState?.motion;
+  const afterimage = activeState?.afterimage;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -102,7 +106,8 @@ export function ActionLabApp() {
     let scene: ActionLabScene | undefined;
     let cancelled = false;
     void mountActionLabScene(host, {
-      action: initialAction,
+      catalog: actionPresentationCatalog,
+      actionId,
       inspect: { stateKey: "end", direction: "down" },
       autoLoop: false,
       altMode: false,
@@ -139,7 +144,8 @@ export function ActionLabApp() {
       return;
     }
     sceneRef.current?.update({
-      action: draft,
+      catalog: mergeAction(catalog, actionId, draft),
+      actionId,
       inspect: inspect ? { stateKey: inspectState, direction: inspectDirection } : null,
       autoLoop,
       altMode,
@@ -147,17 +153,23 @@ export function ActionLabApp() {
   }, [ready, draft, catalog, actionId, inspect, inspectState, inspectDirection, autoLoop, altMode]);
 
   const changeAction = (nextId: string): void => {
+    const next = catalog.actions[nextId];
     setActionId(nextId);
-    setDraft(catalog.actions[nextId]);
+    setDraft(next);
+    // Keep the inspected state valid for the newly selected action.
+    const states = ACTION_STATE_KEYS.filter((key) => Boolean(next?.[key]));
+    if (!states.includes(inspectState)) {
+      setInspectState(states[0] ?? "idle");
+    }
     setStatus("Loaded selected action.");
   };
 
   const setOffsetAxis = (axis: "x" | "y", value: number): void =>
     setDraft((current) => {
-      if (!current) {
+      const state = current?.[inspectState];
+      if (!current || !state) {
         return current;
       }
-      const state = current[inspectState];
       if (layer === "weapon") {
         if (!state.weapon) {
           return current;
@@ -182,6 +194,34 @@ export function ActionLabApp() {
           bodyOffset: { ...state.bodyOffset, [inspectDirection]: { ...dir, [axis]: value } },
         },
       };
+    });
+
+  const patchFrameHold = (index: number, holdSec: number): void =>
+    setDraft((current) => {
+      const state = current?.[inspectState];
+      if (!current || !state?.bodyFrames) {
+        return current;
+      }
+      const bodyFrames = state.bodyFrames.map((frame, i) => (i === index ? { ...frame, holdSec } : frame));
+      return { ...current, [inspectState]: { ...state, bodyFrames } };
+    });
+
+  const patchMotionDuration = (durationSec: number): void =>
+    setDraft((current) => {
+      const state = current?.[inspectState];
+      if (!current || !state?.motion) {
+        return current;
+      }
+      return { ...current, [inspectState]: { ...state, motion: { ...state.motion, durationSec } } };
+    });
+
+  const patchAfterimageInterval = (intervalMs: number): void =>
+    setDraft((current) => {
+      const state = current?.[inspectState];
+      if (!current || !state?.afterimage) {
+        return current;
+      }
+      return { ...current, [inspectState]: { ...state, afterimage: { ...state.afterimage, intervalMs } } };
     });
 
   const persist = async (): Promise<void> => {
@@ -233,12 +273,12 @@ export function ActionLabApp() {
     <main className="action-lab-shell">
       <header>
         <p className="eyebrow">Action / sequence lab</p>
-        <h1>Idle · Prepare · Execute · End</h1>
+        <h1>Player action presentation</h1>
         <p>
-          Dev-only. <strong>Inspect</strong> freezes one state + direction so you can nudge that facing&apos;s body or
-          weapon offset in isolation; the live config below mirrors the catalog and <strong>Apply</strong> writes it to{" "}
-          <code>action-presentation-catalog.json</code>. Turn Inspect off to play the sequence (auto loop, or Alt +
-          click to aim).
+          Dev-only. Pick an <strong>Action</strong> (Batto Dash or Normal Attack), then <strong>Inspect</strong> a
+          state + direction to tune its body/weapon offset and frame timing; the live config mirrors the catalog and{" "}
+          <strong>Apply</strong> writes it to <code>action-presentation-catalog.json</code>. Turn Inspect off to play
+          the dash sequence (auto loop, or Alt + click to aim).
         </p>
       </header>
 
@@ -277,7 +317,7 @@ export function ActionLabApp() {
                     value={inspectState}
                     onChange={(event) => setInspectState(event.target.value as ActionStateKey)}
                   >
-                    {ACTION_STATE_KEYS.map((key) => (
+                    {presentStates.map((key) => (
                       <option key={key} value={key}>
                         {key}
                       </option>
@@ -334,6 +374,47 @@ export function ActionLabApp() {
               ) : (
                 <p className="action-lab-hint">This state has no {layer} layer to offset.</p>
               )}
+
+              {attackFrames ? (
+                <div className="action-lab-timing">
+                  <span className="action-lab-timing-title">Attack frame timing (hold s)</span>
+                  {attackFrames.map((frame, index) => (
+                    <Range
+                      key={index}
+                      label={`frame ${index}`}
+                      min={0.02}
+                      max={0.4}
+                      step={0.01}
+                      value={frame.holdSec}
+                      onChange={(holdSec) => patchFrameHold(index, holdSec)}
+                    />
+                  ))}
+                </div>
+              ) : null}
+
+              {motion ? (
+                <div className="action-lab-timing">
+                  <span className="action-lab-timing-title">Dash timing</span>
+                  <Range
+                    label="motion duration (s)"
+                    min={0.06}
+                    max={0.5}
+                    step={0.01}
+                    value={motion.durationSec}
+                    onChange={patchMotionDuration}
+                  />
+                  {afterimage ? (
+                    <Range
+                      label="afterimage interval (ms)"
+                      min={4}
+                      max={60}
+                      step={1}
+                      value={afterimage.intervalMs}
+                      onChange={patchAfterimageInterval}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
             </fieldset>
           ) : (
             <fieldset>

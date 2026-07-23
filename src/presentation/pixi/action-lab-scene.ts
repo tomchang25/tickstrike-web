@@ -6,10 +6,11 @@ import katanaSlashUrl from "@content/characters/assets/ninja/batto/katana-slash.
 import katanaBattoStartUrl from "@content/characters/assets/ninja/batto/katana-batto-start.png";
 import katanaBattoEndUrl from "@content/characters/assets/ninja/batto/katana-batto-end.png";
 import ninjaBodyUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
+import ninjaAttackUrl from "@content/characters/assets/ninja/attack-sprite-sheet.png";
 import {
   setRuntimeActionPresentationCatalog,
   type ActionDirection,
-  type ActionPresentation,
+  type ActionPresentationCatalog,
   type ActionStateKey,
 } from "@presentation/actions/action-presentation-catalog";
 import {
@@ -48,6 +49,7 @@ const POSE_FOR_STATE: Record<ActionStateKey, PlayerSpritePose> = {
   prepare: "prepare",
   execute: "dash",
   end: "dashLand",
+  attack: "attack",
 };
 
 export interface ActionLabInspect {
@@ -56,7 +58,8 @@ export interface ActionLabInspect {
 }
 
 export interface ActionLabConfig {
-  readonly action: ActionPresentation;
+  readonly catalog: ActionPresentationCatalog;
+  readonly actionId: string;
   readonly inspect: ActionLabInspect | null;
   readonly autoLoop: boolean;
   readonly altMode: boolean;
@@ -95,16 +98,17 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   host.appendChild(app.canvas);
 
   // Inject the same sheets the game renderer injects, then build the real PlayerSprite.
-  const [body, battoBase, slashEnd, katanaSlash, katanaBattoStart, katanaBattoEnd] = await Promise.all([
+  const [body, battoBase, slashEnd, attack, katanaSlash, katanaBattoStart, katanaBattoEnd] = await Promise.all([
     Assets.load<Texture>(ninjaBodyUrl),
     Assets.load<Texture>(battoBaseUrl),
     Assets.load<Texture>(slashEndUrl),
+    Assets.load<Texture>(ninjaAttackUrl),
     Assets.load<Texture>(katanaSlashUrl),
     Assets.load<Texture>(katanaBattoStartUrl),
     Assets.load<Texture>(katanaBattoEndUrl),
   ]);
   setNinjaSpriteSheet(body);
-  setNinjaBattoSheets({ battoBase, slashEnd, katanaSlash, katanaBattoStart, katanaBattoEnd });
+  setNinjaBattoSheets({ battoBase, slashEnd, attack, katanaSlash, katanaBattoStart, katanaBattoEnd });
 
   let config = initial;
 
@@ -158,18 +162,24 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   let facing: ActionDirection = "right";
   let phase: ActionStateKey = "idle";
   let autoCall: gsap.core.Tween | undefined;
+  let inspectLoop: gsap.core.Tween | undefined;
 
-  const executeDuration = (): number => config.action.execute.motion?.durationSec ?? 0.16;
+  // The dash play/auto sequence always previews the batto action; the selected action only drives
+  // the label, the inspected state list, and the attack loop timing.
+  const battoDash = () => config.catalog.actions[NINJA_ACTION_ID];
+  const selectedAction = () => config.catalog.actions[config.actionId];
+  const executeDuration = (): number => battoDash()?.execute?.motion?.durationSec ?? 0.16;
 
   const placeRigAtCell = (cell: Cell): void => {
     const { x, y } = cellCenter(cell);
     player.root.position.set(x, y);
   };
 
-  // The single rendering path: push the draft into the runtime catalog, then drive the real sprite.
+  // The single rendering path: push the whole draft catalog into the runtime catalog the sprite
+  // reads (so both the batto and normal-attack actions resolve), then drive the real sprite.
   const applyState = (stateKey: ActionStateKey, direction: ActionDirection): void => {
     phase = stateKey;
-    setRuntimeActionPresentationCatalog({ schemaVersion: 1, actions: { [NINJA_ACTION_ID]: config.action } });
+    setRuntimeActionPresentationCatalog(config.catalog);
     player.setFacing(DIRECTION_VECTOR[direction]);
     player.setPose(POSE_FOR_STATE[stateKey]);
     showLabel();
@@ -177,7 +187,8 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
 
   const showLabel = (): void => {
     const mode = config.inspect ? "INSPECT" : config.autoLoop ? "AUTO" : config.altMode ? "ALT" : "—";
-    label.text = `[${mode}]  ${config.action.label}  ·  state: ${phase.toUpperCase()}  ·  facing: ${facing}`;
+    const actionLabel = selectedAction()?.label ?? config.actionId;
+    label.text = `[${mode}]  ${actionLabel}  ·  state: ${phase.toUpperCase()}  ·  facing: ${facing}`;
   };
 
   const setCursor = (cell: Cell): void => {
@@ -209,7 +220,7 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
       x: destination.x,
       y: destination.y,
       duration: executeDuration(),
-      ease: config.action.execute.motion?.ease ?? "power2.in",
+      ease: battoDash()?.execute?.motion?.ease ?? "power2.in",
       onUpdate: () => {
         ghostAccum += app.ticker.deltaMS;
         if (ghostAccum >= player.afterimageIntervalMs) {
@@ -251,6 +262,8 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   const stopAuto = (): void => {
     autoCall?.kill();
     autoCall = undefined;
+    inspectLoop?.kill();
+    inspectLoop = undefined;
     gsap.killTweensOf(player.root.position);
   };
 
@@ -262,6 +275,15 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     placeRigAtCell(actorCell);
     facing = inspect.direction;
     applyState(inspect.stateKey, inspect.direction);
+    // The attack is a one-shot animation; replay it on a loop so it can be previewed while frozen.
+    if (inspect.stateKey === "attack") {
+      const total = (selectedAction()?.attack?.bodyFrames ?? []).reduce((sum, frame) => sum + frame.holdSec, 0);
+      const replay = (): void => {
+        applyState("attack", inspect.direction);
+        inspectLoop = gsap.delayedCall(total + 0.6, replay);
+      };
+      inspectLoop = gsap.delayedCall(total + 0.6, replay);
+    }
   };
 
   // --- Pointer interaction (play mode only) -------------------------------------------------
