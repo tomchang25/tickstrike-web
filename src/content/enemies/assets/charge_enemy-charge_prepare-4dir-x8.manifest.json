@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "tool": "tickstrike-sprite-animation",
+  "python_version": "3.14.6",
+  "pillow_version": "12.3.0",
+  "imagemagick_available": true,
+  "source": "src\\content\\enemies\\assets\\skull-sprite-sheet.png",
+  "config": "dev\\tools\\sprite-animation\\configs\\skull_charge_prepare.json",
+  "recipe": "dev\\tools\\sprite-animation\\recipes\\skull_charge_prepare.py",
+  "source_sha256": "6d2e9470a95303610de245e172c39d039aca53c74dbea56f4075fe8d8e92857f",
+  "config_sha256": "6a1a1a6815ca48726d4d0e25b3676bb40d5b90a2a97c081050008df18908819e",
+  "recipe_sha256": "cfb038eb720851ed00ff7ec789f5be878d99268873868c2d13a6ed5f87d7e5a5",
+  "output_rgba_sha256": "f0a41c0013190929261f63eed966183aea74c30a18bc2cb5d4a0aca938aa248d",
+  "validation": [
+    "size=(64, 128)",
+    "alpha=[0, 255]"
+  ]
+}

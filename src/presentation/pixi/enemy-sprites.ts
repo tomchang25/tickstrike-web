@@ -16,6 +16,11 @@ export interface EnemyWaterAnimation {
   readonly frameDurationsMs: readonly number[];
 }
 
+export interface EnemyBodyAnimationFrame {
+  readonly row: number;
+  readonly holdSec: number;
+}
+
 export interface EnemyPresentation {
   readonly profileId: string;
   readonly palette: EnemySpritePalette;
@@ -32,6 +37,7 @@ export interface EnemyPresentation {
   playMove(): gsap.core.Timeline;
   playPrepareAttack(): gsap.core.Timeline;
   playAttackCommit(): gsap.core.Timeline;
+  playBodyAnimation(sheet: Texture, frames: readonly EnemyBodyAnimationFrame[], loop: boolean): gsap.core.Timeline;
   playDamage(): gsap.core.Timeline;
   playStaggered(): gsap.core.Timeline | undefined;
   playStaggerEnded(): gsap.core.Timeline | undefined;
@@ -118,6 +124,8 @@ class SmallEnemyPresentation implements EnemyPresentation {
   private actionTimeline: gsap.core.Timeline | undefined;
   private tintTimeline: gsap.core.Timeline | undefined;
   private blinkTimeline: gsap.core.Timeline | undefined;
+  private bodyAnimationFrameAt: ((column: number, row: number) => Texture) | undefined;
+  private currentBodyAnimationRow: number | undefined;
   private readonly layoutProfile: EntityPresentationProfile;
 
   constructor(
@@ -268,6 +276,33 @@ class SmallEnemyPresentation implements EnemyPresentation {
     return timeline;
   }
 
+  playBodyAnimation(sheet: Texture, frames: readonly EnemyBodyAnimationFrame[], loop: boolean): gsap.core.Timeline {
+    if (frames.length === 0) {
+      throw new Error(`Body animation for ${this.profileId} must contain at least one frame.`);
+    }
+    this.clearAction();
+    sheet.source.scaleMode = "nearest";
+    this.bodyAnimationFrameAt = this.createFrameSelector(sheet);
+    const timeline = gsap.timeline({ repeat: loop ? -1 : 0 });
+    this.actionTimeline = timeline;
+    for (const frame of frames) {
+      timeline.call(() => {
+        this.currentBodyAnimationRow = frame.row;
+        this.applyFrame();
+        this.onChange?.();
+      });
+      timeline.to({}, { duration: Math.max(0.01, frame.holdSec) });
+    }
+    if (!loop) {
+      timeline.call(() => {
+        if (this.actionTimeline === timeline) {
+          this.actionTimeline = undefined;
+        }
+      });
+    }
+    return timeline;
+  }
+
   playDamage(): gsap.core.Timeline {
     this.tintTimeline?.kill();
     const timeline = gsap.timeline();
@@ -344,6 +379,8 @@ class SmallEnemyPresentation implements EnemyPresentation {
   clearAction(): void {
     this.actionTimeline?.kill();
     this.actionTimeline = undefined;
+    this.bodyAnimationFrameAt = undefined;
+    this.currentBodyAnimationRow = undefined;
     this.stopBlink();
     this.root.position.set(0, 0);
     this.rig.actorRoot.rotation = 0;
@@ -378,6 +415,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
   private applyFrame(): void {
     const column = directionColumn(this.currentFacing);
     const inWater = this.currentWaterFrame !== undefined && this.waterFrameAt !== undefined;
+    const inBodyAnimation = this.currentBodyAnimationRow !== undefined && this.bodyAnimationFrameAt !== undefined;
     this.rig.shadow.visible = !inWater;
     // Land frames are feet-anchored in the lower quarter; authored water frames
     // return to cell-centred alignment so the splash art stays on the waterline.
@@ -388,7 +426,9 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.rig.actorRoot.position.y = inWater ? -this.layoutProfile.groundY : 0;
     this.body.texture = inWater
       ? this.waterFrameAt!(column, this.currentWaterFrame!)
-      : this.frameAt(column, POSE_ROWS[this.currentPose]);
+      : inBodyAnimation
+        ? this.bodyAnimationFrameAt!(column, this.currentBodyAnimationRow!)
+        : this.frameAt(column, POSE_ROWS[this.currentPose]);
   }
 
   setEnteredWaterFrame(frame: number): void {

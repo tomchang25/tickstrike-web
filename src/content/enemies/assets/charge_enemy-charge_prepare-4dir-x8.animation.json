@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "target": "charge_enemy",
+  "effect": "charge_prepare",
+  "cell_size": [
+    16,
+    16
+  ],
+  "source_layout": {
+    "columns": 4,
+    "rows": 4,
+    "column_role": "direction",
+    "column_order": [
+      "down",
+      "up",
+      "left",
+      "right"
+    ],
+    "row_role": "source_animation_frame"
+  },
+  "output_layout": {
+    "size": [
+      64,
+      128
+    ],
+    "columns": 4,
+    "rows": 8,
+    "column_role": "direction",
+    "column_order": [
+      "down",
+      "up",
+      "left",
+      "right"
+    ],
+    "row_role": "animation_frame"
+  },
+  "timing": {
+    "frame_durations_ms": [
+      110,
+      100,
+      90,
+      100,
+      140,
+      100,
+      90,
+      100
+    ],
+    "loop": true
+  },
+  "anchor": {
+    "type": "bottom_center",
+    "x": 8,
+    "y": 15
+  },
+  "overflow_policy": "clip",
+  "effect_coordinate_space": "actor",
+  "left_right_policy": "direction_authored",
+  "end_state": "loop",
+  "recipe_status": "approved",
+  "alpha": "binary 0/255"
+}

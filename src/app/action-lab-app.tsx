@@ -9,6 +9,7 @@ import {
   type ActionPresentationCatalog,
   type ActionStateKey,
 } from "@presentation/actions/action-presentation-catalog";
+import { ACTION_LAB_PREVIEW_ACTIONS } from "@presentation/actions/action-lab-preview-actions";
 import { mountActionLabScene, type ActionLabScene } from "@presentation/pixi/action-lab-scene";
 
 const CATALOG_ENDPOINT = "/__debug/action-presentation-catalog";
@@ -20,10 +21,11 @@ interface RangeProps {
   readonly min: number;
   readonly max: number;
   readonly step: number;
+  readonly disabled?: boolean;
   onChange(value: number): void;
 }
 
-function Range({ label, value, min, max, step, onChange }: RangeProps) {
+function Range({ label, value, min, max, step, disabled = false, onChange }: RangeProps) {
   return (
     <label className="action-lab-range">
       <span>
@@ -35,6 +37,7 @@ function Range({ label, value, min, max, step, onChange }: RangeProps) {
         max={max}
         step={step}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value))}
       />
     </label>
@@ -86,7 +89,11 @@ export function ActionLabApp() {
   const [configText, setConfigText] = useState("");
   const [status, setStatus] = useState("");
 
-  const actionIds = useMemo(() => Object.keys(catalog.actions), [catalog]);
+  const actionIds = useMemo(
+    () => [...Object.keys(catalog.actions), ...Object.keys(ACTION_LAB_PREVIEW_ACTIONS)],
+    [catalog],
+  );
+  const previewOnly = Boolean(ACTION_LAB_PREVIEW_ACTIONS[actionId]);
   const presentStates = useMemo(() => ACTION_STATE_KEYS.filter((key) => Boolean(draft?.[key])), [draft]);
   const activeState = draft?.[inspectState];
   const weaponAvailable = Boolean(activeState?.weapon);
@@ -139,27 +146,35 @@ export function ActionLabApp() {
     if (!draft) {
       return;
     }
-    setConfigText(catalogJson(mergeAction(catalog, actionId, draft)));
+    const sceneCatalog = previewOnly ? catalog : mergeAction(catalog, actionId, draft);
+    setConfigText(
+      previewOnly
+        ? JSON.stringify({ id: actionId, previewOnly: true, action: draft }, null, 2)
+        : catalogJson(sceneCatalog),
+    );
     if (!ready) {
       return;
     }
     sceneRef.current?.update({
-      catalog: mergeAction(catalog, actionId, draft),
+      catalog: sceneCatalog,
       actionId,
-      inspect: inspect ? { stateKey: inspectState, direction: inspectDirection } : null,
+      inspect: previewOnly || inspect ? { stateKey: inspectState, direction: inspectDirection } : null,
       autoLoop,
       altMode,
     });
-  }, [ready, draft, catalog, actionId, inspect, inspectState, inspectDirection, autoLoop, altMode]);
+  }, [ready, draft, catalog, actionId, previewOnly, inspect, inspectState, inspectDirection, autoLoop, altMode]);
 
   const changeAction = (nextId: string): void => {
-    const next = catalog.actions[nextId];
+    const next = ACTION_LAB_PREVIEW_ACTIONS[nextId]?.action ?? catalog.actions[nextId];
     setActionId(nextId);
     setDraft(next);
     // Keep the inspected state valid for the newly selected action.
     const states = ACTION_STATE_KEYS.filter((key) => Boolean(next?.[key]));
     if (!states.includes(inspectState)) {
       setInspectState(states[0] ?? "idle");
+    }
+    if (ACTION_LAB_PREVIEW_ACTIONS[nextId]) {
+      setInspect(true);
     }
     setStatus("Loaded selected action.");
   };
@@ -225,7 +240,8 @@ export function ActionLabApp() {
     });
 
   const persist = async (): Promise<void> => {
-    if (!draft) {
+    if (!draft || previewOnly) {
+      setStatus("Preview-only sprite actions are not written to the runtime action catalog.");
       return;
     }
     try {
@@ -239,6 +255,10 @@ export function ActionLabApp() {
   };
 
   const reload = async (): Promise<void> => {
+    if (previewOnly) {
+      setStatus("Preview-only sprite actions are rebuilt from their approved animation metadata.");
+      return;
+    }
     try {
       const disk = await requestCatalog("GET");
       setCatalog(disk);
@@ -250,6 +270,10 @@ export function ActionLabApp() {
   };
 
   const importText = (): void => {
+    if (previewOnly) {
+      setStatus("Preview-only sprite actions cannot import runtime catalog JSON.");
+      return;
+    }
     try {
       const parsed = parseActionPresentationCatalog(JSON.parse(configText));
       setCatalog(parsed);
@@ -273,12 +297,11 @@ export function ActionLabApp() {
     <main className="action-lab-shell">
       <header>
         <p className="eyebrow">Action / sequence lab</p>
-        <h1>Player action presentation</h1>
+        <h1>Action presentation</h1>
         <p>
-          Dev-only. Pick an <strong>Action</strong> (Batto Dash or Normal Attack), then <strong>Inspect</strong> a
-          state + direction to tune its body/weapon offset and frame timing; the live config mirrors the catalog and{" "}
-          <strong>Apply</strong> writes it to <code>action-presentation-catalog.json</code>. Turn Inspect off to play
-          the dash sequence (auto loop, or Alt + click to aim).
+          Dev-only. Runtime catalog actions remain editable and drive the real player sprite. Approved Bomb and Charge
+          sheets appear as separate preview-only Actions and drive the real enemy presentation rig without entering{" "}
+          <code>action-presentation-catalog.json</code>.
         </p>
       </header>
 
@@ -291,10 +314,14 @@ export function ActionLabApp() {
         <aside className="action-lab-controls" aria-label="Action tuning controls">
           <label className="field">
             <span>Action</span>
-            <select value={actionId} onChange={(event) => changeAction(event.target.value)}>
+            <select
+              data-testid="action-lab-action"
+              value={actionId}
+              onChange={(event) => changeAction(event.target.value)}
+            >
               {actionIds.map((id) => (
                 <option key={id} value={id}>
-                  {catalog.actions[id]?.label ?? id}
+                  {ACTION_LAB_PREVIEW_ACTIONS[id]?.action.label ?? catalog.actions[id]?.label ?? id}
                 </option>
               ))}
             </select>
@@ -302,12 +329,17 @@ export function ActionLabApp() {
 
           <div className="action-lab-toggles">
             <label>
-              <input type="checkbox" checked={inspect} onChange={(event) => setInspect(event.target.checked)} /> Inspect
-              (freeze)
+              <input
+                type="checkbox"
+                checked={previewOnly || inspect}
+                disabled={previewOnly}
+                onChange={(event) => setInspect(event.target.checked)}
+              />{" "}
+              Inspect (freeze)
             </label>
           </div>
 
-          {inspect ? (
+          {previewOnly || inspect ? (
             <fieldset>
               <legend>Inspect — pick state · direction · layer</legend>
               <div className="action-lab-selects">
@@ -360,6 +392,7 @@ export function ActionLabApp() {
                     max={64}
                     step={0.5}
                     value={activeOffset.x}
+                    disabled={previewOnly}
                     onChange={(x) => setOffsetAxis("x", x)}
                   />
                   <Range
@@ -368,6 +401,7 @@ export function ActionLabApp() {
                     max={64}
                     step={0.5}
                     value={activeOffset.y}
+                    disabled={previewOnly}
                     onChange={(y) => setOffsetAxis("y", y)}
                   />
                 </>
@@ -386,6 +420,7 @@ export function ActionLabApp() {
                       max={0.4}
                       step={0.01}
                       value={frame.holdSec}
+                      disabled={previewOnly}
                       onChange={(holdSec) => patchFrameHold(index, holdSec)}
                     />
                   ))}
@@ -448,21 +483,26 @@ export function ActionLabApp() {
               className="action-lab-config-text"
               spellCheck={false}
               value={configText}
+              readOnly={previewOnly}
               onChange={(event) => setConfigText(event.target.value)}
               aria-label="Action presentation catalog JSON"
             />
             <div className="action-lab-actions">
-              <button type="button" onClick={() => void persist()}>
+              <button type="button" disabled={previewOnly} onClick={() => void persist()}>
                 Apply to JSON
               </button>
-              <button type="button" onClick={importText}>
+              <button type="button" disabled={previewOnly} onClick={importText}>
                 Import
               </button>
-              <button type="button" onClick={() => void reload()}>
+              <button type="button" disabled={previewOnly} onClick={() => void reload()}>
                 Reload
               </button>
             </div>
           </section>
+
+          {previewOnly ? (
+            <p className="action-lab-hint">Preview-only Action: timing comes from the approved sprite metadata.</p>
+          ) : null}
 
           {status ? (
             <p className="action-lab-status" role="status">

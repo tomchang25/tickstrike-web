@@ -13,6 +13,7 @@ import {
   type ActionPresentationCatalog,
   type ActionStateKey,
 } from "@presentation/actions/action-presentation-catalog";
+import { ACTION_LAB_PREVIEW_ACTIONS } from "@presentation/actions/action-lab-preview-actions";
 import {
   createPlayerSprite,
   setNinjaBattoSheets,
@@ -20,11 +21,11 @@ import {
   type PlayerSprite,
   type PlayerSpritePose,
 } from "./character-sprites";
+import { createEnemyPresentation, type EnemyPresentation } from "./enemy-sprites";
 
-// Dev-only Action/Sequence Lab scene (/debug/action). It mounts the REAL runtime `PlayerSprite`
-// and pushes the draft catalog into the runtime catalog the sprite reads, so what the lab shows is
-// exactly what the game renders — there is no second rendering implementation to keep in sync (see
-// dev/standards/dev_authoring_catalog.md). The lab only owns board chrome and the state sequencing.
+// Dev-only Action/Sequence Lab scene (/debug/action). Catalog actions mount the real runtime
+// `PlayerSprite`; preview-only enemy actions mount the real `EnemyPresentation` rig. The lab owns
+// board chrome and sequencing, not a second sprite renderer (see dev/standards/dev_authoring_catalog.md).
 //   - Play: runs the state machine (prepare -> execute -> end), auto-looping or aimed with the pointer.
 //   - Inspect: freezes one (state, direction) pose so its body/weapon offset can be calibrated.
 
@@ -109,6 +110,19 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   ]);
   setNinjaSpriteSheet(body);
   setNinjaBattoSheets({ battoBase, slashEnd, attack, katanaSlash, katanaBattoStart, katanaBattoEnd });
+  const loadedPreviewAssets = await Promise.all(
+    Object.values(ACTION_LAB_PREVIEW_ACTIONS).map(
+      async (preview) =>
+        [
+          preview.id,
+          {
+            base: await Assets.load<Texture>(preview.baseSheetUrl),
+            animation: await Assets.load<Texture>(preview.animationSheetUrl),
+          },
+        ] as const,
+    ),
+  );
+  const previewAssets = new Map(loadedPreviewAssets);
 
   let config = initial;
 
@@ -147,6 +161,9 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     throw new Error("Action Lab could not create the Ninja player sprite.");
   }
   boardLayer.addChild(player.root);
+  let enemyPresentation: EnemyPresentation | undefined;
+  let enemyHost: Container | undefined;
+  let enemyActionId: string | undefined;
 
   const label = new Text({
     text: "",
@@ -164,24 +181,76 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   let autoCall: gsap.core.Tween | undefined;
   let inspectLoop: gsap.core.Tween | undefined;
 
-  // The dash play/auto sequence always previews the batto action; the selected action only drives
-  // the label, the inspected state list, and the attack loop timing.
+  // The dash play/auto sequence always previews the batto action. Preview-only enemy actions use
+  // their selected action directly and never enter the player dash sequence.
   const battoDash = () => config.catalog.actions[NINJA_ACTION_ID];
-  const selectedAction = () => config.catalog.actions[config.actionId];
+  const selectedPreview = () => ACTION_LAB_PREVIEW_ACTIONS[config.actionId];
+  const selectedAction = () => selectedPreview()?.action ?? config.catalog.actions[config.actionId];
   const executeDuration = (): number => battoDash()?.execute?.motion?.durationSec ?? 0.16;
+
+  const ensureActor = (): void => {
+    const preview = selectedPreview();
+    if (!preview) {
+      enemyPresentation?.clearAction();
+      enemyHost?.destroy({ children: true });
+      enemyPresentation = undefined;
+      enemyHost = undefined;
+      enemyActionId = undefined;
+      player.root.visible = true;
+      return;
+    }
+    if (enemyPresentation && enemyActionId === preview.id) {
+      return;
+    }
+
+    enemyPresentation?.clearAction();
+    enemyHost?.destroy({ children: true });
+    const assets = previewAssets.get(preview.id);
+    const enemy = assets ? createEnemyPresentation(preview.action.profileId, assets.base, undefined) : undefined;
+    if (!enemy) {
+      throw new Error(`Action Lab could not create enemy presentation ${preview.action.profileId}.`);
+    }
+    player.root.visible = false;
+    const host = new Container();
+    host.label = `${preview.id}.host`;
+    host.addChild(enemy.root);
+    enemyPresentation = enemy;
+    enemyHost = host;
+    enemyActionId = preview.id;
+    boardLayer.addChild(host);
+  };
+
+  const actorRoot = (): Container => enemyHost ?? player.root;
 
   const placeRigAtCell = (cell: Cell): void => {
     const { x, y } = cellCenter(cell);
-    player.root.position.set(x, y);
+    actorRoot().position.set(x, y);
+    app.canvas.dataset.actionActorPosition = `${x},${y}`;
   };
 
   // The single rendering path: push the whole draft catalog into the runtime catalog the sprite
   // reads (so both the batto and normal-attack actions resolve), then drive the real sprite.
   const applyState = (stateKey: ActionStateKey, direction: ActionDirection): void => {
     phase = stateKey;
-    setRuntimeActionPresentationCatalog(config.catalog);
-    player.setFacing(DIRECTION_VECTOR[direction]);
-    player.setPose(POSE_FOR_STATE[stateKey]);
+    const preview = selectedPreview();
+    if (preview && enemyPresentation) {
+      const assets = previewAssets.get(preview.id);
+      const frames = preview.action.attack?.bodyFrames;
+      enemyPresentation.setFacing(DIRECTION_VECTOR[direction]);
+      if (stateKey === "attack" && assets && frames) {
+        enemyPresentation.playBodyAnimation(assets.animation, frames, preview.loop);
+      } else {
+        enemyPresentation.clearAction();
+      }
+    } else {
+      setRuntimeActionPresentationCatalog(config.catalog);
+      player.setFacing(DIRECTION_VECTOR[direction]);
+      player.setPose(POSE_FOR_STATE[stateKey]);
+    }
+    app.canvas.dataset.actionId = config.actionId;
+    app.canvas.dataset.actionProfile = selectedAction()?.profileId ?? "";
+    app.canvas.dataset.actionPreviewOnly = String(Boolean(preview));
+    app.canvas.dataset.actionLoop = String(preview?.loop ?? false);
     showLabel();
   };
 
@@ -205,6 +274,9 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   };
 
   const triggerExecute = (target: Cell): void => {
+    if (selectedPreview()) {
+      return;
+    }
     if (phase === "execute") {
       return;
     }
@@ -276,7 +348,7 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     facing = inspect.direction;
     applyState(inspect.stateKey, inspect.direction);
     // The attack is a one-shot animation; replay it on a loop so it can be previewed while frozen.
-    if (inspect.stateKey === "attack") {
+    if (inspect.stateKey === "attack" && !selectedPreview()?.loop) {
       const total = (selectedAction()?.attack?.bodyFrames ?? []).reduce((sum, frame) => sum + frame.holdSec, 0);
       const replay = (): void => {
         applyState("attack", inspect.direction);
@@ -335,6 +407,14 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   const update = (next: ActionLabConfig): void => {
     const prev = config;
     config = next;
+    const actorChanged = prev.actionId !== next.actionId;
+    ensureActor();
+
+    if (actorChanged) {
+      stopAuto();
+      actorCell = { ...centerCell };
+      placeRigAtCell(actorCell);
+    }
 
     if (next.inspect) {
       renderInspect(next.inspect);
@@ -372,6 +452,7 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     }
   };
 
+  ensureActor();
   placeRigAtCell(actorCell);
   setCursor(cursorCell);
   if (config.inspect) {
@@ -387,6 +468,7 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     update,
     destroy() {
       stopAuto();
+      enemyPresentation?.clearAction();
       app.destroy(true, { children: true });
     },
   };
