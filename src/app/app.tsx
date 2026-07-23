@@ -15,7 +15,18 @@ const EntityPresentationLabApp = import.meta.env.DEV
   ? lazy(() => import("./entity-presentation-lab-app").then((module) => ({ default: module.EntityPresentationLabApp })))
   : undefined;
 
+const ActionLabApp = import.meta.env.DEV
+  ? lazy(() => import("./action-lab-app").then((module) => ({ default: module.ActionLabApp })))
+  : undefined;
+
 export function App() {
+  if (ActionLabApp && window.location.pathname === "/debug/action") {
+    return (
+      <Suspense fallback={null}>
+        <ActionLabApp />
+      </Suspense>
+    );
+  }
   if (EntityPresentationLabApp && window.location.pathname === "/debug/entity") {
     return (
       <Suspense fallback={null}>

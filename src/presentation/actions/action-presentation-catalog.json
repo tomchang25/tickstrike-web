@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "actions": {
+    "ninja.batto_dash": {
+      "label": "Ninja Batto Dash",
+      "profileId": "character.ninja",
+      "idle": {
+        "bodySheet": "body",
+        "bodyRow": 0,
+        "bodyOffset": {
+          "down": {
+            "x": 0,
+            "y": 0
+          },
+          "up": {
+            "x": 0,
+            "y": 0
+          },
+          "left": {
+            "x": 0,
+            "y": 0
+          },
+          "right": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      "prepare": {
+        "bodySheet": "battoBase",
+        "bodyRow": 0,
+        "bodyOffset": {
+          "down": {
+            "x": 0,
+            "y": 0
+          },
+          "up": {
+            "x": 0,
+            "y": 0
+          },
+          "left": {
+            "x": 0,
+            "y": 0
+          },
+          "right": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "weapon": {
+          "sheet": "katanaBattoStart",
+          "offset": {
+            "down": {
+              "x": -38,
+              "y": -16
+            },
+            "up": {
+              "x": -12,
+              "y": -30
+            },
+            "left": {
+              "x": -38,
+              "y": -21
+            },
+            "right": {
+              "x": 38,
+              "y": -20
+            }
+          }
+        },
+        "breathing": {
+          "amplitudeX": -0.045,
+          "amplitudeY": 0.06,
+          "periodSec": 1
+        }
+      },
+      "execute": {
+        "bodySheet": "battoBase",
+        "bodyRow": 0,
+        "bodyOffset": {
+          "down": {
+            "x": 0,
+            "y": 0
+          },
+          "up": {
+            "x": 0,
+            "y": 0
+          },
+          "left": {
+            "x": 0,
+            "y": 0
+          },
+          "right": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "weapon": {
+          "sheet": "katanaSlash",
+          "offset": {
+            "down": {
+              "x": 0,
+              "y": -24.5
+            },
+            "up": {
+              "x": 0,
+              "y": -24.5
+            },
+            "left": {
+              "x": 0,
+              "y": -24.5
+            },
+            "right": {
+              "x": 0,
+              "y": -24.5
+            }
+          }
+        },
+        "motion": {
+          "durationSec": 0.16,
+          "ease": "power2.in"
+        },
+        "afterimage": {
+          "enabled": true,
+          "intervalMs": 16,
+          "fadeSec": 0.3,
+          "tint": 9424127
+        }
+      },
+      "end": {
+        "bodySheet": "slashEnd",
+        "bodyRow": 0,
+        "bodyOffset": {
+          "down": {
+            "x": 0,
+            "y": 0
+          },
+          "up": {
+            "x": 0,
+            "y": 0
+          },
+          "left": {
+            "x": 0,
+            "y": 0
+          },
+          "right": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "weapon": {
+          "sheet": "katanaBattoEnd",
+          "offset": {
+            "down": {
+              "x": -1.5,
+              "y": -24.5
+            },
+            "up": {
+              "x": -15,
+              "y": -40
+            },
+            "left": {
+              "x": 0,
+              "y": -28
+            },
+            "right": {
+              "x": 0,
+              "y": -28
+            }
+          }
+        }
+      }
+    }
+  }
+}

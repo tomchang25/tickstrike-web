@@ -1157,3 +1157,165 @@ header > p {
     grid-template-columns: 1fr;
   }
 }
+
+.action-lab-shell {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.action-lab-shell header {
+  margin-bottom: 18px;
+}
+
+.action-lab-shell header p {
+  color: #9aa6b8;
+  max-width: 760px;
+}
+
+.action-lab-shell code {
+  background: #1d2431;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.action-lab-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+
+.action-lab-preview,
+.action-lab-controls {
+  border: 1px solid #333b4c;
+  border-radius: 12px;
+  background: #151922;
+}
+
+.action-lab-preview {
+  overflow: hidden;
+}
+
+.action-lab-preview > p {
+  margin: 0;
+  padding: 12px 16px;
+  color: #8e99aa;
+}
+
+.action-lab-canvas-host {
+  line-height: 0;
+  background: #0e1117;
+}
+
+.action-lab-canvas-host canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  image-rendering: pixelated;
+}
+
+.action-lab-controls {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #cdd6e4;
+}
+
+.action-lab-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.88rem;
+}
+
+.action-lab-controls fieldset {
+  border: 1px solid #2b3346;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-lab-controls legend {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8ea3c4;
+  padding: 0 4px;
+}
+
+.action-lab-range {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.action-lab-range output {
+  color: #ffd166;
+}
+
+.action-lab-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-lab-status {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #9fd6a6;
+}
+
+@media (max-width: 900px) {
+  .action-lab-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+.action-lab-selects {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.action-lab-hint {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #8e99aa;
+}
+
+.action-lab-config {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.action-lab-config-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.action-lab-config-head h2 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.action-lab-config-text {
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: #cfe3ff;
+  background: #0e1117;
+  border: 1px solid #2b3346;
+  border-radius: 8px;
+  padding: 8px;
+}

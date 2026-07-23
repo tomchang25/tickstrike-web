@@ -7,10 +7,14 @@ import type { Plugin } from "vite";
 // Keep the dev writer independent of the runtime catalog import. If Vite config loads
 // that JSON, every Apply becomes a config restart and forces a full-page reload.
 import { parseEntityPresentationProfileCatalog } from "./src/presentation/pixi/entity-presentation-profile-schema";
+import { parseActionPresentationCatalog } from "./src/presentation/actions/action-presentation-schema";
 
 const layer = (name: string) => fileURLToPath(new URL(`./src/${name}`, import.meta.url));
 const entityPresentationCatalogPath = fileURLToPath(
   new URL("./src/presentation/pixi/entity-presentation-profile-catalog.json", import.meta.url),
+);
+const actionPresentationCatalogPath = fileURLToPath(
+  new URL("./src/presentation/actions/action-presentation-catalog.json", import.meta.url),
 );
 
 function sendJson(response: ServerResponse, statusCode: number, value: unknown): void {
@@ -72,8 +76,59 @@ function entityPresentationCatalogWriter(): Plugin {
   };
 }
 
+function actionPresentationCatalogWriter(): Plugin {
+  return {
+    name: "action-presentation-catalog-writer",
+    configureServer(server) {
+      // Same rationale as the entity writer: the endpoint owns the round-trip so the runtime-imported
+      // JSON is not watched into an HMR replacement that would dispose the live Action Lab scene.
+      server.watcher.unwatch(actionPresentationCatalogPath);
+      server.middlewares.use(async (request, response, next) => {
+        if (request.url !== "/__debug/action-presentation-catalog") {
+          next();
+          return;
+        }
+        try {
+          if (request.method === "GET") {
+            const catalog = parseActionPresentationCatalog(
+              JSON.parse(await readFile(actionPresentationCatalogPath, "utf8")),
+            );
+            sendJson(response, 200, catalog);
+            return;
+          }
+          if (request.method !== "PUT") {
+            sendJson(response, 405, { error: "Only GET and PUT are supported." });
+            return;
+          }
+
+          const chunks: Buffer[] = [];
+          let size = 0;
+          for await (const chunk of request) {
+            const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+            size += buffer.length;
+            if (size > 100_000) {
+              sendJson(response, 413, { error: "Action catalog exceeds 100 KB." });
+              return;
+            }
+            chunks.push(buffer);
+          }
+          const catalog = parseActionPresentationCatalog(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+          await writeFile(actionPresentationCatalogPath, `${JSON.stringify(catalog, null, 2)}\n`, "utf8");
+          server.ws.send({ type: "custom", event: "action-presentation-catalog-updated" });
+          sendJson(response, 200, catalog);
+        } catch (error) {
+          sendJson(response, 400, { error: error instanceof Error ? error.message : "Invalid action catalog." });
+        }
+      });
+    },
+    handleHotUpdate(context) {
+      return context.file === actionPresentationCatalogPath ? [] : undefined;
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), entityPresentationCatalogWriter()],
+  plugins: [react(), entityPresentationCatalogWriter(), actionPresentationCatalogWriter()],
   resolve: {
     alias: {
       "@app": layer("app"),
