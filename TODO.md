@@ -62,7 +62,7 @@ Preliminary parity work that is not yet owned by the ordered Main Plans. Use one
 
 ### Arena Terrain And Decoration Rework
 
-The shipped 13.2 terrain and decoration (through the 13.2d decorative frame) is a placeholder: it establishes the layered-arena structure but not the target art quality. Rework items, to be promoted into the port_13_2 plan (plans/port_13_2_layered_arena.md) as they land:
+The shipped 13.2 layered arena, including the subsequent walled-contour shore, static wall reflections, and actor-alignment correction, establishes the presentation structure but not the target decoration quality. Promote each approved rework into Port 13 as a new child or compact implementation spec:
 
 - Add the water surface ripple as an animated sprite (existing deferred sub-child 13.2e)
 - Remake the objects sitting on the water surface
