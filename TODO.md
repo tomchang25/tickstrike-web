@@ -23,6 +23,8 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > When every phase ships: archive the plan file and delete this line.
 
 - [input_feel] Fast-forward the previous turn's pending VFX when new input is enqueued and pace held-move at a fixed cadence so input stops waiting on animation tails - [ref plans/input_feel_vfx_fast_forward.implementation_spec.md]
+- [charge_rework] Rework Charge to farthest-origin targeting, uniform side push with displacement interrupt, claimed target cells, and commit-order detonation - [ref plans/charge_enemy_rework.implementation_spec.md]
+- [knockback_feel] Make charge pushes read as impacts: player keeps facing with a jolt, pushes fire as the charger passes each cell, dash scales with distance - [ref plans/charge_knockback_feel.implementation_spec.md]
 
 ---
 
