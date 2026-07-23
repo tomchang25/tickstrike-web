@@ -1,10 +1,16 @@
 import { Application, Assets, Container, Graphics, Sprite, Text, TilingSprite, type Texture } from "pixi.js";
-import { type Cell, type EntityId, type EntityState, type WorldSnapshot } from "@core/model/types";
+import { sameCell, type Cell, type EntityId, type EntityState, type WorldSnapshot } from "@core/model/types";
 import { CELL_SIZE } from "./pointer-aim";
 import { BoardPainter } from "./board-painter";
 import { InputController, type PointerInputBinding, type PointerMode } from "./input-controller";
 import { PreviewPainter } from "./preview-painter";
-import { createPlayerSprite, setNinjaSpriteSheet, type PlayerSprite, type PlayerSpritePose } from "./character-sprites";
+import {
+  createPlayerSprite,
+  setNinjaBattoSheets,
+  setNinjaSpriteSheet,
+  type PlayerSprite,
+  type PlayerSpritePose,
+} from "./character-sprites";
 import {
   createEnemyPresentation,
   getEnemyPresentationProfile,
@@ -13,6 +19,11 @@ import {
 } from "./enemy-sprites";
 import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animation-assets";
 import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
+import ninjaBattoBaseUrl from "@content/characters/assets/ninja/batto/ninja-batto-base.png";
+import ninjaSlashEndUrl from "@content/characters/assets/ninja/batto/ninja-slash-end.png";
+import ninjaKatanaSlashUrl from "@content/characters/assets/ninja/batto/katana-slash.png";
+import ninjaKatanaBattoStartUrl from "@content/characters/assets/ninja/batto/katana-batto-start.png";
+import ninjaKatanaBattoEndUrl from "@content/characters/assets/ninja/batto/katana-batto-end.png";
 import { enemySpriteSheetUrls } from "@content/enemies/features";
 import { TerrainPainter, type TerrainConfig } from "./terrain-painter";
 import wallTerrainUrl from "./assets/terrain/wall-terrain.png";
@@ -203,6 +214,8 @@ export class PixiGameRenderer {
   private readonly positionOwners = new Set<EntityId>();
   private host: HTMLElement | undefined;
   private snapshot: WorldSnapshot | undefined;
+  private playerPose: PlayerSpritePose = "idle";
+  private pointerMode: PointerMode = "attack";
   private debugMode = false;
   private enemySpriteSheets: Readonly<Record<string, Texture>> = {};
   private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
@@ -226,6 +239,14 @@ export class PixiGameRenderer {
       autoDensity: true,
     });
     setNinjaSpriteSheet(await Assets.load<Texture>(ninjaSpriteSheetUrl));
+    const [battoBase, slashEnd, katanaSlash, katanaBattoStart, katanaBattoEnd] = await Promise.all([
+      Assets.load<Texture>(ninjaBattoBaseUrl),
+      Assets.load<Texture>(ninjaSlashEndUrl),
+      Assets.load<Texture>(ninjaKatanaSlashUrl),
+      Assets.load<Texture>(ninjaKatanaBattoStartUrl),
+      Assets.load<Texture>(ninjaKatanaBattoEndUrl),
+    ]);
+    setNinjaBattoSheets({ battoBase, slashEnd, katanaSlash, katanaBattoStart, katanaBattoEnd });
     const loadedEnemySpriteSheets = await Promise.all(
       Object.entries(enemySpriteSheetUrls).map(async ([sheetKey, url]) => [sheetKey, await Assets.load<Texture>(url)]),
     );
@@ -310,12 +331,26 @@ export class PixiGameRenderer {
     this.host = undefined;
   }
 
+  // `idle` is a request for the player's resting pose: the Alt-hold Dash draw stance while aiming a
+  // dash, otherwise the plain idle. Only move/dash/attack lock facing; idle, prepare, and the held
+  // dashLand finishing pose stay re-aimable so a new aim or command takes over immediately.
+  private restingPose(): PlayerSpritePose {
+    const mobility = this.snapshot?.entities.find((entity) => entity.kind === "player")?.mobility?.kind ?? "dash";
+    return this.pointerMode === "mobility" && mobility === "dash" ? "prepare" : "idle";
+  }
+
+  private isRestingPose(pose: PlayerSpritePose): boolean {
+    return pose === "idle" || pose === "prepare" || pose === "dashLand";
+  }
+
   setPlayerAnimation(pose: PlayerSpritePose): void {
+    const effective = pose === "idle" ? this.restingPose() : pose;
+    this.playerPose = effective;
     const player = this.entityViews.get("player");
-    player?.sprite?.setPose(pose);
-    this.input.setFacingLocked(pose !== "idle");
+    player?.sprite?.setPose(effective);
+    this.input.setFacingLocked(effective === "move" || effective === "dash" || effective === "attack");
     if (this.host) {
-      this.app.canvas.dataset.playerAnimation = pose;
+      this.app.canvas.dataset.playerAnimation = effective;
     }
   }
 
@@ -324,6 +359,10 @@ export class PixiGameRenderer {
   }
 
   private applyPlayerFacing(direction: Cell): void {
+    // A change of aim ends the held finishing pose instead of re-facing it in place.
+    if (this.playerPose === "dashLand") {
+      this.setPlayerAnimation("idle");
+    }
     this.entityViews.get("player")?.sprite?.setFacing(direction);
     if (this.host) {
       this.app.canvas.dataset.playerFacing = `${direction.x},${direction.y}`;
@@ -413,7 +452,12 @@ export class PixiGameRenderer {
       }
       if (this.host && entity.kind === "player" && view.sprite) {
         const playerFacing = this.input.playerFacing;
-        if (view.sprite.pose === "idle") {
+        // Re-aim while resting (idle or the prepare stance); the held dashLand pose keeps its facing
+        // until a new aim ends it, and active animations stay locked to their committed direction.
+        if (
+          (view.sprite.pose === "idle" || view.sprite.pose === "prepare") &&
+          !sameCell(view.sprite.facing, playerFacing)
+        ) {
           view.sprite.setFacing(playerFacing);
         }
         view.body.tint = 0xffffff;
@@ -466,7 +510,14 @@ export class PixiGameRenderer {
   }
 
   setPointerMode(mode: PointerMode): void {
+    const changed = this.pointerMode !== mode;
+    this.pointerMode = mode;
     this.input.setPointerMode(mode);
+    // Entering/leaving Alt mobility from a resting state swaps between idle and the Dash prepare
+    // stance; an active animation is left to finish first.
+    if (changed && this.isRestingPose(this.playerPose)) {
+      this.setPlayerAnimation("idle");
+    }
   }
 
   bindPointerInput(binding: PointerInputBinding): () => void {

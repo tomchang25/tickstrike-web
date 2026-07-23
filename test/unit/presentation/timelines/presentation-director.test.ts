@@ -365,7 +365,7 @@ describe("PresentationDirector combat feedback", () => {
     expect(view.destroy).toHaveBeenCalledOnce();
   });
 
-  it("presents a dash pose and restores idle when the dash settles", async () => {
+  it("presents a dash pose and settles into the held landing pose", async () => {
     const { renderer } = createRenderer();
     const director = new PresentationDirector(renderer);
 
@@ -384,7 +384,7 @@ describe("PresentationDirector combat feedback", () => {
     ]);
 
     expect(renderer.setPlayerAnimation).toHaveBeenNthCalledWith(1, "dash");
-    expect(renderer.setPlayerAnimation).toHaveBeenLastCalledWith("idle");
+    expect(renderer.setPlayerAnimation).toHaveBeenLastCalledWith("dashLand");
     expect(director.isIdle).toBe(true);
   });
 

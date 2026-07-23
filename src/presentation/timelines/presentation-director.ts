@@ -161,6 +161,7 @@ export class PresentationDirector {
       switch (event.type) {
         case "player_attacked": {
           this.renderer.setPlayerFacing(event.direction, true);
+          this.renderer.setPlayerAnimation("attack");
           const effect = this.renderer.createImpact(event.target);
           animations.push(
             this.timelineDone(
@@ -168,7 +169,10 @@ export class PresentationDirector {
                 .timeline()
                 .fromTo(effect.scale, { x: 0.35, y: 0.35 }, { x: 1.8, y: 1.8, duration: 0.14 })
                 .to(effect, { alpha: 0, duration: 0.1 }, "<0.06"),
-              () => this.renderer.releaseTransient(effect),
+              () => {
+                this.renderer.releaseTransient(effect);
+                this.renderer.setPlayerAnimation("idle");
+              },
             ),
           );
           break;
@@ -407,7 +411,9 @@ export class PresentationDirector {
     }
 
     if (playerStep) {
-      track.call(() => this.renderer.setPlayerAnimation("idle"), [], cursor);
+      // A dash settles into its held finishing pose; every other player motion returns to idle.
+      const settled = playerStep.kind === "dash" ? "dashLand" : "idle";
+      track.call(() => this.renderer.setPlayerAnimation(settled), [], cursor);
     }
     return track;
   }

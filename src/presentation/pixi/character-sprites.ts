@@ -1,9 +1,20 @@
 import { Container, Rectangle, Sprite, Texture } from "pixi.js";
+import { gsap } from "gsap";
 import type { Cell } from "@core/model/types";
+import {
+  resolveActionPresentation,
+  type ActionDirection,
+  type ActionStatePresentation,
+} from "@presentation/actions/action-presentation-catalog";
 import { ENTITY_FRAME_SIZE, createEntityPresentationRig, type EntityPresentationRig } from "./entity-presentation-rig";
 import { resolveEntityPresentationProfile } from "./entity-presentation-profiles";
 
-export type PlayerSpritePose = "idle" | "move" | "dash";
+// `prepare`/`dash`/`dashLand` drive the Ninja Batto presentation authored in the Action Lab
+// (`ninja.batto_dash`): `prepare` is the Alt-hold draw stance, `dash` is the draw-cut executed
+// during the Dash motion, and `dashLand` is the held finishing pose. The director settles a dash
+// motion into `dashLand` (not `idle`); the weapon layer and per-direction offsets are pure
+// presentation data, so no character-specific knowledge leaks into the hubs.
+export type PlayerSpritePose = "idle" | "move" | "dash" | "dashLand" | "prepare" | "attack";
 
 export interface PlayerSprite {
   readonly profileId: string;
@@ -17,10 +28,13 @@ export interface PlayerSprite {
 }
 
 const NINJA_PROFILE_ID = "character.ninja";
+const NINJA_ACTION_ID = "ninja.batto_dash";
+const WEAPON_FRAME_SIZE = 64;
 const DEFAULT_FACING: Cell = { x: 1, y: 0 };
 const BODY_IDLE_ROW = 0;
 const BODY_MOVE_ROWS = [1, 2, 3, 2] as const;
 const BODY_DASH_ROW = 1;
+const BODY_ATTACK_ROW = 5;
 const BODY_DIRECTION_COLUMNS = {
   down: 0,
   up: 1,
@@ -28,7 +42,17 @@ const BODY_DIRECTION_COLUMNS = {
   right: 3,
 } as const;
 
+/** Batto sheets injected by the renderer; absent in fixtures that only load the body sheet. */
+export interface NinjaBattoSheets {
+  readonly battoBase?: Texture;
+  readonly slashEnd?: Texture;
+  readonly katanaSlash?: Texture;
+  readonly katanaBattoStart?: Texture;
+  readonly katanaBattoEnd?: Texture;
+}
+
 let ninjaSpriteSheet: Texture | undefined;
+let ninjaBattoSheets: NinjaBattoSheets = {};
 
 function isCardinal(cell: Cell): boolean {
   return Number.isInteger(cell.x) && Number.isInteger(cell.y) && Math.abs(cell.x) + Math.abs(cell.y) === 1;
@@ -47,15 +71,54 @@ function directionColumn(direction: Cell): number {
   return BODY_DIRECTION_COLUMNS.right;
 }
 
-function frameTexture(sheet: Texture, column: number, row: number): Texture {
+function actionDirection(direction: Cell): ActionDirection {
+  if (direction.y > 0) {
+    return "down";
+  }
+  if (direction.y < 0) {
+    return "up";
+  }
+  if (direction.x < 0) {
+    return "left";
+  }
+  return "right";
+}
+
+function frameTexture(sheet: Texture, column: number, row: number, size: number): Texture {
   return new Texture({
     source: sheet.source,
-    frame: new Rectangle(column * ENTITY_FRAME_SIZE, row * ENTITY_FRAME_SIZE, ENTITY_FRAME_SIZE, ENTITY_FRAME_SIZE),
+    frame: new Rectangle(column * size, row * size, size, size),
   });
+}
+
+/** Resolves an action catalog sheet key to its texture and per-sheet frame size. */
+function resolveSheet(sheetKey: string): { texture: Texture; frame: number } | undefined {
+  if (sheetKey === "body") {
+    return ninjaSpriteSheet ? { texture: ninjaSpriteSheet, frame: ENTITY_FRAME_SIZE } : undefined;
+  }
+  const bodyKeys: Record<string, Texture | undefined> = {
+    battoBase: ninjaBattoSheets.battoBase,
+    slashEnd: ninjaBattoSheets.slashEnd,
+  };
+  if (sheetKey in bodyKeys) {
+    const texture = bodyKeys[sheetKey];
+    return texture ? { texture, frame: ENTITY_FRAME_SIZE } : undefined;
+  }
+  const weaponKeys: Record<string, Texture | undefined> = {
+    katanaSlash: ninjaBattoSheets.katanaSlash,
+    katanaBattoStart: ninjaBattoSheets.katanaBattoStart,
+    katanaBattoEnd: ninjaBattoSheets.katanaBattoEnd,
+  };
+  if (sheetKey in weaponKeys) {
+    const texture = weaponKeys[sheetKey];
+    return texture ? { texture, frame: WEAPON_FRAME_SIZE } : undefined;
+  }
+  return undefined;
 }
 
 function createNinjaSprite(sheet: Texture): PlayerSprite {
   const profile = resolveEntityPresentationProfile(NINJA_PROFILE_ID);
+  const action = resolveActionPresentation(NINJA_ACTION_ID);
   const rig = createEntityPresentationRig(profile);
   const root = rig.root;
   root.label = NINJA_PROFILE_ID;
@@ -63,39 +126,157 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
   let currentPose: PlayerSpritePose = "idle";
   let moveFrameIndex = 0;
   let currentMoveRow: number = BODY_MOVE_ROWS[0] ?? BODY_IDLE_ROW;
+  let breathingTween: gsap.core.Tween | undefined;
   const frames = new Map<string, Texture>();
   sheet.source.scaleMode = "nearest";
-  const frameAt = (column: number, row: number): Texture => {
-    const key = `${column},${row}`;
+
+  const bodyFrameFromSheet = (column: number, row: number): Texture => {
+    const key = `body:${column},${row}`;
     const existing = frames.get(key);
     if (existing) {
       return existing;
     }
-    const frame = frameTexture(sheet, column, row);
+    const frame = frameTexture(sheet, column, row, ENTITY_FRAME_SIZE);
     frames.set(key, frame);
     return frame;
   };
 
-  const body = new Sprite(frameAt(directionColumn(DEFAULT_FACING), BODY_IDLE_ROW));
+  const sheetFrame = (sheetKey: string, column: number, row: number): Texture | undefined => {
+    const resolved = resolveSheet(sheetKey);
+    if (!resolved) {
+      return undefined;
+    }
+    resolved.texture.source.scaleMode = "nearest";
+    const key = `${sheetKey}:${column},${row}`;
+    const existing = frames.get(key);
+    if (existing) {
+      return existing;
+    }
+    const frame = frameTexture(resolved.texture, column, row, resolved.frame);
+    frames.set(key, frame);
+    return frame;
+  };
+
+  const body = new Sprite(bodyFrameFromSheet(directionColumn(DEFAULT_FACING), BODY_IDLE_ROW));
   body.anchor.set(profile.bodyFoot.x / ENTITY_FRAME_SIZE, profile.bodyFoot.y / ENTITY_FRAME_SIZE);
   body.scale.set(profile.bodyScale);
 
-  rig.actorRoot.addChild(body);
+  const weapon = new Sprite();
+  weapon.anchor.set(0.5, 0.5);
+  weapon.scale.set(profile.bodyScale);
+  weapon.visible = false;
+
+  rig.actorRoot.addChild(body, weapon);
+
+  const stopBreathing = (): void => {
+    breathingTween?.kill();
+    breathingTween = undefined;
+    body.scale.set(profile.bodyScale);
+  };
+
+  const startBreathing = (): void => {
+    stopBreathing();
+    const breathing = action.prepare.breathing;
+    if (!breathing) {
+      return;
+    }
+    breathingTween = gsap.to(body.scale, {
+      x: profile.bodyScale * (1 + breathing.amplitudeX),
+      y: profile.bodyScale * (1 + breathing.amplitudeY),
+      duration: Math.max(0.05, breathing.periodSec / 2),
+      ease: "sine.inOut",
+      yoyo: true,
+      repeat: -1,
+    });
+  };
+
+  // Renders one authored batto state for the given facing. Returns false when the required batto
+  // sheet is not injected so callers can fall back to the plain body-sheet pose.
+  const applyBattoState = (state: ActionStatePresentation, direction: Cell): boolean => {
+    const dir = actionDirection(direction);
+    const column = BODY_DIRECTION_COLUMNS[dir];
+    const bodyTexture = sheetFrame(state.bodySheet, column, state.bodyRow);
+    if (!bodyTexture) {
+      return false;
+    }
+    body.texture = bodyTexture;
+    const bodyOffset = state.bodyOffset[dir];
+    body.position.set(bodyOffset.x, bodyOffset.y);
+    if (state.weapon) {
+      const weaponTexture = sheetFrame(state.weapon.sheet, column, 0);
+      if (weaponTexture) {
+        weapon.texture = weaponTexture;
+        const offset = state.weapon.offset[dir];
+        weapon.position.set(offset.x, offset.y);
+        weapon.visible = true;
+        weapon.alpha = 1;
+      } else {
+        weapon.visible = false;
+      }
+    } else {
+      weapon.visible = false;
+    }
+    return true;
+  };
+
+  const renderPose = (pose: PlayerSpritePose, direction: Cell): void => {
+    const column = directionColumn(direction);
+    if (pose !== "prepare") {
+      stopBreathing();
+    }
+    switch (pose) {
+      case "prepare":
+        if (applyBattoState(action.prepare, direction)) {
+          startBreathing();
+          return;
+        }
+        break;
+      case "dash":
+        if (applyBattoState(action.execute, direction)) {
+          return;
+        }
+        // Fallback: legacy body-sheet dash frame with no weapon.
+        body.position.set(0, 0);
+        weapon.visible = false;
+        body.texture = bodyFrameFromSheet(column, BODY_DASH_ROW);
+        return;
+      case "dashLand":
+        if (applyBattoState(action.end, direction)) {
+          return;
+        }
+        break;
+      case "move":
+        body.position.set(0, 0);
+        weapon.visible = false;
+        body.texture = bodyFrameFromSheet(column, currentMoveRow);
+        return;
+      case "attack":
+        // Normal-attack body pose; the batto weapon layer is dash-only, so no weapon here.
+        body.position.set(0, 0);
+        weapon.visible = false;
+        body.texture = bodyFrameFromSheet(column, BODY_ATTACK_ROW);
+        return;
+      default:
+        break;
+    }
+    // idle, or any batto pose whose sheet is unavailable.
+    body.position.set(0, 0);
+    weapon.visible = false;
+    body.texture = bodyFrameFromSheet(column, BODY_IDLE_ROW);
+  };
 
   const setFacing = (facing: Cell): void => {
     const direction = isCardinal(facing) ? facing : DEFAULT_FACING;
     currentFacing = { x: direction.x, y: direction.y };
-    const row = currentPose === "dash" ? BODY_DASH_ROW : currentPose === "move" ? currentMoveRow : BODY_IDLE_ROW;
-    body.texture = frameAt(directionColumn(direction), row);
+    renderPose(currentPose, currentFacing);
   };
 
   const setPose = (pose: PlayerSpritePose): void => {
-    currentPose = pose;
     if (pose === "move") {
       currentMoveRow = BODY_MOVE_ROWS[moveFrameIndex++ % BODY_MOVE_ROWS.length] ?? BODY_IDLE_ROW;
     }
-    const row = pose === "dash" ? BODY_DASH_ROW : pose === "move" ? currentMoveRow : BODY_IDLE_ROW;
-    body.texture = frameAt(directionColumn(currentFacing), row);
+    currentPose = pose;
+    renderPose(pose, currentFacing);
   };
 
   setFacing(DEFAULT_FACING);
@@ -129,4 +310,8 @@ export function createPlayerSprite(
 
 export function setNinjaSpriteSheet(texture: Texture | undefined): void {
   ninjaSpriteSheet = texture;
+}
+
+export function setNinjaBattoSheets(sheets: NinjaBattoSheets): void {
+  ninjaBattoSheets = sheets;
 }

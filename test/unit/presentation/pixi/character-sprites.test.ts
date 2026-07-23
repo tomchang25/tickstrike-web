@@ -21,7 +21,9 @@ describe("character sprite profiles", () => {
     expect(sprite?.rig.groundRoot.position.y).toBe(profile.groundY);
     expect(sprite?.root.children).toEqual([sprite?.rig.groundRoot]);
     expect(sprite?.rig.groundRoot.children).toEqual([sprite?.rig.shadow, sprite?.rig.actorRoot]);
-    expect(sprite?.rig.actorRoot.children).toEqual([sprite?.body]);
+    // Body first, then the batto weapon layer stacked above it (hidden until a batto pose).
+    expect(sprite?.rig.actorRoot.children[0]).toBe(sprite?.body);
+    expect(sprite?.rig.actorRoot.children).toHaveLength(2);
   });
 
   it("projects cardinal facing and a transient dash pose without a core state", () => {
