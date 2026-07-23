@@ -39,9 +39,9 @@ Two human approval gates recur across the children and cannot be self-approved b
 
 | Child | Focus                                                                                | Current document form                                                                                              |
 | ----- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 13.3a | Shared entity drop shadow                                                            | Spec: [port_13_3a_entity_drop_shadow.implementation_spec.md](port_13_3a_entity_drop_shadow.implementation_spec.md) |
+| 13.3a | Shared entity drop shadow                                                            | Shipped — port_13_3a_entity_drop_shadow.implementation_spec.md                                                     |
 | 13.3b | Ranged base-sheet redraw and shared-scale alignment                                  | Shipped — port_13_3b_ranged_redraw_and_rescale.implementation_spec.md                                              |
-| 13.3c | Player attack + weapon slash animation and dash prepare/execute states               | Plan child; spec when next to implement — read the queued character featurization plan first                       |
+| 13.3c | Player attack + weapon slash animation and dash prepare/execute states               | Shipped — delivered through the action-presentation catalog and dev Action Lab; no implementation spec             |
 | 13.3d | Bomb and Charge prepare loops and execute body animations                            | Plan child; spec when next to implement                                                                            |
 | 13.3e | Mobility-kill body-split terminals, death-cause semantics, and drowning confirmation | Plan child; spec when next to implement — requires 13.3b                                                           |
 

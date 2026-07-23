@@ -112,4 +112,6 @@ Rules:
 
 ### Entity Visual Profiles
 
+- 2026-07-23 - [port_13.3a] Every authored player and enemy entity now casts a shared uniform drop shadow beneath its footprint, hidden while the drowning animation plays
 - 2026-07-23 - [port_13.3b] The ranged enemy now uses a smaller, rounder four-direction sheet with distinct left and right silhouettes, and its approved drowning animation has been regenerated from the new source
+- 2026-07-23 - [port_13.3c] The Ninja Batto Dash now presents a data-driven Alt-hold draw stance, an afterimage draw-cut, and a held finishing pose, plus a directional normal-attack body animation, all tunable in a dev Action Lab that drives the real player sprite
