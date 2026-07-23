@@ -10,6 +10,14 @@ Use the narrowest available layer that proves the changed behavior. Follow the s
 
 Use Node.js 22.12 or newer with the npm lockfile. Run `npm install` when dependencies are absent or the lockfile changed. The offline sprite-animation tool requires Python plus Pillow from `dev/tools/sprite-animation/requirements.txt`; install it with `python -m pip install --user -r dev/tools/sprite-animation/requirements.txt` before running its test. Playwright browser tests require Chromium installed through `npx playwright install chromium`; do not install it unless browser coverage is required.
 
+## Local Port Isolation
+
+Treat every listener on `http://127.0.0.1:1420/` as user-owned, including a Tickstrike development server or test run. An agent must never stop, kill, restart, reconfigure, or otherwise interfere with that listener to make a command run.
+
+Before starting a server-backed command, check whether its intended port is available. If `1420` is occupied, select an available local port and pass it only to the process being started; do not edit `vite.config.ts` or other persistent configuration to work around the conflict. Start a standalone development server with `npm run dev -- --port <available-port>`.
+
+For a Playwright run that needs its own server, set `PLAYWRIGHT_PORT=<available-port>` for that invocation so its Vite server and browser base URL use the same alternate port. Do not reuse the listener on `1420` for an agent's isolated browser verification unless the user explicitly asks for that server to be tested.
+
 ## Available Layers
 
 - Format check: Prettier verifies the configured formatting contract without modifying files.
@@ -28,7 +36,7 @@ Use Node.js 22.12 or newer with the npm lockfile. Run `npm install` when depende
 - `npm run lint:fix`: applies Oxlint's safe automatic fixes; this is a mutation command, not a pass/fail verification layer.
 - `npm test`: passes when Vitest exits successfully with every unit assertion passing.
 - `npm run build`: passes when TypeScript and Vite exit successfully and produce the Web export in `build/`.
-- `npm run test:e2e`: passes when Playwright starts or reuses the development server and every Chromium scenario passes. On browser launch failure, distinguish a missing browser installation from an application test failure.
+- `npm run test:e2e`: passes when Playwright starts its configured development server or uses the explicitly requested external server and every Chromium scenario passes. On browser launch failure, distinguish a missing browser installation from an application test failure.
 - `python test/unit/tools/sprite_animation_test.py`: passes when the deterministic sprite compiler produces 64x128 sheets with direction columns, validates manifests, creates optional previews, generates every current water target, and rejects a batch with an unknown effect before writing output.
 - `npm run verify`: canonical non-browser verification; runs the format check, lint, unit tests, and production build.
 
