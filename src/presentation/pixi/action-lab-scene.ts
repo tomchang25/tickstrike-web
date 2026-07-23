@@ -1,10 +1,10 @@
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from "pixi.js";
 import { gsap } from "gsap";
-import battoBaseUrl from "../../../assets/ninja-batto/ninja-batto-base.png";
-import slashEndUrl from "../../../assets/ninja-batto/ninja-slash-end.png";
-import katanaSlashUrl from "../../../assets/ninja-batto/katana-slash.png";
-import katanaBattoStartUrl from "../../../assets/ninja-batto/katana-batto-start.png";
-import katanaBattoEndUrl from "../../../assets/ninja-batto/katana-batto-end.png";
+import battoBaseUrl from "@content/characters/assets/ninja/batto/ninja-batto-base.png";
+import slashEndUrl from "@content/characters/assets/ninja/batto/ninja-slash-end.png";
+import katanaSlashUrl from "@content/characters/assets/ninja/batto/katana-slash.png";
+import katanaBattoStartUrl from "@content/characters/assets/ninja/batto/katana-batto-start.png";
+import katanaBattoEndUrl from "@content/characters/assets/ninja/batto/katana-batto-end.png";
 import ninjaBodyUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
 import type {
   ActionDirection,
