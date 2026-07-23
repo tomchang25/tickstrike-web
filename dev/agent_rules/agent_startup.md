@@ -37,4 +37,6 @@ Before creating or changing fixed palette variants, generated recolour assets, o
 
 Before creating, changing, regenerating, or reviewing an offline pixel animation sheet, read `dev/standards/sprite_animation_asset_standard.md`, `dev/workflows/sprite_animation_authoring.md`, and `dev/skills/sprite_animation_authoring.md`.
 
+Before adding, changing, or reviewing a dev-authored presentation catalog — a JSON document a `/debug` Lab tunes and the runtime consumes (e.g. `entity-presentation-profile-catalog.json`, `action-presentation-catalog.json`), including its Lab, writer endpoint, or runtime refresh — read `dev/standards/dev_authoring_catalog.md`.
+
 Read `dev/foundation/platforms/web-react/standards/project_structure_standard.md` and `dev/standards/project_structure.addendum.md` before adding, moving, or reorganizing source, tests, assets, build output, or project documentation. Read additional files under `dev/agent_rules/`, `dev/standards/`, `dev/workflows/`, `dev/skills/`, and applicable parts of `dev/docs/` when their trigger applies. Never read, search, cite, summarize, or use `dev/docs/reports/` as an agent source; those files are human-facing historical/report material and may be stale.
