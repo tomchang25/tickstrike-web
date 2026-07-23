@@ -7,10 +7,10 @@
   "source": "src\\content\\enemies\\assets\\eye-sprite-sheet.png",
   "config": "dev\\tools\\sprite-animation\\configs\\eye_drown.json",
   "recipe": "dev\\tools\\sprite-animation\\recipes\\eye_drown.py",
-  "source_sha256": "21c7de8b33acd7817f2994530baed80e5ef7db632f2bfb7790295a4c3ef1b603",
+  "source_sha256": "3f29b6fa7887e656ebc9dc506c3b4523a2a0a23b65988f36b1ad235b7736c1c9",
   "config_sha256": "20f9a637a181b07f9581c1d3561e4f09f6039a60341e673bf92e9fd8eaa0a446",
   "recipe_sha256": "3aaffdf06ed3f40835cade61b6bcdeab55daf9ba73b214665bc8cb56f993f63e",
-  "output_rgba_sha256": "a30ab6321be19288900a5a0213148f4753ff5fb12c9b6d5efefd127c53f2b6fa",
+  "output_rgba_sha256": "5bb8ae10e392d83da26d67228fe28ac8b03be3e95dcd6412dd0f60ccd536a8da",
   "validation": [
     "size=(64, 128)",
     "alpha=[0, 255]"

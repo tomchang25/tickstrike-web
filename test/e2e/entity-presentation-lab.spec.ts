@@ -4,7 +4,7 @@ import runtimeCatalog from "../../src/presentation/pixi/entity-presentation-prof
 test("Entity Presentation Lab edits, resets, imports, and exports profile data", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const generalScale = String(runtimeCatalog.general.bodyScale);
-  const rangedScale = String(runtimeCatalog.profiles["enemy.ranged"]?.bodyScale ?? runtimeCatalog.general.bodyScale);
+  const rangedScale = generalScale;
   let persistedCatalog: unknown = runtimeCatalog;
   await page.route("**/__debug/entity-presentation-profile-catalog", async (route) => {
     if (route.request().method() === "PUT") {

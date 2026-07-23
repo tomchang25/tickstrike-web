@@ -17,9 +17,6 @@
     }
   },
   "profiles": {
-    "enemy.ranged": {
-      "bodyScale": 3
-    },
     "enemy.bomb": {
       "bodyFoot": {
         "x": 7.5

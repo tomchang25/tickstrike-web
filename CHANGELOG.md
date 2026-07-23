@@ -109,3 +109,7 @@ Rules:
 - 2026-07-22 - [port_13.2] The arena terrain now renders the walled contour from the land mask — borderless floor tiles, an exterior rim ring whose south brick face occludes actors on the southern land row, and inner-face openings for enclosed water rectangles — baked from the Cainos wall sheet and replacing the dual-grid grass autotile, the drawn south face, and its static reflection
 - 2026-07-22 - [port_13.2] The wall faces now cast static reflections in the water — mirrored, water-tinted, squashed, and faded through a continuous gradient toward open water with a 1px waterline highlight — and grid lines now draw only on land cells
 - 2026-07-23 - [port_13.2] The arena now presents an 18x12 widescreen board with a centered 14x8 island, scale-to-fit framing, accurate pointer mapping, and actors and previews aligned to the rendered grid
+
+### Entity Visual Profiles
+
+- 2026-07-23 - [port_13.3b] The ranged enemy now uses a smaller, rounder four-direction sheet with distinct left and right silhouettes, and its approved drowning animation has been regenerated from the new source

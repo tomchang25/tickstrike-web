@@ -11,10 +11,10 @@ describe("entity presentation profiles", () => {
     expect(resolveEntityPresentationProfile("character.ninja")).toEqual(entityPresentationProfileCatalog.general);
   });
 
-  it("merges a sparse entity override onto General", () => {
+  it("uses the General scale when the ranged profile has no override", () => {
     const ranged = resolveEntityPresentationProfile("enemy.ranged");
 
-    expect(ranged.bodyScale).toBe(entityPresentationProfileCatalog.profiles["enemy.ranged"]?.bodyScale);
+    expect(ranged.bodyScale).toBe(entityPresentationProfileCatalog.general.bodyScale);
     expect(ranged.groundY).toBe(entityPresentationProfileCatalog.general.groundY);
     expect(ranged.bodyFoot).toEqual(entityPresentationProfileCatalog.general.bodyFoot);
     expect(ranged.shadow).toEqual(entityPresentationProfileCatalog.general.shadow);

@@ -37,13 +37,13 @@ Two human approval gates recur across the children and cannot be self-approved b
 
 ### Child decomposition
 
-| Child | Focus                                                                                | Current document form                                                                                                            |
-| ----- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| 13.3a | Shared entity drop shadow                                                            | Spec: [port_13_3a_entity_drop_shadow.implementation_spec.md](port_13_3a_entity_drop_shadow.implementation_spec.md)               |
-| 13.3b | Ranged base-sheet redraw and shared-scale alignment                                  | Spec: [port_13_3b_ranged_redraw_and_rescale.implementation_spec.md](port_13_3b_ranged_redraw_and_rescale.implementation_spec.md) |
-| 13.3c | Player attack + weapon slash animation and dash prepare/execute states               | Plan child; spec when next to implement — read the queued character featurization plan first                                     |
-| 13.3d | Bomb and Charge prepare loops and execute body animations                            | Plan child; spec when next to implement                                                                                          |
-| 13.3e | Mobility-kill body-split terminals, death-cause semantics, and drowning confirmation | Plan child; spec when next to implement — requires 13.3b                                                                         |
+| Child | Focus                                                                                | Current document form                                                                                              |
+| ----- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| 13.3a | Shared entity drop shadow                                                            | Spec: [port_13_3a_entity_drop_shadow.implementation_spec.md](port_13_3a_entity_drop_shadow.implementation_spec.md) |
+| 13.3b | Ranged base-sheet redraw and shared-scale alignment                                  | Shipped — port_13_3b_ranged_redraw_and_rescale.implementation_spec.md                                              |
+| 13.3c | Player attack + weapon slash animation and dash prepare/execute states               | Plan child; spec when next to implement — read the queued character featurization plan first                       |
+| 13.3d | Bomb and Charge prepare loops and execute body animations                            | Plan child; spec when next to implement                                                                            |
+| 13.3e | Mobility-kill body-split terminals, death-cause semantics, and drowning confirmation | Plan child; spec when next to implement — requires 13.3b                                                           |
 
 Recommended landing order is 13.3a, 13.3b, 13.3c, 13.3d, then 13.3e. Hard constraints: 13.3e requires the redrawn ranged base sheet from 13.3b; 13.3c and 13.3d share the new frame-playback capability, so whichever lands first builds it and the other must reuse it rather than fork it.
 
