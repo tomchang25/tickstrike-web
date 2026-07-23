@@ -12,6 +12,8 @@ This file is the root entry point for Claude-style agents that discover `CLAUDE.
 
 Do not use any Claude Browser tool (`mcp__Claude_Browser__*` — preview servers, navigation, screenshots, console/network readers, and `javascript_tool` alike). The family is banned in this repo (`.claude/settings.json` denies the server): it has a history of hanging sessions and timing out on canvas screenshots. For browser verification use unit tests, targeted Playwright runs, or a one-off Node script driving the repo's Playwright package (navigate, drive the `window.__TICKSTRIKE__` debug API, `page.screenshot` to the scratchpad) against the dev server.
 
+**STRICTLY FORBIDDEN: never kill, restart, or take over the dev server on port 1420.** That port belongs to the user's own long-running `npm run dev`. Do not run `npm run dev` yourself (it binds 1420 and, on failure, corrupts the shared `node_modules/.vite` dep cache), do not `Stop-Process`/`kill` whatever holds the port, and do not clear `node_modules/.vite`. Agents run their OWN server on a DIFFERENT port for verification — start Vite with an explicit alternate port (e.g. `npm run dev -- --port 5199 --strictPort`) in the scratchpad and point Playwright at that port, or just reuse the user's running 1420 server read-only. If port 1420 appears broken, tell the user and let them restart it; never do it for them.
+
 ## Model-Tier Notes
 
 Match the model tier to the failure mode of the task, not its size:
