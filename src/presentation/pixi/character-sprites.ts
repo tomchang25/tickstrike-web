@@ -118,7 +118,9 @@ function resolveSheet(sheetKey: string): { texture: Texture; frame: number } | u
 
 function createNinjaSprite(sheet: Texture): PlayerSprite {
   const profile = resolveEntityPresentationProfile(NINJA_PROFILE_ID);
-  const action = resolveActionPresentation(NINJA_ACTION_ID);
+  // Resolve the action fresh on every render so a live catalog refresh (dev Action Lab Apply)
+  // takes effect without recreating the sprite.
+  const currentAction = () => resolveActionPresentation(NINJA_ACTION_ID);
   const rig = createEntityPresentationRig(profile);
   const root = rig.root;
   root.label = NINJA_PROFILE_ID;
@@ -176,7 +178,7 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
 
   const startBreathing = (): void => {
     stopBreathing();
-    const breathing = action.prepare.breathing;
+    const breathing = currentAction().prepare.breathing;
     if (!breathing) {
       return;
     }
@@ -224,6 +226,7 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
     if (pose !== "prepare") {
       stopBreathing();
     }
+    const action = currentAction();
     switch (pose) {
       case "prepare":
         if (applyBattoState(action.prepare, direction)) {

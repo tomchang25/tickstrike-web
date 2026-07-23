@@ -92,6 +92,15 @@ export class GameRuntime {
     return true;
   }
 
+  /** Re-applies the dev-authored action presentation (player batto states) without touching world state. */
+  refreshPlayerPresentation(): boolean {
+    if (!this.isIdle) {
+      return false;
+    }
+    this.renderer.refreshPlayerAnimation();
+    return true;
+  }
+
   execute(command: GameCommand): Promise<ActionResolution> {
     if (this.scenario?.commandsEnabled === false) {
       return Promise.resolve({

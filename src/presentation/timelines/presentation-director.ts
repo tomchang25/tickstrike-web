@@ -327,6 +327,13 @@ export class PresentationDirector {
     const track = gsap.timeline();
     const playerStep = entityId === "player" ? steps[0] : undefined;
     if (playerStep) {
+      // Force the player to face the motion direction so a move/dash cleanly turns out of any held
+      // pose (e.g. the dashLand finishing pose) instead of animating in the previous facing.
+      const direction = {
+        x: Math.sign(playerStep.to.x - playerStep.from.x),
+        y: Math.sign(playerStep.to.y - playerStep.from.y),
+      };
+      this.renderer.setPlayerFacing(direction, true);
       this.renderer.setPlayerAnimation(playerStep.kind === "dash" ? "dash" : "move");
     }
 

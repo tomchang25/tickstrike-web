@@ -231,7 +231,11 @@ export class InputController {
     if (this.facingLocked && !force) {
       return;
     }
-    if (sameCell(this.facing, direction)) {
+    // A forced facing (a committed move/dash/attack) must always reach the sprite, even when the
+    // cached facing already matches: snapshot motion can pre-set `facing` to the command direction
+    // without re-facing the sprite, which would otherwise leave it stuck in the prior pose's facing
+    // (e.g. moving down still rendered facing the previous leftward dash).
+    if (!force && sameCell(this.facing, direction)) {
       return;
     }
     this.facing = direction;

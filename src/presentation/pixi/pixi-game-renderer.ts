@@ -339,19 +339,23 @@ export class PixiGameRenderer {
     return this.pointerMode === "mobility" && mobility === "dash" ? "prepare" : "idle";
   }
 
-  private isRestingPose(pose: PlayerSpritePose): boolean {
-    return pose === "idle" || pose === "prepare" || pose === "dashLand";
-  }
-
   setPlayerAnimation(pose: PlayerSpritePose): void {
     const effective = pose === "idle" ? this.restingPose() : pose;
     this.playerPose = effective;
     const player = this.entityViews.get("player");
     player?.sprite?.setPose(effective);
-    this.input.setFacingLocked(effective === "move" || effective === "dash" || effective === "attack");
+    // Only idle and the prepare aim stance re-face to the cursor; move, dash, attack, and the held
+    // dashLand finishing pose keep their committed facing until a command forces a new one.
+    this.input.setFacingLocked(effective !== "idle" && effective !== "prepare");
     if (this.host) {
       this.app.canvas.dataset.playerAnimation = effective;
     }
+  }
+
+  /** Re-applies the current player pose so a live catalog refresh updates the visible frame/offset. */
+  refreshPlayerAnimation(): void {
+    this.setPlayerAnimation(this.playerPose);
+    this.entityViews.get("player")?.sprite?.setFacing(this.input.playerFacing);
   }
 
   setPlayerFacing(facing: Cell, force = false): void {
@@ -359,10 +363,6 @@ export class PixiGameRenderer {
   }
 
   private applyPlayerFacing(direction: Cell): void {
-    // A change of aim ends the held finishing pose instead of re-facing it in place.
-    if (this.playerPose === "dashLand") {
-      this.setPlayerAnimation("idle");
-    }
     this.entityViews.get("player")?.sprite?.setFacing(direction);
     if (this.host) {
       this.app.canvas.dataset.playerFacing = `${direction.x},${direction.y}`;
@@ -513,9 +513,10 @@ export class PixiGameRenderer {
     const changed = this.pointerMode !== mode;
     this.pointerMode = mode;
     this.input.setPointerMode(mode);
-    // Entering/leaving Alt mobility from a resting state swaps between idle and the Dash prepare
-    // stance; an active animation is left to finish first.
-    if (changed && this.isRestingPose(this.playerPose)) {
+    // Alt swaps only between plain idle and the Dash prepare stance. An active animation and the
+    // held dashLand finishing pose are left untouched — dashLand persists through Alt and cursor
+    // moves, and is replaced only when the next move/attack/dash command begins.
+    if (changed && (this.playerPose === "idle" || this.playerPose === "prepare")) {
       this.setPlayerAnimation("idle");
     }
   }

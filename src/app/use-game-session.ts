@@ -8,6 +8,10 @@ import {
   parseEntityPresentationProfileCatalog,
   setRuntimeEntityPresentationProfileCatalog,
 } from "@presentation/pixi/entity-presentation-profiles";
+import {
+  parseActionPresentationCatalog,
+  setRuntimeActionPresentationCatalog,
+} from "@presentation/actions/action-presentation-catalog";
 import { GameRuntime } from "@runtime/game-runtime";
 import { SettingsStore, type GameSettings } from "@runtime/settings-store";
 import { useKeyboardInput } from "@ui/input/use-keyboard-input";
@@ -92,6 +96,26 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     };
     import.meta.hot.on("entity-presentation-catalog-updated", refreshProfiles);
     return () => import.meta.hot?.off("entity-presentation-catalog-updated", refreshProfiles);
+  }, []);
+
+  useEffect(() => {
+    if (!import.meta.hot) {
+      return;
+    }
+    const refreshActions = async () => {
+      try {
+        const response = await fetch("/__debug/action-presentation-catalog");
+        if (!response.ok) {
+          return;
+        }
+        setRuntimeActionPresentationCatalog(parseActionPresentationCatalog(await response.json()));
+        runtimeRef.current?.refreshPlayerPresentation();
+      } catch {
+        // A stale player preview is safer than interrupting an active session on a dev endpoint error.
+      }
+    };
+    import.meta.hot.on("action-presentation-catalog-updated", refreshActions);
+    return () => import.meta.hot?.off("action-presentation-catalog-updated", refreshActions);
   }, []);
 
   // Escape is the single settings entry/exit: it closes whichever panel is open, does nothing while a
