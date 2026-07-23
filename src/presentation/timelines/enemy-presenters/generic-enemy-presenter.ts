@@ -216,13 +216,21 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     );
   }
 
-  protected died(context: EnemyPresenterContext, _event: EventOf<"enemy_died">): void {
+  protected died(context: EnemyPresenterContext, event: EventOf<"enemy_died">): void {
     const view = context.getView();
-    context.getPresentation()?.stopBlink();
+    const presentation = context.getPresentation();
+    presentation?.stopBlink();
     if (!view) {
       return;
     }
-    if (context.getPresentation()) {
+    if (event.cause === "dash") {
+      const timeline = presentation?.playDashKilled();
+      if (timeline) {
+        context.addTimeline(timeline);
+        return;
+      }
+    }
+    if (presentation) {
       context.addTimeline(
         gsap
           .timeline()

@@ -700,6 +700,37 @@ describe("playable encounter outcomes", () => {
 });
 
 describe("terminal entity finalization", () => {
+  it("marks a Dash-originated enemy death without changing terminal finalization", () => {
+    const world = createTrainingArena();
+    world.spawn({
+      id: "player",
+      kind: "player",
+      archetype: "training-player",
+      cell: { x: 3, y: 3 },
+      hp: 100,
+      mobility: { kind: "dash", damage: 30, range: 3, cooldown: 4, staggerMultiplier: 2 },
+    });
+    world.spawn({
+      id: "dash-victim",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 3 },
+      hp: 1,
+    });
+
+    const result = resolveCommand(world, {
+      type: "dash",
+      actorId: "player",
+      direction: { x: 1, y: 0 },
+      distance: 2,
+    });
+
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: "enemy_died", enemyId: "dash-victim", cause: "dash" }),
+    );
+    expect(world.getEntity("dash-victim")).toBeUndefined();
+  });
+
   it("removes the entity its own command killed and frees the cell", () => {
     const world = createFoundationArena();
     world.applyDamage("enemy-thrust", 98);
@@ -711,6 +742,7 @@ describe("terminal entity finalization", () => {
     });
 
     expect(result.events.map((event) => event.type)).toContain("enemy_died");
+    expect(result.events.find((event) => event.type === "enemy_died")).not.toHaveProperty("cause");
     expect(world.getEntity("enemy-thrust")).toBeUndefined();
     expect(world.snapshot().entities.map((entity) => entity.id)).not.toContain("enemy-thrust");
     expect(world.getOccupantAt({ x: 5, y: 6 })).toBeUndefined();

@@ -5,6 +5,8 @@ import prepareSheetUrl from "../assets/bomb_enemy-self_destruct_prepare-4dir-x8.
 import prepareMetadata from "../assets/bomb_enemy-self_destruct_prepare-4dir-x8.animation.json";
 import executeSheetUrl from "../assets/bomb_enemy-self_destruct_execute-4dir-x8.png";
 import executeMetadata from "../assets/bomb_enemy-self_destruct_execute-4dir-x8.animation.json";
+import dashKilledSheetUrl from "../assets/bomb_enemy-dash_killed-4dir-x8.png";
+import dashKilledMetadata from "../assets/bomb_enemy-dash_killed-4dir-x8.animation.json";
 import { defineEnemyFeature } from "./enemy-feature";
 
 export const bombEnemyFeature = defineEnemyFeature({
@@ -36,8 +38,11 @@ export const bombEnemyFeature = defineEnemyFeature({
     palette: "lantern",
   },
   waterAnimation: {
+    id: "enemy.bomb.drowning",
+    label: "Bomb Drowning",
     sheetUrl: waterSheetUrl,
     frameDurationsMs: waterMetadata.timing.frame_durations_ms,
+    loop: waterMetadata.timing.loop,
   },
   actionAnimations: {
     prepare: {
@@ -54,5 +59,12 @@ export const bombEnemyFeature = defineEnemyFeature({
       frameDurationsMs: executeMetadata.timing.frame_durations_ms,
       loop: executeMetadata.timing.loop,
     },
+  },
+  dashKilledAnimation: {
+    id: "enemy.bomb.dash_killed",
+    label: "Bomb Dash-Killed",
+    sheetUrl: dashKilledSheetUrl,
+    frameDurationsMs: dashKilledMetadata.timing.frame_durations_ms,
+    loop: dashKilledMetadata.timing.loop,
   },
 });

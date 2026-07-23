@@ -189,6 +189,29 @@ class SpriteAnimationToolTest(unittest.TestCase):
             self.assertEqual(generated.returncode, 0, generated.stderr)
             self.assertEqual(len(list(output.glob("*-entered_water-4dir-x8.png"))), 5)
 
+    def test_generates_all_dash_killed_targets_in_one_batch(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory)
+            generated = self.run_cli(
+                "generate",
+                "--target",
+                "slash_enemy",
+                "--target",
+                "thrust_enemy",
+                "--target",
+                "charge_enemy",
+                "--target",
+                "ranged_enemy",
+                "--target",
+                "bomb_enemy",
+                "--effect",
+                "dash_killed",
+                "--output",
+                str(output),
+            )
+            self.assertEqual(generated.returncode, 0, generated.stderr)
+            self.assertEqual(len(list(output.glob("*-dash_killed-4dir-x8.png"))), 5)
+
 
 if __name__ == "__main__":
     unittest.main()

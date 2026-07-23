@@ -91,6 +91,7 @@ export type CombatEvent =
       readonly enemyId: EntityId;
       readonly attackerId: EntityId;
       readonly cell: Cell;
+      readonly cause?: "dash";
     }
   | {
       readonly type: "enemy_self_destructed";

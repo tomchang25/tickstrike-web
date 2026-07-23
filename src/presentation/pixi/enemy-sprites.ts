@@ -43,7 +43,7 @@ export interface EnemyPresentation {
   readonly facing: Cell;
   readonly waterFrame: number | undefined;
   readonly waterFrameDurationsMs: readonly number[];
-  readonly bodyAnimation: "prepare" | "execute" | "preview" | undefined;
+  readonly bodyAnimation: "prepare" | "execute" | "preview" | "dashKilled" | undefined;
   readonly bodyAnimationRow: number | undefined;
   readonly hasPrepareAnimation: boolean;
   readonly hasExecuteAnimation: boolean;
@@ -54,6 +54,7 @@ export interface EnemyPresentation {
   playPrepareAttack(): gsap.core.Timeline | undefined;
   playAttackCommit(): gsap.core.Timeline;
   playBodyAnimation(sheet: Texture, frames: readonly EnemyBodyAnimationFrame[], loop: boolean): gsap.core.Timeline;
+  playDashKilled(): gsap.core.Timeline | undefined;
   playDamage(): gsap.core.Timeline;
   playStaggered(): gsap.core.Timeline | undefined;
   playStaggerEnded(): gsap.core.Timeline | undefined;
@@ -142,7 +143,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
   private blinkTimeline: gsap.core.Timeline | undefined;
   private bodyAnimationFrameAt: ((column: number, row: number) => Texture) | undefined;
   private currentBodyAnimationRow: number | undefined;
-  private bodyAnimationKind: "prepare" | "execute" | "preview" | undefined;
+  private bodyAnimationKind: "prepare" | "execute" | "preview" | "dashKilled" | undefined;
   private readonly layoutProfile: EntityPresentationProfile;
 
   constructor(
@@ -151,6 +152,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
     sheet: Texture,
     private readonly waterAnimation: EnemyWaterAnimation | undefined,
     private readonly actionAnimations: EnemyActionAnimations | undefined,
+    private readonly dashKilledAnimation: EnemyActionAnimation | undefined,
     private readonly onChange?: () => void,
   ) {
     sheet.source.scaleMode = "nearest";
@@ -162,6 +164,9 @@ class SmallEnemyPresentation implements EnemyPresentation {
     if (actionAnimations) {
       actionAnimations.prepare.sheet.source.scaleMode = "nearest";
       actionAnimations.execute.sheet.source.scaleMode = "nearest";
+    }
+    if (dashKilledAnimation) {
+      dashKilledAnimation.sheet.source.scaleMode = "nearest";
     }
 
     this.layoutProfile = resolveEntityPresentationProfile(profileId);
@@ -199,7 +204,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
     return this.waterAnimation?.frameDurationsMs ?? [];
   }
 
-  get bodyAnimation(): "prepare" | "execute" | "preview" | undefined {
+  get bodyAnimation(): "prepare" | "execute" | "preview" | "dashKilled" | undefined {
     return this.bodyAnimationKind;
   }
 
@@ -343,6 +348,13 @@ class SmallEnemyPresentation implements EnemyPresentation {
     });
   }
 
+  playDashKilled(): gsap.core.Timeline | undefined {
+    if (!this.dashKilledAnimation) {
+      return undefined;
+    }
+    return this.startBodyAnimation("dashKilled", this.dashKilledAnimation, true);
+  }
+
   playDamage(): gsap.core.Timeline {
     this.tintTimeline?.kill();
     const timeline = gsap.timeline();
@@ -448,8 +460,9 @@ class SmallEnemyPresentation implements EnemyPresentation {
   }
 
   private startBodyAnimation(
-    kind: "prepare" | "execute" | "preview",
+    kind: "prepare" | "execute" | "preview" | "dashKilled",
     animation: EnemyActionAnimation,
+    retainFinalFrame = false,
   ): gsap.core.Timeline {
     this.clearAction();
     this.bodyAnimationKind = kind;
@@ -465,7 +478,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
       animation.loop,
     );
     this.actionTimeline = timeline;
-    if (!animation.loop) {
+    if (!animation.loop && !retainFinalFrame) {
       timeline.call(() => {
         if (this.actionTimeline === timeline) {
           this.actionTimeline = undefined;
@@ -536,10 +549,19 @@ export function createEnemyPresentation(
   sheet: Texture,
   waterAnimation: EnemyWaterAnimation | undefined,
   actionAnimations?: EnemyActionAnimations,
+  dashKilledAnimation?: EnemyActionAnimation,
   onChange?: () => void,
 ): EnemyPresentation | undefined {
   const profile = getEnemyPresentationProfile(profileId);
   return profile
-    ? new SmallEnemyPresentation(profile.id, profile.palette, sheet, waterAnimation, actionAnimations, onChange)
+    ? new SmallEnemyPresentation(
+        profile.id,
+        profile.palette,
+        sheet,
+        waterAnimation,
+        actionAnimations,
+        dashKilledAnimation,
+        onChange,
+      )
     : undefined;
 }

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "tool": "tickstrike-sprite-animation",
+  "python_version": "3.14.6",
+  "pillow_version": "12.3.0",
+  "imagemagick_available": true,
+  "source": "src\\content\\enemies\\assets\\skull-sprite-sheet.png",
+  "config": "dev\\tools\\sprite-animation\\configs\\dash_killed.json",
+  "recipe": "dev\\tools\\sprite-animation\\recipes\\dash_killed.py",
+  "source_sha256": "6d2e9470a95303610de245e172c39d039aca53c74dbea56f4075fe8d8e92857f",
+  "config_sha256": "4de5c49453e819ad41ab7b66644ea2ef71baa595b2007011cef8cf6a2e638764",
+  "recipe_sha256": "4e1f38c5a02320cf192fa5a274a49595f94f780b826ca007fa22730c739b41aa",
+  "output_rgba_sha256": "616defccdfe9b0c955777ae594d7f3d25033566cb8db908d046b85c7e10c075e",
+  "validation": [
+    "size=(64, 128)",
+    "alpha=[0, 255]"
+  ]
+}

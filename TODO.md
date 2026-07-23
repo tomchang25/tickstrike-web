@@ -80,6 +80,10 @@ Add the Viking Smash body motion after its authored player presentation exists a
 - Animate shadow scale and alpha independently to communicate height and landing weight
 - Synchronize the landing compression and ground response with the committed Smash impact without changing gameplay timing
 
+### Smash-Kill Terminal Animation
+
+Add a distinct per-direction Smash-kill terminal animation after Port 13's Dash-kill body-split terminals ship. Decide its visual treatment when promoted rather than assuming it reuses the Dash body split, and drive it from explicit death-cause semantics through the existing terminal lifecycle.
+
 ### Data-Driven Animated Entity Presentation
 
 Extend the entity presentation profile catalog only after Port 13's shared authored frame playback has landed and its body/weapon synchronization contract is stable:

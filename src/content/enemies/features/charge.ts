@@ -5,6 +5,8 @@ import prepareSheetUrl from "../assets/charge_enemy-charge_prepare-4dir-x8.png";
 import prepareMetadata from "../assets/charge_enemy-charge_prepare-4dir-x8.animation.json";
 import executeSheetUrl from "../assets/charge_enemy-charge_execute-4dir-x8.png";
 import executeMetadata from "../assets/charge_enemy-charge_execute-4dir-x8.animation.json";
+import dashKilledSheetUrl from "../assets/charge_enemy-dash_killed-4dir-x8.png";
+import dashKilledMetadata from "../assets/charge_enemy-dash_killed-4dir-x8.animation.json";
 import { defineEnemyFeature } from "./enemy-feature";
 
 export const chargeEnemyFeature = defineEnemyFeature({
@@ -36,8 +38,11 @@ export const chargeEnemyFeature = defineEnemyFeature({
     palette: "skull",
   },
   waterAnimation: {
+    id: "enemy.charge.drowning",
+    label: "Charge Drowning",
     sheetUrl: waterSheetUrl,
     frameDurationsMs: waterMetadata.timing.frame_durations_ms,
+    loop: waterMetadata.timing.loop,
   },
   actionAnimations: {
     prepare: {
@@ -54,5 +59,12 @@ export const chargeEnemyFeature = defineEnemyFeature({
       frameDurationsMs: executeMetadata.timing.frame_durations_ms,
       loop: executeMetadata.timing.loop,
     },
+  },
+  dashKilledAnimation: {
+    id: "enemy.charge.dash_killed",
+    label: "Charge Dash-Killed",
+    sheetUrl: dashKilledSheetUrl,
+    frameDurationsMs: dashKilledMetadata.timing.frame_durations_ms,
+    loop: dashKilledMetadata.timing.loop,
   },
 });

@@ -111,16 +111,13 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   setNinjaSpriteSheet(body);
   setNinjaBattoSheets({ battoBase, slashEnd, attack, katanaSlash, katanaBattoStart, katanaBattoEnd });
   const loadedPreviewAssets = await Promise.all(
-    Object.values(ACTION_LAB_PREVIEW_ACTIONS).map(
-      async (preview) =>
-        [
-          preview.id,
-          {
-            base: await Assets.load<Texture>(preview.baseSheetUrl),
-            animation: await Assets.load<Texture>(preview.animationSheetUrl),
-          },
-        ] as const,
-    ),
+    Object.values(ACTION_LAB_PREVIEW_ACTIONS).map(async (preview) => {
+      const base = await Assets.load<Texture>(preview.baseSheetUrl);
+      const animation = await Assets.load<Texture>(preview.animationSheetUrl);
+      base.source.scaleMode = "nearest";
+      animation.source.scaleMode = "nearest";
+      return [preview.id, { base, animation }] as const;
+    }),
   );
   const previewAssets = new Map(loadedPreviewAssets);
 

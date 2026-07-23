@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { actorCatalog } from "@content/actor-catalog";
 import { enemyActionAnimationAssets } from "@content/enemies/enemy-action-animation-assets";
+import { enemyDashKilledAnimationAssets } from "@content/enemies/enemy-dash-killed-animation-assets";
+import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animation-assets";
 
 describe("canonical actor content", () => {
   it("contains the complete shipped inventory", () => {
@@ -83,5 +85,24 @@ describe("canonical actor content", () => {
       prepare: { id: "enemy.charge.prepare", loop: true },
       execute: { id: "enemy.charge.execute", loop: false },
     });
+  });
+
+  it("registers approved Dash-killed and drowning animations for every enemy profile", () => {
+    const profiles = ["enemy.thrust", "enemy.slash", "enemy.ranged", "enemy.charge", "enemy.bomb"];
+
+    expect(Object.keys(enemyDashKilledAnimationAssets)).toEqual(profiles);
+    expect(Object.keys(enemyWaterAnimationAssets)).toEqual(profiles);
+    for (const profile of profiles) {
+      expect(enemyDashKilledAnimationAssets[profile]).toMatchObject({
+        id: `${profile}.dash_killed`,
+        loop: false,
+        frameDurationsMs: expect.arrayContaining([70]),
+      });
+      expect(enemyWaterAnimationAssets[profile]).toMatchObject({
+        id: `${profile}.drowning`,
+        loop: false,
+        frameDurationsMs: expect.any(Array),
+      });
+    }
   });
 });

@@ -5,18 +5,19 @@
     "thrust_enemy": {
       "family": "kappa",
       "source": "src/content/enemies/assets/kappa-green-sprite-sheet.png",
-      "effects": { "entered_water": "kappa_drown" }
+      "effects": { "entered_water": "kappa_drown", "dash_killed": "dash_killed" }
     },
     "slash_enemy": {
       "family": "kappa",
       "source": "src/content/enemies/assets/kappa-purple-sprite-sheet.png",
-      "effects": { "entered_water": "kappa_drown" }
+      "effects": { "entered_water": "kappa_drown", "dash_killed": "dash_killed" }
     },
     "charge_enemy": {
       "family": "skull",
       "source": "src/content/enemies/assets/skull-sprite-sheet.png",
       "effects": {
         "entered_water": "skull_extinguish",
+        "dash_killed": "dash_killed",
         "charge_prepare": "skull_charge_prepare",
         "charge_execute": "skull_charge_execute"
       }
@@ -26,6 +27,7 @@
       "source": "src/content/enemies/assets/lantern-red-sprite-sheet.png",
       "effects": {
         "entered_water": "lantern_douse",
+        "dash_killed": "dash_killed",
         "self_destruct_prepare": "lantern_self_destruct_prepare",
         "self_destruct_execute": "lantern_self_destruct_execute"
       }
@@ -33,7 +35,11 @@
     "ranged_enemy": {
       "family": "eye",
       "source": "src/content/enemies/assets/eye-sprite-sheet.png",
-      "effects": { "entered_water": "eye_drown", "split": "eye_split" }
+      "effects": {
+        "entered_water": "eye_drown",
+        "dash_killed": "dash_killed",
+        "split": "eye_split"
+      }
     }
   }
 }

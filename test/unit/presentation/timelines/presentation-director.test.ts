@@ -193,6 +193,32 @@ describe("PresentationDirector combat feedback", () => {
     expect(view.destroy).toHaveBeenCalledOnce();
   });
 
+  it("plays a Dash-killed terminal sheet and retains its ghost until playback completes", async () => {
+    const { renderer, view } = createRenderer();
+    const presentation = {
+      playDashKilled: vi.fn(() => gsap.timeline().to({}, { duration: 0.01 })),
+      stopBlink: vi.fn(),
+    };
+    vi.mocked(renderer.getEnemyPresentation).mockReturnValue(presentation as never);
+    const director = new PresentationDirector(renderer);
+    const events: CombatEvent[] = [
+      {
+        type: "enemy_died",
+        enemyId: "enemy",
+        attackerId: "player",
+        cell: { x: 5, y: 6 },
+        cause: "dash",
+      },
+    ];
+
+    director.captureTerminalViews(events);
+    await director.play(events);
+
+    expect(presentation.playDashKilled).toHaveBeenCalledOnce();
+    expect(view.destroy).toHaveBeenCalledOnce();
+    expect(director.isIdle).toBe(true);
+  });
+
   it("cancels stale terminal presentation when the generation changes", async () => {
     const { renderer, view } = createRenderer();
     const director = new PresentationDirector(renderer);

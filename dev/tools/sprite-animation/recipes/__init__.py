@@ -1,3 +1,4 @@
+from .dash_killed import build_frame as build_dash_killed_frame
 from .eye_split import build_frame as build_eye_split_frame
 from .eye_drown import build_frame as build_eye_drown_frame
 from .kappa_drown import build_frame as build_kappa_drown_frame
@@ -9,6 +10,7 @@ from .skull_charge_prepare import build_frame as build_skull_charge_prepare_fram
 from .skull_extinguish import build_frame as build_skull_extinguish_frame
 
 RECIPES = {
+    "dash_killed": build_dash_killed_frame,
     "eye_split": build_eye_split_frame,
     "eye_drown": build_eye_drown_frame,
     "kappa_drown": build_kappa_drown_frame,

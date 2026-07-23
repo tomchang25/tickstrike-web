@@ -1,6 +1,8 @@
 import sheetUrl from "../assets/kappa-green-sprite-sheet.png";
 import waterSheetUrl from "../assets/thrust_enemy-entered_water-4dir-x8.png";
 import waterMetadata from "../assets/thrust_enemy-entered_water-4dir-x8.animation.json";
+import dashKilledSheetUrl from "../assets/thrust_enemy-dash_killed-4dir-x8.png";
+import dashKilledMetadata from "../assets/thrust_enemy-dash_killed-4dir-x8.animation.json";
 import { defineEnemyFeature } from "./enemy-feature";
 
 export const thrustEnemyFeature = defineEnemyFeature({
@@ -39,7 +41,17 @@ export const thrustEnemyFeature = defineEnemyFeature({
     palette: "green",
   },
   waterAnimation: {
+    id: "enemy.thrust.drowning",
+    label: "Thrust Drowning",
     sheetUrl: waterSheetUrl,
     frameDurationsMs: waterMetadata.timing.frame_durations_ms,
+    loop: waterMetadata.timing.loop,
+  },
+  dashKilledAnimation: {
+    id: "enemy.thrust.dash_killed",
+    label: "Thrust Dash-Killed",
+    sheetUrl: dashKilledSheetUrl,
+    frameDurationsMs: dashKilledMetadata.timing.frame_durations_ms,
+    loop: dashKilledMetadata.timing.loop,
   },
 });

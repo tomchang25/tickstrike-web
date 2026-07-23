@@ -5,7 +5,7 @@ Acceptance-target authority: [Port 13 Reference Parity Matrix](port_13_reference
 
 ## Goal
 
-Own every entity-attached animation surface of Port 13: the uniform drop shadow (P2), the ranged rescale and redraw (L2), the player attack/weapon and dash states (P5), the Bomb and Charge prepare/execute body animations (P6), and the per-role Mobility-kill body-split terminals (L3, moved here from 13.4). The boundary with child 13.4 is entity versus world: animation on an entity's own body belongs here; effects over telegraph cells, movement paths, or the board belong to 13.4.
+Own every entity-attached animation surface of Port 13: the uniform drop shadow (P2), the ranged rescale and redraw (L2), the player attack/weapon and dash states (P5), the Bomb and Charge prepare/execute body animations (P6), and the per-role Dash-kill body-split terminals (L3, moved here from 13.4). The boundary with child 13.4 is entity versus world: animation on an entity's own body belongs here; effects over telegraph cells, movement paths, or the board belong to 13.4.
 
 ## Requirements
 
@@ -17,7 +17,7 @@ Own every entity-attached animation surface of Port 13: the uniform drop shadow 
 6. The player's attack presents the reference's character attack animation together with a synchronized weapon slash animated sprite, reopening the earlier preserve-as-is decision by product choice (P5).
 7. Dash prepare (active while the player aims in the alternate input mode) and dash execute each present their own authored player state built on a sword-draw concept — a held, ready-to-draw stance for prepare and the draw-cut for execute — with the weapon possibly authored as a separate synchronized sheet like the attack weapon. This is new content above the reference, which has no dash-specific sprites.
 8. Bomb presents an authored looping self-destruct-prepare animation and a detonation-execute body animation; Charge presents an authored looping charge-prepare animation and a charge-execute body animation (P6). These replace the plain squash/pop poses for those states on those two roles only; the shared action-feedback tweens stay untouched everywhere else.
-9. Every enemy role presents a per-direction Mobility-kill body-split terminal animation through the existing terminal lifecycle (L3), and the semantic event stream gains the minimal death-cause distinction presentation needs, because presentation must never infer a Mobility kill from damage values, artifact state, or timing.
+9. Every enemy role presents a per-direction Dash-kill body-split terminal animation through the existing terminal lifecycle (L3), and the semantic event stream gains the minimal death-cause distinction presentation needs, because presentation must never infer a Dash kill from damage values, artifact state, or timing.
 10. The shipped knockback-into-water drowning animation is confirmed present and unchanged for every role (L4); no new drowning work.
 11. All preserve rows of the 13.3 matrix section stay intact: Thrust/Slash/Charge/Bomb identity, directional facing, the remaining action-feedback poses, and enemy status bars.
 
@@ -31,19 +31,19 @@ Animated states: children 13.3c and 13.3d share one authored frame-playback time
 
 Dash prepare is driven by the input-side aim state that already drives the aim preview, not by any new gameplay state; dash execute is driven by the accepted dash action. Prepare loops on Bomb and Charge are driven by the telegraphing activity already present in the snapshot; their execute animations are driven by the existing commit/detonation events. None of these change command acceptance, damage, occupancy, or timing.
 
-The body-split terminals reuse each role's base sheet — for the ranged role the redrawn sheet from 13.3b, which must therefore land first — authored as recipes in the offline pipeline and routed through the existing terminal animation lifecycle. Because the live death event carries no cause, 13.3e also introduces the smallest semantic death-cause distinction; that is a core event-contract change, so it changes the recorded event stream deliberately (goldens regenerate with line-by-line review) and needs the stricter review tier the project reserves for event contracts, not a content-only pass.
+The Dash-kill body-split terminals reuse each role's base sheet — for the ranged role the redrawn sheet from 13.3b, which must therefore land first — authored as recipes in the offline pipeline and routed through the existing terminal animation lifecycle. Because the live death event carries no cause, 13.3e also introduces the smallest semantic distinction that identifies a Dash kill while every non-Dash death keeps its current terminal treatment; that is a core event-contract change, so it changes the recorded event stream deliberately (goldens regenerate with line-by-line review) and needs the stricter review tier the project reserves for event contracts, not a content-only pass.
 
 Two human approval gates recur across the children and cannot be self-approved by an implementation agent: every redrawn or newly authored base sheet before it replaces or enters the runtime assets, and every regenerated derived sheet before its assets are swapped.
 
 ### Child decomposition
 
-| Child | Focus                                                                                | Current document form                                                                                            |
-| ----- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| 13.3a | Shared entity drop shadow                                                            | Shipped — port_13_3a_entity_drop_shadow.implementation_spec.md                                                   |
-| 13.3b | Ranged base-sheet redraw and shared-scale alignment                                  | Shipped — port_13_3b_ranged_redraw_and_rescale.implementation_spec.md                                            |
-| 13.3c | Player attack + weapon slash animation and dash prepare/execute states               | Shipped — delivered through the action-presentation catalog and dev Action Lab; no implementation spec           |
-| 13.3d | Bomb and Charge prepare loops and execute body animations                            | Shipped — delivered through feature-owned action animation assets and the dev Action Lab; no implementation spec |
-| 13.3e | Mobility-kill body-split terminals, death-cause semantics, and drowning confirmation | Plan child; spec when next to implement — requires 13.3b                                                         |
+| Child | Focus                                                                            | Current document form                                                                                            |
+| ----- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 13.3a | Shared entity drop shadow                                                        | Shipped — port_13_3a_entity_drop_shadow.implementation_spec.md                                                   |
+| 13.3b | Ranged base-sheet redraw and shared-scale alignment                              | Shipped — port_13_3b_ranged_redraw_and_rescale.implementation_spec.md                                            |
+| 13.3c | Player attack + weapon slash animation and dash prepare/execute states           | Shipped — delivered through the action-presentation catalog and dev Action Lab; no implementation spec           |
+| 13.3d | Bomb and Charge prepare loops and execute body animations                        | Shipped — delivered through feature-owned action animation assets and the dev Action Lab; no implementation spec |
+| 13.3e | Dash-kill body-split terminals, death-cause semantics, and drowning confirmation | Shipped — port_13_3e_dash_kill_terminals.implementation_spec.md                                                  |
 
 Recommended landing order is 13.3a, 13.3b, 13.3c, 13.3d, then 13.3e. Hard constraints: 13.3e requires the redrawn ranged base sheet from 13.3b; 13.3c and 13.3d share the new frame-playback capability, so whichever lands first builds it and the other must reuse it rather than fork it.
 
@@ -55,6 +55,7 @@ Recommended landing order is 13.3a, 13.3b, 13.3c, 13.3d, then 13.3e. Hard constr
 4. No palette system or fixed-palette variant changes; redraws keep their existing palette identities.
 5. No Mode or Mode Boss presentation; that content stays omitted.
 6. No Chain Dash lightning or free-Dash aura content; those remain deferred with their gameplay route (L5).
+7. No Smash-kill terminal animation; that future presentation is tracked in `TODO.md` and does not land in 13.3e.
 
 ## Acceptance Criteria
 
@@ -63,7 +64,7 @@ Recommended landing order is 13.3a, 13.3b, 13.3c, 13.3d, then 13.3e. Hard constr
 3. Every redrawn base sheet, newly authored sheet, and regenerated derived sheet received explicit human visual approval before shipping.
 4. Player attacks show the character attack animation with a synchronized weapon slash; aiming in the alternate mode shows the sword-draw prepare stance; an executed dash shows its draw-cut state.
 5. Bomb visibly loops its self-destruct windup and plays a detonation body animation; Charge visibly loops its charge windup and plays an execute body animation; both remain distinguishable from their idle and move states.
-6. Every enemy role killed by player Mobility plays its per-direction body-split terminal animation, selected from explicit death-cause semantics rather than presentation heuristics, and terminal cleanup leaves no pending timeline, callback, or orphan visual.
+6. Every enemy role killed by player Dash plays its per-direction body-split terminal animation, selected from explicit death-cause semantics rather than presentation heuristics, while non-Dash deaths keep their current terminal treatment and terminal cleanup leaves no pending timeline, callback, or orphan visual.
 7. Drowning remains the shipped per-direction eight-frame animation for every role.
 8. Thrust, Slash, Charge, and Bomb identity, facings, remaining action poses, and status bars are unchanged.
 9. The same deterministic scenario produces the same accepted commands, damage, occupancy, and timing; the recorded event stream changes only by the deliberately added death-cause data, regenerated in the goldens with review.

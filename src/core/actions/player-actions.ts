@@ -52,6 +52,7 @@ function appendEnemyHitEvents(
   context: PlayerActionContext,
   events: CombatEvent[],
   preview: MobilityHitPreview | { readonly hit: BasicHitResult | DirectionalHitResult },
+  deathCause?: "dash",
 ): boolean {
   const targetBefore = context.requireEntity(preview.hit.targetId);
   const reservationBefore = context.board.getReservation(preview.hit.targetId);
@@ -120,6 +121,7 @@ function appendEnemyHitEvents(
       enemyId: target.id,
       attackerId: hit.attackerId,
       cell: target.cell,
+      ...(deathCause ? { cause: deathCause } : {}),
     });
   }
   return true;
@@ -325,7 +327,7 @@ function resolveDash(
   context.preparePlayerAction(actor.id);
   context.beginMobilityInvulnerability(actor.id);
   for (const victim of preview.victims) {
-    appendEnemyHitEvents(context, events, victim);
+    appendEnemyHitEvents(context, events, victim, "dash");
   }
   context.moveEntity(actor.id, landing);
   if (actor.mobility) {

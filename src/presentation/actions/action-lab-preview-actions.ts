@@ -1,8 +1,12 @@
 import {
   enemyActionAnimationAssets,
+  enemyDashKilledAnimationAssets,
   enemyPresentationProfiles,
   enemySpriteSheetUrls,
+  enemyWaterAnimationAssets,
   type EnemyActionAnimationAsset,
+  type EnemyTerminalAnimationAsset,
+  type EnemyWaterAnimationAsset,
 } from "@content/enemies/features";
 import type { ActionDirectionalOffset, ActionPresentation } from "./action-presentation-catalog";
 
@@ -21,10 +25,12 @@ const ZERO_OFFSET: ActionDirectionalOffset = {
   right: { x: 0, y: 0 },
 };
 
+type EnemyPreviewAnimationAsset = EnemyActionAnimationAsset | EnemyTerminalAnimationAsset | EnemyWaterAnimationAsset;
+
 function createPreviewAction(
   profileId: string,
   baseSheetUrl: string,
-  animation: EnemyActionAnimationAsset,
+  animation: EnemyPreviewAnimationAsset,
 ): ActionLabPreviewAction {
   return {
     id: animation.id,
@@ -44,17 +50,30 @@ function createPreviewAction(
   };
 }
 
-const previews = Object.entries(enemyActionAnimationAssets).flatMap(([profileId, animations]) => {
+function baseSheetUrlFor(profileId: string): string {
   const profile = enemyPresentationProfiles.get(profileId);
   const baseSheetUrl = profile ? enemySpriteSheetUrls[profile.sheet] : undefined;
   if (!baseSheetUrl) {
     throw new Error(`Action Lab preview is missing the base sheet for ${profileId}.`);
   }
-  return [
-    createPreviewAction(profileId, baseSheetUrl, animations.prepare),
-    createPreviewAction(profileId, baseSheetUrl, animations.execute),
-  ];
-});
+  return baseSheetUrl;
+}
+
+const previews = [
+  ...Object.entries(enemyActionAnimationAssets).flatMap(([profileId, animations]) => {
+    const baseSheetUrl = baseSheetUrlFor(profileId);
+    return [
+      createPreviewAction(profileId, baseSheetUrl, animations.prepare),
+      createPreviewAction(profileId, baseSheetUrl, animations.execute),
+    ];
+  }),
+  ...Object.entries(enemyDashKilledAnimationAssets).map(([profileId, animation]) =>
+    createPreviewAction(profileId, baseSheetUrlFor(profileId), animation),
+  ),
+  ...Object.entries(enemyWaterAnimationAssets).map(([profileId, animation]) =>
+    createPreviewAction(profileId, baseSheetUrlFor(profileId), animation),
+  ),
+];
 
 export const ACTION_LAB_PREVIEW_ACTIONS: Readonly<Record<string, ActionLabPreviewAction>> = Object.fromEntries(
   previews.map((preview) => [preview.id, preview]),

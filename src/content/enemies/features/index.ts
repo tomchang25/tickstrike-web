@@ -3,6 +3,7 @@ import type {
   EnemyActionAnimationAssets,
   EnemyFeature,
   EnemyPresentationProfile,
+  EnemyTerminalAnimationAsset,
   EnemyWaterAnimationAsset,
 } from "./enemy-feature";
 import { thrustEnemyFeature } from "./thrust";
@@ -16,6 +17,7 @@ export type {
   EnemyActionAnimationAssets,
   EnemyFeature,
   EnemyPresentationProfile,
+  EnemyTerminalAnimationAsset,
   EnemyWaterAnimationAsset,
 } from "./enemy-feature";
 export { defineEnemyFeature } from "./enemy-feature";
@@ -54,5 +56,11 @@ export const enemyWaterAnimationAssets: Readonly<Record<string, EnemyWaterAnimat
 export const enemyActionAnimationAssets: Readonly<Record<string, EnemyActionAnimationAssets>> = Object.fromEntries(
   enemyFeatures.flatMap((feature) =>
     feature.actionAnimations ? [[feature.presentation.id, feature.actionAnimations]] : [],
+  ),
+);
+
+export const enemyDashKilledAnimationAssets: Readonly<Record<string, EnemyTerminalAnimationAsset>> = Object.fromEntries(
+  enemyFeatures.flatMap((feature) =>
+    feature.dashKilledAnimation ? [[feature.presentation.id, feature.dashKilledAnimation]] : [],
   ),
 );

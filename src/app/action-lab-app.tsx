@@ -299,9 +299,9 @@ export function ActionLabApp() {
         <p className="eyebrow">Action / sequence lab</p>
         <h1>Action presentation</h1>
         <p>
-          Dev-only. Runtime catalog actions remain editable and drive the real player sprite. Approved Bomb and Charge
-          sheets appear as separate preview-only Actions and drive the real enemy presentation rig without entering{" "}
-          <code>action-presentation-catalog.json</code>.
+          Dev-only. Runtime catalog actions remain editable and drive the real player sprite. Approved enemy action,
+          Dash-killed, and drowning sheets appear as separate preview-only Actions and drive the real enemy presentation
+          rig without entering <code>action-presentation-catalog.json</code>.
         </p>
       </header>
 

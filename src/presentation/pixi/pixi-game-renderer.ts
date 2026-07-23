@@ -14,6 +14,7 @@ import {
 } from "./character-sprites";
 import {
   createEnemyPresentation,
+  type EnemyActionAnimation,
   getEnemyPresentationProfile,
   type EnemyActionAnimations,
   type EnemyWaterAnimation,
@@ -21,6 +22,7 @@ import {
 } from "./enemy-sprites";
 import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animation-assets";
 import { enemyActionAnimationAssets } from "@content/enemies/enemy-action-animation-assets";
+import { enemyDashKilledAnimationAssets } from "@content/enemies/enemy-dash-killed-animation-assets";
 import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
 import ninjaAttackSheetUrl from "@content/characters/assets/ninja/attack-sprite-sheet.png";
 import ninjaBattoBaseUrl from "@content/characters/assets/ninja/batto/ninja-batto-base.png";
@@ -227,6 +229,7 @@ export class PixiGameRenderer {
   private enemySpriteSheets: Readonly<Record<string, Texture>> = {};
   private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
   private enemyActionAnimations: Readonly<Record<string, EnemyActionAnimations>> = {};
+  private enemyDashKilledAnimations: Readonly<Record<string, EnemyActionAnimation>> = {};
 
   get transientCount(): number {
     return this.transientEffects.size;
@@ -288,6 +291,17 @@ export class PixiGameRenderer {
       ]),
     );
     this.enemyActionAnimations = Object.fromEntries(loadedActionAnimations);
+    const loadedDashKilledAnimations = await Promise.all(
+      Object.entries(enemyDashKilledAnimationAssets).map(async ([profileId, asset]) => [
+        profileId,
+        {
+          sheet: await Assets.load<Texture>(asset.sheetUrl),
+          frameDurationsMs: asset.frameDurationsMs,
+          loop: asset.loop,
+        },
+      ]),
+    );
+    this.enemyDashKilledAnimations = Object.fromEntries(loadedDashKilledAnimations);
 
     const [wallTerrain, waterTile] = await Promise.all([
       Assets.load<Texture>(wallTerrainUrl),
@@ -751,10 +765,16 @@ export class PixiGameRenderer {
     const enemySpriteSheet = enemyProfile ? this.enemySpriteSheets[enemyProfile.sheet] : undefined;
     const waterAnimation = enemyProfile ? this.enemyWaterAnimations[enemyProfile.id] : undefined;
     const actionAnimations = enemyProfile ? this.enemyActionAnimations[enemyProfile.id] : undefined;
+    const dashKilledAnimation = enemyProfile ? this.enemyDashKilledAnimations[enemyProfile.id] : undefined;
     const enemyPresentation =
       enemySpriteSheet && enemyProfile
-        ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, waterAnimation, actionAnimations, () =>
-            this.refreshEnemyPresentationDataset(),
+        ? createEnemyPresentation(
+            enemyProfile.id,
+            enemySpriteSheet,
+            waterAnimation,
+            actionAnimations,
+            dashKilledAnimation,
+            () => this.refreshEnemyPresentationDataset(),
           )
         : undefined;
     const body =
