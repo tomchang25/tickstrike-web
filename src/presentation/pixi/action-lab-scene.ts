@@ -1,4 +1,4 @@
-import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from "pixi.js";
+import { Application, Assets, Container, Graphics, Rectangle, Text, Texture } from "pixi.js";
 import { gsap } from "gsap";
 import battoBaseUrl from "@content/characters/assets/ninja/batto/ninja-batto-base.png";
 import slashEndUrl from "@content/characters/assets/ninja/batto/ninja-slash-end.png";
@@ -6,24 +6,26 @@ import katanaSlashUrl from "@content/characters/assets/ninja/batto/katana-slash.
 import katanaBattoStartUrl from "@content/characters/assets/ninja/batto/katana-batto-start.png";
 import katanaBattoEndUrl from "@content/characters/assets/ninja/batto/katana-batto-end.png";
 import ninjaBodyUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
-import type {
-  ActionDirection,
-  ActionPresentation,
-  ActionStateKey,
-  ActionStatePresentation,
+import {
+  setRuntimeActionPresentationCatalog,
+  type ActionDirection,
+  type ActionPresentation,
+  type ActionStateKey,
 } from "@presentation/actions/action-presentation-catalog";
-import { createEntityShadow } from "./entity-shadow";
-import { resolveEntityPresentationProfile } from "./entity-presentation-profiles";
+import {
+  createPlayerSprite,
+  setNinjaBattoSheets,
+  setNinjaSpriteSheet,
+  type PlayerSprite,
+  type PlayerSpritePose,
+} from "./character-sprites";
 
-// Dev-only Action/Sequence Lab scene (/debug/action). Two modes:
-//   - Play: runs the data-described state machine (prepare -> execute -> end) either auto-looping
-//     all four facings or aimed with the pointer.
-//   - Inspect: freezes one (state, direction) pose static so its body/weapon offset can be
-//     calibrated without any tween running.
-// The weapon layer follows the reference `TickPlayerVisualPresenter` model: a DIRECTIONAL sprite
-// (column = cardinal facing) stacked above the body at body scale, positioned by tunable per-
-// direction offset data — never rotated, never placed on the target cell. Asset binding (sheet key
-// -> texture + frame size) lives here; every position/timing number comes from the action catalog.
+// Dev-only Action/Sequence Lab scene (/debug/action). It mounts the REAL runtime `PlayerSprite`
+// and pushes the draft catalog into the runtime catalog the sprite reads, so what the lab shows is
+// exactly what the game renders — there is no second rendering implementation to keep in sync (see
+// dev/standards/dev_authoring_catalog.md). The lab only owns board chrome and the state sequencing.
+//   - Play: runs the state machine (prepare -> execute -> end), auto-looping or aimed with the pointer.
+//   - Inspect: freezes one (state, direction) pose so its body/weapon offset can be calibrated.
 
 const CELL = 64;
 const BOARD_COLS = 5;
@@ -32,8 +34,8 @@ const BOARD_SCALE = 2;
 const LABEL_BAND = 44;
 const PREVIEW_WIDTH = BOARD_COLS * CELL * BOARD_SCALE;
 const PREVIEW_HEIGHT = BOARD_ROWS * CELL * BOARD_SCALE + LABEL_BAND;
+const NINJA_ACTION_ID = "ninja.batto_dash";
 
-const DIRECTION_COLUMN: Record<ActionDirection, number> = { down: 0, up: 1, left: 2, right: 3 };
 const DIRECTION_VECTOR: Record<ActionDirection, { x: number; y: number }> = {
   down: { x: 0, y: 1 },
   up: { x: 0, y: -1 },
@@ -41,15 +43,11 @@ const DIRECTION_VECTOR: Record<ActionDirection, { x: number; y: number }> = {
   right: { x: 1, y: 0 },
 };
 const AUTO_SEQUENCE: readonly ActionDirection[] = ["right", "down", "left", "up"];
-
-/** Sheet key -> imported texture URL and per-sheet frame size. Extend when adding new actions. */
-const SHEET_REGISTRY: Readonly<Record<string, { readonly url: string; readonly frame: number }>> = {
-  body: { url: ninjaBodyUrl, frame: 16 },
-  battoBase: { url: battoBaseUrl, frame: 16 },
-  slashEnd: { url: slashEndUrl, frame: 16 },
-  katanaSlash: { url: katanaSlashUrl, frame: 64 },
-  katanaBattoStart: { url: katanaBattoStartUrl, frame: 64 },
-  katanaBattoEnd: { url: katanaBattoEndUrl, frame: 64 },
+const POSE_FOR_STATE: Record<ActionStateKey, PlayerSpritePose> = {
+  idle: "idle",
+  prepare: "prepare",
+  execute: "dash",
+  end: "dashLand",
 };
 
 export interface ActionLabInspect {
@@ -62,7 +60,6 @@ export interface ActionLabConfig {
   readonly inspect: ActionLabInspect | null;
   readonly autoLoop: boolean;
   readonly altMode: boolean;
-  readonly showWeapon: boolean;
 }
 
 export interface ActionLabScene {
@@ -97,40 +94,25 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   app.canvas.style.imageRendering = "pixelated";
   host.appendChild(app.canvas);
 
-  const sheets = new Map<string, { source: Texture; frame: number }>();
-  await Promise.all(
-    Object.entries(SHEET_REGISTRY).map(async ([key, { url, frame }]) => {
-      const texture = await Assets.load<Texture>(url);
-      texture.source.scaleMode = "nearest";
-      sheets.set(key, { source: texture, frame });
-    }),
-  );
-
-  const frameTexture = (sheetKey: string, col: number, row: number): Texture => {
-    const sheet = sheets.get(sheetKey);
-    if (!sheet) {
-      throw new Error(`Action Lab has no sheet "${sheetKey}".`);
-    }
-    return new Texture({
-      source: sheet.source.source,
-      frame: new Rectangle(col * sheet.frame, row * sheet.frame, sheet.frame, sheet.frame),
-    });
-  };
-  const bodyTexture = (sheetKey: string, dir: ActionDirection, row: number): Texture =>
-    frameTexture(sheetKey, DIRECTION_COLUMN[dir], row);
-  const weaponTexture = (sheetKey: string, dir: ActionDirection): Texture =>
-    frameTexture(sheetKey, DIRECTION_COLUMN[dir], 0);
+  // Inject the same sheets the game renderer injects, then build the real PlayerSprite.
+  const [body, battoBase, slashEnd, katanaSlash, katanaBattoStart, katanaBattoEnd] = await Promise.all([
+    Assets.load<Texture>(ninjaBodyUrl),
+    Assets.load<Texture>(battoBaseUrl),
+    Assets.load<Texture>(slashEndUrl),
+    Assets.load<Texture>(katanaSlashUrl),
+    Assets.load<Texture>(katanaBattoStartUrl),
+    Assets.load<Texture>(katanaBattoEndUrl),
+  ]);
+  setNinjaSpriteSheet(body);
+  setNinjaBattoSheets({ battoBase, slashEnd, katanaSlash, katanaBattoStart, katanaBattoEnd });
 
   let config = initial;
-  const profile = resolveEntityPresentationProfile(config.action.profileId);
-  const bodyScale = profile.bodyScale;
-  const NINJA_FRAME = SHEET_REGISTRY.body?.frame ?? 16;
 
   // --- Static board -------------------------------------------------------------------------
-  const board = new Container();
-  board.position.set(0, LABEL_BAND);
-  board.scale.set(BOARD_SCALE);
-  app.stage.addChild(board);
+  const boardLayer = new Container();
+  boardLayer.position.set(0, LABEL_BAND);
+  boardLayer.scale.set(BOARD_SCALE);
+  app.stage.addChild(boardLayer);
 
   const grid = new Graphics();
   for (let col = 0; col < BOARD_COLS; col += 1) {
@@ -145,28 +127,22 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     grid.moveTo(0, row * CELL).lineTo(BOARD_COLS * CELL, row * CELL);
   }
   grid.stroke({ color: 0x2b3346, width: 1, alpha: 0.9 });
-  board.addChild(grid);
+  boardLayer.addChild(grid);
 
   const cursorHighlight = new Graphics()
     .rect(1, 1, CELL - 2, CELL - 2)
     .stroke({ color: 0xffd166, width: 2, alpha: 0.9 });
-  board.addChild(cursorHighlight);
+  boardLayer.addChild(cursorHighlight);
 
+  // Static layer (does not move with the sprite) that holds the dash afterimage trail behind it.
   const ghostLayer = new Container();
-  board.addChild(ghostLayer);
+  boardLayer.addChild(ghostLayer);
 
-  // --- Actor rig (shadow + body + directional weapon) ---------------------------------------
-  const rig = new Container();
-  const shadow = createEntityShadow(profile.shadow);
-  const body = new Sprite(bodyTexture(config.action.idle.bodySheet, "right", config.action.idle.bodyRow));
-  body.anchor.set(profile.bodyFoot.x / NINJA_FRAME, profile.bodyFoot.y / NINJA_FRAME);
-  body.scale.set(bodyScale);
-  const weapon = new Sprite();
-  weapon.anchor.set(0.5, 0.5);
-  weapon.scale.set(bodyScale);
-  weapon.visible = false;
-  rig.addChild(shadow, body, weapon);
-  board.addChild(rig);
+  const player: PlayerSprite | undefined = createPlayerSprite("character.ninja");
+  if (!player) {
+    throw new Error("Action Lab could not create the Ninja player sprite.");
+  }
+  boardLayer.addChild(player.root);
 
   const label = new Text({
     text: "",
@@ -181,55 +157,22 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   let cursorCell: Cell = { col: 3, row: 2 };
   let facing: ActionDirection = "right";
   let phase: ActionStateKey = "idle";
-  let breathingTween: gsap.core.Tween | undefined;
   let autoCall: gsap.core.Tween | undefined;
-  let ghostTimer = 0;
 
   const executeDuration = (): number => config.action.execute.motion?.durationSec ?? 0.16;
+
   const placeRigAtCell = (cell: Cell): void => {
     const { x, y } = cellCenter(cell);
-    rig.position.set(x, y + profile.groundY);
+    player.root.position.set(x, y);
   };
 
-  const applyBody = (state: ActionStatePresentation, dir: ActionDirection): void => {
-    body.texture = bodyTexture(state.bodySheet, dir, state.bodyRow);
-    const offset = state.bodyOffset[dir];
-    body.position.set(offset.x, offset.y);
-  };
-
-  const applyWeapon = (state: ActionStatePresentation, dir: ActionDirection): void => {
-    if (!state.weapon || !config.showWeapon) {
-      weapon.visible = false;
-      return;
-    }
-    weapon.texture = weaponTexture(state.weapon.sheet, dir);
-    const offset = state.weapon.offset[dir];
-    weapon.position.set(offset.x, offset.y);
-    weapon.visible = true;
-    weapon.alpha = 1;
-  };
-
-  const stopBreathing = (): void => {
-    breathingTween?.kill();
-    breathingTween = undefined;
-    body.scale.set(bodyScale);
-  };
-
-  const startBreathing = (): void => {
-    stopBreathing();
-    const breathing = config.action.prepare.breathing;
-    body.scale.set(bodyScale);
-    if (!breathing) {
-      return;
-    }
-    breathingTween = gsap.to(body.scale, {
-      x: bodyScale * (1 + breathing.amplitudeX),
-      y: bodyScale * (1 + breathing.amplitudeY),
-      duration: Math.max(0.05, breathing.periodSec / 2),
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1,
-    });
+  // The single rendering path: push the draft into the runtime catalog, then drive the real sprite.
+  const applyState = (stateKey: ActionStateKey, direction: ActionDirection): void => {
+    phase = stateKey;
+    setRuntimeActionPresentationCatalog({ schemaVersion: 1, actions: { [NINJA_ACTION_ID]: config.action } });
+    player.setFacing(DIRECTION_VECTOR[direction]);
+    player.setPose(POSE_FOR_STATE[stateKey]);
+    showLabel();
   };
 
   const showLabel = (): void => {
@@ -250,57 +193,6 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     facing = cardinalFacing(actorCell, cursorCell);
   };
 
-  const goIdle = (): void => {
-    stopBreathing();
-    phase = "idle";
-    applyBody(config.action.idle, facing);
-    weapon.visible = false;
-    showLabel();
-  };
-
-  const goPrepare = (): void => {
-    phase = "prepare";
-    applyBody(config.action.prepare, facing);
-    applyWeapon(config.action.prepare, facing);
-    startBreathing();
-    showLabel();
-  };
-
-  const goEnd = (): void => {
-    phase = "end";
-    applyBody(config.action.end, facing);
-    applyWeapon(config.action.end, facing);
-    showLabel();
-  };
-
-  const spawnGhost = (): void => {
-    const afterimage = config.action.execute.afterimage;
-    if (!afterimage?.enabled) {
-      return;
-    }
-    const bodyGhost = new Sprite(body.texture);
-    bodyGhost.anchor.set(body.anchor.x, body.anchor.y);
-    bodyGhost.scale.set(bodyScale);
-    bodyGhost.position.set(rig.position.x + body.position.x, rig.position.y + body.position.y);
-    bodyGhost.tint = afterimage.tint;
-    bodyGhost.alpha = 0.5;
-    ghostLayer.addChild(bodyGhost);
-    const fade = [bodyGhost];
-    if (weapon.visible) {
-      const weaponGhost = new Sprite(weapon.texture);
-      weaponGhost.anchor.set(0.5, 0.5);
-      weaponGhost.scale.set(bodyScale);
-      weaponGhost.position.set(rig.position.x + weapon.position.x, rig.position.y + weapon.position.y);
-      weaponGhost.tint = afterimage.tint;
-      weaponGhost.alpha = 0.55;
-      ghostLayer.addChild(weaponGhost);
-      fade.push(weaponGhost);
-    }
-    for (const ghost of fade) {
-      gsap.to(ghost, { alpha: 0, duration: afterimage.fadeSec, ease: "power1.out", onComplete: () => ghost.destroy() });
-    }
-  };
-
   const triggerExecute = (target: Cell): void => {
     if (phase === "execute") {
       return;
@@ -308,36 +200,26 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     if (target.col === actorCell.col && target.row === actorCell.row) {
       return;
     }
-    stopBreathing();
     facing = cardinalFacing(actorCell, target);
-    phase = "execute";
-    const state = config.action.execute;
-    applyBody(state, facing);
-    body.scale.set(bodyScale);
-    applyWeapon(state, facing);
-    showLabel();
+    applyState("execute", facing);
 
     const destination = cellCenter(target);
-    const afterimage = state.afterimage;
-    ghostTimer = 0;
-    gsap.to(rig.position, {
+    let ghostAccum = 0;
+    gsap.to(player.root.position, {
       x: destination.x,
-      y: destination.y + profile.groundY,
+      y: destination.y,
       duration: executeDuration(),
-      ease: state.motion?.ease ?? "power2.in",
+      ease: config.action.execute.motion?.ease ?? "power2.in",
       onUpdate: () => {
-        if (!afterimage?.enabled) {
-          return;
-        }
-        ghostTimer += app.ticker.deltaMS;
-        if (ghostTimer >= afterimage.intervalMs) {
-          ghostTimer = 0;
-          spawnGhost();
+        ghostAccum += app.ticker.deltaMS;
+        if (ghostAccum >= player.afterimageIntervalMs) {
+          ghostAccum = 0;
+          player.spawnAfterimage(ghostLayer, player.root.position);
         }
       },
       onComplete: () => {
         actorCell = { ...target };
-        goEnd();
+        applyState("end", facing);
       },
     });
   };
@@ -356,7 +238,7 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     const target: Cell = { col: centerCell.col + vector.x * 2, row: centerCell.row + vector.y * 2 };
     facing = direction;
     setCursor(target);
-    goPrepare();
+    applyState("prepare", facing);
     autoCall = gsap.delayedCall(1.15, () => {
       if (!config.autoLoop) {
         return;
@@ -369,30 +251,24 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
   const stopAuto = (): void => {
     autoCall?.kill();
     autoCall = undefined;
+    gsap.killTweensOf(player.root.position);
   };
 
-  // --- Inspect (freeze one state + direction static) ----------------------------------------
+  // --- Inspect (freeze one state + direction) -----------------------------------------------
   const renderInspect = (inspect: ActionLabInspect): void => {
     stopAuto();
-    stopBreathing();
-    gsap.killTweensOf(rig.position);
     cursorHighlight.visible = false;
     actorCell = { ...centerCell };
     placeRigAtCell(actorCell);
     facing = inspect.direction;
-    phase = inspect.stateKey;
-    const state = config.action[inspect.stateKey];
-    body.scale.set(bodyScale);
-    applyBody(state, inspect.direction);
-    applyWeapon(state, inspect.direction);
-    showLabel();
+    applyState(inspect.stateKey, inspect.direction);
   };
 
   // --- Pointer interaction (play mode only) -------------------------------------------------
-  board.eventMode = "static";
-  board.hitArea = new Rectangle(0, 0, BOARD_COLS * CELL, BOARD_ROWS * CELL);
+  boardLayer.eventMode = "static";
+  boardLayer.hitArea = new Rectangle(0, 0, BOARD_COLS * CELL, BOARD_ROWS * CELL);
   const cellFromEvent = (globalX: number, globalY: number): Cell | undefined => {
-    const local = board.toLocal({ x: globalX, y: globalY });
+    const local = boardLayer.toLocal({ x: globalX, y: globalY });
     const col = Math.floor(local.x / CELL);
     const row = Math.floor(local.y / CELL);
     if (col < 0 || row < 0 || col >= BOARD_COLS || row >= BOARD_ROWS) {
@@ -400,7 +276,7 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     }
     return { col, row };
   };
-  board.on("pointermove", (event) => {
+  boardLayer.on("pointermove", (event) => {
     if (config.inspect || config.autoLoop) {
       return;
     }
@@ -408,22 +284,15 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     if (!cell) {
       return;
     }
-    const changed = cell.col !== cursorCell.col || cell.row !== cursorCell.row;
     setCursor(cell);
-    setFacingFromCursor();
-    if (phase === "end" && changed) {
-      goIdle();
-      if (config.altMode) {
-        goPrepare();
-      }
-    } else if (phase === "prepare") {
-      goPrepare();
-    } else if (phase === "idle") {
-      applyBody(config.action.idle, facing);
+    // Only idle and the prepare aim stance follow the cursor; the held finishing pose stays put,
+    // mirroring the runtime — it is left only by a click (execute/idle).
+    if (phase === "idle" || phase === "prepare") {
+      setFacingFromCursor();
+      applyState(phase, facing);
     }
-    showLabel();
   });
-  board.on("pointertap", (event) => {
+  boardLayer.on("pointertap", (event) => {
     if (config.inspect || config.autoLoop) {
       return;
     }
@@ -436,7 +305,7 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
       triggerExecute(cell);
     } else {
       setFacingFromCursor();
-      goIdle();
+      applyState("idle", facing);
     }
   });
 
@@ -457,10 +326,8 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
         stopAuto();
         autoStep = 0;
         runAuto();
-      } else if (phase === "prepare") {
-        goPrepare();
-      } else if (phase === "end") {
-        goEnd();
+      } else if (phase === "prepare" || phase === "end") {
+        applyState(phase, facing);
       }
       showLabel();
       return;
@@ -471,20 +338,16 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
       stopAuto();
       actorCell = { ...centerCell };
       placeRigAtCell(actorCell);
-      goIdle();
+      applyState("idle", facing);
     }
     if (next.altMode && phase === "idle") {
-      goPrepare();
+      applyState("prepare", facing);
     } else if (!next.altMode && phase === "prepare") {
-      goIdle();
-    } else if (phase === "prepare") {
-      goPrepare();
-    } else if (phase === "end") {
-      goEnd();
+      applyState("idle", facing);
     } else {
-      goIdle();
+      // Re-render the current state so slider edits show live.
+      applyState(phase, facing);
     }
-    showLabel();
   };
 
   placeRigAtCell(actorCell);
@@ -495,15 +358,13 @@ export async function mountActionLabScene(host: HTMLElement, initial: ActionLabC
     runAuto();
     showLabel();
   } else {
-    goIdle();
+    applyState("idle", facing);
   }
 
   return {
     update,
     destroy() {
       stopAuto();
-      stopBreathing();
-      gsap.killTweensOf(rig.position);
       app.destroy(true, { children: true });
     },
   };

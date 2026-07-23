@@ -83,7 +83,6 @@ export function ActionLabApp() {
   const [inspectLayer, setInspectLayer] = useState<OffsetLayer>("weapon");
   const [autoLoop, setAutoLoop] = useState(false);
   const [altMode, setAltMode] = useState(false);
-  const [showWeapon, setShowWeapon] = useState(true);
   const [configText, setConfigText] = useState("");
   const [status, setStatus] = useState("");
 
@@ -107,7 +106,6 @@ export function ActionLabApp() {
       inspect: { stateKey: "end", direction: "down" },
       autoLoop: false,
       altMode: false,
-      showWeapon: true,
     }).then((mounted) => {
       if (cancelled) {
         mounted.destroy();
@@ -145,9 +143,8 @@ export function ActionLabApp() {
       inspect: inspect ? { stateKey: inspectState, direction: inspectDirection } : null,
       autoLoop,
       altMode,
-      showWeapon,
     });
-  }, [ready, draft, catalog, actionId, inspect, inspectState, inspectDirection, autoLoop, altMode, showWeapon]);
+  }, [ready, draft, catalog, actionId, inspect, inspectState, inspectDirection, autoLoop, altMode]);
 
   const changeAction = (nextId: string): void => {
     setActionId(nextId);
@@ -267,10 +264,6 @@ export function ActionLabApp() {
             <label>
               <input type="checkbox" checked={inspect} onChange={(event) => setInspect(event.target.checked)} /> Inspect
               (freeze)
-            </label>
-            <label>
-              <input type="checkbox" checked={showWeapon} onChange={(event) => setShowWeapon(event.target.checked)} />{" "}
-              Show weapon
             </label>
           </div>
 
