@@ -240,6 +240,44 @@ describe("PresentationDirector combat feedback", () => {
     expect(view.destroy).toHaveBeenCalledOnce();
   });
 
+  it("keeps an authored Bomb detonation instead of layering the generic death shrink", async () => {
+    const { renderer, view } = createRenderer();
+    const presentation = {
+      profileId: "enemy.bomb",
+      hasExecuteAnimation: true,
+      playAttackCommit: vi.fn(() => gsap.timeline().to({}, { duration: 0.1 })),
+      playFuseBlink: vi.fn(),
+      stopBlink: vi.fn(),
+    };
+    vi.mocked(renderer.getEnemyPresentation).mockReturnValue(presentation as never);
+    const director = new PresentationDirector(renderer);
+    const events: CombatEvent[] = [
+      {
+        type: "enemy_attack_detonated",
+        enemyId: "bomb",
+        attack: {
+          attackId: "bomb_area",
+          cells: [{ x: 2, y: 2 }],
+          damage: 50,
+          warningTicks: 0,
+          recoveryTicks: 1,
+          metadata: { selfDestruct: true },
+        },
+        target: { x: 2, y: 2 },
+      },
+      { type: "enemy_self_destructed", enemyId: "bomb", cell: { x: 2, y: 2 } },
+      { type: "enemy_died", enemyId: "bomb", attackerId: "bomb", cell: { x: 2, y: 2 } },
+    ];
+
+    director.captureTerminalViews(events);
+    await director.play(events);
+
+    expect(presentation.playAttackCommit).toHaveBeenCalledOnce();
+    expect(presentation.playFuseBlink).not.toHaveBeenCalled();
+    expect(view.scale).toEqual({ x: 1, y: 1 });
+    expect(view.destroy).toHaveBeenCalledOnce();
+  });
+
   it("ignores capture requests from a stale generation", () => {
     const { renderer } = createRenderer();
     const director = new PresentationDirector(renderer);

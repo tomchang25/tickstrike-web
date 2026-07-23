@@ -31,8 +31,35 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   const finalCellCenterX = canvasPointForCell(canvasBox, 3, 3).x;
 
   await executeLeft();
+  await expect(canvas).toHaveAttribute(
+    "data-enemy-presentations",
+    /enemy-charge:enemy\.charge:skull:idle:action:prepare:/,
+  );
   await executeLeft();
+  await page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=game-canvas]");
+    if (!canvas) {
+      throw new Error("Game canvas is unavailable.");
+    }
+    const owner = window as Window & { __chargePresentationHistory?: string[] };
+    owner.__chargePresentationHistory = [];
+    new MutationObserver(() => {
+      owner.__chargePresentationHistory?.push(canvas.getAttribute("data-enemy-presentations") ?? "");
+    }).observe(canvas, { attributes: true, attributeFilter: ["data-enemy-presentations"] });
+  });
   await executeLeft();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Boolean(
+          (window as Window & { __chargePresentationHistory?: string[] }).__chargePresentationHistory?.some((value) =>
+            value.includes("enemy-charge:enemy.charge:skull:idle:action:execute:"),
+          ),
+        ),
+      ),
+    )
+    .toBe(true);
 
   const inMotion = await page.evaluate(() => {
     const api = window.__TICKSTRIKE__;
@@ -57,6 +84,7 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   await expect(page.getByTestId("event-log")).toContainText("charge_landed");
 
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-charge:enemy\.charge:skull:idle(\||$)/);
   const settledCenterX = await page.evaluate(() => {
     const api = window.__TICKSTRIKE__;
     const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=game-canvas]");

@@ -2,6 +2,7 @@ import { Graphics, Texture } from "pixi.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createEnemyPresentation,
+  type EnemyActionAnimations,
   type EnemyWaterAnimation,
   type EnemyPresentation,
 } from "@presentation/pixi/enemy-sprites";
@@ -11,6 +12,18 @@ let presentation: EnemyPresentation | undefined;
 const WATER_ANIMATION: EnemyWaterAnimation = {
   sheet: Texture.WHITE,
   frameDurationsMs: [10, 10, 10, 10, 10, 10, 10, 10],
+};
+const ACTION_ANIMATIONS: EnemyActionAnimations = {
+  prepare: {
+    sheet: Texture.WHITE,
+    frameDurationsMs: [10, 10, 10, 10, 10, 10, 10, 10],
+    loop: true,
+  },
+  execute: {
+    sheet: Texture.WHITE,
+    frameDurationsMs: [10, 10, 10, 10, 10, 10, 10, 10],
+    loop: false,
+  },
 };
 
 beforeEach(() => {
@@ -78,6 +91,34 @@ describe("small enemy sprite profiles", () => {
     expect(presentation.body.texture.frame).toMatchObject({ x: 48, y: 0, width: 16, height: 16 });
   });
 
+  it("keeps authored prepare loops snapshot-driven and plays finite execute frames", () => {
+    presentation = createEnemyPresentation("enemy.charge", Texture.WHITE, WATER_ANIMATION, ACTION_ANIMATIONS);
+    if (!presentation) {
+      throw new Error("Charge presentation is missing.");
+    }
+
+    presentation.sync({ activity: "telegraphing", facing: { x: 1, y: 0 }, phase: "alive" });
+    expect(presentation.hasPrepareAnimation).toBe(true);
+    expect(presentation.hasExecuteAnimation).toBe(true);
+    expect(presentation.bodyAnimation).toBe("prepare");
+    expect(presentation.playPrepareAttack()).toBeUndefined();
+
+    presentation.setFacing({ x: -1, y: 0 });
+    expect(presentation.bodyAnimation).toBe("prepare");
+    expect(presentation.body.texture.frame.x).toBe(32);
+
+    const execute = presentation.playAttackCommit();
+    expect(presentation.bodyAnimation).toBe("execute");
+    execute.totalProgress(1);
+    expect(presentation.bodyAnimation).toBeUndefined();
+    expect(presentation.bodyAnimationRow).toBeUndefined();
+    expect(presentation.pose).toBe("idle");
+
+    presentation.clearAction();
+    expect(presentation.bodyAnimation).toBeUndefined();
+    expect(presentation.bodyAnimationRow).toBeUndefined();
+  });
+
   it("renders a shared shadow beneath the body and hides it for water frames", () => {
     presentation = createEnemyPresentation("enemy.thrust", Texture.WHITE, WATER_ANIMATION);
     if (!presentation) {
@@ -93,7 +134,7 @@ describe("small enemy sprite profiles", () => {
     }
     expect(shadow.visible).toBe(true);
 
-    presentation.playPrepareAttack().progress(1);
+    presentation.playPrepareAttack()?.progress(1);
     expect(presentation.rig.actorRoot.scale).toMatchObject({ x: 1.12, y: 0.84 });
     expect(shadow.scale).toMatchObject({ x: 1, y: 1 });
     presentation.clearAction();

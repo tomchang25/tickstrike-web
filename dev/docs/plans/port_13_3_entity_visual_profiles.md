@@ -27,7 +27,7 @@ The shadow is a uniform dark ellipse seated at each entity's ground-contact line
 
 The rescale and the redraw land together as one child, never separately: shrinking the current sheet first would make the already-thin side frames even harder to read, and shipping a redraw at the oversize scale would misstate the approved footprint. The redraw keeps the sheet's four-direction, four-pose layout, the existing palette identity, and binary transparency; its content goal is a thicker, readable side silhouette and an effective body footprint that matches the other small enemies at the shared scale.
 
-Animated states: the presentation layer currently plays single frames per pose plus the frame-played drowning sheets. Children 13.3c and 13.3d introduce authored multi-frame body states — looping prepare loops and finite execute animations — so whichever of the two lands first builds the shared frame-playback capability and the other reuses it. Every new or derived sheet goes through the deterministic offline pipeline with human visual approval before shipping, the same gate discipline as the ranged redraw.
+Animated states: children 13.3c and 13.3d share one authored frame-playback timeline across player attacks and enemy body states, covering looping prepare animations and finite execute animations alongside the existing drowning sheets. Every new or derived sheet goes through the deterministic offline pipeline with human visual approval before shipping, the same gate discipline as the ranged redraw.
 
 Dash prepare is driven by the input-side aim state that already drives the aim preview, not by any new gameplay state; dash execute is driven by the accepted dash action. Prepare loops on Bomb and Charge are driven by the telegraphing activity already present in the snapshot; their execute animations are driven by the existing commit/detonation events. None of these change command acceptance, damage, occupancy, or timing.
 
@@ -37,13 +37,13 @@ Two human approval gates recur across the children and cannot be self-approved b
 
 ### Child decomposition
 
-| Child | Focus                                                                                | Current document form                                                                                              |
-| ----- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 13.3a | Shared entity drop shadow                                                            | Shipped — port_13_3a_entity_drop_shadow.implementation_spec.md                                                     |
-| 13.3b | Ranged base-sheet redraw and shared-scale alignment                                  | Shipped — port_13_3b_ranged_redraw_and_rescale.implementation_spec.md                                              |
-| 13.3c | Player attack + weapon slash animation and dash prepare/execute states               | Shipped — delivered through the action-presentation catalog and dev Action Lab; no implementation spec             |
-| 13.3d | Bomb and Charge prepare loops and execute body animations                            | Plan child; spec when next to implement                                                                            |
-| 13.3e | Mobility-kill body-split terminals, death-cause semantics, and drowning confirmation | Plan child; spec when next to implement — requires 13.3b                                                           |
+| Child | Focus                                                                                | Current document form                                                                                            |
+| ----- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| 13.3a | Shared entity drop shadow                                                            | Shipped — port_13_3a_entity_drop_shadow.implementation_spec.md                                                   |
+| 13.3b | Ranged base-sheet redraw and shared-scale alignment                                  | Shipped — port_13_3b_ranged_redraw_and_rescale.implementation_spec.md                                            |
+| 13.3c | Player attack + weapon slash animation and dash prepare/execute states               | Shipped — delivered through the action-presentation catalog and dev Action Lab; no implementation spec           |
+| 13.3d | Bomb and Charge prepare loops and execute body animations                            | Shipped — delivered through feature-owned action animation assets and the dev Action Lab; no implementation spec |
+| 13.3e | Mobility-kill body-split terminals, death-cause semantics, and drowning confirmation | Plan child; spec when next to implement — requires 13.3b                                                         |
 
 Recommended landing order is 13.3a, 13.3b, 13.3c, 13.3d, then 13.3e. Hard constraints: 13.3e requires the redrawn ranged base sheet from 13.3b; 13.3c and 13.3d share the new frame-playback capability, so whichever lands first builds it and the other must reuse it rather than fork it.
 

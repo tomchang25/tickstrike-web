@@ -1,6 +1,10 @@
 import sheetUrl from "../assets/lantern-red-sprite-sheet.png";
 import waterSheetUrl from "../assets/bomb_enemy-entered_water-4dir-x8.png";
 import waterMetadata from "../assets/bomb_enemy-entered_water-4dir-x8.animation.json";
+import prepareSheetUrl from "../assets/bomb_enemy-self_destruct_prepare-4dir-x8.png";
+import prepareMetadata from "../assets/bomb_enemy-self_destruct_prepare-4dir-x8.animation.json";
+import executeSheetUrl from "../assets/bomb_enemy-self_destruct_execute-4dir-x8.png";
+import executeMetadata from "../assets/bomb_enemy-self_destruct_execute-4dir-x8.animation.json";
 import { defineEnemyFeature } from "./enemy-feature";
 
 export const bombEnemyFeature = defineEnemyFeature({
@@ -34,5 +38,21 @@ export const bombEnemyFeature = defineEnemyFeature({
   waterAnimation: {
     sheetUrl: waterSheetUrl,
     frameDurationsMs: waterMetadata.timing.frame_durations_ms,
+  },
+  actionAnimations: {
+    prepare: {
+      id: "enemy.bomb.self_destruct_prepare",
+      label: "Bomb Self-Destruct Prepare",
+      sheetUrl: prepareSheetUrl,
+      frameDurationsMs: prepareMetadata.timing.frame_durations_ms,
+      loop: prepareMetadata.timing.loop,
+    },
+    execute: {
+      id: "enemy.bomb.self_destruct_execute",
+      label: "Bomb Self-Destruct Execute",
+      sheetUrl: executeSheetUrl,
+      frameDurationsMs: executeMetadata.timing.frame_durations_ms,
+      loop: executeMetadata.timing.loop,
+    },
   },
 });

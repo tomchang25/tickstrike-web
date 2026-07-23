@@ -4,6 +4,7 @@ import type { Cell, EntityState } from "@core/model/types";
 import { enemyPresentationProfiles, type EnemyPresentationProfile } from "@content/enemies/features";
 import { ENTITY_FRAME_SIZE, createEntityPresentationRig, type EntityPresentationRig } from "./entity-presentation-rig";
 import { resolveEntityPresentationProfile, type EntityPresentationProfile } from "./entity-presentation-profiles";
+import { createFramePlaybackTimeline } from "../timelines/frame-playback";
 
 export type EnemySpritePose = "idle" | "move" | "prepareAttack" | "commitCue";
 export type EnemySpritePalette = string;
@@ -14,6 +15,17 @@ export type { EnemyPresentationProfile } from "@content/enemies/features";
 export interface EnemyWaterAnimation {
   readonly sheet: Texture;
   readonly frameDurationsMs: readonly number[];
+}
+
+export interface EnemyActionAnimation {
+  readonly sheet: Texture;
+  readonly frameDurationsMs: readonly number[];
+  readonly loop: boolean;
+}
+
+export interface EnemyActionAnimations {
+  readonly prepare: EnemyActionAnimation;
+  readonly execute: EnemyActionAnimation;
 }
 
 export interface EnemyBodyAnimationFrame {
@@ -31,11 +43,15 @@ export interface EnemyPresentation {
   readonly facing: Cell;
   readonly waterFrame: number | undefined;
   readonly waterFrameDurationsMs: readonly number[];
+  readonly bodyAnimation: "prepare" | "execute" | "preview" | undefined;
+  readonly bodyAnimationRow: number | undefined;
+  readonly hasPrepareAnimation: boolean;
+  readonly hasExecuteAnimation: boolean;
   setFacing(facing: Cell): void;
   setPose(pose: EnemySpritePose): void;
   sync(entity: Pick<EntityState, "activity" | "facing" | "phase">): void;
   playMove(): gsap.core.Timeline;
-  playPrepareAttack(): gsap.core.Timeline;
+  playPrepareAttack(): gsap.core.Timeline | undefined;
   playAttackCommit(): gsap.core.Timeline;
   playBodyAnimation(sheet: Texture, frames: readonly EnemyBodyAnimationFrame[], loop: boolean): gsap.core.Timeline;
   playDamage(): gsap.core.Timeline;
@@ -126,6 +142,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
   private blinkTimeline: gsap.core.Timeline | undefined;
   private bodyAnimationFrameAt: ((column: number, row: number) => Texture) | undefined;
   private currentBodyAnimationRow: number | undefined;
+  private bodyAnimationKind: "prepare" | "execute" | "preview" | undefined;
   private readonly layoutProfile: EntityPresentationProfile;
 
   constructor(
@@ -133,6 +150,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
     readonly palette: EnemySpritePalette,
     sheet: Texture,
     private readonly waterAnimation: EnemyWaterAnimation | undefined,
+    private readonly actionAnimations: EnemyActionAnimations | undefined,
     private readonly onChange?: () => void,
   ) {
     sheet.source.scaleMode = "nearest";
@@ -140,6 +158,10 @@ class SmallEnemyPresentation implements EnemyPresentation {
     if (waterAnimation) {
       waterAnimation.sheet.source.scaleMode = "nearest";
       this.waterFrameAt = this.createFrameSelector(waterAnimation.sheet);
+    }
+    if (actionAnimations) {
+      actionAnimations.prepare.sheet.source.scaleMode = "nearest";
+      actionAnimations.execute.sheet.source.scaleMode = "nearest";
     }
 
     this.layoutProfile = resolveEntityPresentationProfile(profileId);
@@ -177,6 +199,22 @@ class SmallEnemyPresentation implements EnemyPresentation {
     return this.waterAnimation?.frameDurationsMs ?? [];
   }
 
+  get bodyAnimation(): "prepare" | "execute" | "preview" | undefined {
+    return this.bodyAnimationKind;
+  }
+
+  get bodyAnimationRow(): number | undefined {
+    return this.currentBodyAnimationRow;
+  }
+
+  get hasPrepareAnimation(): boolean {
+    return Boolean(this.actionAnimations?.prepare);
+  }
+
+  get hasExecuteAnimation(): boolean {
+    return Boolean(this.actionAnimations?.execute);
+  }
+
   setFacing(facing: Cell): void {
     const direction = isCardinal(facing) ? facing : DEFAULT_FACING;
     this.currentFacing = { x: direction.x, y: direction.y };
@@ -184,13 +222,25 @@ class SmallEnemyPresentation implements EnemyPresentation {
   }
 
   sync(entity: Pick<EntityState, "activity" | "facing" | "phase">): void {
-    this.actionTimeline?.kill();
-    this.actionTimeline = undefined;
+    const telegraphing = entity.phase === "alive" && entity.activity === "telegraphing";
+    const keepPrepareLoop = telegraphing && this.bodyAnimationKind === "prepare";
+    if (!keepPrepareLoop) {
+      this.actionTimeline?.kill();
+      this.actionTimeline = undefined;
+      this.bodyAnimationFrameAt = undefined;
+      this.currentBodyAnimationRow = undefined;
+      this.bodyAnimationKind = undefined;
+    }
     this.root.position.set(0, 0);
     this.rig.actorRoot.rotation = 0;
     this.setFacing(entity.facing ?? DEFAULT_FACING);
 
-    if (entity.phase === "alive" && entity.activity === "telegraphing") {
+    if (telegraphing && this.actionAnimations?.prepare) {
+      if (!keepPrepareLoop) {
+        this.startBodyAnimation("prepare", this.actionAnimations.prepare);
+      }
+      this.rig.actorRoot.scale.set(1, 1);
+    } else if (telegraphing) {
       this.setPose("prepareAttack");
       this.rig.actorRoot.scale.set(PREPARE_SCALE.x, PREPARE_SCALE.y);
     } else {
@@ -241,7 +291,10 @@ class SmallEnemyPresentation implements EnemyPresentation {
     return timeline;
   }
 
-  playPrepareAttack(): gsap.core.Timeline {
+  playPrepareAttack(): gsap.core.Timeline | undefined {
+    if (this.actionAnimations?.prepare) {
+      return undefined;
+    }
     const timeline = this.startAction("prepareAttack");
     timeline.to(this.rig.actorRoot.scale, {
       x: PREPARE_SCALE.x,
@@ -253,6 +306,9 @@ class SmallEnemyPresentation implements EnemyPresentation {
   }
 
   playAttackCommit(): gsap.core.Timeline {
+    if (this.actionAnimations?.execute) {
+      return this.startBodyAnimation("execute", this.actionAnimations.execute);
+    }
     const timeline = this.startAction("commitCue");
     this.rig.actorRoot.scale.set(PREPARE_SCALE.x, PREPARE_SCALE.y);
     timeline.to(this.rig.actorRoot.scale, {
@@ -280,27 +336,11 @@ class SmallEnemyPresentation implements EnemyPresentation {
     if (frames.length === 0) {
       throw new Error(`Body animation for ${this.profileId} must contain at least one frame.`);
     }
-    this.clearAction();
-    sheet.source.scaleMode = "nearest";
-    this.bodyAnimationFrameAt = this.createFrameSelector(sheet);
-    const timeline = gsap.timeline({ repeat: loop ? -1 : 0 });
-    this.actionTimeline = timeline;
-    for (const frame of frames) {
-      timeline.call(() => {
-        this.currentBodyAnimationRow = frame.row;
-        this.applyFrame();
-        this.onChange?.();
-      });
-      timeline.to({}, { duration: Math.max(0.01, frame.holdSec) });
-    }
-    if (!loop) {
-      timeline.call(() => {
-        if (this.actionTimeline === timeline) {
-          this.actionTimeline = undefined;
-        }
-      });
-    }
-    return timeline;
+    return this.startBodyAnimation("preview", {
+      sheet,
+      frameDurationsMs: frames.map((frame) => frame.holdSec * 1000),
+      loop,
+    });
   }
 
   playDamage(): gsap.core.Timeline {
@@ -381,6 +421,7 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.actionTimeline = undefined;
     this.bodyAnimationFrameAt = undefined;
     this.currentBodyAnimationRow = undefined;
+    this.bodyAnimationKind = undefined;
     this.stopBlink();
     this.root.position.set(0, 0);
     this.rig.actorRoot.rotation = 0;
@@ -403,6 +444,38 @@ class SmallEnemyPresentation implements EnemyPresentation {
     this.setPose(pose);
     const timeline = gsap.timeline();
     this.actionTimeline = timeline;
+    return timeline;
+  }
+
+  private startBodyAnimation(
+    kind: "prepare" | "execute" | "preview",
+    animation: EnemyActionAnimation,
+  ): gsap.core.Timeline {
+    this.clearAction();
+    this.bodyAnimationKind = kind;
+    this.bodyAnimationFrameAt = this.createFrameSelector(animation.sheet);
+    const frames = animation.frameDurationsMs.map((durationMs, row) => ({ row, holdSec: durationMs / 1000 }));
+    const timeline = createFramePlaybackTimeline(
+      frames,
+      ({ row }) => {
+        this.currentBodyAnimationRow = row;
+        this.applyFrame();
+        this.onChange?.();
+      },
+      animation.loop,
+    );
+    this.actionTimeline = timeline;
+    if (!animation.loop) {
+      timeline.call(() => {
+        if (this.actionTimeline === timeline) {
+          this.actionTimeline = undefined;
+          this.bodyAnimationFrameAt = undefined;
+          this.currentBodyAnimationRow = undefined;
+          this.bodyAnimationKind = undefined;
+          this.setPose("idle");
+        }
+      });
+    }
     return timeline;
   }
 
@@ -462,8 +535,11 @@ export function createEnemyPresentation(
   profileId: string,
   sheet: Texture,
   waterAnimation: EnemyWaterAnimation | undefined,
+  actionAnimations?: EnemyActionAnimations,
   onChange?: () => void,
 ): EnemyPresentation | undefined {
   const profile = getEnemyPresentationProfile(profileId);
-  return profile ? new SmallEnemyPresentation(profile.id, profile.palette, sheet, waterAnimation, onChange) : undefined;
+  return profile
+    ? new SmallEnemyPresentation(profile.id, profile.palette, sheet, waterAnimation, actionAnimations, onChange)
+    : undefined;
 }

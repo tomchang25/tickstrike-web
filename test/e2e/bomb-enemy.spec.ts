@@ -11,6 +11,7 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
   test.setTimeout(30_000);
   await page.goto("/debug?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
+  const canvas = page.getByTestId("game-canvas");
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
   const committed = await page.evaluate(async () => {
@@ -78,6 +79,10 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
   expect(committed?.committedAttack?.cells).toContainEqual(committed?.cell);
   await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-activity", "telegraphing");
   await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-attack-warning-ticks", "3");
+  await expect(canvas).toHaveAttribute(
+    "data-enemy-presentations",
+    /enemy-bomb:enemy\.bomb:lantern:idle:action:prepare:/,
+  );
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -88,6 +93,7 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
   });
   await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-attack-warning-ticks", "1");
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-bomb:.*:action:prepare:/);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -97,6 +103,7 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
     await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
   });
 
+  await expect(canvas).toHaveAttribute("data-retained-presentations", /enemy-bomb:.*:action:execute:/);
   await expect(page.getByTestId("entity-enemy-bomb")).toHaveCount(0);
   await expect(page.getByTestId("event-log")).toContainText("enemy_self_destructed");
   await expect(page.getByTestId("event-log")).toContainText("enemy_died");
@@ -104,6 +111,7 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
   expect(finalState?.telegraphs.some((telegraph) => telegraph.sourceId === "enemy-bomb")).toBe(false);
   expect(finalState?.reservations.some((reservation) => reservation.ownerId === "enemy-bomb")).toBe(false);
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  await expect(canvas).not.toHaveAttribute("data-retained-presentations", /enemy-bomb:/);
 });
 
 test("Bomb disarms when killed before its fuse resolves", async ({ page }) => {

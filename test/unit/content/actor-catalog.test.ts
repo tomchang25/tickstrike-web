@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { actorCatalog } from "@content/actor-catalog";
+import { enemyActionAnimationAssets } from "@content/enemies/enemy-action-animation-assets";
 
 describe("canonical actor content", () => {
   it("contains the complete shipped inventory", () => {
@@ -70,5 +71,17 @@ describe("canonical actor content", () => {
       { id: "bomb_enemy", guardId: null, attackIds: ["bomb_area"] },
     ]);
     expect(actorCatalog.enemies.find((enemy) => enemy.id === "charge_enemy")?.roleTuning).toBeNull();
+  });
+
+  it("registers approved Bomb and Charge prepare and execute animations", () => {
+    expect(Object.keys(enemyActionAnimationAssets)).toEqual(["enemy.charge", "enemy.bomb"]);
+    expect(enemyActionAnimationAssets["enemy.bomb"]).toMatchObject({
+      prepare: { id: "enemy.bomb.self_destruct_prepare", loop: true },
+      execute: { id: "enemy.bomb.self_destruct_execute", loop: false },
+    });
+    expect(enemyActionAnimationAssets["enemy.charge"]).toMatchObject({
+      prepare: { id: "enemy.charge.prepare", loop: true },
+      execute: { id: "enemy.charge.execute", loop: false },
+    });
   });
 });

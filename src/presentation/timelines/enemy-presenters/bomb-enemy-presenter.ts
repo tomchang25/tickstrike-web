@@ -1,11 +1,18 @@
 import { GenericEnemyPresenter } from "./generic-enemy-presenter";
+import type { CombatEvent } from "@core/events/combat-events";
+import type { EnemyPresenterContext } from "./enemy-presenter";
 
-/**
- * Bomb's presenter seam. Fuse blink and the self-destruct explosion currently
- * stay metadata/event-driven in `GenericEnemyPresenter` so profiles without a
- * dedicated presenter present identically; override the named methods here when
- * Bomb earns bespoke animation without touching the coordinator.
- */
-export class BombEnemyPresenter extends GenericEnemyPresenter {}
+type EnemyDiedEvent = Extract<CombatEvent, { type: "enemy_died" }>;
+
+/** Keeps ordinary Bomb deaths generic while letting self-destruction finish its authored body animation. */
+export class BombEnemyPresenter extends GenericEnemyPresenter {
+  protected override died(context: EnemyPresenterContext, event: EnemyDiedEvent): void {
+    if (event.attackerId === event.enemyId) {
+      context.getPresentation()?.stopBlink();
+      return;
+    }
+    super.died(context, event);
+  }
+}
 
 export const bombEnemyPresenter = new BombEnemyPresenter();

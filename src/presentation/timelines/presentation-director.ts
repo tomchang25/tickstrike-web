@@ -240,6 +240,7 @@ export class PresentationDirector {
           if ("enemyId" in event) {
             const presenter = getEnemyPresenter(this.getEnemyPresentation(event.enemyId)?.profileId);
             presenter.presentEvent(this.presenterContext(event.enemyId, animations), event);
+            this.refreshTerminalPresentationLabels();
           }
           break;
         }

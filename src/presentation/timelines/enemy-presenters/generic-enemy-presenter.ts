@@ -65,8 +65,11 @@ export class GenericEnemyPresenter implements EnemyPresenter {
   protected attackCommitted(context: EnemyPresenterContext, event: EventOf<"enemy_attack_committed">): void {
     const presentation = context.getPresentation();
     if (presentation) {
-      context.addTimeline(presentation.playPrepareAttack());
-      if (event.attack.metadata?.selfDestruct) {
+      const timeline = presentation.playPrepareAttack();
+      if (timeline) {
+        context.addTimeline(timeline);
+      }
+      if (event.attack.metadata?.selfDestruct && !presentation.hasPrepareAnimation) {
         presentation.playFuseBlink(FUSE_BLINK_INTERVAL, FUSE_BLINK_MIN_ALPHA);
       }
       return;
@@ -87,7 +90,7 @@ export class GenericEnemyPresenter implements EnemyPresenter {
     const presentation = context.getPresentation();
     if (presentation) {
       context.addTimeline(presentation.playAttackCommit());
-      if (event.attack.metadata?.selfDestruct) {
+      if (event.attack.metadata?.selfDestruct && !presentation.hasExecuteAnimation) {
         presentation.playFuseBlink(FUSE_BLINK_FAST_INTERVAL, FUSE_BLINK_MIN_ALPHA);
       }
     }

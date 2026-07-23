@@ -15,10 +15,12 @@ import {
 import {
   createEnemyPresentation,
   getEnemyPresentationProfile,
+  type EnemyActionAnimations,
   type EnemyWaterAnimation,
   type EnemyPresentation,
 } from "./enemy-sprites";
 import { enemyWaterAnimationAssets } from "@content/enemies/enemy-water-animation-assets";
+import { enemyActionAnimationAssets } from "@content/enemies/enemy-action-animation-assets";
 import ninjaSpriteSheetUrl from "@content/characters/assets/ninja/body-sprite-sheet.png";
 import ninjaAttackSheetUrl from "@content/characters/assets/ninja/attack-sprite-sheet.png";
 import ninjaBattoBaseUrl from "@content/characters/assets/ninja/batto/ninja-batto-base.png";
@@ -224,6 +226,7 @@ export class PixiGameRenderer {
   private debugMode = false;
   private enemySpriteSheets: Readonly<Record<string, Texture>> = {};
   private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
+  private enemyActionAnimations: Readonly<Record<string, EnemyActionAnimations>> = {};
 
   get transientCount(): number {
     return this.transientEffects.size;
@@ -267,6 +270,24 @@ export class PixiGameRenderer {
       ]),
     );
     this.enemyWaterAnimations = Object.fromEntries(loadedWaterAnimations);
+    const loadedActionAnimations = await Promise.all(
+      Object.entries(enemyActionAnimationAssets).map(async ([profileId, assets]) => [
+        profileId,
+        {
+          prepare: {
+            sheet: await Assets.load<Texture>(assets.prepare.sheetUrl),
+            frameDurationsMs: assets.prepare.frameDurationsMs,
+            loop: assets.prepare.loop,
+          },
+          execute: {
+            sheet: await Assets.load<Texture>(assets.execute.sheetUrl),
+            frameDurationsMs: assets.execute.frameDurationsMs,
+            loop: assets.execute.loop,
+          },
+        },
+      ]),
+    );
+    this.enemyActionAnimations = Object.fromEntries(loadedActionAnimations);
 
     const [wallTerrain, waterTile] = await Promise.all([
       Assets.load<Texture>(wallTerrainUrl),
@@ -331,11 +352,15 @@ export class PixiGameRenderer {
     this.stopPlayerAfterimage();
     this.input.unbind();
     this.preview.clear();
+    for (const view of this.entityViews.values()) {
+      view.enemyPresentation?.reset();
+    }
     this.entityViews.clear();
     this.clearPositionReservations();
     this.clearTransient();
     this.enemySpriteSheets = {};
     this.enemyWaterAnimations = {};
+    this.enemyActionAnimations = {};
     this.app.destroy(true, { children: true });
     this.host = undefined;
   }
@@ -449,7 +474,7 @@ export class PixiGameRenderer {
       return;
     }
     for (const view of this.entityViews.values()) {
-      view.root.destroy({ children: true });
+      this.destroyEntityView(view);
     }
     this.entityViews.clear();
     this.positionOwners.clear();
@@ -473,7 +498,7 @@ export class PixiGameRenderer {
     const liveIds = new Set(snapshot.entities.map((entity) => entity.id));
     for (const [id, view] of this.entityViews) {
       if (!liveIds.has(id)) {
-        view.root.destroy({ children: true });
+        this.destroyEntityView(view);
         this.entityViews.delete(id);
         this.positionOwners.delete(id);
       }
@@ -482,7 +507,7 @@ export class PixiGameRenderer {
     for (const entity of snapshot.entities) {
       let view = this.entityViews.get(entity.id);
       if (view && view.presentationId !== entity.presentationId) {
-        view.root.destroy({ children: true });
+        this.destroyEntityView(view);
         this.entityViews.delete(entity.id);
         this.positionOwners.delete(entity.id);
         view = undefined;
@@ -725,9 +750,10 @@ export class PixiGameRenderer {
       entity.kind === "enemy" && entity.presentationId ? getEnemyPresentationProfile(entity.presentationId) : undefined;
     const enemySpriteSheet = enemyProfile ? this.enemySpriteSheets[enemyProfile.sheet] : undefined;
     const waterAnimation = enemyProfile ? this.enemyWaterAnimations[enemyProfile.id] : undefined;
+    const actionAnimations = enemyProfile ? this.enemyActionAnimations[enemyProfile.id] : undefined;
     const enemyPresentation =
       enemySpriteSheet && enemyProfile
-        ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, waterAnimation, () =>
+        ? createEnemyPresentation(enemyProfile.id, enemySpriteSheet, waterAnimation, actionAnimations, () =>
             this.refreshEnemyPresentationDataset(),
           )
         : undefined;
@@ -816,9 +842,17 @@ export class PixiGameRenderer {
       guardBar,
     };
   }
+
+  private destroyEntityView(view: EntityView): void {
+    view.enemyPresentation?.reset();
+    view.root.destroy({ children: true });
+  }
 }
 
 export function enemyPresentationLabel(id: EntityId, presentation: EnemyPresentation): string {
   const water = presentation.waterFrame === undefined ? "" : `:water:${presentation.waterFrame}`;
-  return `${id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}${water}`;
+  const action = presentation.bodyAnimation
+    ? `:action:${presentation.bodyAnimation}:${presentation.bodyAnimationRow ?? 0}`
+    : "";
+  return `${id}:${presentation.profileId}:${presentation.palette}:${presentation.pose}${water}${action}`;
 }

@@ -18,6 +18,19 @@ export interface EnemyWaterAnimationAsset {
   readonly frameDurationsMs: readonly number[];
 }
 
+export interface EnemyActionAnimationAsset {
+  readonly id: string;
+  readonly label: string;
+  readonly sheetUrl: string;
+  readonly frameDurationsMs: readonly number[];
+  readonly loop: boolean;
+}
+
+export interface EnemyActionAnimationAssets {
+  readonly prepare: EnemyActionAnimationAsset;
+  readonly execute: EnemyActionAnimationAsset;
+}
+
 /**
  * One enemy, fully described in one place: authored definition, its attacks,
  * its presentation profile and sprite assets. Every derived registry (actor
@@ -30,6 +43,7 @@ export interface EnemyFeature {
   readonly presentation: EnemyPresentationProfile;
   readonly spriteSheet: EnemySpriteSheetAsset;
   readonly waterAnimation?: EnemyWaterAnimationAsset;
+  readonly actionAnimations?: EnemyActionAnimationAssets;
 }
 
 export interface EnemyFeatureInput {
@@ -42,6 +56,7 @@ export interface EnemyFeatureInput {
     readonly palette: string;
   };
   readonly waterAnimation?: EnemyWaterAnimationAsset;
+  readonly actionAnimations?: EnemyActionAnimationAssets;
 }
 
 /** Writes each shared identifier exactly once and derives every cross-reference. */
@@ -60,5 +75,6 @@ export function defineEnemyFeature(input: EnemyFeatureInput): EnemyFeature {
     },
     spriteSheet: input.presentation.sheet,
     ...(input.waterAnimation ? { waterAnimation: input.waterAnimation } : {}),
+    ...(input.actionAnimations ? { actionAnimations: input.actionAnimations } : {}),
   };
 }

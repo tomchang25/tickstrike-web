@@ -1,12 +1,23 @@
 import type { AttackDefinition, EnemyDefinition } from "@core/content/actor-schema";
-import type { EnemyFeature, EnemyPresentationProfile, EnemyWaterAnimationAsset } from "./enemy-feature";
+import type {
+  EnemyActionAnimationAssets,
+  EnemyFeature,
+  EnemyPresentationProfile,
+  EnemyWaterAnimationAsset,
+} from "./enemy-feature";
 import { thrustEnemyFeature } from "./thrust";
 import { slashEnemyFeature } from "./slash";
 import { rangedEnemyFeature } from "./ranged";
 import { chargeEnemyFeature } from "./charge";
 import { bombEnemyFeature } from "./bomb";
 
-export type { EnemyFeature, EnemyPresentationProfile, EnemyWaterAnimationAsset } from "./enemy-feature";
+export type {
+  EnemyActionAnimationAsset,
+  EnemyActionAnimationAssets,
+  EnemyFeature,
+  EnemyPresentationProfile,
+  EnemyWaterAnimationAsset,
+} from "./enemy-feature";
 export { defineEnemyFeature } from "./enemy-feature";
 
 /**
@@ -37,5 +48,11 @@ export const enemySpriteSheetUrls: Readonly<Record<string, string>> = Object.fro
 export const enemyWaterAnimationAssets: Readonly<Record<string, EnemyWaterAnimationAsset>> = Object.fromEntries(
   enemyFeatures.flatMap((feature) =>
     feature.waterAnimation ? [[feature.presentation.id, feature.waterAnimation]] : [],
+  ),
+);
+
+export const enemyActionAnimationAssets: Readonly<Record<string, EnemyActionAnimationAssets>> = Object.fromEntries(
+  enemyFeatures.flatMap((feature) =>
+    feature.actionAnimations ? [[feature.presentation.id, feature.actionAnimations]] : [],
   ),
 );

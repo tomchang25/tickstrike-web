@@ -8,6 +8,7 @@ import {
 } from "@presentation/actions/action-presentation-catalog";
 import { ENTITY_FRAME_SIZE, createEntityPresentationRig, type EntityPresentationRig } from "./entity-presentation-rig";
 import { resolveEntityPresentationProfile } from "./entity-presentation-profiles";
+import { createFramePlaybackTimeline } from "../timelines/frame-playback";
 
 // `prepare`/`dash`/`dashLand` drive the Ninja Batto presentation authored in the Action Lab
 // (`ninja.batto_dash`): `prepare` is the Alt-hold draw stance, `dash` is the draw-cut executed
@@ -235,16 +236,12 @@ function createNinjaSprite(sheet: Texture): PlayerSprite {
       return;
     }
     const sheetKey = state.bodySheet;
-    const timeline = gsap.timeline();
-    for (const frame of frames) {
-      timeline.call(() => {
-        const texture = sheetFrame(sheetKey, column, frame.row);
-        if (texture && !body.destroyed) {
-          body.texture = texture;
-        }
-      });
-      timeline.to({}, { duration: Math.max(0.01, frame.holdSec) });
-    }
+    const timeline = createFramePlaybackTimeline(frames, (frame) => {
+      const texture = sheetFrame(sheetKey, column, frame.row);
+      if (texture && !body.destroyed) {
+        body.texture = texture;
+      }
+    });
     attackTween = timeline;
   };
 
