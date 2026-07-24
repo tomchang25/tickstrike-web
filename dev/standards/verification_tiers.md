@@ -10,7 +10,7 @@ Scope verification to the risk of the change; never run the full vertical slice 
 | New terminal or multi-entity animation | Presentation unit test plus Playwright cleanup assertion   |
 | New global system                      | Full vertical slice                                        |
 
-The capability rule in `dev/foundation/platforms/web-react/standards/testing_standard.md` applies: Playwright verifies system capabilities, never per-content variants.
+The capability rule in `dev/foundation/platforms/web-react/standards/testing_standard.md` applies: Playwright verifies system capabilities, never per-content variants. How an individual test is authored — layer choice, cost budget, and fixture-based setup — is owned by `dev/standards/test_economy_standard.md`.
 
 ## Browser suite scope
 
