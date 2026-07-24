@@ -57,7 +57,7 @@ function context(
 }
 
 describe("Ranged distance-band decisions", () => {
-  it("commits a player-centered Cross throughout the inclusive band", () => {
+  it("commits a player-centered Cross throughout the inclusive band, facing the target's dominant axis", () => {
     const decision = decideEnemyAction(context(enemy(), { x: 6, y: 3 }));
 
     expect(decision).toEqual({
@@ -65,14 +65,20 @@ describe("Ranged distance-band decisions", () => {
       attack: ranged,
       cells: [
         { x: 6, y: 3 },
+        { x: 7, y: 3 },
+        { x: 5, y: 3 },
         { x: 6, y: 4 },
         { x: 6, y: 2 },
-        { x: 5, y: 3 },
-        { x: 7, y: 3 },
       ],
-      facing: { x: 0, y: 1 },
+      facing: { x: 1, y: 0 },
       metadata: { targetCenter: { x: 6, y: 3 } },
     });
+  });
+
+  it("keeps the current facing when the target sits on an exact diagonal", () => {
+    const decision = decideEnemyAction(context(enemy({ facing: { x: -1, y: 0 } }), { x: 5, y: 5 }));
+
+    expect(decision).toMatchObject({ type: "attack", facing: { x: -1, y: 0 } });
   });
 
   it("clips the target-centered Cross only at arena bounds", () => {
@@ -82,9 +88,10 @@ describe("Ranged distance-band decisions", () => {
       type: "attack",
       cells: [
         { x: 0, y: 0 },
-        { x: 0, y: 1 },
         { x: 1, y: 0 },
+        { x: 0, y: 1 },
       ],
+      facing: { x: -1, y: 0 },
       metadata: { targetCenter: { x: 0, y: 0 } },
     });
   });
@@ -217,10 +224,10 @@ describe("Ranged committed Cross lifecycle", () => {
       committedAttack: {
         cells: [
           { x: 2, y: 3 },
+          { x: 3, y: 3 },
+          { x: 1, y: 3 },
           { x: 2, y: 4 },
           { x: 2, y: 2 },
-          { x: 1, y: 3 },
-          { x: 3, y: 3 },
         ],
         metadata: { targetCenter: { x: 2, y: 3 } },
         warningTicks: 2,
@@ -231,10 +238,10 @@ describe("Ranged committed Cross lifecycle", () => {
     expect(world.requireEntity("enemy-ranged").committedAttack).toMatchObject({
       cells: [
         { x: 2, y: 3 },
+        { x: 3, y: 3 },
+        { x: 1, y: 3 },
         { x: 2, y: 4 },
         { x: 2, y: 2 },
-        { x: 1, y: 3 },
-        { x: 3, y: 3 },
       ],
       warningTicks: 1,
     });

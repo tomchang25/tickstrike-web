@@ -14,6 +14,16 @@ function rangedFacing(enemy: EntityState): Cell {
   return cardinalDirection(enemy.facing ?? CARDINAL_DIRECTIONS[0]!) ?? CARDINAL_DIRECTIONS[0]!;
 }
 
+/** Faces the target's dominant axis so windup visibly points at the Cross center; ties keep the current facing. */
+function rangedTargetFacing(enemy: EntityState, target: Cell): Cell {
+  const dx = target.x - enemy.cell.x;
+  const dy = target.y - enemy.cell.y;
+  if (Math.abs(dx) === Math.abs(dy)) {
+    return rangedFacing(enemy);
+  }
+  return Math.abs(dx) > Math.abs(dy) ? { x: Math.sign(dx), y: 0 } : { x: 0, y: Math.sign(dy) };
+}
+
 export function rangedAttackCells(
   targetCenter: Cell,
   facing: Cell,
@@ -87,11 +97,12 @@ export const rangedEnemyBehavior: EnemyBehavior = {
       return { type: "wait" };
     }
     if (distance >= tuning.minDistance && distance <= tuning.maxDistance) {
+      const facing = rangedTargetFacing(enemy, playerCell);
       return {
         type: "attack",
         attack: action,
-        cells: rangedAttackCells(playerCell, rangedFacing(enemy), action, context.isInside),
-        facing: rangedFacing(enemy),
+        cells: rangedAttackCells(playerCell, facing, action, context.isInside),
+        facing,
         metadata: {
           ...action.metadata,
           targetCenter: { x: playerCell.x, y: playerCell.y },

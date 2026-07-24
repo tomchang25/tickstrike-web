@@ -27,6 +27,7 @@ Rules:
 ### Enemy Action Timing Balance
 
 - 2026-07-24 - [enemy_balance] Nerfed enemy action timings: Bomb windup to 5 ticks, Ranged windup to 4 ticks with recovery extended to 2 ticks, Charge windup to 3 ticks with recovery held at 2 ticks
+- 2026-07-24 - [enemy_balance] Ranged now faces the target's dominant axis when it commits its windup, instead of keeping whatever direction it last moved
 
 ### Deterministic Tick Arena Foundation
 
