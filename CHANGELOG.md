@@ -16,6 +16,10 @@ Rules:
 
 ## [unreleased]
 
+### Explicit Time Order
+
+- 2026-07-24 - [time_order] Tick Arena now resolves the Player and every living action-capable enemy through one canonical spawn-order slot sequence, exposed by a persistent sprite-based Turn Order rail with reactive status counts, cross-highlights, fast-forward, and fast or normal overlap pacing
+
 ### Web-Native Content Foundation
 
 - 2026-07-18 - [content] Shipped gameplay content is now validated through immutable actor, wave, Artifact, and browser inspection catalogs

@@ -35,7 +35,6 @@ Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from 
 
 - [port_13_visual_parity] Audit port-ref and match the reference board, entities, feedback, HUD, and presentation quality - [ref plans/port_13_visual_parity_and_polish.md]
 - [port_14_hardening] Harden responsive behavior, shell lifecycle, teardown, and browser/Windows packaging for the same path - [ref plans/port_14_platform_and_release_hardening.md]
-- [time_order] Make within-tick enemy resolution order explicit and player-visible: linear slot resolution plus a single-segment order bar - [ref plans/explicit_time_order.md]
 - [action_points] Replace the Speed free-action model with player-round Action Points, an AP HUD, and overflow-aware Chain Dash - [ref plans/tick_arena_action_points_and_relative_timing.md]
 
 ---

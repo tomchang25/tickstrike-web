@@ -9,15 +9,15 @@ Make the within-tick resolution order an explicit, player-visible contract: one 
 1. Exactly one canonical actor order per tick: the Player first, then every living, action-capable enemy in stable spawn order. This order is the only intra-tick ordering truth. It supersedes the "wound up first hits first" simultaneous-detonation rule introduced by the charge enemy rework, because a displayed order and a different resolution order would make the bar lie.
 2. Every enemy resolves all of its per-tick activity at its own slot — warning countdown, retargeting, detonation, stagger/protection/recovery/rest advancement, decision, and movement — against the live state produced by earlier slots. An entity displaced, interrupted, or killed by an earlier slot simply is that changed thing when its own slot arrives; there is no lookahead and no priority tier, so interrupt chains are well-founded by construction.
 3. The order bar shows a single segment: a Player icon at the head, then one icon per living enabled enemy in slot order. Membership is unconditional — an enemy with nothing visible to do this tick still holds its slot, shown dimmed with a status badge — because conditional membership would require predicting outcomes. A second forecast segment is deliberately omitted: with unconditional membership and stable order it would repeat the same cast and carry no information.
-4. The bar states order, never predicted outcomes, and updates only reactively as resolved events play back: the active slot highlights both the bar icon and the arena entity, a finished slot pops, death removes icons, an interruption re-badges the victim's icon the moment the interrupting event plays, and the emptied bar refills with the current living cast at the tick boundary. Hovering an enemy in the arena highlights its bar icon and vice versa.
+4. The bar states order, never predicted outcomes, and updates only reactively as resolved events play back: the active highlight moves between the bar icon and arena entity at each handoff, finished slots remain visible, death or despawn removes icons, and an interruption re-badges the victim's icon the moment the interrupting event plays. The rail remains visible even with no entities and refills with the current living cast at the tick boundary. Hovering an enemy in the arena highlights its bar icon and vice versa.
 5. Logic resolves instantly at the player-round boundary; the bar and all per-slot animation are playback of the already-resolved event stream, so determinism, replay, and input fast-forward are unaffected by any pacing choice.
-6. Slot playback pacing is a player setting: the default staggers slot starts by 0.1 s with animations allowed to overlap, and an alternative waits for each slot's VFX to finish. Player input fast-forwards all remaining playback. No-op slots consume near-zero playback time so idle-heavy casts do not drag the segment.
+6. Slot playback pacing is a player setting: Fast hands off after 0.1 s and Normal after 0.25 s, with animations allowed to overlap in both modes. Player input fast-forwards all remaining playback. No-op slots consume near-zero playback time so idle-heavy casts do not drag the segment.
 
 ## Design
 
 ### Canonical order and slot resolution
 
-The order for a tick is the Player followed by the living enabled enemies in spawn order. Death is the only thing that removes a slot mid-tick; a newly spawned enemy joins the order at the next tick boundary.
+The order for a tick is the Player followed by the living enabled enemies in spawn order. Death or despawn is the only thing that removes a slot mid-tick; a newly spawned enemy joins the order at the next tick boundary.
 
 Interrupts need no special ordering rule. A charge that detonates at slot N pushes and cancels victims regardless of their slot; a victim whose slot already resolved this tick has simply already acted, and a victim whose slot is still pending resolves from its interrupted state (recovering, no telegraph). If a future enemy can interrupt the charger, it is the same rule applied from an earlier slot — nothing nests.
 
@@ -31,14 +31,14 @@ Reasoning about that difference — "kill the Charge to let the Bomb go off" —
 
 ### Order bar behavior
 
-The active slot is highlighted in both the bar and the arena while its events play, then pops. Icons carry live state: dimmed plus a badge for recovering, resting, staggered, or mid-windup enemies (including the remaining warning count, which ticks down during that enemy's own slot playback, not in a batch at the segment end). When the segment empties and control returns to the Player, the tick counter updates and the bar refills from the current living cast — this refill is the visible tick boundary.
+The active slot is highlighted in both the bar and the arena while its events play, then the highlight hands off without removing the icon. Icons carry live state: dimmed plus a badge for recovering, resting, staggered, or mid-windup enemies (including the remaining warning count, which ticks down during that enemy's own slot playback, not in a batch at the segment end). Only death or despawn removes an icon. When control returns to the Player, the tick counter updates and the bar reconciles with the current living cast at the tick boundary; the rail itself remains visible even when that cast is empty.
 
 ### Pacing
 
-| Setting             | Behavior                                                               |
-| ------------------- | ---------------------------------------------------------------------- |
-| Staggered (default) | Each slot's playback starts 0.1 s after the previous one; VFX overlap. |
-| Wait for VFX        | The next slot starts only after the previous slot's VFX completes.     |
+| Setting        | Behavior                                                                |
+| -------------- | ----------------------------------------------------------------------- |
+| Fast (default) | Each slot's playback starts 0.1 s after the previous one; VFX overlap.  |
+| Normal         | Each slot's playback starts 0.25 s after the previous one; VFX overlap. |
 
 In both modes player input fast-forwards every remaining slot instantly, and no-op slots (nothing visible happened) flash through in near-zero time while keeping their icon in the bar.
 
@@ -47,7 +47,7 @@ In both modes player input fast-forwards every remaining slot instantly, and no-
 | Child | Focus                                                                                       | Current document                                                            |
 | ----- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | 01    | Linear slot resolution: one canonical order, per-slot enemy resolution, retire commit-order | `explicit_time_order_01_linear_slot_resolution.implementation_spec.md`      |
-| 02    | Order bar UI, per-slot staggered playback, pacing setting, hover cross-highlight            | `explicit_time_order_02_order_bar_and_slot_playback.implementation_spec.md` |
+| 02    | Order bar UI, per-slot overlap playback, pacing setting, hover cross-highlight              | `explicit_time_order_02_order_bar_and_slot_playback.implementation_spec.md` |
 
 Landing order: 01 before 02 — the bar can only display a truthful order after the logic holds exactly one. Baseline: the charge enemy rework (uniform side push, displacement interrupt, claimed targets) lands before child 01; its displacement interrupt is the mechanic this plan makes legible, and its commit-order detonation rule is what child 01 replaces.
 
@@ -64,6 +64,6 @@ Landing order: 01 before 02 — the bar can only display a truthful order after 
 1. Same-seed runs remain byte-identical, and within a tick every enemy's events resolve grouped at its own slot in the canonical order.
 2. Simultaneous detonations resolve in bar order; the displayed order and the resolution order can never disagree.
 3. The Bomb-after-Charge worked example resolves as specified in both player branches, and the outcome difference is readable from the bar plus arena telegraphs alone.
-4. Bar membership is unconditional with reactive updates only: pops on completion, removal on death, re-badging on interruption, refill at the tick boundary, hover cross-highlighting in both directions.
-5. The pacing setting switches between staggered and wait-for-VFX playback, input fast-forward works in both, and no-op slots do not visibly stall the segment.
+4. Bar membership is unconditional with reactive updates only: completed slots remain visible, death or despawn removes icons, interruptions re-badge immediately, the tick boundary reconciles membership, the empty rail persists, and hover cross-highlighting works in both directions.
+5. The pacing setting switches between 0.1-second Fast and 0.25-second Normal overlap playback, input fast-forward works in both, and no-op slots do not visibly stall the segment.
 6. Existing per-enemy transition rules — which activity transitions allow acting in the same tick — are preserved exactly.

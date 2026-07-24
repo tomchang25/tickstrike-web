@@ -98,7 +98,7 @@ Recommended landing order: establish the player-round and AP clock first; then l
 3. Do not add a separate Preparation perk in this plan; Max AP is the first authored way to complete Smash preparation and release in one round.
 4. Do not redesign normal attack footprints, Dash or Smash damage, enemy attack footprints, wave composition, or general player-versus-enemy balance.
 5. Do not let ordinary rewards refund AP or create overflow unless a later named effect defines its own bounded trigger and reset contract.
-6. Do not define enemy in-phase resolution order, the order bar, or slot playback pacing; the Explicit Time Order plan owns intra-tick ordering, and this plan's player round is the single Player slot at the head of that plan's sequence.
+6. Do not redefine the shipped enemy in-phase resolution order, Turn Order rail, or slot playback pacing; this plan's player round remains the Player slot at the head of the canonical sequence, followed by living action-capable enemies in stable spawn order.
 
 ## Acceptance Criteria
 
