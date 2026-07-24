@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tickstrike Web — Tick Flow Map</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --panel: #ffffff;
+    --ink: #1c1d21;
+    --muted: #61636b;
+    --line: #e2e3e7;
+    --accent: #3b6cff;
+    --core: #2f7d54;
+    --core-bg: #e7f4ec;
+    --event: #a2620a;
+    --event-bg: #fbf0dd;
+    --present: #8a3fc0;
+    --present-bg: #f2e8fb;
+    --react: #2465b8;
+    --react-bg: #e5eefb;
+    --code-bg: #f0f1f4;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16171a;
+      --panel: #1e2024;
+      --ink: #e7e8ea;
+      --muted: #9a9ca4;
+      --line: #2e3036;
+      --accent: #6f96ff;
+      --core: #6cd39a;
+      --core-bg: #16241b;
+      --event: #e6ac5a;
+      --event-bg: #2a2013;
+      --present: #c79bf0;
+      --present-bg: #241830;
+      --react: #7db0f5;
+      --react-bg: #14202f;
+      --code-bg: #26282e;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f7f8; --panel: #fff; --ink: #1c1d21; --muted: #61636b; --line: #e2e3e7;
+    --code-bg: #f0f1f4; --core-bg:#e7f4ec; --event-bg:#fbf0dd; --present-bg:#f2e8fb; --react-bg:#e5eefb;
+  }
+  :root[data-theme="dark"] {
+    --bg: #16171a; --panel: #1e2024; --ink: #e7e8ea; --muted: #9a9ca4; --line: #2e3036;
+    --code-bg: #26282e; --core-bg:#16241b; --event-bg:#2a2013; --present-bg:#241830; --react-bg:#14202f;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.65 -apple-system, "Segoe UI", system-ui, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 20px 96px; }
+  header.top { margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0; }
+  .meta { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+  h2 {
+    font-size: 19px; margin: 44px 0 14px; padding-top: 20px;
+    border-top: 1px solid var(--line); letter-spacing: -.01em;
+  }
+  h2:first-of-type { border-top: none; padding-top: 0; }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .path {
+    font-family: "SF Mono", "Cascadia Code", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+  }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  .callout {
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 14px 16px; margin: 16px 0; box-shadow: var(--shadow);
+  }
+  .callout.warn { border-left-color: var(--event); }
+  .callout strong { display:block; margin-bottom: 4px; }
+
+  /* flow */
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 18px 0; }
+  .station {
+    position: relative; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 15px 17px 15px 58px; box-shadow: var(--shadow);
+  }
+  .station + .arrow { align-self: center; color: var(--muted); font-size: 20px; line-height: 1; padding: 7px 0; }
+  .num {
+    position: absolute; left: 14px; top: 15px; width: 28px; height: 28px; border-radius: 8px;
+    display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff;
+  }
+  .lane { display:inline-block; font-size: 11px; font-weight:700; letter-spacing:.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-bottom: 7px; }
+  .lane.react { color: var(--react); background: var(--react-bg); }
+  .lane.core { color: var(--core); background: var(--core-bg); }
+  .lane.event { color: var(--event); background: var(--event-bg); }
+  .lane.present { color: var(--present); background: var(--present-bg); }
+  .react .num { background: var(--react); }
+  .core .num { background: var(--core); }
+  .event .num { background: var(--event); }
+  .present .num { background: var(--present); }
+  .station h3 { margin: 0 0 6px; font-size: 15.5px; }
+  .station p { margin: 0 0 8px; font-size: 14px; color: var(--ink); }
+  .refs { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
+  .ref { font-size: 12px; color: var(--muted); }
+  .ref a { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+  .ref .what { color: var(--muted); }
+
+  .legend { display:flex; flex-wrap: wrap; gap: 10px 18px; margin: 14px 0 6px; font-size: 13px; }
+  .legend span { display:inline-flex; align-items:center; gap:7px; }
+  .dot { width: 12px; height: 12px; border-radius: 4px; display:inline-block; }
+  .dot.react{background:var(--react);} .dot.core{background:var(--core);}
+  .dot.event{background:var(--event);} .dot.present{background:var(--present);}
+
+  table { width:100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 11px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing:.03em; }
+  td .path { display:block; margin-top:3px; }
+  .kbd {
+    display:inline-block; font-family: inherit; font-size: 12.5px; font-weight:600;
+    background: var(--code-bg); border:1px solid var(--line); border-bottom-width:2px;
+    border-radius: 5px; padding: 1px 7px; white-space: nowrap;
+  }
+  .scroll { overflow-x: auto; }
+  footer { margin-top: 48px; color: var(--muted); font-size: 12.5px; border-top:1px solid var(--line); padding-top:16px; }
+  .toc { display:flex; flex-wrap:wrap; gap: 6px 14px; margin: 18px 0 4px; font-size: 13.5px; }
+  .toc a { color: var(--muted); }
+  .toc a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Tickstrike Web — Tick Flow Map</h1>
+    <p class="sub">一次玩家輸入，從 React 到 core 結算、到事件、再到 PixiJS 演出的完整 call chain。每一站都可點開對應的 <span class="path">file:line</span>。</p>
+    <p class="meta">產出時間 2026-07-24 · 依據當前 <code>main</code> 分支原始碼追蹤 · 行號會隨改動漂移，動到這條鏈的 spec 請順手更新本頁。</p>
+    <nav class="toc">
+      <a href="#flow">① 主流程</a>
+      <a href="#paths">② 兩條播放路徑</a>
+      <a href="#side">③ 側向輸入</a>
+      <a href="#content">④ Content 掛載點</a>
+      <a href="#seam">⑤ Determinism 單向閥</a>
+      <a href="#nav">⑥ VS Code 導覽</a>
+    </nav>
+  </header>
+
+  <div class="callout">
+    <strong>怎麼讀這張圖</strong>
+    這條鏈是<b>單向</b>的：core 同步改完 <code>World</code> 並吐出一串 <code>CombatEvent</code>（純資料），presentation 只讀那串事件加 snapshot 來演出，永遠不會回寫 core。所以追一個 bug 時先問自己：症狀是「數值/判定錯」（往 core 找）還是「畫面/動畫錯」（往 presentation 找）——兩邊用事件切開，很少需要同時看。
+  </div>
+
+  <div class="legend">
+    <span><i class="dot react"></i> React / 輸入層 <span class="path">src/app · src/ui</span></span>
+    <span><i class="dot core"></i> Core 結算 <span class="path">src/core</span></span>
+    <span><i class="dot event"></i> 事件（純資料介面）<span class="path">src/core/events</span></span>
+    <span><i class="dot present"></i> Presentation 演出 <span class="path">src/presentation · src/runtime</span></span>
+  </div>
+
+  <h2 id="flow">① 主流程：一次玩家攻擊 / 移動</h2>
+  <p>這是 <code>type: "attack" | "move" | "dash" | "smash"</code> 這類會消耗一個 tick 的指令走的路。reward / milestone / cancel 走簡化版（見 <a href="#side">③</a>）。</p>
+
+  <div class="flow">
+
+    <div class="station react">
+      <span class="num">1</span>
+      <span class="lane react">React 輸入</span>
+      <h3>鍵盤 / 指標 → 產生 GameCommand</h3>
+      <p>鍵盤與滑鼠事件在 hook 裡被翻成 <code>move / attack / dash / smash</code> callback。<code>moveOrAttack</code> 會先用 <code>previewAttack</code> 純讀 snapshot 決定這一步是打還是走。<code>execute()</code> 只是包一層 <code>setBusy</code>。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/app/use-game-session.ts:362">use-game-session.ts:362</a> <span class="what">— useKeyboardInput 綁定</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/app/use-game-session.ts:445">use-game-session.ts:445</a> <span class="what">— bindPointerInput（點擊 → attack/dash/smash）</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/app/use-game-session.ts:344">use-game-session.ts:344</a> <span class="what">— moveOrAttack：previewAttack 決定打或走</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/app/use-game-session.ts:269">use-game-session.ts:269</a> <span class="what">— runtime.execute({ type: "attack", … })</span></div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="station present">
+      <span class="num">2</span>
+      <span class="lane present">Runtime 佇列</span>
+      <h3>execute() → submit() → drainCommands()</h3>
+      <p>每個輸入包成一個 job 進佇列，序列化執行（一次只跑一個 turn）。<code>submit</code> 送出時會把上一回合還在跑的 VFX <b>快轉到結束</b>（<code>finishActive</code>），所以連點不會被前一段動畫卡住。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:111">game-runtime.ts:111</a> <span class="what">— execute()</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:139">game-runtime.ts:139</a> <span class="what">— submit()：入列 + 快轉在飛的動畫</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:290">game-runtime.ts:290</a> <span class="what">— drainCommands()：主迴圈</span></div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="station core">
+      <span class="num">3</span>
+      <span class="lane core">Core 入口</span>
+      <h3>resolveCommand()：守門 + 分派</h3>
+      <p>先擋掉不該處理的狀態（encounter 已結束、有待選 reward、有待決 milestone），再跑 <code>resolvePlayerAction</code>。玩家這步被拒就直接回傳、不動 tick。被接受才進入完整回合結算。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:315">game-runtime.ts:315</a> <span class="what">— drainCommands 呼叫 resolveCommand()</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/action-resolver.ts:91">action-resolver.ts:91</a> <span class="what">— resolveCommand()：三道守門</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/action-resolver.ts:112">action-resolver.ts:112</a> <span class="what">— resolvePlayerAction()</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/player-actions.ts:23">player-actions.ts:23</a> <span class="what">— PlayerActionContext（玩家階段拿到的窄能力介面）</span></div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="station core">
+      <span class="num">4</span>
+      <span class="lane core">Core 回合結算</span>
+      <h3>finishAccepted()：一個 tick 的所有階段</h3>
+      <p>玩家動作被接受後，這裡按固定順序跑完整個 tick，並把每個階段吐出的事件<b>依序串成一條</b> <code>completeEvents</code>：<br>
+      玩家事件 → <code>advancePlayerAction</code> → <code>resolveEnemyPhaseSlots</code>（敵人階段）→ <code>resolveWavePhase</code>（波次）→ <code>updateEncounterOutcome</code>（勝負）→ <code>recordEvents</code> → <code>purgeTerminalEntities</code>（移除這批打死的實體）。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/action-resolver.ts:45">action-resolver.ts:45</a> <span class="what">— finishAccepted()：階段編排 + 事件串接</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/action-resolver.ts:53">action-resolver.ts:53</a> <span class="what">— resolveEnemyPhaseSlots()</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/action-resolver.ts:55">action-resolver.ts:55</a> <span class="what">— resolveWavePhase() / updateEncounterOutcome()</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/action-resolver.ts:77">action-resolver.ts:77</a> <span class="what">— recordEvents() + purgeTerminalEntities()</span></div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="station core">
+      <span class="num">5</span>
+      <span class="lane core">Core 敵人階段</span>
+      <h3>resolveEnemyPhaseSlots()：每個敵人一個 slot</h3>
+      <p>逐一敵人跑：先處理 telegraph 收線與攻擊落地，再推進狀態（stagger / recover / rest），最後 ready 的敵人才 <code>decideAtSlot</code> 決策並 <code>applyDecisionAtSlot</code> 落地。<b>role 專屬邏輯不寫在這裡</b>——透過 <code>getEnemyBehavior(role)</code> 從 registry 取（見 <a href="#content">④</a>）。這是「加一個敵人不用動 enemy-phase」的關鍵。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/enemy-phase.ts:116">enemy-phase.ts:116</a> <span class="what">— resolveEnemyPhaseSlots()</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/enemy-phase.ts:22">enemy-phase.ts:22</a> <span class="what">— resolveTelegraphingSlot()：behavior.retarget / resolveAttack</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/enemy-phase.ts:44">enemy-phase.ts:44</a> <span class="what">— decideAtSlot() → decideEnemyAction()</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/enemy-phase.ts:65">enemy-phase.ts:65</a> <span class="what">— applyDecisionAtSlot()：move / attack / wait</span></div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="station event">
+      <span class="num">6</span>
+      <span class="lane event">事件</span>
+      <h3>ActionResolution：flat events + turnPlayback</h3>
+      <p><code>finishAccepted</code> 回傳兩份同源資料：<code>events</code>（扁平、權威的語意事件流，測試都斷言這個）和 <code>turnPlayback</code>（同一批事件<b>按 actor 分組</b>，只給演出用來分節奏）。事件型別是一個大 union，所有跨層溝通都靠它——想知道有哪些事件，看這個 union。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/actions/action-resolver.ts:20">action-resolver.ts:20</a> <span class="what">— ActionResolution / TurnPlayback 型別</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/events/combat-events.ts:14">combat-events.ts:14</a> <span class="what">— CombatEvent union（全部事件在此）</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/core/events/terminal-entities.ts:1">terminal-entities.ts</a> <span class="what">— collectTerminalEntityIds（誰在這批被移除）</span></div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="station present">
+      <span class="num">7</span>
+      <span class="lane present">Runtime 交棒</span>
+      <h3>回到 drainCommands：發佈 snapshot、選播放路徑</h3>
+      <p>拿到 resolution 後：<code>reserveMotionOwners</code> + <code>captureTerminalViews</code> 先鎖住要動/要死的 view，<code>emit()</code> 把新 snapshot 推給 renderer 和 React，<code>audioDirector.play</code> 出聲。接著<b>二選一</b>：有 <code>turnPlayback</code> 就走 <code>turnOrder.play</code>（分節奏），否則 <code>presentation.play</code>（一次全放）。詳見 <a href="#paths">②</a>。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:318">game-runtime.ts:318</a> <span class="what">— reserveMotionOwners / captureTerminalViews</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:324">game-runtime.ts:324</a> <span class="what">— emit()：推 snapshot 給 renderer + React</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:330">game-runtime.ts:330</a> <span class="what">— turnOrder.play(…) 或 presentation.play(…)</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:440">game-runtime.ts:440</a> <span class="what">— emit() 定義：renderer.updateSnapshot + listeners</span></div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="station present">
+      <span class="num">8</span>
+      <span class="lane present">Presentation 演出</span>
+      <h3>PresentationDirector.playNow()：事件 → GSAP timeline</h3>
+      <p>把事件流轉成動畫。位移類事件先經 <code>normalizeMotionEvents</code> 變成 <code>BoardMotionStep</code>；其餘事件走一個 <code>switch</code>：玩家事件（攻擊/受傷/死亡/smash）在本檔內建，<b>敵人事件全部路由到 presenter registry</b>——<code>getEnemyPresenter(profileId).presentEvent(…)</code>，coordinator 不認識任何 role（見 <a href="#content">④</a>）。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/presentation/timelines/presentation-director.ts:170">presentation-director.ts:170</a> <span class="what">— playNow()</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/presentation/timelines/presentation-director.ts:19">presentation-director.ts:19</a> <span class="what">— normalizeMotionEvents()：事件 → BoardMotionStep</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/presentation/timelines/presentation-director.ts:184">presentation-director.ts:184</a> <span class="what">— 事件 switch（玩家事件內建）</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/presentation/timelines/presentation-director.ts:260">presentation-director.ts:260</a> <span class="what">— default：敵人事件路由到 presenter</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/presentation/timelines/presentation-director.ts:344">presentation-director.ts:344</a> <span class="what">— createMotionTrack()：位移 timeline</span></div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="station react">
+      <span class="num">9</span>
+      <span class="lane react">React 回讀</span>
+      <h3>snapshot / turnOrder 回到 UI</h3>
+      <p>core 每次 <code>emit()</code> 都會呼叫在 <code>subscribe</code> 註冊的 listener，把 <code>WorldSnapshot</code> 灌進 React state（HP、波次、結局都從這來）。回合節奏另走 <code>subscribeTurnOrder</code>，由 <code>TurnOrderController</code> 一格一格推。演出結束再 <code>notifyPresentationSettled</code> 補一次最終 snapshot。</p>
+      <div class="refs">
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/app/use-game-session.ts:202">use-game-session.ts:202</a> <span class="what">— runtime.subscribe(setSnapshot)</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/turn-order-controller.ts:171">turn-order-controller.ts:171</a> <span class="what">— TurnOrderController.play()：逐 slot 推進</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/turn-order-controller.ts:254">turn-order-controller.ts:254</a> <span class="what">— reduceEvents()：事件 → 回合條 token 狀態</span></div>
+        <div class="ref"><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:451">game-runtime.ts:451</a> <span class="what">— notifyPresentationSettled()</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2 id="paths">② 兩條播放路徑（為什麼有兩個 play）</h2>
+  <p>這是最容易看糊的地方：同一批事件，runtime 會走其中一條，<b>不會兩條都走</b>。判斷點在 <a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:330">game-runtime.ts:330</a>。</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>路徑</th><th>何時走</th><th>做什麼</th><th>入口</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>turnOrder.play</b><br><span class="path">分節奏</span></td>
+        <td>resolution 帶 <code>turnPlayback</code>（一般消耗 tick 的指令）</td>
+        <td>按 actor 分組，一格一格演：玩家 slot → 每個敵人 slot → 收尾。格與格之間插入 handoff 停頓（fast 100ms / normal 250ms），同時更新上方回合條。</td>
+        <td><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/turn-order-controller.ts:171">turn-order-controller.ts:171</a></td>
+      </tr>
+      <tr>
+        <td><b>presentation.play</b><br><span class="path">一次全放</span></td>
+        <td>沒有 <code>turnPlayback</code> 時的後備</td>
+        <td>把整批事件一次丟進 <code>playNow</code>，所有動畫並行跑完。</td>
+        <td><a href="vscode://file/E:/Code/tickstrike-web/src/presentation/timelines/presentation-director.ts:120">presentation-director.ts:120</a></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p>兩條最後都落到同一個 <code>PresentationDirector.playSlot / playNow</code> 去產 GSAP timeline——差別只在「分幾次餵、要不要插停頓」。所以動畫本身怎麼演的 bug 一律看 <code>presentation-director.ts</code>；「節奏 / 回合條 / 停頓」的 bug 才看 <code>turn-order-controller.ts</code>。</p>
+
+  <h2 id="side">③ 側向輸入（不走完整回合的三種）</h2>
+  <p>reward 選卡、milestone 決定、smash 取消都經<b>同一個佇列</b>（<code>submit</code>）序列化，但都<b>不跑敵人階段、不跑演出 timeline</b>，只 <code>emit()</code> 發佈新 snapshot。這是它們比主流程短很多的原因。</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>輸入</th><th>Runtime 入口</th><th>Core 結算</th></tr></thead>
+    <tbody>
+      <tr><td>選 reward 卡</td>
+        <td><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:159">game-runtime.ts:159</a> selectReward</td>
+        <td><span class="path">resolveRewardSelection — wave-phase.ts</span></td></tr>
+      <tr><td>milestone 決定</td>
+        <td><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:184">game-runtime.ts:184</a> selectMilestoneDecision</td>
+        <td><span class="path">resolveMilestoneDecision — wave-phase.ts</span></td></tr>
+      <tr><td>取消已架起的 smash</td>
+        <td><a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:209">game-runtime.ts:209</a> cancelArmedSmash</td>
+        <td><span class="path">resolveSmashCancel — player-actions.ts</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2 id="content">④ Content 掛載點：加一個敵人動哪三個檔</h2>
+  <p>整套 registry pattern 的用意就是：新增一個敵人 = 各加一個 module + 各加一行 registry，<b>hub（enemy-phase / world / director）一行都不用改</b>。代價是靜態追蹤會斷在 registry——真正的 dispatch 是 runtime 用字串 key 做的。</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>軸</th><th>放哪</th><th>Registry（dispatch 斷點）</th><th>用什麼 key</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>定義 / 攻擊 / 素材</b><br><span class="path">content 側</span></td>
+        <td><span class="path">src/content/enemies/features/&lt;name&gt;.ts</span></td>
+        <td><a href="vscode://file/E:/Code/tickstrike-web/src/content/enemies/features/index.ts:29">features/index.ts:29</a> enemyFeatures</td>
+        <td>直接列在陣列</td>
+      </tr>
+      <tr>
+        <td><b>role 邏輯</b><br><span class="path">core 側 · 決定性</span></td>
+        <td><span class="path">src/core/enemies/behaviors/&lt;name&gt;.ts</span></td>
+        <td><a href="vscode://file/E:/Code/tickstrike-web/src/core/enemies/behaviors/index.ts:13">behaviors/index.ts:13</a> registry</td>
+        <td>role 字串，如 <code>"bomb"</code></td>
+      </tr>
+      <tr>
+        <td><b>專屬演出</b><br><span class="path">presentation 側</span></td>
+        <td><span class="path">src/presentation/timelines/enemy-presenters/&lt;name&gt;.ts</span></td>
+        <td><a href="vscode://file/E:/Code/tickstrike-web/src/presentation/timelines/enemy-presenters/index.ts:14">enemy-presenters/index.ts:14</a> registry</td>
+        <td>profile 字串，如 <code>"enemy.bomb"</code></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout warn">
+    <strong>追蹤斷點怎麼過</strong>
+    對 <code>bombEnemyBehavior</code> 按 <span class="kbd">Shift+F12</span> 只會找到 registry 那一行，因為呼叫端是 runtime 拿字串 <code>"bomb"</code> 去查 Map。想找「誰真的觸發它」時，<b>改搜字串 key（<code>"bomb"</code> / <code>"enemy.bomb"</code>）</b>，不要搜 function 名字。這是唯一一個 registry pattern 讓你多付的成本。
+  </div>
+
+  <h2 id="seam">⑤ 為什麼 core 和 presentation 這樣切（Determinism 單向閥）</h2>
+  <p>整條鏈是一個單向閥：</p>
+  <div class="callout">
+    <strong>core 只寫 World、只吐事件；presentation 只讀事件、只碰畫面。事件流是唯一的縫。</strong>
+    core 同步跑完一個 tick（步驟 3–6），把發生的事寫成純資料 <code>CombatEvent[]</code>。presentation（步驟 7–9）只消費這串事件加 snapshot，<b>永遠不回寫 core</b>。這就是你當初為了 determinism 做的 logic / presentation 拆分——它的回報是：同一個 seed + 同一串輸入，core 一定跑出同一串事件，跟畫面演成怎樣完全無關。<code>replayCommandLog</code>（<a href="vscode://file/E:/Code/tickstrike-web/src/runtime/game-runtime.ts:232">game-runtime.ts:232</a>）就是靠這點重播整場。
+  </div>
+  <p>實務推論：presentation 那層再怎麼改都不會弄壞遊戲性（有視覺 regression 擋著就夠）；但只要改動會影響 core 吐出的<b>事件內容或順序</b>，就是動到 determinism，需要 same-seed 事件序列比對，不能只看測試綠。這也是 CLAUDE.md model-tier 規則把這兩類分開的原因。</p>
+
+  <h2 id="nav">⑥ VS Code 導覽捷徑</h2>
+  <p>「看到 function 名字卻不知道 define / caller 在哪」在這個 repo 是<b>環境問題</b>，不是 TypeScript 的宿命。用 VS Code 開這個資料夾、確認右下角 TS 語言伺服器有起來，以下開箱即用（import 進來的一樣能跳）：</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>快捷鍵</th><th>作用</th><th>什麼時候用</th></tr></thead>
+    <tbody>
+      <tr><td><span class="kbd">Ctrl</span> + 點擊 / <span class="kbd">F12</span></td><td>跳到定義</td><td>順著呼叫往下鑽</td></tr>
+      <tr><td><span class="kbd">Shift</span>+<span class="kbd">F12</span></td><td>Find All References（反查所有 caller）</td><td>「誰在用這個」——但遇到 registry 會斷，改搜字串 key</td></tr>
+      <tr><td><span class="kbd">Alt</span>+<span class="kbd">F12</span></td><td>Peek definition（不離開當前檔）</td><td>只想瞄一眼型別/實作</td></tr>
+      <tr><td><span class="kbd">Ctrl</span>+<span class="kbd">T</span></td><td>全 workspace 用名字搜 symbol</td><td>不知道檔案在哪，只記得名字</td></tr>
+      <tr><td><span class="kbd">Shift</span>+<span class="kbd">Alt</span>+<span class="kbd">H</span></td><td>Call Hierarchy（呼叫樹）</td><td>展開「誰呼叫它、它又呼叫誰」整棵樹</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout warn">
+    <strong>registry pattern 的追蹤限制</strong>
+    這個 codebase 大量用 role 字串 → 實作的 Map（enemy behavior、presenter、feature）。對這種 code，<span class="kbd">Shift+F12</span> 和 Call Hierarchy 都會停在 registry 那行，因為真正的 dispatch 是 runtime 用字串做的、靜態分析看不到。<b>對付它的通用招：改用 Grep 搜字串 key</b>（例如 <code>"bomb"</code>），不要搜 function 名字。知道這條規則後，斷點從「惡夢」變成「多一次 grep」。
+  </div>
+
+  <footer>
+    Tickstrike Web · Tick Flow Map · 本頁是人類導向的追蹤地圖，非權威規格。行號請以原始碼為準；<code>vscode://</code> 連結需在有此 repo 開啟的 VS Code 環境點擊。
+  </footer>
+</div>
+
+<script>
+  // Respect an explicit theme toggle if the host stamps data-theme; otherwise follow the OS.
+  (function () {
+    try {
+      var stored = localStorage.getItem("tickstrike-flowmap-theme");
+      if (stored === "light" || stored === "dark") {
+        document.documentElement.setAttribute("data-theme", stored);
+      }
+    } catch (e) {}
+  })();
+</script>
+</body>
+</html>
