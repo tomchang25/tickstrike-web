@@ -19,7 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
+      - run: npm run verify
 
   e2e:
     name: Browser acceptance (Chromium)

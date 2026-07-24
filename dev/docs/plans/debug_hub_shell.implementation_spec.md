@@ -50,18 +50,18 @@ Because the whole Playwright e2e suite enters through `page.goto("/debug?scenari
 
 ## Files to Change
 
-| File                                    | Change Size | Purpose                                                                    |
-| --------------------------------------- | ----------- | -------------------------------------------------------------------------- |
-| `src/app/debug/debug-tool-catalog.ts`    | Small (new) | Route catalog: id, path, title, subtitle, DEV-guarded lazy loader per tool |
-| `src/app/debug/debug-shell.tsx`          | Small (new) | Shared header/navigation frame wrapping each tool                          |
-| `src/app/debug/debug-hub-app.tsx`        | Small (new) | Hub index page listing catalog entries                                     |
-| `src/app/app.tsx`                        | Medium      | Replace hand-written conditionals with catalog dispatch; hub at `/debug`   |
-| `src/app/testbed-app.tsx`                | Medium      | Serve `/debug/game`; yield outer frame to the shared shell                 |
-| `src/app/wall-testbed-app.tsx`           | Small       | Yield outer frame to the shared shell                                      |
-| `src/app/entity-presentation-lab-app.tsx`| Small       | Yield outer frame to the shared shell                                      |
-| `src/app/action-lab-app.tsx`             | Small       | Yield outer frame to the shared shell                                      |
-| `src/app/styles.css`                     | Small       | Hub index and shell navigation styles                                      |
-| `test/e2e/*.spec.ts`                     | Small, wide | Rewrite `goto("/debug?scenario=…")` to `/debug/game?scenario=…`            |
+| File                                      | Change Size | Purpose                                                                    |
+| ----------------------------------------- | ----------- | -------------------------------------------------------------------------- |
+| `src/app/debug/debug-tool-catalog.ts`     | Small (new) | Route catalog: id, path, title, subtitle, DEV-guarded lazy loader per tool |
+| `src/app/debug/debug-shell.tsx`           | Small (new) | Shared header/navigation frame wrapping each tool                          |
+| `src/app/debug/debug-hub-app.tsx`         | Small (new) | Hub index page listing catalog entries                                     |
+| `src/app/app.tsx`                         | Medium      | Replace hand-written conditionals with catalog dispatch; hub at `/debug`   |
+| `src/app/testbed-app.tsx`                 | Medium      | Serve `/debug/game`; yield outer frame to the shared shell                 |
+| `src/app/wall-testbed-app.tsx`            | Small       | Yield outer frame to the shared shell                                      |
+| `src/app/entity-presentation-lab-app.tsx` | Small       | Yield outer frame to the shared shell                                      |
+| `src/app/action-lab-app.tsx`              | Small       | Yield outer frame to the shared shell                                      |
+| `src/app/styles.css`                      | Small       | Hub index and shell navigation styles                                      |
+| `test/e2e/*.spec.ts`                      | Small, wide | Rewrite `goto("/debug?scenario=…")` to `/debug/game?scenario=…`            |
 
 ## Execution Outline
 
@@ -79,11 +79,11 @@ Because the whole Playwright e2e suite enters through `page.goto("/debug?scenari
 
 ## Edge Cases
 
-| Case                                          | Expected Handling                                                        |
-| --------------------------------------------- | ------------------------------------------------------------------------ |
-| Unknown `/debug/<something>` path in dev      | Fall back to the hub index so a typo never white-screens                 |
-| Any `/debug` path in a production build       | `GameApp` renders, exactly as today                                      |
-| `/debug/game` with no or invalid `?scenario=` | Default scenario loads, matching current testbed fallback                |
+| Case                                          | Expected Handling                                         |
+| --------------------------------------------- | --------------------------------------------------------- |
+| Unknown `/debug/<something>` path in dev      | Fall back to the hub index so a typo never white-screens  |
+| Any `/debug` path in a production build       | `GameApp` renders, exactly as today                       |
+| `/debug/game` with no or invalid `?scenario=` | Default scenario loads, matching current testbed fallback |
 
 ## Acceptance Criteria
 
