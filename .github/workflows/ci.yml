@@ -31,6 +31,8 @@ jobs:
         run: npm run check:boundaries
       - name: Unit tests
         run: npm run test:unit
+      - name: Component tests
+        run: npm run test:component
       - name: Build
         run: npm run build
 

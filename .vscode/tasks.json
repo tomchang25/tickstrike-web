@@ -29,6 +29,13 @@
       "problemMatcher": []
     },
     {
+      "label": "Component test",
+      "type": "shell",
+      "command": "npm run test:component",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
       "label": "E2E test",
       "type": "shell",
       "command": "npm run test:e2e",

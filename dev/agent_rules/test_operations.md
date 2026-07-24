@@ -24,9 +24,10 @@ For a Playwright run that needs its own server, set `PLAYWRIGHT_PORT=<available-
 - Lint: Oxlint verifies TypeScript, TSX, and control-flow style rules.
 - Unit: Vitest tests under `test/unit/`.
 - Build smoke: TypeScript project compilation followed by the Vite production export to `build/`.
+- Component: Vitest tests under `test/component/` that render a single React component into jsdom and assert its DOM. Each file opts into jsdom with a `// @vitest-environment jsdom` docblock and imports `render`/`screen`/`userEvent` from `test/component/harness.tsx`.
 - Browser acceptance: Playwright tests under `test/e2e/` against the Vite development server.
 - Sprite animation tooling: Python tests under `test/unit/tools/` for the offline compiler, validator, preview output, and catalog preflight behavior.
-- Component and accessibility layers are not configured yet.
+- The accessibility layer is not configured yet.
 
 ## Commands And Pass Criteria
 
@@ -34,7 +35,8 @@ For a Playwright run that needs its own server, set `PLAYWRIGHT_PORT=<available-
 - `npm run format:check`: passes when every eligible project file conforms to the Prettier configuration.
 - `npm run lint`: passes when Oxlint finds no violations in eligible TypeScript and TSX files.
 - `npm run lint:fix`: applies Oxlint's safe automatic fixes; this is a mutation command, not a pass/fail verification layer.
-- `npm run test:unit`: the canonical unit-suite entry; passes when Vitest exits successfully with every unit assertion passing. `npm test` is an alias required by the command surface standard and delegates to it.
+- `npm run test:unit`: the canonical unit-suite entry (`test/unit/`, Node environment); passes when Vitest exits successfully with every unit assertion passing.
+- `npm run test:component`: the component render layer (`test/component/`, jsdom); passes when every React panel-render assertion passes. `npm test` runs both suites and is the aggregate name required by the command surface standard.
 - `npm run build`: passes when TypeScript and Vite exit successfully and produce the Web export in `build/`.
 - `npm run test:e2e`: passes when Playwright starts its configured development server or uses the explicitly requested external server and every Chromium scenario passes. On browser launch failure, distinguish a missing browser installation from an application test failure.
 - `python test/unit/tools/sprite_animation_test.py`: passes when the deterministic sprite compiler produces 64x128 sheets with direction columns, validates manifests, creates optional previews, generates every current water target, and rejects a batch with an unknown effect before writing output.
