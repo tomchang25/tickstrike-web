@@ -24,6 +24,10 @@ Rules:
 
 - 2026-07-24 - [port_13_3] Every enemy profile now plays its approved directional body-split terminal on a Dash kill, with explicit Dash death semantics, retained-view cleanup, and read-only Action Lab previews for Dash-killed and drowning sheets
 
+### Enemy Action Timing Balance
+
+- 2026-07-24 - [enemy_balance] Nerfed enemy action timings: Bomb windup to 5 ticks, Ranged windup to 4 ticks with recovery extended to 2 ticks, Charge windup to 3 ticks with recovery held at 2 ticks
+
 ### Deterministic Tick Arena Foundation
 
 - 2026-07-18 - [port_02] The Web port now has a deterministic twelve-by-twelve Tick Arena with reset-safe occupancy, reservations, Telegraph ownership, seeded streams, and runtime generation boundaries

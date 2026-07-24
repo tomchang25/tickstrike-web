@@ -27,7 +27,7 @@ export const chargeEnemyFeature = defineEnemyFeature({
       name: "Charge",
       kind: "charge",
       damage: 8,
-      warningTicks: 2,
+      warningTicks: 3,
       recoveryTicks: 2,
       shape: { shape: "line", length: 5 },
     },

@@ -27,8 +27,8 @@ export const rangedEnemyFeature = defineEnemyFeature({
       name: "Ranged Cross",
       kind: "tile",
       damage: 10,
-      warningTicks: 2,
-      recoveryTicks: 1,
+      warningTicks: 4,
+      recoveryTicks: 2,
       shape: {
         shape: "custom-offsets",
         offsets: [

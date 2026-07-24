@@ -7,13 +7,17 @@ describe("Charge motion ownership scenario", () => {
     const scenario = requireScenario("charge-enemy");
     const world = scenario.createWorld(scenario.seed);
     const moveLeft = { type: "move" as const, actorId: "player", direction: { x: -1, y: 0 } };
+    // Charge's 3-tick windup needs one more tick than the three left moves provide; hold the
+    // Player in place with an in-place attack so the detonation still lands on (4,3).
+    const holdInPlace = { type: "attack" as const, actorId: "player", direction: { x: -1, y: 0 } };
 
     resolveCommand(world, moveLeft);
     resolveCommand(world, moveLeft);
-    const result = resolveCommand(world, moveLeft);
+    const thirdMove = resolveCommand(world, moveLeft);
+    const result = resolveCommand(world, holdInPlace);
 
-    expect(result.events.map((event) => event.type)).toContain("actor_moved");
-    expect(result.events).toContainEqual({
+    expect(thirdMove.events.map((event) => event.type)).toContain("actor_moved");
+    expect(thirdMove.events).toContainEqual({
       type: "actor_moved",
       entityId: "player",
       from: { x: 5, y: 3 },

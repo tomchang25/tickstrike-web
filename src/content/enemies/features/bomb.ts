@@ -27,7 +27,7 @@ export const bombEnemyFeature = defineEnemyFeature({
       name: "Bomb Area",
       kind: "area",
       damage: 50,
-      warningTicks: 3,
+      warningTicks: 5,
       recoveryTicks: 1,
       shape: { shape: "manhattan", radius: 3 },
     },
