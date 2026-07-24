@@ -45,7 +45,11 @@ const PROGRESSION_PROFILE: WaveProgressionProfile = {
 
 const MILESTONE_GROUP: SpawnGroupDefinition = {
   id: "milestone-grunt-group",
-  placementStrategy: "scatter",
+  // Spawn the passive grunt in the player-ring band (2-4 cells) rather than scattered anywhere in
+  // the arena, so the run-lifecycle browser spec reaches each clear in a couple of moves instead of
+  // pathfinding across the whole board. Purely a fixture-speed choice; this scenario is not a
+  // determinism golden.
+  placementStrategy: "player-ring",
   compositionMode: "fixed",
   weightedTotalCount: 0,
   entries: [{ enemyId: "reward-grunt", count: 1 }],

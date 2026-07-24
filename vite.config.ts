@@ -154,7 +154,10 @@ export default defineConfig({
     sourcemap: true,
   },
   test: {
+    // Node is the default for the pure-logic unit suite. Component tests opt into jsdom per file
+    // with a `// @vitest-environment jsdom` docblock so React can render into a simulated DOM
+    // without a browser; see dev/standards/test_economy_standard.md.
     environment: "node",
-    include: ["test/unit/**/*.test.ts"],
+    include: ["test/unit/**/*.test.ts", "test/component/**/*.test.tsx"],
   },
 });

@@ -4,8 +4,9 @@ import { canvasPointForCell } from "./canvas-geometry";
 test("Dash uses directional Guard results and ignores a committed enemy hit during release", async ({ page }) => {
   await page.goto("/debug?scenario=mobility-combat");
 
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
+  // Player sprite profile and idle/dashLand animation selection are owned by the character-sprites
+  // and presentation-director unit suites; this spec is about the directional Guard result and
+  // dash-release invulnerability. See dev/standards/test_economy_standard.md.
   const canvas = page.getByTestId("game-canvas");
   const box = await canvas.boundingBox();
   if (!box) {
@@ -46,8 +47,6 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
   await expect(page.getByTestId("event-log")).toContainText("enemy_guard_broken");
   await expect(page.getByTestId("event-log")).toContainText("enemy_attack_detonated");
   await expect(page.getByTestId("event-log")).not.toContainText("player_damaged");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
   await page.getByRole("button", { name: "Reset scenario" }).click();
@@ -57,27 +56,7 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 });
 
-test("a second input during the previous turn's VFX applies immediately and the board settles", async ({ page }) => {
-  await page.goto("/debug?scenario=empty-arena");
-  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
-
-  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
-  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
-
-  // Fire two moves back-to-back without awaiting the first: the second enqueues while the first
-  // move is still animating, exercising the enqueue-triggered fast-forward. Both must apply.
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    if (!api) {
-      throw new Error("Tickstrike debug API is unavailable.");
-    }
-    const first = api.execute({ type: "move", actorId: "player", direction: { x: 1, y: 0 } });
-    const second = api.execute({ type: "move", actorId: "player", direction: { x: 1, y: 0 } });
-    await Promise.all([first, second]);
-  });
-
-  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "8");
-  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
-  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-});
+// The enqueue-triggered fast-forward (a second command applying while the previous turn's VFX is
+// still in flight) is runtime behavior owned by test/unit/runtime/game-runtime.test.ts
+// ("fast-forwards an in-flight presentation when the next command is enqueued"), which asserts the
+// same two-step outcome headlessly. See dev/standards/test_economy_standard.md.

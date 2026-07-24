@@ -10,7 +10,9 @@ Scope verification to the risk of the change; never run the full vertical slice 
 | New terminal or multi-entity animation | Presentation unit test plus Playwright cleanup assertion   |
 | New global system                      | Full vertical slice                                        |
 
-The capability rule in `dev/foundation/platforms/web-react/standards/testing_standard.md` applies: Playwright verifies system capabilities, never per-content variants.
+The capability rule in `dev/foundation/platforms/web-react/standards/testing_standard.md` applies: Playwright verifies system capabilities, never per-content variants. How an individual test is authored — layer choice, cost budget, fixture-based setup, and the rule that presenter-selection attributes belong in unit while only one real-browser terminal-cleanup assertion is warranted — is owned by `dev/standards/test_economy_standard.md`.
+
+The "Playwright cleanup assertion" in the terminal/animation row above is one capability assertion, not one per enemy or effect. Which sprite, pose, palette, facing, or animation the runtime selects is verified in the presentation unit suites; a browser attribute check of that selection proves no visual and needs no browser.
 
 ## Browser suite scope
 

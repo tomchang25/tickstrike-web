@@ -7,8 +7,7 @@ declare global {
   }
 }
 
-test("Waves scenario warns, spawns, clears, and warns the next group in the same arena", async ({ page }) => {
-  test.setTimeout(45_000);
+test("Waves scenario renders the spawn warning, spawns the group, and resets", async ({ page }) => {
   await page.goto("/debug?scenario=waves");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
@@ -68,144 +67,11 @@ test("Waves scenario warns, spawns, clears, and warns the next group in the same
   expect(wave1Enemies).toHaveLength(3);
   await expect(page.getByTestId("enemy-count")).toHaveText("3");
 
-  // Clear Wave 1 with a bounded, deterministic combat loop driven only by accepted commands.
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    if (!api) {
-      throw new Error("Tickstrike debug API is unavailable.");
-    }
-    const DIRECTIONS = [
-      { x: 0, y: -1 },
-      { x: 1, y: 0 },
-      { x: 0, y: 1 },
-      { x: -1, y: 0 },
-    ];
-    const sameCell = (a: { x: number; y: number }, b: { x: number; y: number }) => a.x === b.x && a.y === b.y;
-    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-      Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-
-    for (let step = 0; step < 300; step += 1) {
-      const state = api.getState();
-      const player = state.entities.find((entity) => entity.id === "player");
-      if (!player || player.phase !== "alive") {
-        break;
-      }
-      const enemies = state.entities.filter(
-        (entity) => entity.kind === "enemy" && entity.id.startsWith("wave-1-slot-0-") && entity.phase === "alive",
-      );
-      if (enemies.length === 0) {
-        break;
-      }
-
-      const candidates = DIRECTIONS.filter((direction) => {
-        const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
-        if (cell.x < 0 || cell.y < 0 || cell.x >= state.arena.width || cell.y >= state.arena.height) {
-          return false;
-        }
-        const index = cell.y * state.arena.width + cell.x;
-        if (state.arena.tiles[index] !== "floor") {
-          return false;
-        }
-        if (state.entities.some((entity) => entity.phase === "alive" && sameCell(entity.cell, cell))) {
-          return false;
-        }
-        return !state.telegraphs.some((telegraph) =>
-          telegraph.cells.some((telegraphCell) => sameCell(telegraphCell, cell)),
-        );
-      });
-      const playerIsThreatened = state.telegraphs.some((telegraph) =>
-        telegraph.cells.some((cell) => sameCell(cell, player.cell)),
-      );
-      const threatenedRetreat = candidates[0];
-      if (playerIsThreatened && threatenedRetreat) {
-        await api.execute({ type: "move", actorId: "player", direction: threatenedRetreat });
-        continue;
-      }
-
-      const adjacent = enemies.find((enemy) => distance(enemy.cell, player.cell) === 1);
-      if (adjacent) {
-        const relation = { x: player.cell.x - adjacent.cell.x, y: player.cell.y - adjacent.cell.y };
-        const isFront = adjacent.facing && relation.x === adjacent.facing.x && relation.y === adjacent.facing.y;
-        if (isFront) {
-          const flank = candidates.find((direction) => {
-            const cell = { x: player.cell.x + direction.x, y: player.cell.y + direction.y };
-            return (
-              distance(cell, adjacent.cell) === 1 &&
-              !(cell.x - adjacent.cell.x === adjacent.facing?.x && cell.y - adjacent.cell.y === adjacent.facing?.y)
-            );
-          });
-          if (flank) {
-            await api.execute({ type: "move", actorId: "player", direction: flank });
-            continue;
-          }
-        }
-        await api.execute({
-          type: "attack",
-          actorId: "player",
-          direction: { x: adjacent.cell.x - player.cell.x, y: adjacent.cell.y - player.cell.y },
-        });
-        continue;
-      }
-
-      const aligned = enemies.find((enemy) => enemy.cell.x === player.cell.x || enemy.cell.y === player.cell.y);
-      if (aligned && (!player.mobility || player.mobility.remainingCooldown === 0)) {
-        const direction =
-          aligned.cell.x === player.cell.x
-            ? { x: 0, y: Math.sign(aligned.cell.y - player.cell.y) }
-            : { x: Math.sign(aligned.cell.x - player.cell.x), y: 0 };
-        await api.execute({ type: "dash", actorId: "player", direction });
-        continue;
-      }
-
-      const target = [...enemies].sort((a, b) => distance(a.cell, player.cell) - distance(b.cell, player.cell))[0];
-      if (!target) {
-        break;
-      }
-      const toward = DIRECTIONS.filter((direction) =>
-        direction.x !== 0 ? target.cell.x !== player.cell.x : target.cell.y !== player.cell.y,
-      )
-        .sort((a, b) => {
-          const nextA = { x: player.cell.x + a.x, y: player.cell.y + a.y };
-          const nextB = { x: player.cell.x + b.x, y: player.cell.y + b.y };
-          return distance(nextA, target.cell) - distance(nextB, target.cell);
-        })
-        .find((direction) => candidates.some((candidate) => sameCell(candidate, direction)));
-      const move = toward ?? candidates[0] ?? DIRECTIONS[0];
-      if (!move) {
-        break;
-      }
-      await api.execute({ type: "move", actorId: "player", direction: move });
-    }
-  });
-
-  await expect
-    .poll(async () =>
-      page.evaluate(
-        () => window.__TICKSTRIKE__?.getState().entities.filter((entity) => entity.kind === "enemy").length,
-      ),
-    )
-    .toBe(0);
-  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-
-  // The tick that kills Wave 1's last enemy clears the wave and installs Wave 2 (still
-  // unwarned); the very next accepted command latches Wave 2's slot eligible and admits its
-  // group in the same call, warning it in the same arena with no fixture reset or route change.
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    if (!api) {
-      throw new Error("Tickstrike debug API is unavailable.");
-    }
-    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
-  });
-
-  const wave2Warned = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
-  expect(wave2Warned?.waveRuntime?.waveNumber).toBe(2);
-  expect(wave2Warned?.telegraphs).toHaveLength(1);
-  expect(wave2Warned?.telegraphs[0]).toMatchObject({ phase: "spawning" });
-  expect(wave2Warned?.reservations.filter((reservation) => reservation.purpose === "spawn")).toHaveLength(1);
-  expect(wave2Warned?.entities.filter((entity) => entity.kind === "enemy")).toHaveLength(0);
-
-  // Deterministic reset returns to Wave 1 with no leftover spawn state from Wave 2.
+  // Wave clearing, the Wave 2 warning in the same arena, and reset-to-Wave-1 are wave-runtime
+  // semantics owned by test/unit/core/actions/wave-phase.test.ts,
+  // test/unit/harness/waves.scenario.test.ts, and the waves determinism golden. This spec keeps only
+  // the browser-observable spawn-warning render above and the reset below.
+  // See dev/standards/test_economy_standard.md.
   await page.getByRole("button", { name: "Reset scenario" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
   const reset = await page.evaluate(() => window.__TICKSTRIKE__?.getState());

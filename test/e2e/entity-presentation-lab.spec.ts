@@ -31,7 +31,9 @@ test("Entity Presentation Lab edits, resets, imports, and exports profile data",
 
   await page.getByTestId("entity-lab-profile").selectOption("enemy.ranged");
   await page.getByTestId("entity-lab-edit-target").selectOption("specific");
-  await expect(page.getByTestId("entity-lab-profile-source")).toContainText("enemy.ranged override");
+  // enemy.ranged ships without a specific override, so the specific edit target starts from the
+  // general fallback until one is written below.
+  await expect(page.getByTestId("entity-lab-profile-source")).toContainText("General fallback");
   await expect(page.getByTestId("entity-lab-body-scale")).toHaveValue(rangedScale);
 
   await page.getByTestId("entity-lab-direction").selectOption("left");
@@ -45,6 +47,7 @@ test("Entity Presentation Lab edits, resets, imports, and exports profile data",
   );
   await expect(page.getByTestId("entity-lab-catalog-json")).toContainText('"bodyScale": 4.2');
   await expect(page.getByTestId("entity-lab-catalog-json")).toContainText('"offsetY": 3');
+  await expect(page.getByTestId("entity-lab-profile-source")).toContainText("enemy.ranged override");
 
   await page.getByTestId("entity-lab-ground-y").fill("24");
   await page.getByTestId("entity-lab-reset-profile").click();

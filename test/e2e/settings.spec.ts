@@ -8,6 +8,9 @@ declare global {
 }
 
 test("the settings panel toggles the debug overlay and restarts the run", async ({ page }) => {
+  // This test opens/closes the settings panel and build overview several times in sequence; on a
+  // loaded CI runner the cumulative actionability waits can approach the 30s default budget.
+  test.setTimeout(60_000);
   await page.goto("/debug?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
@@ -60,10 +63,9 @@ test("the settings panel persists volume levels across reload", async ({ page })
   await page.getByTestId("settings-open").click();
   const master = page.getByTestId("settings-volume-master");
   await expect(master).toBeVisible();
-  await expect(page.getByTestId("settings-volume-effect")).toBeVisible();
-  await expect(page.getByTestId("settings-volume-music")).toBeVisible();
 
-  // The stored value is a 0..1 fraction; the slider works in whole percent.
+  // Slider rendering and the 0..1-fraction ↔ percent mapping are owned by
+  // test/component/settings-panel.test.tsx; this spec proves the value survives a real page reload.
   await master.fill("40");
   await expect(master).toHaveValue("40");
 

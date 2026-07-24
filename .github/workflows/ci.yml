@@ -19,7 +19,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
+      # The same stages `npm run verify` aggregates, split into named steps so a
+      # lint failure and a unit failure surface as distinct results in the UI.
+      - name: Format check
+        run: npm run format:check
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Boundaries
+        run: npm run check:boundaries
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Component tests
+        run: npm run test:component
+      - name: Build
+        run: npm run build
 
   e2e:
     name: Browser acceptance (Chromium)

@@ -8,8 +8,6 @@ declare global {
   }
 }
 
-const MAJOR_IDS = ["guard_shredder", "execution"];
-
 function requirePlayer(state: WorldSnapshot | undefined): EntityState {
   const player = state?.entities.find((entity) => entity.id === "player");
   if (!player) {
@@ -95,10 +93,8 @@ async function clearWaveForReward(page: Page): Promise<void> {
   });
 }
 
-test("Reward offers present three cards, a Major milestone, and a live build HUD, all cleared on reset", async ({
-  page,
-}) => {
-  test.setTimeout(120_000);
+test("Reward offer presents its cards and a live build HUD, all cleared on reset", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/debug?scenario=rewards");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
@@ -107,22 +103,22 @@ test("Reward offers present three cards, a Major milestone, and a live build HUD
   expect(initial.tick).toBe(0);
   expect(initial.pendingReward).toBeUndefined();
   expect(initial.runBuild).toEqual({ stacks: {}, triggers: [] });
-  expect(initial.waveRuntime).toMatchObject({ waveNumber: 1 });
   const basePlayer = requirePlayer(initial);
   expect(basePlayer.normalAttackDamage).toBeGreaterThan(0);
 
   const overlay = page.getByTestId("reward-overlay");
   await expect(page.getByTestId("run-build-empty")).toBeVisible();
 
-  // --- Wave 1: an ordinary offer of three distinct Minor cards at one stack, no Major ---
+  // Clear one wave to open its reward offer. The card composition across ordinary and milestone
+  // waves (three distinct Minors, stack counts, the Major cadence) and the effect each selection
+  // applies are owned by test/unit/core/rewards/reward-offers.test.ts and
+  // test/unit/core/actions/wave-phase.test.ts (including the Guard Shredder / Execution triggers).
+  // This spec keeps only the browser overlay, the live build HUD, the pause, and reset.
+  // See dev/standards/test_economy_standard.md.
   await clearWaveForReward(page);
   const wave1 = await readState(page);
   const offer1 = wave1.pendingReward;
   expect(offer1?.waveNumber).toBe(1);
-  expect(offer1?.cards).toHaveLength(3);
-  expect(new Set(offer1?.cards.map((card) => card.artifactId)).size).toBe(3);
-  expect(offer1?.cards.every((card) => card.resultingStackCount === 1)).toBe(true);
-  expect(offer1?.cards.some((card) => MAJOR_IDS.includes(card.artifactId))).toBe(false);
   await expect(overlay).toBeVisible();
   for (const card of offer1?.cards ?? []) {
     await expect(page.getByTestId(`reward-card-${card.artifactId}`)).toBeVisible();
@@ -131,18 +127,13 @@ test("Reward offers present three cards, a Major milestone, and a live build HUD
   // The pause is real: a command and keyboard input are both inert while an offer is open.
   const tickBeforeReject = wave1.tick;
   await page.evaluate(async () => {
-    await window.__TICKSTRIKE__?.execute({
-      type: "move",
-      actorId: "player",
-      direction: { x: 0, y: 1 },
-    });
+    await window.__TICKSTRIKE__?.execute({ type: "move", actorId: "player", direction: { x: 0, y: 1 } });
   });
-  const afterRejected = await readState(page);
-  expect(afterRejected.tick).toBe(tickBeforeReject);
-  expect(afterRejected.pendingReward).toBeDefined();
+  expect((await readState(page)).tick).toBe(tickBeforeReject);
   await page.keyboard.press("d");
   expect((await readState(page)).tick).toBe(tickBeforeReject);
 
+  // Selecting a card closes the overlay and surfaces the pick on the live build HUD.
   const firstPick = offer1!.cards[0]!.artifactId;
   await page.getByTestId(`reward-card-${firstPick}`).click();
   await expect(overlay).toHaveCount(0);
@@ -152,36 +143,7 @@ test("Reward offers present three cards, a Major milestone, and a live build HUD
   await expect(page.getByTestId(`run-build-item-${firstPick}`)).toBeVisible();
   await expect(page.getByTestId(`run-build-item-${firstPick}`)).toHaveAttribute("data-stack", "1");
 
-  // --- Wave 2: another ordinary Minor offer, still no Major ---
-  await clearWaveForReward(page);
-  const offer2 = (await readState(page)).pendingReward;
-  expect(offer2?.waveNumber).toBe(2);
-  expect(offer2?.cards.length).toBeGreaterThanOrEqual(1);
-  expect(offer2?.cards.some((card) => MAJOR_IDS.includes(card.artifactId))).toBe(false);
-  const secondPick = offer2!.cards[0]!.artifactId;
-  await page.getByTestId(`reward-card-${secondPick}`).click();
-  await expect(overlay).toHaveCount(0);
-  const buildBeforeMilestone = (await readState(page)).runBuild.stacks;
-
-  // --- Wave 3: a milestone offer with an eligible Major and a Minor two-stack card ---
-  await clearWaveForReward(page);
-  const offer3 = (await readState(page)).pendingReward;
-  expect(offer3?.waveNumber).toBe(3);
-  expect(offer3?.cards).toHaveLength(3);
-  const majorCard = offer3?.cards.find((card) => MAJOR_IDS.includes(card.artifactId));
-  expect(majorCard).toBeDefined();
-  // The non-Major milestone card grants two stacks over the pre-milestone build, whatever it lands on.
-  const minorCard = offer3?.cards.find((card) => !MAJOR_IDS.includes(card.artifactId));
-  expect(minorCard).toBeDefined();
-  expect(minorCard!.resultingStackCount).toBe((buildBeforeMilestone[minorCard!.artifactId] ?? 0) + 2);
-  await page.getByTestId(`reward-card-${majorCard!.artifactId}`).click();
-  await expect(overlay).toHaveCount(0);
-  const afterWave3 = await readState(page);
-  const expectedTrigger = majorCard!.artifactId === "guard_shredder" ? "guard-shredder" : "execution";
-  expect(afterWave3.runBuild.triggers).toContain(expectedTrigger);
-  await expect(page.getByTestId(`run-build-item-${majorCard!.artifactId}`)).toBeVisible();
-
-  // --- Reset clears the build, HUD, and any open offer, and restores the player ---
+  // Reset clears the build, HUD, and any open offer, and restores the player.
   await page.getByRole("button", { name: "Reset scenario" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
   const reset = await readState(page);
@@ -192,7 +154,6 @@ test("Reward offers present three cards, a Major milestone, and a live build HUD
   expect(resetPlayer.mobility).toEqual(basePlayer.mobility);
   expect(resetPlayer.maxHp).toBe(basePlayer.maxHp);
   expect(resetPlayer.hp).toBe(basePlayer.hp);
-  expect(reset.waveRuntime).toMatchObject({ waveNumber: 1 });
   await expect(overlay).toHaveCount(0);
   await expect(page.getByTestId("run-build-empty")).toBeVisible();
 });

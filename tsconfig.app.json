@@ -31,5 +31,5 @@
       "@ui/*": ["./src/ui/*"]
     }
   },
-  "include": ["src", "test/unit", "test/e2e"]
+  "include": ["src", "test/unit", "test/e2e", "test/component"]
 }

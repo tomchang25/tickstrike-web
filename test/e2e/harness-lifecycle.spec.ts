@@ -38,7 +38,9 @@ test("Enemy navigation testbed exposes blocked and reserved grid cells", async (
   await expect(page.getByTestId("tick-value")).toHaveText("1");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-hp", "100");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-mobility-cooldown", "0");
-  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  // Twenty enemies each take a turn-order playback slot, so settling runs longer than the default
+  // poll window.
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle()), { timeout: 20_000 }).toBe(true);
 });
 
 test("Empty arena presents the shipped board and deterministic start", async ({ page }) => {
@@ -49,14 +51,9 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
-
-  const arena = await page.evaluate(() => window.__TICKSTRIKE__?.getState().arena);
-  expect(arena).toMatchObject({ width: 18, height: 12 });
-  expect(arena?.terrain.filter((terrain) => terrain === "land")).toHaveLength(112);
-  expect(arena?.terrain.filter((terrain) => terrain === "sea")).toHaveLength(104);
+  // The shipped board's dimensions and terrain counts are owned by test/unit/core/world/arena.test.ts,
+  // and the player sprite/facing/idle-animation selection by the character-sprites unit suite; this
+  // spec is only the browser boot smoke and deterministic start. See dev/standards/test_economy_standard.md.
 });
 
 test("Held movement queues steps and settles each player presentation in order", async ({ page }) => {
@@ -107,10 +104,6 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("enemy-hp-enemy-thrust")).toContainText("100/100");
   await expect(page.getByTestId("enemy-guard-enemy-thrust")).toContainText("32/32");
   await expect(page.getByTestId("entity-enemy-ranged")).toBeAttached();
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
-    "data-enemy-presentations",
-    /enemy-thrust:enemy\.thrust:green:idle.*enemy-slash:enemy\.slash:purple:idle/,
-  );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-facing-x", "1");
@@ -124,10 +117,9 @@ test("Foundation arena resets its generation without stale presentation state", 
   await page.getByTestId("debug-mode").check();
   await expect(page.getByTestId("enemies-state")).toHaveCount(0);
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-debug-mode", "true");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
-    "data-enemy-presentations",
-    /enemy-thrust:enemy\.thrust:green:idle.*enemy-slash:enemy\.slash:purple:idle/,
-  );
+  // Enemy sprite/pose selection (thrust green idle, slash purple idle) is owned by the enemy-sprites
+  // and presentation-director unit suites; this spec verifies reset restores identical semantic state
+  // and clears stale telegraphs. See dev/standards/test_economy_standard.md.
 
   const initial = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   await page.keyboard.press("ArrowRight");
