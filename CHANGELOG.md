@@ -29,6 +29,12 @@ Rules:
 - 2026-07-24 - [enemy_balance] Nerfed enemy action timings: Bomb windup to 5 ticks, Ranged windup to 4 ticks with recovery extended to 2 ticks, Charge windup to 3 ticks with recovery held at 2 ticks
 - 2026-07-24 - [enemy_balance] Ranged now faces the target's dominant axis when it commits its windup, instead of keeping whatever direction it last moved
 
+### Charge Collision Rework
+
+- 2026-07-24 - [charge_rework] Charge now pushes every occupant along its path sideways, including the final-cell target, so nothing is knocked forward; a target that cannot be pushed takes double damage in place and the charger stops short
+- 2026-07-24 - [charge_rework] Being pushed by a charge cancels the victim's telegraph and committed attack, even one due to detonate the same tick, and drops it into recovery; staggered enemies keep their stagger
+- 2026-07-24 - [charge_rework] Two chargers no longer telegraph onto the same cell, a repositioning charger seeks the farthest reachable origin, and simultaneous detonations resolve earlier-committed-first
+
 ### Deterministic Tick Arena Foundation
 
 - 2026-07-18 - [port_02] The Web port now has a deterministic twelve-by-twelve Tick Arena with reset-safe occupancy, reservations, Telegraph ownership, seeded streams, and runtime generation boundaries

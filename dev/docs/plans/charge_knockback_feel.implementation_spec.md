@@ -31,7 +31,7 @@ No new sprite art, no catalog changes, no core event changes. Landed result: the
 
 ## Relational Context
 
-- Land this after `charge_enemy_rework.implementation_spec.md`: that spec collapses every charge push to the `charge_side_push` cause and removes forward target knockback, which is the vocabulary the pairing rule matches on.
+- The core collision rework this builds on has shipped, so its vocabulary is already in place: every charge push now emits the single `entity_displaced` cause `charge_side_push`, forward target knockback no longer exists, and the final-cell occupant is pushed sideways like every other path occupant. That single cause is what the pairing rule matches on.
 - `normalizeMotionEvents` (`src/presentation/timelines/presentation-director.ts`) is the single event→motion mapping and today maps each event independently; the pairing rule makes it batch-aware (a displacement looks up the `charge_landed` step in the same batch). It already consumes `charge_landed` and `entity_displaced` — this stays event-vocabulary-driven coordination, which is the director's job; per-profile visuals stay in the enemy presenters, and no per-profile branching is added.
 - Cross-entity timing can only live in the director: presenters are scoped to one enemy's events and cannot see the victims' motion steps.
 - `createMotionTrack` owns per-entity sequencing with a running cursor; a step's new optional delay offsets its position within that track. Displaced entities normally have a single step, but the delay must compose with the cursor, not replace it.
@@ -51,17 +51,17 @@ No new sprite art, no catalog changes, no core event changes. Landed result: the
 
 ### Excluded
 
-- Any core/gameplay change (owned by `charge_enemy_rework.implementation_spec.md`).
+- Any core/gameplay change; the Charge collision rework shipped separately and this spec is presentation-only.
 - New player or enemy sprite art, poses, or catalog entries.
 - Impact VFX/SFX additions and screen shake.
 - Smash knockback (`enemy_knocked`) timing, which already reads acceptably.
 
 ## Files to Change
 
-| File                                                        | Change Size | Purpose                                                                          |
-| ----------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------- |
-| `src/presentation/timelines/presentation-director.ts`       | Medium      | Batch-aware normalization with delays; hit-reaction track rules; dash scaling     |
-| `test/unit/presentation/timelines/presentation-director.test.ts` | Medium | Assert delays, durations, and player displacement pose/facing behavior            |
+| File                                                             | Change Size | Purpose                                                                       |
+| ---------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------- |
+| `src/presentation/timelines/presentation-director.ts`            | Medium      | Batch-aware normalization with delays; hit-reaction track rules; dash scaling |
+| `test/unit/presentation/timelines/presentation-director.test.ts` | Medium      | Assert delays, durations, and player displacement pose/facing behavior        |
 
 ## Execution Outline
 
@@ -80,13 +80,13 @@ No new sprite art, no catalog changes, no core event changes. Landed result: the
 
 ## Edge Cases
 
-| Case                                                       | Expected Handling                                                              |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Charger stops short (blocked landing fallback)             | Dash span is shorter; scaling and pairing follow the actual `from`→`to` span   |
-| Two charges detonate in one presentation batch             | Each displacement pairs with the span containing its cell; first match wins    |
-| New input arrives mid-animation                            | `finishActive()` collapses delayed steps with everything else; no input stall  |
-| Displacement event with a cause other than a charge push   | Plays immediately with the hit-reaction treatment, no delay                    |
-| Player displaced while holding a dash finishing pose       | No facing/pose override during the shove; settles to idle afterward            |
+| Case                                                     | Expected Handling                                                             |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Charger stops short (blocked landing fallback)           | Dash span is shorter; scaling and pairing follow the actual `from`→`to` span  |
+| Two charges detonate in one presentation batch           | Each displacement pairs with the span containing its cell; first match wins   |
+| New input arrives mid-animation                          | `finishActive()` collapses delayed steps with everything else; no input stall |
+| Displacement event with a cause other than a charge push | Plays immediately with the hit-reaction treatment, no delay                   |
+| Player displaced while holding a dash finishing pose     | No facing/pose override during the shove; settles to idle afterward           |
 
 ## Acceptance Criteria
 
