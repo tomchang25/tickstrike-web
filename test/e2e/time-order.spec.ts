@@ -37,7 +37,7 @@ test("Turn Order rail shows canonical order, exceptional badges, and cross-highl
   await expect(page.getByTestId("turn-order-token-enemy-slash")).toHaveAttribute("data-hovered", "true");
 
   await page.getByTestId("settings-open").click();
-  await page.getByTestId("settings-turn-order-pacing").selectOption("wait-for-vfx");
+  await page.getByTestId("settings-turn-order-pacing").selectOption("normal");
   await page.keyboard.press("Escape");
 
   await page.evaluate(() => {
@@ -66,10 +66,10 @@ test("Turn Order pacing preference survives reload", async ({ page }) => {
   await page.goto("/debug?scenario=tick-arena");
   await page.getByTestId("settings-open").click();
   const pacing = page.getByTestId("settings-turn-order-pacing");
-  await expect(pacing).toHaveValue("staggered");
-  await pacing.selectOption("wait-for-vfx");
+  await expect(pacing).toHaveValue("fast");
+  await pacing.selectOption("normal");
 
   await page.reload();
   await page.getByTestId("settings-open").click();
-  await expect(page.getByTestId("settings-turn-order-pacing")).toHaveValue("wait-for-vfx");
+  await expect(page.getByTestId("settings-turn-order-pacing")).toHaveValue("normal");
 });

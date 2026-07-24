@@ -4,9 +4,13 @@ import type { EntityId, EntityState, WorldSnapshot } from "@core/model/types";
 import type { SlotPresentation } from "@presentation/timelines/presentation-director";
 import type { TurnOrderPacing } from "./settings-store";
 
-const STAGGER_MS = 100;
+const HANDOFF_DELAY_MS: Readonly<Record<TurnOrderPacing, number>> = {
+  fast: 100,
+  normal: 250,
+};
 
 export type TurnOrderStatus = "STG" | "REC" | "REST" | "ATTACK";
+export type TurnOrderSpritePose = "idle" | "move" | "prepare" | "attack";
 
 export interface TurnOrderToken {
   readonly entityId: EntityId;
@@ -15,7 +19,12 @@ export interface TurnOrderToken {
   readonly shortLabel: string;
   readonly archetype: string;
   readonly presentationId?: string;
+  readonly facing?: EntityState["facing"];
+  /** The best runtime-derived pose available to the DOM rail; idle is the safe fallback. */
+  readonly spritePose: TurnOrderSpritePose;
   readonly status?: TurnOrderStatus;
+  /** Remaining telegraph ticks, shown only beside an ATTACK warning. */
+  readonly warningTicks?: number;
 }
 
 export interface TurnOrderState {
@@ -56,6 +65,25 @@ function readableName(value: string): string {
   return value.replace(/[._-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function spritePoseFromEntity(entity: EntityState): TurnOrderSpritePose {
+  return entity.kind === "enemy" && entity.activity === "telegraphing" ? "prepare" : "idle";
+}
+
+function tokenFromEntity(entity: EntityState, shortLabel: string): TurnOrderToken {
+  return {
+    entityId: entity.id,
+    kind: entity.kind,
+    label: entity.kind === "player" ? "Player" : readableName(entity.archetype),
+    shortLabel,
+    archetype: entity.archetype,
+    presentationId: entity.presentationId,
+    facing: entity.facing,
+    spritePose: spritePoseFromEntity(entity),
+    status: statusFromEntity(entity),
+    warningTicks: entity.committedAttack?.warningTicks,
+  };
+}
+
 function orderTokens(snapshot: WorldSnapshot): readonly TurnOrderToken[] {
   let enemyNumber = 0;
   return snapshot.entities.flatMap((entity) => {
@@ -68,17 +96,7 @@ function orderTokens(snapshot: WorldSnapshot): readonly TurnOrderToken[] {
     if (entity.kind === "enemy") {
       enemyNumber += 1;
     }
-    return [
-      {
-        entityId: entity.id,
-        kind: entity.kind,
-        label: entity.kind === "player" ? "Player" : readableName(entity.archetype),
-        shortLabel: entity.kind === "player" ? "P" : `E${enemyNumber}`,
-        archetype: entity.archetype,
-        presentationId: entity.presentationId,
-        status: statusFromEntity(entity),
-      },
-    ];
+    return [tokenFromEntity(entity, entity.kind === "player" ? "P" : `E${enemyNumber}`)];
   });
 }
 
@@ -89,7 +107,7 @@ function orderTokens(snapshot: WorldSnapshot): readonly TurnOrderToken[] {
 export class TurnOrderController {
   private readonly listeners = new Set<TurnOrderListener>();
   private state: TurnOrderState = { tokens: [], playing: false };
-  private pacing: TurnOrderPacing = "staggered";
+  private pacing: TurnOrderPacing = "fast";
   private finishRequested = false;
   private delayTimer: ReturnType<typeof setTimeout> | undefined;
   private releaseDelay: (() => void) | undefined;
@@ -178,23 +196,20 @@ export class TurnOrderController {
       this.reduceEvents(slot.events);
 
       const visual = this.presentation.playSlot(slot.events, generation);
-      if (slot.postSlotState) {
-        this.applyPostSlotState(slot.postSlotState);
-      }
 
       if (this.finishRequested) {
         this.presentation.finishActive();
         await visual.done;
-      } else if (visual.hasVisualWork && this.pacing === "staggered") {
+      } else if (visual.hasVisualWork) {
         inFlight.push(visual.done);
         await this.waitForHandoff();
-      } else if (visual.hasVisualWork) {
-        await visual.done;
       } else {
         await Promise.resolve();
       }
 
-      this.completeSlot(slot.actorId);
+      if (slot.postSlotState) {
+        this.applyPostSlotState(slot.postSlotState);
+      }
     }
 
     const trailing = this.presentation.playSlot(playback.trailingEvents, generation);
@@ -232,7 +247,7 @@ export class TurnOrderController {
       this.delayTimer = setTimeout(() => {
         this.delayTimer = undefined;
         release();
-      }, STAGGER_MS);
+      }, HANDOFF_DELAY_MS[this.pacing]);
     });
   }
 
@@ -250,18 +265,52 @@ export class TurnOrderController {
           tokens = tokens.filter((token) => token.entityId !== event.playerId);
           break;
         case "enemy_staggered":
-          tokens = this.withStatus(tokens, event.enemyId, "STG");
+          tokens = this.updateToken(tokens, event.enemyId, { status: "STG", warningTicks: undefined });
           break;
         case "enemy_attack_interrupted":
         case "enemy_recovering":
-          tokens = this.withStatus(tokens, event.enemyId, "REC");
+          tokens = this.updateToken(tokens, event.enemyId, { status: "REC", warningTicks: undefined });
           break;
         case "enemy_recovered":
         case "enemy_stagger_ended":
-          tokens = this.withStatus(tokens, event.enemyId, undefined);
+          tokens = this.updateToken(tokens, event.enemyId, { status: undefined, warningTicks: undefined });
           break;
         case "enemy_attack_committed":
-          tokens = this.withStatus(tokens, event.enemyId, "ATTACK");
+          tokens = this.updateToken(tokens, event.enemyId, {
+            status: "ATTACK",
+            warningTicks: event.attack.warningTicks,
+            spritePose: "prepare",
+          });
+          break;
+        case "enemy_moved":
+          tokens = this.updateToken(tokens, event.enemyId, {
+            facing: {
+              x: Math.sign(event.to.x - event.from.x),
+              y: Math.sign(event.to.y - event.from.y),
+            },
+            spritePose: "move",
+          });
+          break;
+        case "actor_moved":
+          tokens = this.updateToken(tokens, event.entityId, {
+            facing: {
+              x: Math.sign(event.to.x - event.from.x),
+              y: Math.sign(event.to.y - event.from.y),
+            },
+            spritePose: "move",
+          });
+          break;
+        case "player_dashed":
+          tokens = this.updateToken(tokens, event.actorId, {
+            facing: {
+              x: Math.sign(event.to.x - event.from.x),
+              y: Math.sign(event.to.y - event.from.y),
+            },
+            spritePose: "move",
+          });
+          break;
+        case "player_attacked":
+          tokens = this.updateToken(tokens, event.actorId, { facing: event.direction, spritePose: "attack" });
           break;
         default:
           break;
@@ -286,12 +335,13 @@ export class TurnOrderController {
     }
     this.publish({
       ...this.state,
-      tokens: this.withStatus([...this.state.tokens], entity.id, statusFromEntity(entity)),
+      tokens: this.updateToken([...this.state.tokens], entity.id, {
+        facing: entity.facing,
+        spritePose: spritePoseFromEntity(entity),
+        status: statusFromEntity(entity),
+        warningTicks: entity.committedAttack?.warningTicks,
+      }),
     });
-  }
-
-  private completeSlot(actorId: EntityId): void {
-    this.removeToken(actorId);
   }
 
   private removeToken(entityId: EntityId): void {
@@ -304,12 +354,12 @@ export class TurnOrderController {
     });
   }
 
-  private withStatus(
+  private updateToken(
     tokens: TurnOrderToken[],
     entityId: EntityId,
-    status: TurnOrderStatus | undefined,
+    update: Partial<Pick<TurnOrderToken, "facing" | "spritePose" | "status" | "warningTicks">>,
   ): TurnOrderToken[] {
-    return tokens.map((token) => (token.entityId === entityId ? { ...token, status } : token));
+    return tokens.map((token) => (token.entityId === entityId ? { ...token, ...update } : token));
   }
 
   private publish(state: TurnOrderState): void {

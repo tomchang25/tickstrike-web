@@ -48,7 +48,7 @@ afterEach(() => {
 });
 
 describe("TurnOrderController", () => {
-  it("hands staggered logical slots off after 100 ms without waiting for prior VFX", async () => {
+  it("hands fast logical slots off after 100 ms without waiting for prior VFX", async () => {
     vi.useFakeTimers();
     const presentation = new FakePresentation();
     const highlights = { setTurnOrderHighlights: vi.fn() };
@@ -68,6 +68,10 @@ describe("TurnOrderController", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(presentation.calls).toHaveLength(2);
     expect(controller.get().activeEntityId).toBe(enemyIds[0]);
+    expect(controller.get().tokens.map((token) => token.entityId)).toEqual([
+      "player",
+      ...snapshot.entities.filter((entity) => entity.kind === "enemy" && entity.enemyAction).map((entity) => entity.id),
+    ]);
 
     controller.finishActive();
     await done;
@@ -80,18 +84,21 @@ describe("TurnOrderController", () => {
     ]);
   });
 
-  it("wait-for-vfx keeps the next slot pending until the current visual work settles", async () => {
+  it("normal pacing hands the next slot off after 250 ms without waiting for prior VFX", async () => {
     vi.useFakeTimers();
     const presentation = new FakePresentation();
     const controller = new TurnOrderController(presentation, { setTurnOrderHighlights: vi.fn() });
-    controller.setPacing("wait-for-vfx");
+    controller.setPacing("normal");
     const snapshot = createFoundationArena().snapshot();
     const enemyId = snapshot.entities.find((entity) => entity.kind === "enemy" && entity.enemyAction)?.id;
     expect(enemyId).toBeDefined();
 
     const done = controller.play(playback([enemyId!]), snapshot, snapshot, 0);
-    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(249);
     expect(presentation.calls).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(presentation.calls).toHaveLength(2);
 
     controller.finishActive();
     await done;
@@ -121,6 +128,44 @@ describe("TurnOrderController", () => {
 
     expect(controller.get().tokens.find((token) => token.entityId === staggered!.id)?.status).toBe("STG");
     expect(controller.get().tokens.some((token) => token.entityId === defeated!.id)).toBe(false);
+    controller.finishActive();
+    await done;
+  });
+
+  it("keeps an attack warning's remaining turn count with its sprite pose", async () => {
+    const snapshot = createFoundationArena().snapshot();
+    const enemy = snapshot.entities.find((entity) => entity.kind === "enemy" && entity.enemyAction);
+    expect(enemy).toBeDefined();
+    const presentation = new FakePresentation();
+    const controller = new TurnOrderController(presentation, { setTurnOrderHighlights: vi.fn() });
+
+    const done = controller.play(
+      playback(
+        [],
+        [
+          {
+            type: "enemy_attack_committed",
+            enemyId: enemy!.id,
+            attack: {
+              attackId: "test.attack",
+              cells: [enemy!.cell],
+              damage: 1,
+              warningTicks: 2,
+              recoveryTicks: 1,
+            },
+          },
+        ],
+      ),
+      snapshot,
+      snapshot,
+      0,
+    );
+
+    expect(controller.get().tokens.find((token) => token.entityId === enemy!.id)).toMatchObject({
+      status: "ATTACK",
+      warningTicks: 2,
+      spritePose: "prepare",
+    });
     controller.finishActive();
     await done;
   });

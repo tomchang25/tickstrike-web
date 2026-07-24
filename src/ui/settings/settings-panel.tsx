@@ -152,8 +152,8 @@ function SettingsDialog({
             value={turnOrderPacing}
             onChange={(event) => onTurnOrderPacingChange(event.target.value as TurnOrderPacing)}
           >
-            <option value="staggered">Staggered</option>
-            <option value="wait-for-vfx">Wait for VFX</option>
+            <option value="fast">Fast — 0.1s</option>
+            <option value="normal">Normal — 0.25s</option>
           </select>
         </label>
 
