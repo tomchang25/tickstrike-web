@@ -1018,8 +1018,8 @@ describe("Bomb self-destruct resolution", () => {
   });
 });
 
-describe("Guardless enabled enemies do not block generic status processing", () => {
-  it("advances stagger and protection for a guarded enemy while a guardless Bomb coexists", () => {
+describe("Per-enemy status processing", () => {
+  it("advances stagger and protection for one guarded enemy with event parity", () => {
     const world = bombWorld();
     const smallGuard: GuardDefinition = {
       id: "small",
@@ -1072,11 +1072,11 @@ describe("Guardless enabled enemies do not block generic status processing", () 
       staggerTicks: 2,
     });
 
-    let events = world.advanceEnemyStatuses();
+    let events = world.combat.advanceEnemyStatus("guarded");
     expect(events).toEqual([]);
     expect(world.requireEntity("guarded").staggerTicks).toBe(1);
 
-    events = world.advanceEnemyStatuses();
+    events = world.combat.advanceEnemyStatus("guarded");
     expect(events).toEqual([
       { type: "enemy_stagger_ended", enemyId: "guarded", guard: 32, maxGuard: 32 },
       { type: "enemy_protection_started", enemyId: "guarded", ticks: 2 },
@@ -1087,11 +1087,11 @@ describe("Guardless enabled enemies do not block generic status processing", () 
       protectionTicks: 2,
     });
 
-    events = world.advanceEnemyStatuses();
+    events = world.combat.advanceEnemyStatus("guarded");
     expect(events).toEqual([]);
     expect(world.requireEntity("guarded").protectionTicks).toBe(1);
 
-    events = world.advanceEnemyStatuses();
+    events = world.combat.advanceEnemyStatus("guarded");
     expect(events).toEqual([{ type: "enemy_protection_ended", enemyId: "guarded" }]);
     expect(world.requireEntity("guarded").protectionTicks).toBeUndefined();
 
@@ -1100,6 +1100,11 @@ describe("Guardless enabled enemies do not block generic status processing", () 
     expect(bombEntity.activity).toBe("ready");
     expect(bombEntity.staggerTicks).toBeUndefined();
     expect(bombEntity.protectionTicks).toBeUndefined();
+
+    expect(world.combat.advanceEnemyStatus("enemy-bomb")).toEqual([]);
+    expect(world.combat.advanceEnemyStatus("player")).toEqual([]);
+    world.setPhase("guarded", "dead");
+    expect(world.combat.advanceEnemyStatus("guarded")).toEqual([]);
   });
 });
 

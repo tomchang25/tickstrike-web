@@ -19,8 +19,10 @@ describe("deterministic scenario goldens", () => {
   for (const { name, scenario } of GOLDEN_SCENARIOS) {
     it(name, () => {
       const produced = serialize(runScenario(scenario));
+      const repeated = serialize(runScenario(scenario));
       const path = goldenPath(name);
 
+      expect(repeated).toBe(produced);
       if (UPDATING) {
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, produced);

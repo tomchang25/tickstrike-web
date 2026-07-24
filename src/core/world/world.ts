@@ -32,13 +32,7 @@ import {
 } from "../model/types";
 import type { AdmittedBatch, SlotState } from "../waves/wave-scheduler";
 import { Arena } from "./arena";
-import {
-  GridBoard,
-  type MovementReservationRequest,
-  type ReservationDecision,
-  type ReservationRequest,
-  type TelegraphInput,
-} from "./grid-board";
+import { GridBoard, type ReservationDecision, type ReservationRequest, type TelegraphInput } from "./grid-board";
 import { CombatOperations, type AttackRetargetResult, type EnemyAttackResolution } from "./combat-operations";
 import { RunBuild } from "./run-build";
 import { WaveRuntime } from "./wave-runtime";
@@ -51,7 +45,6 @@ export interface SpawnEntityInput extends EntitySpawnData {
 export type {
   BoardEntityLocator,
   DisplacementTransaction,
-  MovementReservationRequest,
   ReservationDecision,
   ReservationRequest,
   TelegraphInput,
@@ -600,10 +593,6 @@ export class World implements WorldView {
     this.combat.resetEnemyCombatState(id);
   }
 
-  advanceEnemyStatuses(): readonly CombatEvent[] {
-    return this.combat.advanceEnemyStatuses();
-  }
-
   commitEnemyAttack(id: EntityId, attack: CommittedAttack): CommittedAttack {
     return this.combat.commitEnemyAttack(id, attack);
   }
@@ -796,14 +785,6 @@ export class World implements WorldView {
 
   requestReservation(request: ReservationRequest): ReservationDecision {
     return this.board.requestReservation(request);
-  }
-
-  /**
-   * Claims all one-cell movement intents as one arbitration step. The claims
-   * remain installed until the enemy phase applies every granted movement.
-   */
-  requestMovementReservations(requests: readonly MovementReservationRequest[]): readonly ReservationDecision[] {
-    return this.board.requestMovementReservations(requests);
   }
 
   getReservation(ownerId: string): Reservation | undefined {

@@ -26,11 +26,6 @@ export interface ReservationRequest {
   readonly activeStep?: boolean;
 }
 
-export interface MovementReservationRequest extends ReservationRequest {
-  readonly purpose: "movement";
-  readonly activeStep?: true;
-}
-
 export interface ReservationDecision {
   readonly accepted: boolean;
   readonly granted: boolean;
@@ -282,98 +277,6 @@ export class GridBoard {
     };
     this.reservations.set(request.ownerId, reservation);
     return { ...decision, reservation: cloneReservation(reservation) };
-  }
-
-  /**
-   * Claims all one-cell movement intents as one arbitration step. The claims
-   * remain installed until the enemy phase applies every granted movement.
-   */
-  requestMovementReservations(requests: readonly MovementReservationRequest[]): readonly ReservationDecision[] {
-    const ownerIds = new Set<string>();
-    const invalidReason = (request: MovementReservationRequest): string | undefined => {
-      if (ownerIds.has(request.ownerId)) {
-        return "Reservation owners must be unique.";
-      }
-      ownerIds.add(request.ownerId);
-      if (request.cells.length === 0 || hasDuplicateCells(request.cells)) {
-        return "Reservation cells must be unique and non-empty.";
-      }
-      if (!request.cells.every((cell) => this.geometry.isLegalCell(cell))) {
-        return "Reservation cells must be legal land cells.";
-      }
-      if (request.cells.some((cell) => this.isOccupied(cell))) {
-        return "Movement reservation cells must be unoccupied.";
-      }
-      return undefined;
-    };
-    const reasons = requests.map(invalidReason);
-    if (reasons.some((reason) => reason !== undefined)) {
-      return requests.map((request, index) => ({
-        accepted: false,
-        granted: false,
-        lostOwners: [],
-        ...(reasons[index] ? { reason: reasons[index] } : { reason: "Movement claims were rejected atomically." }),
-      }));
-    }
-
-    const requestedOwners = new Set(requests.map((request) => request.ownerId));
-    const existing = [...this.reservations.values()].filter((reservation) => !requestedOwners.has(reservation.ownerId));
-    const candidates = requests.map((request, index): Reservation => ({
-      ownerId: request.ownerId,
-      purpose: "movement",
-      cells: request.cells.map(cloneCell),
-      activeStep: true,
-      registrationIndex:
-        this.reservations.get(request.ownerId)?.registrationIndex ?? this.nextRegistrationIndex + index,
-    }));
-    const allCandidates = [...existing, ...candidates];
-    const overlaps = (a: Reservation, b: Reservation): boolean =>
-      a.cells.some((cell) => b.cells.some((other) => sameCell(cell, other)));
-    const granted = new Set(
-      candidates
-        .filter((candidate) =>
-          allCandidates.every(
-            (other) =>
-              other.ownerId === candidate.ownerId ||
-              !overlaps(candidate, other) ||
-              this.compareReservations(candidate, other) <= 0,
-          ),
-        )
-        .map((candidate) => candidate.ownerId),
-    );
-
-    for (const ownerId of requestedOwners) {
-      this.releaseReservation(ownerId);
-    }
-    for (const reservation of existing) {
-      if (
-        candidates.some(
-          (candidate) =>
-            granted.has(candidate.ownerId) &&
-            overlaps(candidate, reservation) &&
-            this.compareReservations(candidate, reservation) < 0,
-        )
-      ) {
-        this.releaseReservation(reservation.ownerId);
-      }
-    }
-    this.nextRegistrationIndex += candidates.filter((candidate) => !this.reservations.has(candidate.ownerId)).length;
-    for (const candidate of candidates) {
-      if (granted.has(candidate.ownerId)) {
-        this.reservations.set(candidate.ownerId, candidate);
-      }
-    }
-
-    return requests.map((request, index) => {
-      const reservation = candidates[index]!;
-      return {
-        accepted: true,
-        granted: granted.has(request.ownerId),
-        ...(granted.has(request.ownerId) ? { reservation: cloneReservation(reservation) } : {}),
-        lostOwners: [],
-        ...(granted.has(request.ownerId) ? {} : { reason: "Reservation lost arbitration." }),
-      };
-    });
   }
 
   getReservation(ownerId: string): Reservation | undefined {

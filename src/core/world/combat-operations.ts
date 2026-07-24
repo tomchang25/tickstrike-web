@@ -237,53 +237,52 @@ export class CombatOperations {
     });
   }
 
-  advanceEnemyStatuses(): readonly CombatEvent[] {
-    const events: CombatEvent[] = [];
-    for (const entity of this.world.allEntities()) {
-      if (entity.phase !== "alive" || !entity.enemyAction || !entity.guard) {
-        continue;
+  advanceEnemyStatus(id: EntityId): readonly CombatEvent[] {
+    const entity = this.world.getEntity(id);
+    if (entity?.phase !== "alive" || !entity.enemyAction || !entity.guard) {
+      return [];
+    }
+    if (entity.activity === "staggered") {
+      const ticks = entity.staggerTicks ?? 0;
+      if (ticks > 1) {
+        this.world.setEntity(entity.id, { ...entity, staggerTicks: ticks - 1 });
+        return [];
       }
-      if (entity.activity === "staggered") {
-        const ticks = entity.staggerTicks ?? 0;
-        if (ticks > 1) {
-          this.world.setEntity(entity.id, { ...entity, staggerTicks: ticks - 1 });
-          continue;
-        }
 
-        const guard = { ...entity.guard, current: entity.guard.max };
-        this.world.setEntity(entity.id, {
-          ...entity,
-          guard,
-          activity: "ready",
-          staggerTicks: undefined,
-          protectionTicks: guard.protectionDuration,
-        });
-        events.push({
+      const guard = { ...entity.guard, current: entity.guard.max };
+      this.world.setEntity(entity.id, {
+        ...entity,
+        guard,
+        activity: "ready",
+        staggerTicks: undefined,
+        protectionTicks: guard.protectionDuration,
+      });
+      return [
+        {
           type: "enemy_stagger_ended",
           enemyId: entity.id,
           guard: guard.current,
           maxGuard: guard.max,
-        });
-        events.push({
+        },
+        {
           type: "enemy_protection_started",
           enemyId: entity.id,
           ticks: guard.protectionDuration,
-        });
-        continue;
-      }
-
-      const protectionTicks = entity.protectionTicks ?? 0;
-      if (protectionTicks <= 0) {
-        continue;
-      }
-      if (protectionTicks === 1) {
-        this.world.setEntity(entity.id, { ...entity, protectionTicks: undefined });
-        events.push({ type: "enemy_protection_ended", enemyId: entity.id });
-      } else {
-        this.world.setEntity(entity.id, { ...entity, protectionTicks: protectionTicks - 1 });
-      }
+        },
+      ];
     }
-    return events;
+
+    const protectionTicks = entity.protectionTicks ?? 0;
+    if (protectionTicks <= 0) {
+      return [];
+    }
+    if (protectionTicks === 1) {
+      this.world.setEntity(entity.id, { ...entity, protectionTicks: undefined });
+      return [{ type: "enemy_protection_ended", enemyId: entity.id }];
+    }
+
+    this.world.setEntity(entity.id, { ...entity, protectionTicks: protectionTicks - 1 });
+    return [];
   }
 
   commitEnemyAttack(id: EntityId, attack: CommittedAttack): CommittedAttack {

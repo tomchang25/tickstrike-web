@@ -92,8 +92,6 @@ export interface CommittedAttack {
   readonly recoveryTicks: number;
   /** Locked role data copied at commitment and never recomputed during warning. */
   readonly metadata?: Readonly<Record<string, unknown>>;
-  /** World tick this attack was committed on; sorts simultaneous detonations wound-up-first. Absent for attacks committed outside `enemy-phase` (e.g. harness/test injection). */
-  readonly commitTick?: number;
 }
 
 export interface GuardRuntime {

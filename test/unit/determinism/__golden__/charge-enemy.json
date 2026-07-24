@@ -51,8 +51,7 @@
           ],
           "damage": 8,
           "warningTicks": 3,
-          "recoveryTicks": 2,
-          "commitTick": 1
+          "recoveryTicks": 2
         }
       },
       {
@@ -284,8 +283,7 @@
           ],
           "damage": 8,
           "warningTicks": 0,
-          "recoveryTicks": 2,
-          "commitTick": 1
+          "recoveryTicks": 2
         },
         "target": {
           "x": 4,
@@ -474,8 +472,7 @@
           ],
           "damage": 8,
           "warningTicks": 3,
-          "recoveryTicks": 2,
-          "commitTick": 6
+          "recoveryTicks": 2
         }
       },
       {
@@ -641,8 +638,7 @@
           ],
           "damage": 8,
           "warningTicks": 0,
-          "recoveryTicks": 2,
-          "commitTick": 6
+          "recoveryTicks": 2
         },
         "target": {
           "x": 4,
@@ -861,8 +857,7 @@
           ],
           "damage": 8,
           "warningTicks": 3,
-          "recoveryTicks": 2,
-          "commitTick": 11
+          "recoveryTicks": 2
         }
       },
       {
@@ -1024,8 +1019,7 @@
           ],
           "damage": 8,
           "warningTicks": 0,
-          "recoveryTicks": 2,
-          "commitTick": 11
+          "recoveryTicks": 2
         },
         "target": {
           "x": 4,
@@ -1402,8 +1396,7 @@
           ],
           "damage": 8,
           "warningTicks": 3,
-          "recoveryTicks": 2,
-          "commitTick": 20
+          "recoveryTicks": 2
         }
       },
       {
@@ -1585,8 +1578,7 @@
           ],
           "damage": 8,
           "warningTicks": 0,
-          "recoveryTicks": 2,
-          "commitTick": 20
+          "recoveryTicks": 2
         },
         "target": {
           "x": 10,
@@ -1783,8 +1775,7 @@
           ],
           "damage": 8,
           "warningTicks": 3,
-          "recoveryTicks": 2,
-          "commitTick": 25
+          "recoveryTicks": 2
         }
       },
       {
@@ -1977,8 +1968,7 @@
           ],
           "damage": 8,
           "warningTicks": 0,
-          "recoveryTicks": 2,
-          "commitTick": 25
+          "recoveryTicks": 2
         },
         "target": {
           "x": 10,
@@ -2356,8 +2346,7 @@
             ],
             "damage": 8,
             "warningTicks": 0,
-            "recoveryTicks": 2,
-            "commitTick": 25
+            "recoveryTicks": 2
           },
           "target": {
             "x": 10,
