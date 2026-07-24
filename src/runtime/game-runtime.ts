@@ -17,12 +17,15 @@ import { MusicDirector } from "@presentation/audio/music-director";
 import { PixiGameRenderer, type ScreenBounds } from "@presentation/pixi/pixi-game-renderer";
 import { PresentationDirector } from "@presentation/timelines/presentation-director";
 import { cloneCommandLog, type RunCommandLog, type RunCommandLogEntry } from "./command-log";
+import { TurnOrderController, type TurnOrderState } from "./turn-order-controller";
+import type { TurnOrderPacing } from "./settings-store";
 
 export type RuntimeListener = (snapshot: WorldSnapshot) => void;
 
 export class GameRuntime {
   readonly renderer = new PixiGameRenderer();
   readonly presentation = new PresentationDirector(this.renderer);
+  readonly turnOrder = new TurnOrderController(this.presentation, this.renderer);
   readonly audio = new AudioMixer();
   readonly audioDirector = new AudioDirector(this.audio);
   readonly musicDirector = new MusicDirector(this.audio);
@@ -41,7 +44,9 @@ export class GameRuntime {
   }
 
   get isIdle(): boolean {
-    return !this.processingCommands && this.queuedCommands.length === 0 && this.presentation.isIdle;
+    return (
+      !this.processingCommands && this.queuedCommands.length === 0 && this.presentation.isIdle && this.turnOrder.isIdle
+    );
   }
 
   async mount(host: HTMLElement): Promise<void> {
@@ -72,7 +77,9 @@ export class GameRuntime {
     this.world = scenario.createWorld(scenario.seed);
     this.commandLog = { scenarioId: scenario.id, seed: scenario.seed, entries: [] };
     this.presentation.setGeneration(this.currentGeneration);
-    this.renderer.sync(this.world.snapshot());
+    const snapshot = this.world.snapshot();
+    this.renderer.sync(snapshot);
+    this.turnOrder.reset(snapshot);
     this.emit();
   }
 
@@ -135,7 +142,9 @@ export class GameRuntime {
     const generation = this.currentGeneration;
     return new Promise<T>((resolve, reject) => {
       this.queuedCommands.push(makeJob(resolve, reject, generation));
-      if (!this.presentation.isIdle) {
+      if (!this.turnOrder.isIdle) {
+        this.turnOrder.finishActive();
+      } else if (!this.presentation.isIdle) {
         this.presentation.finishActive();
       }
       void this.drainCommands();
@@ -254,6 +263,18 @@ export class GameRuntime {
     return () => this.listeners.delete(listener);
   }
 
+  subscribeTurnOrder(listener: (state: TurnOrderState) => void): () => void {
+    return this.turnOrder.subscribe(listener);
+  }
+
+  setTurnOrderPacing(pacing: TurnOrderPacing): void {
+    this.turnOrder.setPacing(pacing);
+  }
+
+  setTurnOrderHoveredEntity(entityId?: string): void {
+    this.turnOrder.setHoveredEntity(entityId);
+  }
+
   getEntityBounds(id: string): ScreenBounds | undefined {
     return this.renderer.getEntityBounds(id);
   }
@@ -290,6 +311,7 @@ export class GameRuntime {
 
         try {
           if (job.kind === "command") {
+            const before = this.requireWorld().snapshot();
             const resolution = resolveCommand(this.requireWorld(), job.command, this.scenario?.waveContext);
 
             if (resolution.accepted) {
@@ -305,7 +327,9 @@ export class GameRuntime {
 
             if (resolution.accepted) {
               this.audioDirector.play(resolution.events);
-              presentationDone = this.presentation.play(resolution.events, job.generation);
+              presentationDone = resolution.turnPlayback
+                ? this.turnOrder.play(resolution.turnPlayback, before, this.requireWorld().snapshot(), job.generation)
+                : this.presentation.play(resolution.events, job.generation);
               void presentationDone.then(
                 () => this.notifyPresentationSettled(job.generation),
                 () => this.notifyPresentationSettled(job.generation),
@@ -394,6 +418,7 @@ export class GameRuntime {
   private invalidateWork(reason: string): void {
     this.currentGeneration += 1;
     this.presentation.cancel();
+    this.turnOrder.reset();
     this.audio.stopAll();
     if (this.activeCommand) {
       this.activeCommand.reject(new Error(reason));

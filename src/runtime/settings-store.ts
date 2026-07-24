@@ -1,7 +1,9 @@
 /**
- * Player-facing settings owned by the runtime. v2 adds the three audio-mixer volumes; v3 adds the
- * background-audio mute preference.
+ * Player-facing settings owned by the runtime. v2 adds the three audio-mixer volumes, v3 adds the
+ * background-audio mute preference, and v4 adds turn-order playback pacing.
  */
+export type TurnOrderPacing = "staggered" | "wait-for-vfx";
+
 export interface GameSettings {
   /** Grid/reservation debug overlay; only toggleable in development shells. */
   readonly showDebugOverlay: boolean;
@@ -13,6 +15,8 @@ export interface GameSettings {
   readonly musicVolume: number;
   /** When true, audio suspends while the browser tab is hidden. */
   readonly muteAudioInBackground: boolean;
+  /** Controls whether logical actor slots overlap or wait for their VFX to settle. */
+  readonly turnOrderPacing: TurnOrderPacing;
 }
 
 const DEFAULT_SETTINGS: GameSettings = {
@@ -21,9 +25,10 @@ const DEFAULT_SETTINGS: GameSettings = {
   effectVolume: 1,
   musicVolume: 1,
   muteAudioInBackground: true,
+  turnOrderPacing: "staggered",
 };
-const SETTINGS_VERSION = 3;
-const KNOWN_VERSIONS: ReadonlySet<number> = new Set([1, 2, SETTINGS_VERSION]);
+const SETTINGS_VERSION = 4;
+const KNOWN_VERSIONS: ReadonlySet<number> = new Set([1, 2, 3, SETTINGS_VERSION]);
 
 /** The versioned envelope a `SettingsStorage` persists. `data` is untyped bytes until the store validates it. */
 export interface PersistedSettings {
@@ -80,8 +85,9 @@ export class SettingsStore {
 /**
  * Merges a loaded envelope over the defaults, ignoring an absent, unknown-version, or malformed
  * payload. Older envelopes migrate forward by field: a v1 payload keeps its `showDebugOverlay` and
- * defaults the v2 volumes; a v1 or v2 payload defaults the v3 background-mute preference. The store
- * persists the migrated shape at the current version on the next `set`.
+ * defaults the v2 volumes; a v1 or v2 payload defaults the v3 background-mute preference; and every
+ * v1-v3 payload defaults the v4 pacing preference. The store persists the migrated shape at the
+ * current version on the next `set`.
  */
 function coerceSettings(persisted: PersistedSettings | undefined): GameSettings {
   if (
@@ -104,6 +110,10 @@ function coerceSettings(persisted: PersistedSettings | undefined): GameSettings 
       typeof record.muteAudioInBackground === "boolean"
         ? record.muteAudioInBackground
         : DEFAULT_SETTINGS.muteAudioInBackground,
+    turnOrderPacing:
+      record.turnOrderPacing === "staggered" || record.turnOrderPacing === "wait-for-vfx"
+        ? record.turnOrderPacing
+        : DEFAULT_SETTINGS.turnOrderPacing,
   };
 }
 

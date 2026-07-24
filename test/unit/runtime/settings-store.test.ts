@@ -12,6 +12,7 @@ const DEFAULTS: GameSettings = {
   effectVolume: 1,
   musicVolume: 1,
   muteAudioInBackground: true,
+  turnOrderPacing: "staggered",
 };
 
 function fakeStorage(initial?: PersistedSettings): { storage: SettingsStorage; saved: PersistedSettings[] } {
@@ -33,15 +34,16 @@ describe("SettingsStore", () => {
     expect(store.get()).toEqual(DEFAULTS);
   });
 
-  it("loads and merges a valid v3 payload over the defaults", () => {
+  it("loads and merges a valid v4 payload over the defaults", () => {
     const { storage } = fakeStorage({
-      version: 3,
+      version: 4,
       data: {
         showDebugOverlay: true,
         masterVolume: 0.5,
         effectVolume: 0.25,
         musicVolume: 0,
         muteAudioInBackground: false,
+        turnOrderPacing: "wait-for-vfx",
       },
     });
     const store = new SettingsStore(storage);
@@ -51,6 +53,7 @@ describe("SettingsStore", () => {
       effectVolume: 0.25,
       musicVolume: 0,
       muteAudioInBackground: false,
+      turnOrderPacing: "wait-for-vfx",
     });
   });
 
@@ -66,6 +69,7 @@ describe("SettingsStore", () => {
       effectVolume: 0.25,
       musicVolume: 0,
       muteAudioInBackground: true,
+      turnOrderPacing: "staggered",
     });
   });
 
@@ -93,11 +97,12 @@ describe("SettingsStore", () => {
       effectVolume: 0,
       musicVolume: 1,
       muteAudioInBackground: true,
+      turnOrderPacing: "staggered",
     });
   });
 
   it("ignores an unknown-version or malformed payload and does not overwrite until an explicit set", () => {
-    const unknownVersion = fakeStorage({ version: 4, data: { showDebugOverlay: true } });
+    const unknownVersion = fakeStorage({ version: 5, data: { showDebugOverlay: true } });
     expect(new SettingsStore(unknownVersion.storage).get()).toEqual(DEFAULTS);
     expect(unknownVersion.saved).toEqual([]);
 
@@ -106,7 +111,7 @@ describe("SettingsStore", () => {
     expect(malformed.saved).toEqual([]);
   });
 
-  it("persists a v3 envelope and notifies subscribers on set", () => {
+  it("persists a v4 envelope and notifies subscribers on set", () => {
     const { storage, saved } = fakeStorage();
     const store = new SettingsStore(storage);
     const listener = vi.fn();
@@ -116,7 +121,7 @@ describe("SettingsStore", () => {
 
     const expected: GameSettings = { ...DEFAULTS, effectVolume: 0.4 };
     expect(store.get()).toEqual(expected);
-    expect(saved).toEqual([{ version: 3, data: expected }]);
+    expect(saved).toEqual([{ version: 4, data: expected }]);
     expect(listener).toHaveBeenCalledWith(expected);
   });
 
@@ -128,7 +133,26 @@ describe("SettingsStore", () => {
 
     const expected: GameSettings = { ...DEFAULTS, muteAudioInBackground: false };
     expect(store.get()).toEqual(expected);
-    expect(saved).toEqual([{ version: 3, data: expected }]);
+    expect(saved).toEqual([{ version: 4, data: expected }]);
+  });
+
+  it("persists the turn-order pacing preference and defaults invalid values", () => {
+    const invalid = new SettingsStore(
+      fakeStorage({ version: 4, data: { ...DEFAULTS, turnOrderPacing: "cinematic" } }).storage,
+    );
+    expect(invalid.get().turnOrderPacing).toBe("staggered");
+
+    const { storage, saved } = fakeStorage();
+    const store = new SettingsStore(storage);
+    store.set({ turnOrderPacing: "wait-for-vfx" });
+
+    expect(store.get().turnOrderPacing).toBe("wait-for-vfx");
+    expect(saved).toEqual([
+      {
+        version: 4,
+        data: { ...DEFAULTS, turnOrderPacing: "wait-for-vfx" },
+      },
+    ]);
   });
 
   it("keeps working in memory when the storage adapter reports failure by no-op", () => {

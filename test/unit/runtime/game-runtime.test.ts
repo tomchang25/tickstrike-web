@@ -12,7 +12,7 @@ describe("GameRuntime command and presentation ordering", () => {
       releaseFirstPresentation = resolve;
     });
     let presentationCalls = 0;
-    const play = vi.spyOn(runtime.presentation, "play").mockImplementation(() => {
+    const play = vi.spyOn(runtime.turnOrder, "play").mockImplementation(() => {
       presentationCalls += 1;
       return presentationCalls === 1 ? firstPresentation : Promise.resolve();
     });
@@ -39,14 +39,14 @@ describe("GameRuntime command and presentation ordering", () => {
       releaseFirstPresentation = resolve;
     });
     let presentationCalls = 0;
-    vi.spyOn(runtime.presentation, "play").mockImplementation(() => {
+    vi.spyOn(runtime.turnOrder, "play").mockImplementation(() => {
       presentationCalls += 1;
       return presentationCalls === 1 ? firstPresentation : Promise.resolve();
     });
     // Report the first presentation as still playing, and complete it when fast-forwarded.
     let firstIdle = true;
-    vi.spyOn(runtime.presentation, "isIdle", "get").mockImplementation(() => firstIdle);
-    const finishActive = vi.spyOn(runtime.presentation, "finishActive").mockImplementation(() => {
+    vi.spyOn(runtime.turnOrder, "isIdle", "get").mockImplementation(() => firstIdle);
+    const finishActive = vi.spyOn(runtime.turnOrder, "finishActive").mockImplementation(() => {
       firstIdle = true;
       releaseFirstPresentation?.();
     });

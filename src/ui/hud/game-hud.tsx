@@ -1,6 +1,8 @@
 import type { WorldSnapshot } from "@core/model/types";
 import { artifactCatalog } from "@content/artifact-catalog";
+import type { TurnOrderState } from "@runtime/turn-order-controller";
 import { RunBuildHud } from "@ui/run-build-hud";
+import { TurnOrderBar } from "./turn-order-bar";
 import keyW from "./assets/input/KeyW.png";
 import keyA from "./assets/input/KeyA.png";
 import keyS from "./assets/input/KeyS.png";
@@ -20,6 +22,8 @@ export interface GameHudProps {
   /** The session owns the build-overview open state so a single Escape handler can coordinate panels. */
   readonly buildOpen: boolean;
   readonly onBuildOpenChange: (open: boolean) => void;
+  readonly turnOrder: TurnOrderState;
+  readonly onTurnOrderHoveredEntityChange: (entityId?: string) => void;
 }
 
 interface KeyHint {
@@ -66,7 +70,14 @@ function artifactName(artifactId: string): string {
  * runtime. The container is `pointer-events: none` so gameplay clicks reach the board; only the Build
  * button and the overview re-enable pointer events.
  */
-export function GameHud({ snapshot, commandsEnabled = true, buildOpen, onBuildOpenChange }: GameHudProps) {
+export function GameHud({
+  snapshot,
+  commandsEnabled = true,
+  buildOpen,
+  onBuildOpenChange,
+  turnOrder,
+  onTurnOrderHoveredEntityChange,
+}: GameHudProps) {
   const player = snapshot.entities.find((entity) => entity.id === "player");
   const wave = snapshot.waveRuntime?.waveNumber;
   const hpPercent = player && player.maxHp > 0 ? Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100)) : 0;
@@ -100,6 +111,8 @@ export function GameHud({ snapshot, commandsEnabled = true, buildOpen, onBuildOp
           Wave {wave}
         </div>
       ) : null}
+
+      <TurnOrderBar state={turnOrder} onHoveredEntityChange={onTurnOrderHoveredEntityChange} />
 
       {commandsEnabled ? (
         <section className="hud-controls" aria-label="Controls">

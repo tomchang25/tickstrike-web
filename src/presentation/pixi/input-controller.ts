@@ -26,6 +26,7 @@ export interface PointerInputBinding {
   canInteract(): boolean;
   onPrimaryClick(commit: PointerCommit): void | Promise<void>;
   onCancel(): void | Promise<void>;
+  onHoveredEntityChange?(entityId?: string): void;
 }
 
 export interface InputPresentationHooks {
@@ -62,6 +63,7 @@ export interface PointerPreviewModel {
 export class InputController {
   private mode: PointerMode = "attack";
   private hoverCell: Cell | undefined;
+  private hoveredEntityId: string | undefined;
   private lastAim: Cell = INITIAL_AIM;
   private facing: Cell = INITIAL_AIM;
   private facingLocked = false;
@@ -114,14 +116,24 @@ export class InputController {
     const canvas = this.app.canvas;
     const onPointerMove = (event: PointerEvent) => {
       const nextPointerCell = this.pointerToCell(event);
-      if (nextPointerCell && this.hoverCell && sameCell(nextPointerCell, this.hoverCell)) {
+      const nextHoveredEntityId = this.entityAt(nextPointerCell)?.id;
+      if (
+        nextPointerCell &&
+        this.hoverCell &&
+        sameCell(nextPointerCell, this.hoverCell) &&
+        nextHoveredEntityId === this.hoveredEntityId
+      ) {
         return;
       }
       this.hoverCell = nextPointerCell;
+      this.hoveredEntityId = nextHoveredEntityId;
+      binding.onHoveredEntityChange?.(nextHoveredEntityId);
       this.refreshPreview(true);
     };
     const onPointerLeave = () => {
       this.hoverCell = undefined;
+      this.hoveredEntityId = undefined;
+      binding.onHoveredEntityChange?.();
       this.attack = undefined;
       this.dash = undefined;
       this.retainedDash = undefined;
@@ -199,6 +211,7 @@ export class InputController {
       canvas.removeEventListener("pointerleave", onPointerLeave);
       canvas.removeEventListener("click", onClick);
       canvas.removeEventListener("contextmenu", onContextMenu);
+      binding.onHoveredEntityChange?.();
       if (this.cleanup === cleanup) {
         this.cleanup = undefined;
       }
@@ -216,6 +229,7 @@ export class InputController {
     this.lastAim = INITIAL_AIM;
     this.facing = INITIAL_AIM;
     this.facingLocked = false;
+    this.hoveredEntityId = undefined;
     this.projectedMotionKey = undefined;
     this.dash = undefined;
     this.retainedDash = undefined;
@@ -366,6 +380,15 @@ export class InputController {
         widthCells: snapshot.arena.width,
         heightCells: snapshot.arena.height,
       },
+    );
+  }
+
+  private entityAt(cell: Cell | undefined) {
+    if (!cell) {
+      return undefined;
+    }
+    return this.snapshot()?.entities.find(
+      (entity) => sameCell(entity.cell, cell) || entity.footprint.some((occupied) => sameCell(occupied, cell)),
     );
   }
 }

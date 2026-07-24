@@ -166,6 +166,176 @@ button:disabled {
   transform: translateX(-50%);
 }
 
+.turn-order-rail {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  z-index: 12;
+  min-width: 132px;
+  max-width: 760px;
+  padding: 15px 18px 10px;
+  border: 1px solid rgb(114 212 255 / 42%);
+  border-radius: 12px;
+  background: rgb(14 19 27 / 91%);
+  box-shadow:
+    0 8px 18px rgb(4 8 13 / 45%),
+    inset 0 1px rgb(218 243 255 / 7%);
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.turn-order-title {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  padding: 0 8px;
+  background: #111720;
+  color: #79cdea;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 14px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+}
+
+.turn-order-list {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+  justify-content: center;
+  scrollbar-width: thin;
+}
+
+.turn-order-entry {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.turn-order-chevron {
+  color: #71879a;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.turn-order-token {
+  position: relative;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  padding: 4px;
+  border: 2px solid #526576;
+  border-radius: 11px;
+  background: #1c2731;
+  box-shadow: inset 0 0 0 1px rgb(235 248 255 / 5%);
+  color: #e8eef7;
+  place-items: center;
+  transition:
+    border-color 100ms ease,
+    box-shadow 100ms ease,
+    opacity 100ms ease,
+    transform 100ms ease;
+}
+
+.turn-order-token[data-kind="player"] {
+  background: #1b302b;
+}
+
+.turn-order-token[data-active="true"] {
+  border-color: #53e4ff;
+  box-shadow:
+    0 0 0 2px rgb(83 228 255 / 18%),
+    0 0 12px rgb(83 228 255 / 45%);
+  transform: translateY(-2px);
+}
+
+.turn-order-token[data-active="true"]::after {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-right: 4px solid transparent;
+  border-bottom: 0;
+  border-left: 4px solid transparent;
+  border-top: 5px solid #53e4ff;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.turn-order-token[data-hovered="true"],
+.turn-order-token:hover,
+.turn-order-token:focus-visible {
+  border-color: #ffd166;
+  outline: 2px solid rgb(255 209 102 / 35%);
+  outline-offset: 2px;
+}
+
+.turn-order-portrait {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgb(255 221 150 / 90%) 0 34%, transparent 35%),
+    linear-gradient(90deg, #2d4936 0 50%, #385a42 51%);
+  color: #0b1115;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 10px;
+  font-weight: 900;
+  text-shadow: 0 1px rgb(255 255 255 / 35%);
+  place-items: center;
+  image-rendering: pixelated;
+}
+
+.turn-order-token[data-kind="enemy"] .turn-order-portrait {
+  background:
+    linear-gradient(180deg, rgb(255 216 155 / 90%) 0 34%, transparent 35%),
+    linear-gradient(90deg, #6b6f32 0 50%, #5b6030 51%);
+}
+
+.turn-order-status {
+  position: absolute;
+  right: -8px;
+  bottom: -7px;
+  min-width: 25px;
+  padding: 1px 4px;
+  border: 1px solid #66788b;
+  border-radius: 5px;
+  background: #111720;
+  color: #dce7ef;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 12px;
+  text-align: center;
+}
+
+.turn-order-status-stg {
+  border-color: #b68cff;
+  color: #d9c3ff;
+}
+
+.turn-order-status-rec,
+.turn-order-status-rest {
+  color: #b8c4cf;
+}
+
+.turn-order-status-attack {
+  border-color: #e2a84f;
+  color: #ffd166;
+  font-size: 11px;
+}
+
 .hud-controls {
   position: absolute;
   right: 10px;
@@ -381,6 +551,19 @@ button:disabled {
   cursor: pointer;
 }
 
+.settings-select {
+  justify-content: space-between;
+}
+
+.settings-select select {
+  min-width: 130px;
+  padding: 5px 8px;
+  border: 0.5px solid #3b4355;
+  border-radius: 7px;
+  background: #202632;
+  color: #e8eef7;
+}
+
 .settings-footer {
   display: flex;
   align-items: center;
@@ -409,6 +592,16 @@ button:disabled {
 
 .terminal-banner .primary-command {
   margin-top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn-order-token {
+    transition: none;
+  }
+
+  .turn-order-token[data-active="true"] {
+    transform: none;
+  }
 }
 
 .app-shell {

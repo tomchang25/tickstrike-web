@@ -7,6 +7,12 @@ import { genericDetonationEvents } from "../enemies/attack-resolution-events";
 
 export type { EnemyPhaseContext } from "../enemies/enemy-behavior";
 
+export interface EnemyPhaseSlotResult {
+  readonly actorId: string;
+  readonly events: readonly CombatEvent[];
+  readonly postSlotState?: EntityState;
+}
+
 function enabledEnemies(context: EnemyPhaseContext): readonly EntityState[] {
   return context
     .listEntities()
@@ -107,7 +113,7 @@ function applyDecisionAtSlot(
   }
 }
 
-export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
+export function resolveEnemyPhaseSlots(context: EnemyPhaseContext): readonly EnemyPhaseSlotResult[] {
   const enemies = enabledEnemies(context);
   const readyAtStart = new Set(
     enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "ready").map((enemy) => enemy.id),
@@ -118,11 +124,17 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
   const restingAtStart = new Set(
     enemies.filter((enemy) => enemy.phase === "alive" && enemy.activity === "resting").map((enemy) => enemy.id),
   );
-  const events: CombatEvent[] = [];
+  const slots: EnemyPhaseSlotResult[] = [];
 
   for (const enemy of enemies) {
+    const events: CombatEvent[] = [];
     let current = context.getEntity(enemy.id);
     if (!current?.enemyAction || current.phase !== "alive") {
+      slots.push({
+        actorId: enemy.id,
+        events,
+        postSlotState: current ? structuredClone(current) : undefined,
+      });
       continue;
     }
 
@@ -134,9 +146,15 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
     events.push(...context.combat.advanceEnemyStatus(enemy.id));
     current = context.getEntity(enemy.id);
     if (!current?.enemyAction || current.phase !== "alive") {
+      slots.push({
+        actorId: enemy.id,
+        events,
+        postSlotState: current ? structuredClone(current) : undefined,
+      });
       continue;
     }
     if (activityAtSlot === "staggered") {
+      slots.push({ actorId: enemy.id, events, postSlotState: structuredClone(current) });
       continue;
     }
 
@@ -150,18 +168,40 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
 
     current = context.getEntity(enemy.id);
     if (!current?.enemyAction || current.phase !== "alive") {
+      slots.push({
+        actorId: enemy.id,
+        events,
+        postSlotState: current ? structuredClone(current) : undefined,
+      });
       continue;
     }
     if (current.activity === "resting" && restingAtStart.has(enemy.id)) {
       context.combat.advanceEnemyRest(enemy.id);
+      current = context.getEntity(enemy.id);
+      slots.push({
+        actorId: enemy.id,
+        events,
+        postSlotState: current ? structuredClone(current) : undefined,
+      });
       continue;
     }
     if (current.activity !== "ready" || (!readyAtStart.has(enemy.id) && !recoveredThisSlot)) {
+      slots.push({ actorId: enemy.id, events, postSlotState: structuredClone(current) });
       continue;
     }
 
     events.push(...applyDecisionAtSlot(context, current, decideAtSlot(context, current)));
+    current = context.getEntity(enemy.id);
+    slots.push({
+      actorId: enemy.id,
+      events,
+      postSlotState: current ? structuredClone(current) : undefined,
+    });
   }
 
-  return events;
+  return slots;
+}
+
+export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
+  return resolveEnemyPhaseSlots(context).flatMap((slot) => slot.events);
 }

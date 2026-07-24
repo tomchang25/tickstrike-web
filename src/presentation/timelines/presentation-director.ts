@@ -92,6 +92,11 @@ interface ActiveTimeline {
   readonly resolve: () => void;
 }
 
+export interface SlotPresentation {
+  readonly done: Promise<void>;
+  readonly hasVisualWork: boolean;
+}
+
 export class PresentationDirector {
   private readonly activeTimelines = new Set<ActiveTimeline>();
   private readonly terminalViews = new Map<EntityId, DetachedEntityView>();
@@ -117,6 +122,24 @@ export class PresentationDirector {
       return Promise.resolve();
     }
     return this.playNow(events, generation);
+  }
+
+  /**
+   * Starts one canonical actor batch and reports whether it scheduled visible work. The turn-order
+   * scheduler uses this presentation-owned answer to avoid imposing pacing delays on semantic-only
+   * and no-op slots.
+   */
+  playSlot(events: readonly CombatEvent[], generation = this.generation): SlotPresentation {
+    if (generation !== this.generation) {
+      return { done: Promise.resolve(), hasVisualWork: false };
+    }
+    const activeBefore = this.activeTimelines.size;
+    const transientsBefore = this.renderer.transientCount;
+    const done = this.playNow(events, generation);
+    return {
+      done,
+      hasVisualWork: this.activeTimelines.size > activeBefore || this.renderer.transientCount > transientsBefore,
+    };
   }
 
   captureTerminalViews(events: readonly CombatEvent[], generation = this.generation): void {

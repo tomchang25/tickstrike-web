@@ -44,10 +44,10 @@ In both modes player input fast-forwards every remaining slot instantly, and no-
 
 ### Child overview
 
-| Child | Focus                                                                                       | Current document                                                       |
-| ----- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| 01    | Linear slot resolution: one canonical order, per-slot enemy resolution, retire commit-order | `explicit_time_order_01_linear_slot_resolution.implementation_spec.md` |
-| 02    | Order bar UI, per-slot staggered playback, pacing setting, hover cross-highlight            | Not started (spec after 01 ships)                                      |
+| Child | Focus                                                                                       | Current document                                                            |
+| ----- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 01    | Linear slot resolution: one canonical order, per-slot enemy resolution, retire commit-order | `explicit_time_order_01_linear_slot_resolution.implementation_spec.md`      |
+| 02    | Order bar UI, per-slot staggered playback, pacing setting, hover cross-highlight            | `explicit_time_order_02_order_bar_and_slot_playback.implementation_spec.md` |
 
 Landing order: 01 before 02 — the bar can only display a truthful order after the logic holds exactly one. Baseline: the charge enemy rework (uniform side push, displacement interrupt, claimed targets) lands before child 01; its displacement interrupt is the mechanic this plan makes legible, and its commit-order detonation rule is what child 01 replaces.
 

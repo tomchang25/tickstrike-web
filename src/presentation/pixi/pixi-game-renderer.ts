@@ -42,6 +42,8 @@ export type { PointerCommit, PointerInputBinding, PointerMode } from "./input-co
 
 interface EntityView {
   readonly root: Container;
+  readonly activeHighlight: Graphics;
+  readonly hoverHighlight: Graphics;
   readonly body: Graphics | Sprite;
   readonly sprite?: PlayerSprite;
   readonly enemyPresentation?: EnemyPresentation;
@@ -230,6 +232,8 @@ export class PixiGameRenderer {
   private enemyWaterAnimations: Readonly<Record<string, EnemyWaterAnimation>> = {};
   private enemyActionAnimations: Readonly<Record<string, EnemyActionAnimations>> = {};
   private enemyDashKilledAnimations: Readonly<Record<string, EnemyActionAnimation>> = {};
+  private activeTurnOrderEntityId: EntityId | undefined;
+  private hoveredTurnOrderEntityId: EntityId | undefined;
 
   get transientCount(): number {
     return this.transientEffects.size;
@@ -586,6 +590,7 @@ export class PixiGameRenderer {
       view.debugLabel.text = debugStateLabel(entity);
       view.statusLabel.visible = entity.kind === "enemy" && Boolean(combatStatusLabel(entity));
       view.statusLabel.text = combatStatusLabel(entity);
+      this.applyTurnOrderHighlight(entity.id, view);
     }
     if (this.host) {
       this.app.canvas.dataset.enemyPresentations = snapshot.entities
@@ -615,6 +620,31 @@ export class PixiGameRenderer {
 
   bindPointerInput(binding: PointerInputBinding): () => void {
     return this.input.bind(binding);
+  }
+
+  setTurnOrderHighlights(activeEntityId?: EntityId, hoveredEntityId?: EntityId): void {
+    this.activeTurnOrderEntityId = activeEntityId;
+    this.hoveredTurnOrderEntityId = hoveredEntityId;
+    for (const [entityId, view] of this.entityViews) {
+      this.applyTurnOrderHighlight(entityId, view);
+    }
+    if (this.host) {
+      if (activeEntityId) {
+        this.app.canvas.dataset.turnOrderActive = activeEntityId;
+      } else {
+        delete this.app.canvas.dataset.turnOrderActive;
+      }
+      if (hoveredEntityId) {
+        this.app.canvas.dataset.turnOrderHover = hoveredEntityId;
+      } else {
+        delete this.app.canvas.dataset.turnOrderHover;
+      }
+    }
+  }
+
+  private applyTurnOrderHighlight(entityId: EntityId, view: EntityView): void {
+    view.activeHighlight.visible = entityId === this.activeTurnOrderEntityId;
+    view.hoverHighlight.visible = entityId === this.hoveredTurnOrderEntityId;
   }
 
   getEntityView(id: EntityId): Container | undefined {
@@ -755,6 +785,15 @@ export class PixiGameRenderer {
     const root = new Container();
     root.label = entity.id;
     root.eventMode = "none";
+    const activeHighlight = new Graphics()
+      .circle(0, BODY_CENTER_Y, 32)
+      .fill({ color: 0x07151d, alpha: 0.22 })
+      .stroke({ color: 0x72d4ff, width: 4, alpha: 0.95 });
+    activeHighlight.visible = entity.id === this.activeTurnOrderEntityId;
+    const hoverHighlight = new Graphics()
+      .circle(0, BODY_CENTER_Y, 37)
+      .stroke({ color: 0xffd166, width: 3, alpha: 0.95 });
+    hoverHighlight.visible = entity.id === this.hoveredTurnOrderEntityId;
     const hpBar = new Graphics();
     const guardBar = new Graphics();
     guardBar.visible = Boolean(entity.guard);
@@ -840,6 +879,8 @@ export class PixiGameRenderer {
     }
 
     root.addChild(
+      hoverHighlight,
+      activeHighlight,
       hpBar,
       guardBar,
       ...(playerSprite ? [playerSprite.root] : enemyPresentation ? [enemyPresentation.root] : [body]),
@@ -850,6 +891,8 @@ export class PixiGameRenderer {
     );
     return {
       root,
+      activeHighlight,
+      hoverHighlight,
       body,
       ...(playerSprite ? { sprite: playerSprite } : {}),
       ...(enemyPresentation ? { enemyPresentation } : {}),

@@ -15,6 +15,8 @@ export interface SettingsPanelProps {
   readonly onMusicVolumeChange: (value: number) => void;
   readonly muteAudioInBackground: boolean;
   readonly onMuteAudioInBackgroundChange: (value: boolean) => void;
+  readonly turnOrderPacing: TurnOrderPacing;
+  readonly onTurnOrderPacingChange: (value: TurnOrderPacing) => void;
   readonly onRestart: () => void;
 }
 
@@ -35,6 +37,8 @@ export function SettingsPanel({
   onMusicVolumeChange,
   muteAudioInBackground,
   onMuteAudioInBackgroundChange,
+  turnOrderPacing,
+  onTurnOrderPacingChange,
   onRestart,
 }: SettingsPanelProps) {
   return (
@@ -60,6 +64,8 @@ export function SettingsPanel({
           onMusicVolumeChange={onMusicVolumeChange}
           muteAudioInBackground={muteAudioInBackground}
           onMuteAudioInBackgroundChange={onMuteAudioInBackgroundChange}
+          turnOrderPacing={turnOrderPacing}
+          onTurnOrderPacingChange={onTurnOrderPacingChange}
           onRestart={onRestart}
         />
       ) : null}
@@ -77,6 +83,8 @@ interface SettingsDialogProps {
   readonly onMusicVolumeChange: (value: number) => void;
   readonly muteAudioInBackground: boolean;
   readonly onMuteAudioInBackgroundChange: (value: boolean) => void;
+  readonly turnOrderPacing: TurnOrderPacing;
+  readonly onTurnOrderPacingChange: (value: TurnOrderPacing) => void;
   readonly onRestart: () => void;
 }
 
@@ -90,6 +98,8 @@ function SettingsDialog({
   onMusicVolumeChange,
   muteAudioInBackground,
   onMuteAudioInBackgroundChange,
+  turnOrderPacing,
+  onTurnOrderPacingChange,
   onRestart,
 }: SettingsDialogProps) {
   return (
@@ -132,6 +142,19 @@ function SettingsDialog({
             onChange={(event) => onMuteAudioInBackgroundChange(event.target.checked)}
           />
           <span>Mute audio in background</span>
+        </label>
+
+        <hr className="settings-divider" />
+        <label className="settings-row settings-select">
+          <span>Turn order pacing</span>
+          <select
+            data-testid="settings-turn-order-pacing"
+            value={turnOrderPacing}
+            onChange={(event) => onTurnOrderPacingChange(event.target.value as TurnOrderPacing)}
+          >
+            <option value="staggered">Staggered</option>
+            <option value="wait-for-vfx">Wait for VFX</option>
+          </select>
         </label>
 
         {import.meta.env.DEV ? (
@@ -195,3 +218,4 @@ function VolumeSlider({ label, testId, value, onChange }: VolumeSliderProps) {
     </label>
   );
 }
+import type { TurnOrderPacing } from "@runtime/settings-store";

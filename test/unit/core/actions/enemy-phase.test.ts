@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveEnemyPhase } from "@core/actions/enemy-phase";
+import { resolveEnemyPhase, resolveEnemyPhaseSlots } from "@core/actions/enemy-phase";
 import type { CombatEvent } from "@core/events/combat-events";
 import type { EnemyActionDefinition } from "@core/model/types";
 import { World } from "@core/world/world";
@@ -33,6 +33,31 @@ function detonationOrder(events: readonly CombatEvent[]): string[] {
 }
 
 describe("Slot-order detonation", () => {
+  it("exposes one grouped result per enabled enemy while preserving flattening", () => {
+    const world = phaseWorld();
+    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 0, y: 0 }, hp: 100 });
+    for (const [id, x] of [
+      ["enemy-first", 5],
+      ["enemy-second", 7],
+    ] as const) {
+      world.spawn({
+        id,
+        kind: "enemy",
+        archetype: "training-grunt",
+        cell: { x, y: 5 },
+        hp: 50,
+        enemyAction: thrust,
+        facing: { x: 1, y: 0 },
+      });
+    }
+
+    const slots = resolveEnemyPhaseSlots(world);
+
+    expect(slots.map((slot) => slot.actorId)).toEqual(["enemy-first", "enemy-second"]);
+    expect(slots.every((slot) => slot.postSlotState?.id === slot.actorId)).toBe(true);
+    expect(slots.flatMap((slot) => slot.events).map((event) => event.type)).toEqual(["enemy_moved", "enemy_moved"]);
+  });
+
   it("resolves telegraphing enemies in stable entity order", () => {
     const world = phaseWorld();
     world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 0, y: 0 }, hp: 100 });

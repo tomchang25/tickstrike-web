@@ -12,6 +12,30 @@ import { createInitialSlotStates } from "@core/waves/wave-scheduler";
 import { createFoundationArena } from "@harness/fixtures/shipped-arena";
 import { createTrainingArena } from "@harness/fixtures/training-arena";
 
+describe("turn playback sidecar", () => {
+  it("groups canonical actor slots without changing the authoritative flat event stream", () => {
+    const world = createFoundationArena();
+    const enemyOrder = world
+      .listEntities()
+      .filter((entity) => entity.kind === "enemy" && entity.phase === "alive" && entity.enemyAction)
+      .map((entity) => entity.id);
+
+    const result = resolveCommand(world, {
+      type: "move",
+      actorId: "player",
+      direction: { x: 0, y: 1 },
+    });
+
+    expect(result.turnPlayback?.enemies.map((slot) => slot.actorId)).toEqual(enemyOrder);
+    expect([
+      ...(result.turnPlayback?.player.events ?? []),
+      ...(result.turnPlayback?.enemies.flatMap((slot) => slot.events) ?? []),
+      ...(result.turnPlayback?.trailingEvents ?? []),
+    ]).toEqual(result.events);
+    expect(result.turnPlayback?.trailingEvents.at(-1)?.type).toBe("world_advanced");
+  });
+});
+
 describe("Smash action", () => {
   it("arms on the first action and releases the locked landing on the second", () => {
     const world = createTrainingArena();

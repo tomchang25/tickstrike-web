@@ -58,6 +58,8 @@ export function TestbedApp() {
                 commandsEnabled={commandsEnabled}
                 buildOpen={session.buildOpen}
                 onBuildOpenChange={session.setBuildOpen}
+                turnOrder={session.turnOrder}
+                onTurnOrderHoveredEntityChange={session.setTurnOrderHoveredEntity}
               />
             ) : null}
             <SettingsPanel
@@ -75,6 +77,8 @@ export function TestbedApp() {
               onMusicVolumeChange={session.setMusicVolume}
               muteAudioInBackground={session.settings.muteAudioInBackground}
               onMuteAudioInBackgroundChange={session.setMuteAudioInBackground}
+              turnOrderPacing={session.settings.turnOrderPacing}
+              onTurnOrderPacingChange={session.setTurnOrderPacing}
               onRestart={session.reset}
             />
             {snapshot && snapshot.outcome !== "running" ? (

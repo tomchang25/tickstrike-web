@@ -1,13 +1,11 @@
 // The home shell imports its scenario module directly instead of the scenario registry:
 // the registry's import.meta.glob would pull every harness scenario into the production bundle.
-import { useEffect } from "react";
 import { scenarios as runScenarios } from "@harness/scenarios/run.scenario";
 import { GameHud } from "@ui/hud/game-hud";
 import { MilestoneOverlay } from "@ui/milestone-overlay";
 import { RewardOverlay } from "@ui/reward-overlay";
 import { SemanticMirror } from "@ui/semantic-mirror";
 import { SettingsPanel } from "@ui/settings/settings-panel";
-import { COMPOSITION_WIDTH } from "@presentation/pixi/arena-layout";
 import { useGameSession } from "./use-game-session";
 
 function requireHomeScenario() {
@@ -27,25 +25,6 @@ export function GameApp() {
   const pendingReward = snapshot?.pendingReward;
   const pendingMilestone = snapshot?.pendingMilestone;
 
-  // Scale the HUD in lockstep with the displayed composition. The frame's content width is the
-  // displayed canvas width, CSS-driven and
-  // available immediately, so it needs no canvas-mount timing and updates on every viewport resize.
-  useEffect(() => {
-    const frame = session.canvasHostRef.current?.parentElement;
-    if (!frame) {
-      return;
-    }
-    const apply = () => {
-      if (frame.clientWidth > 0) {
-        frame.style.setProperty("--hud-scale", String(frame.clientWidth / COMPOSITION_WIDTH));
-      }
-    };
-    const observer = new ResizeObserver(apply);
-    observer.observe(frame);
-    apply();
-    return () => observer.disconnect();
-  }, [session.canvasHostRef]);
-
   return (
     <main className="game-shell">
       <div className="game-stage">
@@ -53,7 +32,13 @@ export function GameApp() {
         <div className="canvas-frame" data-testid="game-canvas-host">
           <div ref={session.canvasHostRef} className="canvas-host" />
           {snapshot ? (
-            <GameHud snapshot={snapshot} buildOpen={session.buildOpen} onBuildOpenChange={session.setBuildOpen} />
+            <GameHud
+              snapshot={snapshot}
+              buildOpen={session.buildOpen}
+              onBuildOpenChange={session.setBuildOpen}
+              turnOrder={session.turnOrder}
+              onTurnOrderHoveredEntityChange={session.setTurnOrderHoveredEntity}
+            />
           ) : null}
           <SettingsPanel
             open={session.settingsOpen}
@@ -70,6 +55,8 @@ export function GameApp() {
             onMusicVolumeChange={session.setMusicVolume}
             muteAudioInBackground={session.settings.muteAudioInBackground}
             onMuteAudioInBackgroundChange={session.setMuteAudioInBackground}
+            turnOrderPacing={session.settings.turnOrderPacing}
+            onTurnOrderPacingChange={session.setTurnOrderPacing}
             onRestart={session.reset}
           />
           {snapshot && snapshot.outcome !== "running" ? (

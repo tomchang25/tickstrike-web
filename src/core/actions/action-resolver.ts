@@ -5,14 +5,25 @@ import type { World } from "../world/world";
 import type { WavePhaseContext } from "./wave-phase";
 import { resolveWavePhase } from "./wave-phase";
 import type { GameCommand } from "./commands";
-import { resolveEnemyPhase } from "./enemy-phase";
+import { resolveEnemyPhaseSlots, type EnemyPhaseSlotResult } from "./enemy-phase";
 import { resolvePlayerAction } from "./player-actions";
+
+export interface TurnPlayback {
+  readonly player: {
+    readonly actorId: string;
+    readonly events: readonly CombatEvent[];
+  };
+  readonly enemies: readonly EnemyPhaseSlotResult[];
+  readonly trailingEvents: readonly CombatEvent[];
+}
 
 export interface ActionResolution {
   readonly accepted: boolean;
   readonly consumedTime?: boolean;
   readonly reason?: string;
   readonly events: readonly CombatEvent[];
+  /** Session-only playback grouping; flat `events` remains the authoritative semantic stream. */
+  readonly turnPlayback?: TurnPlayback;
 }
 
 /**
@@ -38,13 +49,13 @@ function finishAccepted(
   waveContext: WavePhaseContext | undefined,
 ): ActionResolution {
   const advanced = world.advancePlayerAction();
-  const enemyEvents = resolveEnemyPhase(world);
+  const enemySlots = resolveEnemyPhaseSlots(world);
   world.clearMobilityInvulnerability(command.actorId);
   const waveResult = resolveWavePhase(world, waveContext);
   const outcome = world.updateEncounterOutcome(
     world.waveRuntime ? { victoryReady: waveResult.victoryReady } : undefined,
   );
-  const completeEvents: CombatEvent[] = [
+  const playerEvents: CombatEvent[] = [
     {
       type: "command_resolved",
       commandType: command.type,
@@ -52,10 +63,16 @@ function finishAccepted(
       consumedTime: true,
     },
     ...events,
-    ...enemyEvents,
+  ];
+  const trailingEvents: CombatEvent[] = [
     ...waveResult.events,
     ...(outcome && outcome !== "running" ? [{ type: "encounter_ended", outcome } as const] : []),
     advanced,
+  ];
+  const completeEvents: CombatEvent[] = [
+    ...playerEvents,
+    ...enemySlots.flatMap((slot) => slot.events),
+    ...trailingEvents,
   ];
   world.recordEvents(completeEvents);
   purgeTerminalEntities(world, completeEvents);
@@ -63,6 +80,11 @@ function finishAccepted(
     accepted: true,
     consumedTime: true,
     events: completeEvents,
+    turnPlayback: {
+      player: { actorId: command.actorId, events: playerEvents },
+      enemies: enemySlots,
+      trailingEvents,
+    },
   };
 }
 

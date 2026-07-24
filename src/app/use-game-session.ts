@@ -4,6 +4,7 @@ import type { Cell, MilestoneChoice, WorldSnapshot } from "@core/model/types";
 import { createLocalStorageSettingsStorage } from "@platform/settings-storage";
 import type { TestScenario } from "@harness/types";
 import type { PointerCommit, PointerMode } from "@presentation/pixi/pixi-game-renderer";
+import { COMPOSITION_WIDTH } from "@presentation/pixi/arena-layout";
 import {
   parseEntityPresentationProfileCatalog,
   setRuntimeEntityPresentationProfileCatalog,
@@ -13,7 +14,8 @@ import {
   setRuntimeActionPresentationCatalog,
 } from "@presentation/actions/action-presentation-catalog";
 import { GameRuntime } from "@runtime/game-runtime";
-import { SettingsStore, type GameSettings } from "@runtime/settings-store";
+import { SettingsStore, type GameSettings, type TurnOrderPacing } from "@runtime/settings-store";
+import type { TurnOrderState } from "@runtime/turn-order-controller";
 import { useKeyboardInput } from "@ui/input/use-keyboard-input";
 
 export interface GameSessionOptions {
@@ -31,6 +33,7 @@ export interface GameSession {
   runtimeRef: RefObject<GameRuntime | undefined>;
   scenario: TestScenario;
   snapshot: WorldSnapshot | undefined;
+  turnOrder: TurnOrderState;
   busy: boolean;
   pointerMode: PointerMode;
   interactive: boolean;
@@ -44,6 +47,8 @@ export interface GameSession {
   setEffectVolume: (value: number) => void;
   setMusicVolume: (value: number) => void;
   setMuteAudioInBackground: (value: boolean) => void;
+  setTurnOrderPacing: (value: TurnOrderPacing) => void;
+  setTurnOrderHoveredEntity: (entityId?: string) => void;
   loadScenario: (scenario: TestScenario) => void;
   reset: () => void;
   selectReward: (artifactId: string) => Promise<void>;
@@ -60,6 +65,7 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
   const settingsStore = settingsStoreRef.current;
   const [scenario, setScenario] = useState(initialScenario);
   const [snapshot, setSnapshot] = useState<WorldSnapshot>();
+  const [turnOrder, setTurnOrder] = useState<TurnOrderState>({ tokens: [], playing: false });
   const [busy, setBusy] = useState(false);
   const [pointerMode, setPointerMode] = useState<PointerMode>("attack");
   const [settings, setSettings] = useState<GameSettings>(() => settingsStore.get());
@@ -74,6 +80,23 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
   // settings and build panels join this gate so gameplay input is inert while either is open.
   const interactive =
     commandsEnabled && encounterRunning && !pendingReward && !pendingMilestone && !settingsOpen && !buildOpen;
+
+  // Scale every HUD shell in lockstep with the displayed composition, including the debug testbed.
+  useEffect(() => {
+    const frame = canvasHostRef.current?.parentElement;
+    if (!frame) {
+      return;
+    }
+    const apply = () => {
+      if (frame.clientWidth > 0) {
+        frame.style.setProperty("--hud-scale", String(frame.clientWidth / COMPOSITION_WIDTH));
+      }
+    };
+    const observer = new ResizeObserver(apply);
+    observer.observe(frame);
+    apply();
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => settingsStore.subscribe(setSettings), [settingsStore]);
 
@@ -149,6 +172,13 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     (value: boolean) => settingsStore.set({ muteAudioInBackground: value }),
     [settingsStore],
   );
+  const setTurnOrderPacing = useCallback(
+    (value: TurnOrderPacing) => settingsStore.set({ turnOrderPacing: value }),
+    [settingsStore],
+  );
+  const setTurnOrderHoveredEntity = useCallback((entityId?: string) => {
+    runtimeRef.current?.setTurnOrderHoveredEntity(entityId);
+  }, []);
 
   useEffect(() => {
     const host = canvasHostRef.current;
@@ -159,6 +189,7 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     const runtime = new GameRuntime();
     runtimeRef.current = runtime;
     let unsubscribe: () => void = () => undefined;
+    let unsubscribeTurnOrder: () => void = () => undefined;
     let uninstallDebug: () => void = () => undefined;
     let cancelled = false;
 
@@ -166,8 +197,10 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
       if (cancelled) {
         return;
       }
+      runtime.setTurnOrderPacing(settingsStore.get().turnOrderPacing);
       runtime.loadScenario(scenario);
       unsubscribe = runtime.subscribe(setSnapshot);
+      unsubscribeTurnOrder = runtime.subscribeTurnOrder(setTurnOrder);
       if (debugApi && import.meta.env.DEV) {
         const { installDebugApi } = await import("@harness/debug-api");
         if (!cancelled) {
@@ -179,6 +212,7 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     return () => {
       cancelled = true;
       unsubscribe();
+      unsubscribeTurnOrder();
       uninstallDebug();
       runtime.destroy();
       runtimeRef.current = undefined;
@@ -354,6 +388,10 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     });
   }, [settings.masterVolume, settings.effectVolume, settings.musicVolume, snapshot]);
 
+  useEffect(() => {
+    runtimeRef.current?.setTurnOrderPacing(settings.turnOrderPacing);
+  }, [settings.turnOrderPacing, snapshot]);
+
   // The browser audio context starts suspended; unlock it on the first user gesture. The listeners
   // remove themselves once the runtime is mounted and unlocked, and on unmount. A gesture that lands
   // before mount is a no-op and leaves the listeners in place for the next one.
@@ -416,14 +454,16 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
         return smash(commit.target);
       },
       onCancel: () => cancelArmedSmash(),
+      onHoveredEntityChange: setTurnOrderHoveredEntity,
     });
-  }, [attack, cancelArmedSmash, dash, interactive, pointerMode, smash, snapshot]);
+  }, [attack, cancelArmedSmash, dash, interactive, pointerMode, setTurnOrderHoveredEntity, smash, snapshot]);
 
   return {
     canvasHostRef,
     runtimeRef,
     scenario,
     snapshot,
+    turnOrder,
     busy,
     pointerMode,
     interactive,
@@ -437,6 +477,8 @@ export function useGameSession({ initialScenario, debugApi }: GameSessionOptions
     setEffectVolume,
     setMusicVolume,
     setMuteAudioInBackground,
+    setTurnOrderPacing,
+    setTurnOrderHoveredEntity,
     loadScenario,
     reset,
     selectReward,
