@@ -33,8 +33,6 @@ Before deciding what verification a change needs, read `dev/standards/verificati
 
 Before authoring or restructuring any test — unit or browser — read `dev/standards/test_economy_standard.md`: unit first, browser only for browser-only observations, one extreme scenario per capability, fixture/interface setup instead of gameplay simulation.
 
-Before closing out a plan child or updating a plan's child overview, read `dev/workflows/closeout_standard.addendum.md`: shipped rows stay in the plan with their spec named in plain text and no link.
-
 Before creating or changing fixed palette variants, generated recolour assets, or their runtime selection and validation, read `dev/standards/palette_variant_asset_standard.md`.
 
 Before creating, changing, regenerating, or reviewing an offline pixel animation sheet, read `dev/standards/sprite_animation_asset_standard.md`, `dev/workflows/sprite_animation_authoring.md`, and `dev/skills/sprite_animation_authoring.md`.
