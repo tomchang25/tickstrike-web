@@ -8,6 +8,9 @@ declare global {
 }
 
 test("the settings panel toggles the debug overlay and restarts the run", async ({ page }) => {
+  // This test opens/closes the settings panel and build overview several times in sequence; on a
+  // loaded CI runner the cumulative actionability waits can approach the 30s default budget.
+  test.setTimeout(60_000);
   await page.goto("/debug?scenario=tick-arena");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
