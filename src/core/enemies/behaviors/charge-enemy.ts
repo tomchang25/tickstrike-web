@@ -12,7 +12,7 @@ import {
   type EnemyMovementCandidate,
 } from "../../model/types";
 import type { CombatEvent } from "../../events/combat-events";
-import type { AttackResolutionTransaction, WorldView } from "../../world/world";
+import type { AttackResolutionTransaction } from "../../world/world";
 import { findEnemyPaths } from "../enemy-path-planner";
 import { CARDINAL_DIRECTIONS } from "../attack-geometry";
 import { damageEventsFor } from "../attack-resolution-events";
@@ -31,8 +31,6 @@ export interface ChargeImpactResult {
   readonly targetId?: EntityId;
   readonly cell: Cell;
   readonly outcome: "empty" | "normal" | "blocked";
-  readonly from?: Cell;
-  readonly to?: Cell;
   readonly damage?: DamageResult;
 }
 
@@ -45,7 +43,6 @@ export interface ChargeAttackResolution {
 
 /** Single source of the Charge range policy; tuning only authors `maxRange`. */
 export const CHARGE_MIN_RANGE = 1;
-export const CHARGE_PREFERRED_MIN_RANGE = 2;
 
 export interface ChargeRangePath {
   /** Cells from the cell immediately in front of the origin through the target cell, inclusive. */
@@ -95,19 +92,21 @@ export function chargeLiveRetarget(
   return path && facing && sameCell(path.facing, facing) ? path : undefined;
 }
 
-function chargeOriginCells(playerCell: Cell, maxRange: number): { primary: Cell[]; fallback: Cell[] } {
-  const primary: Cell[] = [];
-  const fallback: Cell[] = [];
-  for (const direction of CARDINAL_DIRECTIONS) {
-    for (let distance = CHARGE_MIN_RANGE; distance <= maxRange; distance += 1) {
-      const cell = {
+/**
+ * Charge origin cells for one player-distance, in every cardinal direction, farthest
+ * distance first — the longest available run-up wins, tried before any shorter one.
+ */
+function chargeOriginCellsByDistance(playerCell: Cell, maxRange: number): readonly (readonly Cell[])[] {
+  const tiers: Cell[][] = [];
+  for (let distance = maxRange; distance >= CHARGE_MIN_RANGE; distance -= 1) {
+    tiers.push(
+      CARDINAL_DIRECTIONS.map((direction) => ({
         x: playerCell.x + direction.x * distance,
         y: playerCell.y + direction.y * distance,
-      };
-      (distance >= CHARGE_PREFERRED_MIN_RANGE ? primary : fallback).push(cell);
-    }
+      })),
+    );
   }
-  return { primary, fallback };
+  return tiers;
 }
 
 function chargeMovementCandidates(
@@ -116,7 +115,6 @@ function chargeMovementCandidates(
   tuning: ChargeEnemyTuning,
   context: EnemyDecisionContext,
 ): readonly EnemyMovementCandidate[] {
-  const { primary, fallback } = chargeOriginCells(playerCell, tuning.maxRange);
   const findPaths = (goals: readonly Cell[]) =>
     findEnemyPaths({
       start: enemy.cell,
@@ -124,8 +122,15 @@ function chargeMovementCandidates(
       canPathThrough: (cell) => context.isInside(cell) && context.canPathThrough(cell),
       canEndAt: context.canEndAt,
     });
-  const primaryPaths = findPaths(primary);
-  const paths = primaryPaths.length > 0 ? primaryPaths : findPaths(fallback);
+
+  let paths: readonly (readonly Cell[])[] = [];
+  for (const tier of chargeOriginCellsByDistance(playerCell, tuning.maxRange)) {
+    paths = findPaths(tier);
+    if (paths.length > 0) {
+      break;
+    }
+  }
+
   return paths.map((path) => {
     const destination = path[0]!;
     const goal = path[path.length - 1]!;
@@ -139,8 +144,10 @@ function chargeMovementCandidates(
 }
 
 /**
- * The Charge detonation policy: alternating side displacement for non-target path
- * occupants, target knockback or blocked double damage, and Charge's own landing.
+ * The Charge detonation policy: one alternating side-push pass over the entire path,
+ * including the final cell — nothing is ever knocked forward. The final-cell occupant
+ * always takes the attack's damage, doubled and left in place when both sides are
+ * blocked; the charger's own landing follows that same push or blocked fallback.
  * Runs entirely against the transaction's staged view, then commits once.
  */
 function chargeDetonationPolicy(transaction: AttackResolutionTransaction): ChargeAttackResolution | undefined {
@@ -151,19 +158,21 @@ function chargeDetonationPolicy(transaction: AttackResolutionTransaction): Charg
     return undefined;
   }
   const targetCell = path[path.length - 1]!;
-  const sidePath = path.slice(0, -1);
   const direction = enemy.facing ?? { x: 1, y: 0 };
   const right = { x: -direction.y, y: direction.x };
   const left = { x: direction.y, y: -direction.x };
 
   const displacements: ChargeDisplacementResult[] = [];
+  let impact: ChargeImpactResult = { cell: { ...targetCell }, outcome: "empty" };
+  let landingCell: Cell = { ...targetCell };
 
-  for (let index = 0; index < sidePath.length; index += 1) {
-    const cell = sidePath[index]!;
+  for (let index = 0; index < path.length; index += 1) {
+    const cell = path[index]!;
     const occupant = transaction.livingOccupantAt(cell);
     if (!occupant) {
       continue;
     }
+    const isTarget = index === path.length - 1;
 
     const rightFirst = index % 2 === 0;
     const primary = rightFirst ? right : left;
@@ -184,44 +193,25 @@ function chargeDetonationPolicy(transaction: AttackResolutionTransaction): Charg
         to: { ...destination },
         blocked: false,
       });
-    } else {
-      transaction.stageDamage(occupant.id, attack.damage);
-      displacements.push({ entityId: occupant.id, from: { ...occupant.cell }, blocked: true });
-    }
-  }
-
-  const targetOccupant = transaction.livingOccupantAt(targetCell);
-  let impact: ChargeImpactResult;
-  let landingCell: Cell;
-
-  if (!targetOccupant) {
-    impact = { cell: { ...targetCell }, outcome: "empty" };
-    landingCell = { ...targetCell };
-  } else {
-    const forwardDestination = { x: targetCell.x + direction.x, y: targetCell.y + direction.y };
-    if (transaction.isFree(forwardDestination)) {
-      transaction.stageMove(targetOccupant.id, forwardDestination);
-      transaction.stageDamage(targetOccupant.id, attack.damage);
-      impact = {
-        targetId: targetOccupant.id,
-        cell: { ...targetCell },
-        outcome: "normal",
-        from: { ...targetCell },
-        to: { ...forwardDestination },
-      };
-      landingCell = { ...targetCell };
-    } else {
-      transaction.stageDamage(targetOccupant.id, attack.damage * 2);
-      impact = { targetId: targetOccupant.id, cell: { ...targetCell }, outcome: "blocked" };
+      if (isTarget) {
+        transaction.stageDamage(occupant.id, attack.damage);
+        impact = { targetId: occupant.id, cell: { ...targetCell }, outcome: "normal" };
+      }
+    } else if (isTarget) {
+      transaction.stageDamage(occupant.id, attack.damage * 2);
+      impact = { targetId: occupant.id, cell: { ...targetCell }, outcome: "blocked" };
       let fallback: Cell | undefined;
-      for (let index = sidePath.length - 1; index >= 0; index -= 1) {
-        const candidate = sidePath[index]!;
+      for (let scan = index - 1; scan >= 0; scan -= 1) {
+        const candidate = path[scan]!;
         if (transaction.isFree(candidate)) {
           fallback = candidate;
           break;
         }
       }
       landingCell = fallback ? { ...fallback } : origin;
+    } else {
+      transaction.stageDamage(occupant.id, attack.damage);
+      displacements.push({ entityId: occupant.id, from: { ...occupant.cell }, blocked: true });
     }
   }
 
@@ -248,8 +238,43 @@ export function resolveChargeAttack(context: EnemyPhaseContext, id: EntityId): C
   return context.resolveCommittedAttackTransaction(id, chargeDetonationPolicy);
 }
 
+/**
+ * Cancels the windup of every entity this detonation actually displaced (the pushed
+ * final-cell target included, via the same `displacements` entries as the side pushes).
+ * A blocked-in-place occupant took damage but never moved, so it keeps its windup by
+ * design. `interruptDisplacedEnemy` self-guards the player and non-enemies, so no
+ * entity-kind filtering is needed here.
+ */
+function chargeInterruptEvents(
+  context: EnemyPhaseContext,
+  displacements: readonly ChargeDisplacementResult[],
+): CombatEvent[] {
+  const events: CombatEvent[] = [];
+  for (const displacement of displacements) {
+    if (!displacement.to) {
+      continue;
+    }
+    const interrupt = context.combat.interruptDisplacedEnemy(displacement.entityId);
+    if (!interrupt.changed) {
+      continue;
+    }
+    if (interrupt.hadCommittedAttack || interrupt.hadTelegraph) {
+      events.push({ type: "enemy_attack_interrupted", enemyId: displacement.entityId });
+    }
+    if (interrupt.hadTelegraph) {
+      events.push({ type: "telegraph_changed", sourceId: displacement.entityId, cleared: true });
+    }
+    events.push({
+      type: "enemy_recovering",
+      enemyId: displacement.entityId,
+      recoveryTicks: interrupt.recoveryTicks,
+    });
+  }
+  return events;
+}
+
 function chargeResolutionEvents(
-  world: WorldView,
+  context: EnemyPhaseContext,
   enemyId: EntityId,
   resolution: ChargeAttackResolution,
 ): CombatEvent[] {
@@ -264,7 +289,7 @@ function chargeResolutionEvents(
 
   for (const displacement of resolution.displacements) {
     if (displacement.blocked && displacement.damage) {
-      events.push(...damageEventsFor(world, enemyId, displacement.entityId, displacement.damage));
+      events.push(...damageEventsFor(context, enemyId, displacement.entityId, displacement.damage));
     }
   }
 
@@ -277,7 +302,7 @@ function chargeResolutionEvents(
       outcome: resolution.impact.outcome,
     });
     if (resolution.impact.damage) {
-      events.push(...damageEventsFor(world, enemyId, resolution.impact.targetId, resolution.impact.damage));
+      events.push(...damageEventsFor(context, enemyId, resolution.impact.targetId, resolution.impact.damage));
     }
   } else {
     events.push({ type: "charge_impact", enemyId, cell: resolution.impact.cell, outcome: "empty" });
@@ -294,15 +319,8 @@ function chargeResolutionEvents(
       });
     }
   }
-  if (resolution.impact.outcome === "normal" && resolution.impact.targetId && resolution.impact.to) {
-    events.push({
-      type: "entity_displaced",
-      entityId: resolution.impact.targetId,
-      from: resolution.impact.from!,
-      to: resolution.impact.to,
-      cause: "charge_target_knockback",
-    });
-  }
+
+  events.push(...chargeInterruptEvents(context, resolution.displacements));
 
   events.push({
     type: "charge_landed",
@@ -319,11 +337,35 @@ function chargeResolutionEvents(
   return events;
 }
 
-/** Cardinal line-rush behavior: commits when a legal range path exists, otherwise repositions. */
+/**
+ * True when some other charge enemy's committed attack already ends on this cell. A charge
+ * always ends on the Player's cell, so this is how two chargers serialize instead of both
+ * telegraphing onto the same cell. Stale claims (the other charger's Player-cell target moved,
+ * or it could no longer retarget) simply compare unequal.
+ */
+function chargeCellClaimed(cell: Cell, otherCommittedAttacks: readonly CommittedAttack[]): boolean {
+  return otherCommittedAttacks.some((attack) => {
+    if (attack.role !== "charge") {
+      return false;
+    }
+    const finalCell = attack.cells[attack.cells.length - 1];
+    return finalCell !== undefined && sameCell(finalCell, cell);
+  });
+}
+
+/** Cardinal line-rush behavior: commits when a legal, unclaimed range path exists, otherwise repositions. */
 export const chargeEnemyBehavior: EnemyBehavior = {
   retarget(context, enemy) {
     const retarget = chargeLiveRetarget(enemy, context.playerCell, (cell) => context.board.isLegalCell(cell));
     if (!retarget) {
+      return [];
+    }
+    const finalCell = retarget.path[retarget.path.length - 1]!;
+    const otherCommittedAttacks = context
+      .listEntities()
+      .filter((other) => other.id !== enemy.id && other.committedAttack)
+      .map((other) => other.committedAttack!);
+    if (chargeCellClaimed(finalCell, otherCommittedAttacks)) {
       return [];
     }
     const result = context.combat.retargetCommittedAttack(enemy.id, retarget.path, retarget.facing);
@@ -350,7 +392,7 @@ export const chargeEnemyBehavior: EnemyBehavior = {
       return { type: "wait" };
     }
     const rangePath = chargeRangePath(enemy.cell, playerCell, tuning.maxRange, context.isLegalTerrain);
-    if (rangePath) {
+    if (rangePath && !chargeCellClaimed(rangePath.path[rangePath.path.length - 1]!, context.otherCommittedAttacks)) {
       return {
         type: "attack",
         attack: action,

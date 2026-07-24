@@ -1,5 +1,6 @@
 import type {
   Cell,
+  CommittedAttack,
   EnemyActionDefinition,
   EnemyMovementCandidate,
   EntityId,
@@ -49,6 +50,11 @@ export interface EnemyDecisionContext {
   canEndAt(cell: Cell): boolean;
   /** Terrain-only legality, ignoring occupancy and the live Player position. Used by Charge range/path checks. */
   isLegalTerrain(cell: Cell): boolean;
+  /**
+   * Every other telegraphing enemy's committed attack, role-agnostic and unfiltered — a
+   * behavior that needs to avoid a claimed target cell (e.g. Charge) filters by role itself.
+   */
+  readonly otherCommittedAttacks: readonly CommittedAttack[];
 }
 
 /**

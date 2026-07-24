@@ -53,6 +53,7 @@ function context(
     canPathThrough: () => true,
     canEndAt: (cell) => !blockedCells.has(key(cell)),
     isLegalTerrain: () => true,
+    otherCommittedAttacks: [],
   };
 }
 

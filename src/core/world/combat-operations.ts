@@ -26,6 +26,20 @@ export interface AttackRetargetResult {
 }
 
 /**
+ * `changed: false` means the entity was exempt (not an alive enemy, or staggered) and nothing
+ * was touched; it carries no other fields. The `changed: true` arm always reports the recovery
+ * duration applied, so callers that narrow on `changed` never need a fallback.
+ */
+export type DisplacementInterruptResult =
+  | { readonly changed: false }
+  | {
+      readonly changed: true;
+      readonly hadTelegraph: boolean;
+      readonly hadCommittedAttack: boolean;
+      readonly recoveryTicks: number;
+    };
+
+/**
  * The entity surface combat rules are allowed to touch. `setPhase` is the
  * world's own terminal transition, which cascades placement, reservation,
  * telegraph, and armed-smash cleanup; combat never performs that cleanup itself.
@@ -352,6 +366,37 @@ export class CombatOperations {
     this.world.setEntity(id, { ...entity, committedAttack: next, facing: cloneCell(facing) });
     const telegraph = this.board.setTelegraph({ sourceId: id, phase: "warning", cells: path });
     return { changed: true, telegraph };
+  }
+
+  /**
+   * Cancels an alive, non-staggered enemy's windup because it was just forcibly displaced
+   * (a charge push today): releases its reservation, clears its telegraph, drops its
+   * committed attack, and enters `recovering` at its full authored duration — refreshing
+   * the timer even if it was already recovering. Staggered enemies, the player, and dead
+   * entities are exempt and left untouched. Mirrors `applyDirectionalHit`'s stagger
+   * transition; emits nothing itself, matching this subsystem's existing style.
+   */
+  interruptDisplacedEnemy(id: EntityId): DisplacementInterruptResult {
+    const entity = this.world.getEntity(id);
+    if (!entity?.enemyAction || entity.phase !== "alive" || entity.activity === "staggered") {
+      return { changed: false };
+    }
+
+    const hadCommittedAttack = entity.committedAttack !== undefined;
+    const hadTelegraph = this.board.clearTelegraph(id);
+    this.board.releaseReservation(id);
+    const recoveryTicks = entity.enemyAction.recoveryTicks;
+    this.world.setEntity(id, {
+      ...entity,
+      activity: "recovering",
+      recoveryTicks,
+      restTicks: undefined,
+      committedAttack: undefined,
+      // Cleared for the same reason `setEnemyActivity` clears it on any non-staggered
+      // transition; unreachable today because the staggered guard above returns early.
+      staggerTicks: undefined,
+    });
+    return { changed: true, hadTelegraph, hadCommittedAttack, recoveryTicks };
   }
 
   advanceEnemyRecovery(id: EntityId): boolean {

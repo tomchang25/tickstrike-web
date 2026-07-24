@@ -51,6 +51,7 @@ function context(
     canPathThrough: (cell) => !illegalCells.has(key(cell)),
     canEndAt: (cell) => !blockedCells.has(key(cell)) && !illegalCells.has(key(cell)),
     isLegalTerrain: (cell) => !illegalCells.has(key(cell)),
+    otherCommittedAttacks: [],
   };
 }
 
@@ -130,6 +131,7 @@ describe("Bomb approach movement", () => {
       canPathThrough: (cell) => allowed.has(`${cell.x},${cell.y}`),
       canEndAt: () => true,
       isLegalTerrain: () => true,
+      otherCommittedAttacks: [],
     });
     expect(decision).toEqual({ type: "wait" });
   });

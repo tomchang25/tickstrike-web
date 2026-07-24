@@ -18,9 +18,10 @@ function chargeAction(): EnemyActionDefinition {
 /**
  * Charge origin (9,3) and Player (7,3) share a leftward path. Three left moves bring the
  * Player to (4,3); a fourth in-place command (Charge's 3-tick windup needs one more tick than
- * a plain move sequence provides) holds the Player there so the detonating command contains
- * target knockback from (4,3) to (3,3) and Charge landing from (9,3) to (4,3). `enemy-side-blocker`
- * at (8,3) also exercises the first alternating side displacement.
+ * a plain move sequence provides) holds the Player there so the detonating command pushes the
+ * Player sideways from (4,3) to (4,2) — the final-cell occupant is pushed like every other path
+ * occupant, never knocked forward — and lands Charge from (9,3) to (4,3). `enemy-side-blocker`
+ * at (8,3) exercises the same alternating side push, pushed to (8,2).
  */
 export function createChargeArena(seed?: Seed): World {
   const tiles: readonly TileKind[] = Array.from({ length: WIDTH * HEIGHT }, () => "floor");
@@ -74,7 +75,7 @@ export const scenarios: readonly TestScenario[] = [
     id: "charge-enemy",
     title: "Charge Enemy / Live Targeting and Impact",
     description:
-      "Three deterministic left moves plus a held in-place command end with same-direction Player movement and Charge knockback, while a side blocker and Charge landing move concurrently from their declared origins.",
+      "Three deterministic left moves plus a held in-place command end with same-direction Player movement and a Charge side push, while a side blocker and Charge landing move concurrently from their declared origins.",
     seed: "charge-enemy-foundation",
     createWorld(seed) {
       return createChargeArena(seed ?? "charge-enemy-foundation");

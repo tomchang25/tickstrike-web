@@ -181,7 +181,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 3
         }
       },
       {
@@ -293,7 +294,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 4
         }
       },
       {
@@ -393,7 +395,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 3
         },
         "target": {
           "x": 6,
@@ -516,7 +519,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 4
         },
         "target": {
           "x": 6,
@@ -629,7 +633,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 7
         }
       },
       {
@@ -678,7 +683,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 7
         }
       },
       {
@@ -833,7 +839,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 7
         },
         "target": {
           "x": 6,
@@ -891,7 +898,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 7
         },
         "target": {
           "x": 6,
@@ -1103,7 +1111,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 11
         }
       },
       {
@@ -1164,7 +1173,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 11
         }
       },
       {
@@ -1252,7 +1262,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 12
         }
       },
       {
@@ -1412,7 +1423,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 11
         },
         "target": {
           "x": 8,
@@ -1470,7 +1482,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 11
         },
         "target": {
           "x": 8,
@@ -1663,7 +1676,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 12
         },
         "target": {
           "x": 13,
@@ -1985,7 +1999,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 18
         }
       },
       {
@@ -2097,7 +2112,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 19
         }
       },
       {
@@ -2146,7 +2162,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 19
         }
       },
       {
@@ -2234,7 +2251,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 18
         },
         "target": {
           "x": 13,
@@ -2331,7 +2349,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 19
         },
         "target": {
           "x": 12,
@@ -2409,7 +2428,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 19
         },
         "target": {
           "x": 12,
@@ -2673,7 +2693,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 23
         }
       },
       {
@@ -2722,7 +2743,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 23
         }
       },
       {
@@ -2883,7 +2905,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 23
         },
         "target": {
           "x": 12,
@@ -2941,7 +2964,8 @@
           ],
           "damage": 10,
           "warningTicks": 0,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 23
         },
         "target": {
           "x": 12,
@@ -3109,7 +3133,8 @@
           ],
           "damage": 10,
           "warningTicks": 2,
-          "recoveryTicks": 2
+          "recoveryTicks": 2,
+          "commitTick": 27
         }
       },
       {
@@ -3722,7 +3747,8 @@
             ],
             "damage": 10,
             "warningTicks": 2,
-            "recoveryTicks": 2
+            "recoveryTicks": 2,
+            "commitTick": 27
           }
         },
         {
@@ -3925,7 +3951,8 @@
             ],
             "damage": 10,
             "warningTicks": 2,
-            "recoveryTicks": 2
+            "recoveryTicks": 2,
+            "commitTick": 27
           }
         },
         {

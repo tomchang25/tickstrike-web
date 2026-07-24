@@ -57,7 +57,12 @@ export type {
   TelegraphInput,
 } from "./grid-board";
 export { GridBoard } from "./grid-board";
-export type { AttackRetargetResult, CombatWorldAccess, EnemyAttackResolution } from "./combat-operations";
+export type {
+  AttackRetargetResult,
+  CombatWorldAccess,
+  DisplacementInterruptResult,
+  EnemyAttackResolution,
+} from "./combat-operations";
 export { CombatOperations } from "./combat-operations";
 export { RunBuild } from "./run-build";
 export { WaveRuntime } from "./wave-runtime";

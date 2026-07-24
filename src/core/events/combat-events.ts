@@ -187,7 +187,7 @@ export type CombatEvent =
       readonly entityId: EntityId;
       readonly from: Cell;
       readonly to: Cell;
-      readonly cause: "charge_side_push" | "charge_target_knockback";
+      readonly cause: "charge_side_push";
     }
   | {
       readonly type: "charge_impact";

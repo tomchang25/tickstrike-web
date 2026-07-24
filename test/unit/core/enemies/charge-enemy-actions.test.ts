@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { resolveCommand } from "@core/actions/action-resolver";
+import { resolveEnemyPhase } from "@core/actions/enemy-phase";
 import { chargeLiveRetarget, decideEnemyAction, type EnemyDecisionContext } from "@core/enemies/enemy-actions";
-import type { EnemyActionDefinition, EntityState } from "@core/model/types";
+import type { CommittedAttack, EnemyActionDefinition, EntityState } from "@core/model/types";
 import { World } from "@core/world/world";
 
 const charge: EnemyActionDefinition = {
@@ -37,6 +38,7 @@ function context(
   playerCell: { x: number; y: number } | undefined,
   blocked: readonly string[] = [],
   illegal: readonly string[] = [],
+  otherCommittedAttacks: readonly CommittedAttack[] = [],
 ): EnemyDecisionContext {
   const blockedCells = new Set(blocked);
   const illegalCells = new Set(illegal);
@@ -49,6 +51,7 @@ function context(
     canPathThrough: (cell) => !illegalCells.has(key(cell)),
     canEndAt: (cell) => !blockedCells.has(key(cell)) && !illegalCells.has(key(cell)),
     isLegalTerrain: (cell) => !illegalCells.has(key(cell)),
+    otherCommittedAttacks,
   };
 }
 
@@ -98,20 +101,52 @@ describe("Charge cardinal range decisions", () => {
 });
 
 describe("Charge movement planning", () => {
-  it("prefers a two-through-five-cell origin over closing to melee range", () => {
+  it("prefers the farthest reachable origin (the tuning's maxRange) over closing to melee range", () => {
     const decision = decideEnemyAction(context(enemy({ cell: { x: 5, y: 11 } }), { x: 5, y: 5 }));
     expect(decision.type).toBe("move");
     if (decision.type !== "move") {
       return;
     }
     expect(decision.candidates.length).toBeGreaterThan(0);
-    const first = decision.candidates[0]!;
-    const distance = Math.abs(first.goal.x - 5) + Math.abs(first.goal.y - 5);
-    expect(distance).toBeGreaterThanOrEqual(2);
-    expect(distance).toBeLessThanOrEqual(5);
+    for (const candidate of decision.candidates) {
+      const distance = Math.abs(candidate.goal.x - 5) + Math.abs(candidate.goal.y - 5);
+      expect(distance).toBe(5);
+    }
   });
 
-  it("falls back to an adjacent origin when no two-through-five cell is reachable", () => {
+  it("prefers a farther reachable origin over a nearer one that's also reachable", () => {
+    // Box the enemy into a 7x7 area centered on the Player so distances 4 and 5 (of a
+    // maxRange-5 tuning) are unreachable but 2 and 3 both are — the farthest reachable
+    // tier (3) must win, not just any reachable tier beyond melee range.
+    const allowed = new Set<string>();
+    for (let x = 2; x <= 8; x += 1) {
+      for (let y = 2; y <= 8; y += 1) {
+        allowed.add(`${x},${y}`);
+      }
+    }
+    const inBox = (cell: { x: number; y: number }) => allowed.has(`${cell.x},${cell.y}`);
+    const decision = decideEnemyAction({
+      enemy: enemy({ cell: { x: 2, y: 2 } }),
+      playerCell: { x: 5, y: 5 },
+      isInside: inBox,
+      canMove: () => true,
+      canPathThrough: inBox,
+      canEndAt: inBox,
+      isLegalTerrain: inBox,
+      otherCommittedAttacks: [],
+    });
+    expect(decision.type).toBe("move");
+    if (decision.type !== "move") {
+      return;
+    }
+    expect(decision.candidates.length).toBeGreaterThan(0);
+    for (const candidate of decision.candidates) {
+      const distance = Math.abs(candidate.goal.x - 5) + Math.abs(candidate.goal.y - 5);
+      expect(distance).toBe(3);
+    }
+  });
+
+  it("falls back to an adjacent origin when nothing farther is reachable", () => {
     const allowed = new Set(["4,4", "4,5", "5,4", "5,5"]);
     const decision = decideEnemyAction({
       enemy: enemy({ cell: { x: 4, y: 4 } }),
@@ -121,6 +156,7 @@ describe("Charge movement planning", () => {
       canPathThrough: (cell) => allowed.has(`${cell.x},${cell.y}`),
       canEndAt: () => true,
       isLegalTerrain: () => true,
+      otherCommittedAttacks: [],
     });
     expect(decision.type).toBe("move");
     if (decision.type !== "move") {
@@ -143,6 +179,7 @@ describe("Charge movement planning", () => {
       canPathThrough: (cell) => allowed.has(`${cell.x},${cell.y}`),
       canEndAt: () => true,
       isLegalTerrain: () => true,
+      otherCommittedAttacks: [],
     });
     expect(decision).toEqual({ type: "wait" });
   });
@@ -267,5 +304,128 @@ describe("Charge committed lifecycle", () => {
       committedAttack: undefined,
     });
     expect(world.getTelegraph("enemy-charge")).toBeUndefined();
+  });
+});
+
+describe("Charge target-cell claims", () => {
+  it("does not commit onto a cell another charge enemy already claims, rerouting to reposition instead", () => {
+    const claimedAttack: CommittedAttack = {
+      attackId: "charge",
+      role: "charge",
+      cells: [
+        { x: 5, y: 3 },
+        { x: 5, y: 2 },
+      ],
+      damage: 8,
+      warningTicks: 2,
+      recoveryTicks: 2,
+    };
+    const decision = decideEnemyAction(context(enemy(), { x: 5, y: 2 }, [], [], [claimedAttack]));
+    expect(decision.type).not.toBe("attack");
+  });
+
+  it("ignores a claim from a non-charge role's committed attack", () => {
+    const otherRoleAttack: CommittedAttack = {
+      attackId: "thrust",
+      role: "thrust",
+      cells: [{ x: 5, y: 2 }],
+      damage: 5,
+      warningTicks: 2,
+      recoveryTicks: 2,
+    };
+    const decision = decideEnemyAction(context(enemy(), { x: 5, y: 2 }, [], [], [otherRoleAttack]));
+    expect(decision).toEqual({
+      type: "attack",
+      attack: charge,
+      cells: [
+        { x: 5, y: 4 },
+        { x: 5, y: 3 },
+        { x: 5, y: 2 },
+      ],
+      facing: { x: 0, y: -1 },
+    });
+  });
+
+  it("declines a warning-time retarget onto a cell already claimed by another telegraphing charger", () => {
+    const world = createChargeWorld();
+    // Off in a corner, unaligned with the Player, so this claimant never retargets or
+    // detonates itself during the test — it exists purely to hold the (5,7) claim.
+    world.spawn({
+      id: "enemy-charge-claimant",
+      kind: "enemy",
+      archetype: "charge",
+      cell: { x: 0, y: 0 },
+      hp: 150,
+      enemyAction: charge,
+      facing: { x: 1, y: 0 },
+    });
+    world.commitEnemyAttack("enemy-charge-claimant", {
+      attackId: "charge",
+      role: "charge",
+      cells: [{ x: 5, y: 7 }],
+      damage: 8,
+      warningTicks: 5,
+      recoveryTicks: 2,
+    });
+
+    resolveCommand(world, { type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    const lockedCells = world.requireEntity("enemy-charge").committedAttack?.cells;
+    expect(lockedCells).toEqual([
+      { x: 5, y: 4 },
+      { x: 5, y: 5 },
+      { x: 5, y: 6 },
+    ]);
+
+    // The Player steps onto (5,7) — enemy-charge's live retarget would normally extend to
+    // it, but enemy-charge-claimant already claims that cell, so the retarget is declined.
+    resolveCommand(world, { type: "move", actorId: "player", direction: { x: 0, y: 1 } });
+
+    expect(world.playerCell).toEqual({ x: 5, y: 7 });
+    expect(world.requireEntity("enemy-charge").committedAttack).toMatchObject({
+      cells: lockedCells,
+      warningTicks: 1,
+    });
+  });
+
+  it("lets only the first-decided charge enemy this phase claim the Player's cell; the second reroutes", () => {
+    const world = new World(
+      12,
+      12,
+      Array.from({ length: 144 }, () => "floor" as const),
+      "charge-claim-race-test",
+    );
+    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 5, y: 5 }, hp: 100 });
+    // Spawned first, so it decides first in enemy-phase's iteration order and wins the claim
+    // even though neither has committed anything yet when both evaluate this same tick.
+    world.spawn({
+      id: "enemy-charge-a",
+      kind: "enemy",
+      archetype: "charge",
+      cell: { x: 5, y: 0 },
+      hp: 150,
+      enemyAction: charge,
+      facing: { x: 0, y: 1 },
+    });
+    world.spawn({
+      id: "enemy-charge-b",
+      kind: "enemy",
+      archetype: "charge",
+      cell: { x: 0, y: 5 },
+      hp: 150,
+      enemyAction: charge,
+      facing: { x: 1, y: 0 },
+    });
+
+    const events = resolveEnemyPhase(world);
+
+    const a = world.requireEntity("enemy-charge-a");
+    const b = world.requireEntity("enemy-charge-b");
+    expect(a.activity).toBe("telegraphing");
+    expect(a.committedAttack?.cells.at(-1)).toEqual({ x: 5, y: 5 });
+    expect(b.activity).not.toBe("telegraphing");
+    expect(b.committedAttack).toBeUndefined();
+    expect(events.some((event) => event.type === "enemy_attack_committed" && event.enemyId === "enemy-charge-b")).toBe(
+      false,
+    );
   });
 });

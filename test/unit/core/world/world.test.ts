@@ -5,7 +5,7 @@ import type { GuardDefinition } from "@core/content/actor-schema";
 import type { EnemyActionDefinition } from "@core/model/types";
 import type { AdmittedBatch, SlotState } from "@core/waves/wave-scheduler";
 import { World } from "@core/world/world";
-import { resolveChargeAttack } from "@core/enemies/behaviors/charge-enemy";
+import { chargeEnemyBehavior, resolveChargeAttack } from "@core/enemies/behaviors/charge-enemy";
 
 describe("canonical world occupancy", () => {
   it("indexes explicit footprints and owns the player cell", () => {
@@ -459,7 +459,7 @@ function commitCharge(world: World, cells: readonly { x: number; y: number }[]):
 }
 
 describe("Charge attack resolution", () => {
-  it("displaces a side entity sideways and knocks a normal target forward", () => {
+  it("pushes every path occupant sideways, including the final-cell target — nothing is knocked forward", () => {
     const world = chargeWorld();
     spawnCharge(world);
     world.spawn({
@@ -482,23 +482,25 @@ describe("Charge attack resolution", () => {
       { x: 5, y: 5 },
     ]);
 
+    // Facing left, so "right" (even path index) is up (-y) and "left" (odd index) is down (+y).
+    // blocker-a sits at index 0 (even) and gets pushed up; the target sits at index 2 (even)
+    // and is pushed up too, continuing the same alternation instead of knocking forward.
     const resolution = resolveChargeAttack(world, "enemy-charge");
     expect(resolution).toBeDefined();
     expect(resolution?.displacements).toEqual([
       { entityId: "blocker-a", from: { x: 7, y: 5 }, to: { x: 7, y: 4 }, blocked: false },
+      { entityId: "player", from: { x: 5, y: 5 }, to: { x: 5, y: 4 }, blocked: false },
     ]);
-    expect(resolution?.impact).toMatchObject({
+    expect(resolution?.impact).toEqual({
       targetId: "player",
       cell: { x: 5, y: 5 },
       outcome: "normal",
-      from: { x: 5, y: 5 },
-      to: { x: 4, y: 5 },
-      damage: { damage: 8, hpBefore: 100, hpAfter: 92, killed: false },
+      damage: { targetId: "player", damage: 8, hpBefore: 100, hpAfter: 92, killed: false },
     });
     expect(resolution?.landing).toEqual({ from: { x: 8, y: 5 }, to: { x: 5, y: 5 } });
 
     expect(world.requireEntity("blocker-a").cell).toEqual({ x: 7, y: 4 });
-    expect(world.requireEntity("player")).toMatchObject({ cell: { x: 4, y: 5 }, hp: 92 });
+    expect(world.requireEntity("player")).toMatchObject({ cell: { x: 5, y: 4 }, hp: 92 });
     expect(world.requireEntity("enemy-charge")).toMatchObject({
       cell: { x: 5, y: 5 },
       activity: "recovering",
@@ -509,7 +511,7 @@ describe("Charge attack resolution", () => {
     expect(world.getOccupantAt({ x: 8, y: 5 })).toBeUndefined();
   });
 
-  it("keeps a side entity in place and damages it when both sides are blocked, and applies double damage on a blocked impact with a scanned fallback landing", () => {
+  it("keeps a side entity in place and damages it when both sides are blocked, and applies double damage in place to a cornered target with a scanned fallback landing", () => {
     const world = chargeWorld();
     spawnCharge(world);
     world.spawn({
@@ -547,11 +549,20 @@ describe("Charge attack resolution", () => {
       cell: { x: 4, y: 5 },
       hp: 100,
     });
+    // Target sits at index 3 (odd), so its own push destinations are down (4,6) then up (4,4) —
+    // pin the target itself, not the old forward cell (3,5), to force the blocked outcome.
     world.spawn({
-      id: "forward-block",
+      id: "target-block-south",
       kind: "enemy",
       archetype: "training-grunt",
-      cell: { x: 3, y: 5 },
+      cell: { x: 4, y: 6 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "target-block-north",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 4, y: 4 },
       hp: 100,
     });
     commitCharge(world, [
@@ -571,11 +582,11 @@ describe("Charge attack resolution", () => {
         damage: { targetId: "pinned", damage: 8, hpBefore: 100, hpAfter: 92, killed: false },
       },
     ]);
-    expect(resolution?.impact).toMatchObject({
+    expect(resolution?.impact).toEqual({
       targetId: "player",
       cell: { x: 4, y: 5 },
       outcome: "blocked",
-      damage: { damage: 16, hpBefore: 100, hpAfter: 84, killed: false },
+      damage: { targetId: "player", damage: 16, hpBefore: 100, hpAfter: 84, killed: false },
     });
     expect(resolution?.landing).toEqual({ from: { x: 8, y: 5 }, to: { x: 5, y: 5 } });
 
@@ -617,11 +628,19 @@ describe("Charge attack resolution", () => {
       cell: { x: 6, y: 5 },
       hp: 100,
     });
+    // Target sits at index 1 (odd): pin its own down/up destinations, not the old forward cell.
     world.spawn({
-      id: "forward-block",
+      id: "target-block-south",
       kind: "enemy",
       archetype: "training-grunt",
-      cell: { x: 5, y: 5 },
+      cell: { x: 6, y: 6 },
+      hp: 100,
+    });
+    world.spawn({
+      id: "target-block-north",
+      kind: "enemy",
+      archetype: "training-grunt",
+      cell: { x: 6, y: 4 },
       hp: 100,
     });
     commitCharge(world, [
@@ -668,6 +687,214 @@ describe("Charge attack resolution", () => {
     });
     expect(world.getTelegraph("enemy-charge")).toBeUndefined();
     expect(resolveChargeAttack(world, "enemy-charge")).toBeUndefined();
+  });
+});
+
+describe("Displacement interrupt", () => {
+  it("cancels a telegraphing enemy's windup, releasing its reservation and telegraph, and enters full recovery", () => {
+    const world = chargeWorld();
+    spawnCharge(world);
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+      { x: 5, y: 5 },
+    ]);
+    world.requestReservation({ ownerId: "enemy-charge", purpose: "attack", cells: [{ x: 5, y: 5 }] });
+
+    const result = world.combat.interruptDisplacedEnemy("enemy-charge");
+
+    expect(result).toEqual({ changed: true, hadTelegraph: true, hadCommittedAttack: true, recoveryTicks: 2 });
+    expect(world.requireEntity("enemy-charge")).toMatchObject({
+      activity: "recovering",
+      recoveryTicks: 2,
+      restTicks: undefined,
+      committedAttack: undefined,
+    });
+    expect(world.getTelegraph("enemy-charge")).toBeUndefined();
+    expect(world.getReservation("enemy-charge")).toBeUndefined();
+  });
+
+  it("still enters recovery for a ready enemy with no windup to cancel, reporting nothing was cancelled", () => {
+    const world = chargeWorld();
+    spawnCharge(world);
+
+    const result = world.combat.interruptDisplacedEnemy("enemy-charge");
+
+    expect(result).toEqual({ changed: true, hadTelegraph: false, hadCommittedAttack: false, recoveryTicks: 2 });
+    expect(world.requireEntity("enemy-charge")).toMatchObject({
+      activity: "recovering",
+      recoveryTicks: 2,
+    });
+  });
+
+  // At this layer the refresh is unconditionally full. Driven through a whole enemy phase the
+  // victim then loses one tick to the recovery pass, because it was already in
+  // `recoveringAtStart` — pinned separately in `enemy-phase.test.ts`.
+  it("refreshes an already-recovering enemy's timer to its full authored duration", () => {
+    const world = chargeWorld();
+    spawnCharge(world);
+    world.combat.setEnemyActivity("enemy-charge", "recovering", 1);
+
+    const result = world.combat.interruptDisplacedEnemy("enemy-charge");
+
+    expect(result).toMatchObject({ changed: true, recoveryTicks: 2 });
+    expect(world.requireEntity("enemy-charge").recoveryTicks).toBe(2);
+  });
+
+  it("leaves a staggered enemy untouched", () => {
+    const world = chargeWorld();
+    spawnCharge(world);
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+      { x: 5, y: 5 },
+    ]);
+    world.combat.setEnemyActivity("enemy-charge", "staggered");
+
+    const result = world.combat.interruptDisplacedEnemy("enemy-charge");
+
+    expect(result).toEqual({ changed: false });
+    expect(world.requireEntity("enemy-charge").activity).toBe("staggered");
+  });
+
+  it("no-ops on a dead enemy", () => {
+    const world = chargeWorld();
+    spawnCharge(world);
+    world.setPhase("enemy-charge", "dead");
+
+    const result = world.combat.interruptDisplacedEnemy("enemy-charge");
+
+    expect(result).toEqual({ changed: false });
+  });
+
+  it("no-ops on the Player, who has no enemyAction", () => {
+    const world = chargeWorld();
+    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 5, y: 5 }, hp: 100 });
+
+    const result = world.combat.interruptDisplacedEnemy("player");
+
+    expect(result).toEqual({ changed: false });
+    expect(world.requireEntity("player").phase).toBe("alive");
+  });
+});
+
+describe("Charge detonation interrupts a displaced telegraphing enemy", () => {
+  it("cancels the pushed occupant's own windup, ordering the interrupt before the charger's own landing", () => {
+    const world = chargeWorld();
+    spawnCharge(world);
+    world.spawn({
+      id: "enemy-blocker-charge",
+      kind: "enemy",
+      archetype: "charge",
+      cell: { x: 7, y: 5 },
+      hp: 150,
+      enemyAction: chargeAction,
+      facing: { x: 1, y: 0 },
+    });
+    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 5, y: 5 }, hp: 100 });
+    // The blocker is mid-windup on an unrelated attack of its own when the first charger's
+    // path sweeps its cell and pushes it aside.
+    world.commitEnemyAttack("enemy-blocker-charge", {
+      attackId: "charge",
+      cells: [{ x: 8, y: 5 }],
+      damage: 8,
+      warningTicks: 1,
+      recoveryTicks: 2,
+    });
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+      { x: 5, y: 5 },
+    ]);
+
+    const events = chargeEnemyBehavior.resolveAttack?.(world, "enemy-charge", world.getTelegraph("enemy-charge"));
+    expect(events).toBeDefined();
+
+    const blocker = world.requireEntity("enemy-blocker-charge");
+    expect(blocker).toMatchObject({
+      cell: { x: 7, y: 4 },
+      activity: "recovering",
+      recoveryTicks: 2,
+      committedAttack: undefined,
+    });
+    expect(world.getTelegraph("enemy-blocker-charge")).toBeUndefined();
+
+    expect(events).toContainEqual({
+      type: "entity_displaced",
+      entityId: "enemy-blocker-charge",
+      from: { x: 7, y: 5 },
+      to: { x: 7, y: 4 },
+      cause: "charge_side_push",
+    });
+    expect(events).toContainEqual({ type: "enemy_attack_interrupted", enemyId: "enemy-blocker-charge" });
+    expect(events).toContainEqual({
+      type: "telegraph_changed",
+      sourceId: "enemy-blocker-charge",
+      cleared: true,
+    });
+    expect(events).toContainEqual({
+      type: "enemy_recovering",
+      enemyId: "enemy-blocker-charge",
+      recoveryTicks: 2,
+    });
+
+    const types = events!.map((event) => event.type);
+    const displacedIndex = events!.findIndex(
+      (event) => event.type === "entity_displaced" && "entityId" in event && event.entityId === "enemy-blocker-charge",
+    );
+    const interruptedIndex = types.indexOf("enemy_attack_interrupted");
+    const blockerTelegraphClearedIndex = events!.findIndex(
+      (event) => event.type === "telegraph_changed" && "sourceId" in event && event.sourceId === "enemy-blocker-charge",
+    );
+    const blockerRecoveringIndex = events!.findIndex(
+      (event) => event.type === "enemy_recovering" && "enemyId" in event && event.enemyId === "enemy-blocker-charge",
+    );
+    const landedIndex = types.indexOf("charge_landed");
+
+    expect(displacedIndex).toBeGreaterThanOrEqual(0);
+    expect(interruptedIndex).toBeGreaterThan(displacedIndex);
+    expect(blockerTelegraphClearedIndex).toBeGreaterThan(interruptedIndex);
+    expect(blockerRecoveringIndex).toBeGreaterThan(blockerTelegraphClearedIndex);
+    expect(landedIndex).toBeGreaterThan(blockerRecoveringIndex);
+  });
+
+  it("does not interrupt a blocked-in-place occupant, which keeps its windup", () => {
+    const world = chargeWorld();
+    spawnCharge(world);
+    world.spawn({
+      id: "enemy-blocker-charge",
+      kind: "enemy",
+      archetype: "charge",
+      cell: { x: 7, y: 5 },
+      hp: 150,
+      enemyAction: chargeAction,
+      facing: { x: 1, y: 0 },
+    });
+    world.spawn({ id: "pin-north", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 4 }, hp: 100 });
+    world.spawn({ id: "pin-south", kind: "enemy", archetype: "training-grunt", cell: { x: 7, y: 6 }, hp: 100 });
+    world.spawn({ id: "player", kind: "player", archetype: "player", cell: { x: 5, y: 5 }, hp: 100 });
+    world.commitEnemyAttack("enemy-blocker-charge", {
+      attackId: "charge",
+      cells: [{ x: 8, y: 5 }],
+      damage: 8,
+      warningTicks: 1,
+      recoveryTicks: 2,
+    });
+    commitCharge(world, [
+      { x: 7, y: 5 },
+      { x: 6, y: 5 },
+      { x: 5, y: 5 },
+    ]);
+
+    const events = chargeEnemyBehavior.resolveAttack?.(world, "enemy-charge", world.getTelegraph("enemy-charge"));
+
+    expect(world.requireEntity("enemy-blocker-charge")).toMatchObject({
+      cell: { x: 7, y: 5 },
+      activity: "telegraphing",
+      committedAttack: expect.objectContaining({ attackId: "charge" }),
+    });
+    expect(world.getTelegraph("enemy-blocker-charge")).toBeDefined();
+    expect(events?.some((event) => event.type === "enemy_attack_interrupted")).toBe(false);
   });
 });
 

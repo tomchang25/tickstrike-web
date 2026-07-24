@@ -58,7 +58,7 @@ describe("PresentationDirector combat feedback", () => {
           entityId: "player",
           from: { x: 2, y: 1 },
           to: { x: 3, y: 1 },
-          cause: "charge_target_knockback",
+          cause: "charge_side_push",
         },
         { type: "charge_landed", enemyId: "enemy", from: { x: 4, y: 1 }, to: { x: 4, y: 1 } },
         {
@@ -100,7 +100,7 @@ describe("PresentationDirector combat feedback", () => {
         entityId: "player",
         from: { x: 2, y: 1 },
         to: { x: 3, y: 1 },
-        cause: "charge_target_knockback",
+        cause: "charge_side_push",
       },
       { type: "enemy_moved", enemyId: "enemy", from: { x: 4, y: 1 }, to: { x: 3, y: 1 } },
     ];

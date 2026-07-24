@@ -84,6 +84,7 @@ describe("role-neutral enemy action decisions", () => {
         canPathThrough: () => true,
         canEndAt: () => true,
         isLegalTerrain: () => true,
+        otherCommittedAttacks: [],
       }),
     ).toEqual({
       type: "attack",
@@ -103,6 +104,7 @@ describe("role-neutral enemy action decisions", () => {
       canPathThrough: () => true,
       canEndAt: () => true,
       isLegalTerrain: () => true,
+      otherCommittedAttacks: [],
     });
     expect(firstMove).toMatchObject({ type: "move" });
     expect(firstMove.type === "move" ? firstMove.candidates[0] : undefined).toMatchObject({
@@ -118,6 +120,7 @@ describe("role-neutral enemy action decisions", () => {
       canPathThrough: () => true,
       canEndAt: () => true,
       isLegalTerrain: () => true,
+      otherCommittedAttacks: [],
     });
     expect(secondMove).toMatchObject({ type: "move" });
     if (secondMove.type === "move") {
@@ -133,6 +136,7 @@ describe("role-neutral enemy action decisions", () => {
         canPathThrough: () => true,
         canEndAt: () => true,
         isLegalTerrain: () => true,
+        otherCommittedAttacks: [],
       }),
     ).toMatchObject({
       type: "attack",
@@ -151,6 +155,7 @@ describe("role-neutral enemy action decisions", () => {
         canPathThrough: () => true,
         canEndAt: () => true,
         isLegalTerrain: () => true,
+        otherCommittedAttacks: [],
       }),
     ).toEqual({
       type: "wait",
@@ -172,6 +177,7 @@ describe("role-neutral enemy action decisions", () => {
       canPathThrough: () => true,
       canEndAt: () => true,
       isLegalTerrain: () => true,
+      otherCommittedAttacks: [],
     });
 
     expect(decision).toMatchObject({

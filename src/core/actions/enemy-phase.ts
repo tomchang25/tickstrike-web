@@ -1,5 +1,5 @@
 import type { CombatEvent } from "../events/combat-events";
-import { sameCell, type EntityState } from "../model/types";
+import { sameCell, type CommittedAttack, type EntityState } from "../model/types";
 import type { EnemyPhaseContext } from "../enemies/enemy-behavior";
 import { committedAttackFromDecision, decideEnemyAction, type EnemyActionDecision } from "../enemies/enemy-actions";
 import { getEnemyBehavior } from "../enemies/behaviors";
@@ -9,6 +9,29 @@ export type { EnemyPhaseContext } from "../enemies/enemy-behavior";
 
 function enabledEnemies(context: EnemyPhaseContext): readonly EntityState[] {
   return context.listEntities().filter((entity) => entity.kind === "enemy" && entity.enemyAction !== undefined);
+}
+
+/**
+ * Telegraphing enemies detonate in ascending commit-tick order — whoever wound up first hits
+ * first — tie-broken by the stable entity order `Array.prototype.sort` already preserves. An
+ * attack committed outside `enemy-phase` (harness/test injection) carries no stamp and sorts
+ * as earliest, matching today's unstamped stable-order behavior. Written as explicit branches
+ * rather than subtracting a sentinel so two unstamped attacks compare equal outright instead
+ * of relying on how `sort` coerces a non-finite difference.
+ */
+function byCommitOrder(a: EntityState, b: EntityState): number {
+  const aTick = a.committedAttack?.commitTick;
+  const bTick = b.committedAttack?.commitTick;
+  if (aTick === bTick) {
+    return 0;
+  }
+  if (aTick === undefined) {
+    return -1;
+  }
+  if (bTick === undefined) {
+    return 1;
+  }
+  return aTick - bTick;
 }
 
 interface EnemyDecisionRecord {
@@ -42,7 +65,7 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
   const decisions: EnemyDecisionRecord[] = [];
   const movementEvents = new Map<string, Extract<CombatEvent, { type: "enemy_moved" | "enemy_waited" }>>();
 
-  for (const enemy of enemies) {
+  for (const enemy of [...enemies].sort(byCommitOrder)) {
     const current = context.getEntity(enemy.id);
     if (!current || current.phase !== "alive" || current.activity !== "telegraphing") {
       continue;
@@ -86,6 +109,19 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
     context.combat.advanceEnemyRest(enemy.id);
   }
 
+  // Pre-existing commitments are read once: nothing commits between here and the apply loop
+  // below, so this set is static for the whole decision pass and re-reading it per enemy would
+  // just re-clone every entity.
+  const standingCommitments = context
+    .listEntities()
+    .filter((entity) => entity.committedAttack)
+    .map((entity) => ({ ownerId: entity.id, attack: entity.committedAttack! }));
+
+  // Accumulates this phase's own attack decisions as they're made, so a later enemy in
+  // iteration order sees an earlier same-tick sibling's claim — "first to decide claims it" —
+  // alongside every already-telegraphing enemy's pre-existing committed attack.
+  const decidedAttacksThisPhase: CommittedAttack[] = [];
+
   for (const enemy of enemies) {
     if (!readyAtStart.has(enemy.id) && !recoveredThisPhase.has(enemy.id)) {
       continue;
@@ -94,6 +130,10 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
     if (!current || current.phase !== "alive" || current.activity !== "ready") {
       continue;
     }
+    const otherCommittedAttacks: CommittedAttack[] = [
+      ...decidedAttacksThisPhase,
+      ...standingCommitments.filter((held) => held.ownerId !== current.id).map((held) => held.attack),
+    ];
     const decision = decideEnemyAction({
       enemy: current,
       playerCell: context.playerCell,
@@ -106,7 +146,16 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
         context.board.isLegalCell(cell) && (context.playerCell === undefined || !sameCell(cell, context.playerCell)),
       canEndAt: (cell) => context.board.isWalkable(cell),
       isLegalTerrain: (cell) => context.board.isLegalCell(cell),
+      otherCommittedAttacks,
     });
+    if (decision.type === "attack") {
+      // Same off-board trim and skip-if-empty the apply loop performs, so a recorded claim can
+      // never name cells the eventual commitment does not.
+      const claimedCells = decision.cells.filter((cell) => context.board.isInside(cell));
+      if (claimedCells.length > 0) {
+        decidedAttacksThisPhase.push(committedAttackFromDecision({ ...decision, cells: claimedCells }));
+      }
+    }
     decisions.push({ enemy: current, decision });
   }
 
@@ -216,10 +265,10 @@ export function resolveEnemyPhase(context: EnemyPhaseContext): CombatEvent[] {
         }
         context.combat.setEnemyFacing(enemy.id, decision.facing);
         context.combat.setEnemyDecision(enemy.id, "attack");
-        const committed = context.combat.commitEnemyAttack(
-          enemy.id,
-          committedAttackFromDecision({ ...decision, cells }),
-        );
+        const committed = context.combat.commitEnemyAttack(enemy.id, {
+          ...committedAttackFromDecision({ ...decision, cells }),
+          commitTick: context.tick,
+        });
         events.push({ type: "enemy_attack_committed", enemyId: enemy.id, attack: committed });
         const telegraph = context.board.getTelegraph(enemy.id);
         if (telegraph) {
