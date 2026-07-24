@@ -16,6 +16,10 @@ Rules:
 
 ## [unreleased]
 
+### Input Feel Fast-Forward
+
+- 2026-07-21 - [input_feel] Player input issued while the previous turn's effects are still animating now fast-forwards them to their end states, and held-direction movement steps at a fixed cadence instead of waiting out animation tails
+
 ### Explicit Time Order
 
 - 2026-07-24 - [time_order] Tick Arena now resolves the Player and every living action-capable enemy through one canonical spawn-order slot sequence, exposed by a persistent sprite-based Turn Order rail with reactive status counts, cross-highlights, fast-forward, and fast or normal overlap pacing

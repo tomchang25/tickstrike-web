@@ -22,10 +22,14 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > Ship a phase: remove it from that file and append its outcome to `CHANGELOG.md`, leaving this line until every phase ships.
 > When every phase ships: archive the plan file and delete this line.
 
-- [input_feel] Fast-forward the previous turn's pending VFX when new input is enqueued and pace held-move at a fixed cadence so input stops waiting on animation tails - [ref plans/input_feel_vfx_fast_forward.implementation_spec.md]
-- [knockback_feel] Make charge pushes read as impacts: player keeps facing with a jolt, pushes fire as the charger passes each cell, dash scales with distance - [ref plans/charge_knockback_feel.implementation_spec.md]
-- [debug_hub] Reorganize dev-only tools behind one shared `/debug` shell with navigation to `/debug/game`, `/debug/wall`, `/debug/entity`, and later tools, sharing only the route catalog, header, responsive shell, and dev-only guard while each tool keeps its own mount, state, validation, and cleanup - [spec pending]
-- [debug_actions] Add debug actions — god mode, no-damage mode, instant normal-attack kill, instant mobility kill, no mobility cooldown, and instant kill-all-enemies - [spec pending]
+- [telegraph_rework] Rework telegraph readability: move the turn order bar to top-center (wave display moves below), draw each attacker's telegraph as a faint outline around its whole attack-cell set, replace floor countdown numbers with a countdown over the attacker's head, and cue imminent execution on the turn order bar plus a red flash on the enemy and its telegraph outline - [spec pending]
+- [charge_targeting] Make Charge commit to the farthest legal cell along the player's direction up to its range instead of tracking the player's cell — the committed target never changes, blocked paths replan to a suitable origin, and an illegal landing cell (wall/water) falls back one cell at a time until legal - [spec pending]
+- [knockback_feel] Make charge pushes read as impacts: player keeps facing with a jolt, pushes fire as the charger passes each cell, dash scales with distance, and the dead time between charge arrival and knockback is eliminated - [ref plans/charge_knockback_feel.implementation_spec.md]
+- [enemy_presentation_audit] Inventory every enemy's per-state sprite and VFX implementation status, add an Action Lab Move preview for every enemy base sheet, and tune the visibly over-fast per-enemy timings - [spec pending]
+- [debug_hub] Unify the dev-only Lab and testbed pages (scenario testbed, wall, entity, action) behind one `/debug` hub with a shared route catalog, header shell, and dev-only guard, moving the scenario testbed to `/debug/game` - [ref plans/debug_hub_shell.implementation_spec.md]
+- [debug_actions] Add in-game debug actions to the game session — god mode, no-damage mode, instant normal-attack kill, instant mobility kill, no mobility cooldown, and instant kill-all-enemies - [spec pending]
+- [port_13_4] Replace placeholder combat feedback with authored windup loops, hit/Guard/Smash/Major-trigger and deny effects, and clean terminal presentation; telegraph danger markers are superseded by the telegraph rework - [ref plans/port_13_04_combat_feedback_and_terminal.sketch.md]
+- [port_13_5] Rebuild the reward offer as an authored responsive card surface with semantic normal/milestone/curse-reveal modes and add the Port 13 visual regression gates - [ref plans/port_13_05_reward_surface_and_regression.sketch.md]
 
 ---
 
@@ -33,7 +37,6 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 
 Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from top to bottom and promote only the next eligible line to `## Active`. Retire stale parity work to `## Port Draft` and non-parity work to `## Future Draft`.
 
-- [port_13_visual_parity] Audit port-ref and match the reference board, entities, feedback, HUD, and presentation quality - [ref plans/port_13_visual_parity_and_polish.md]
 - [port_14_hardening] Harden responsive behavior, shell lifecycle, teardown, and browser/Windows packaging for the same path - [ref plans/port_14_platform_and_release_hardening.md]
 - [action_points] Replace the Speed free-action model with player-round Action Points, an AP HUD, and overflow-aware Chain Dash - [ref plans/tick_arena_action_points_and_relative_timing.md]
 
@@ -47,7 +50,6 @@ One line, no rationale, no backing document.
 - [boundary_tooling] Raise the `no-circular` rule to error and drop the swc parser once dependency-cruiser supports TypeScript 7 and can classify type-only imports again
 - [dead_code] Burn the `npm run check:unused` baseline (mostly deliberate extension surface awaiting its consumer, judged per item — delete a real orphan or give the export its consumer) to zero, then add it to `verify`
 - [desktop_deps] Confirm whether the Tauri shell needs `@tauri-apps/api` before removing it as unused
-- [action_lab] Add a Move preview for every enemy base sprite sheet and tune the visibly over-fast timings per enemy
 - [determinism_golden] Add reward-selection coverage to the determinism golden by driving the reward arena to a wave clear on the command path (adapt `wave-phase.test.ts`'s `clearWaveOne`, do not script the bot), or accept the existing `wave-phase.test.ts` coverage
 - [strict_ts] Enable `exactOptionalPropertyTypes`, `noImplicitOverride`, and app-level `verbatimModuleSyntax` in one dedicated commit, never bundled (it forces rewriting the `restTicks: undefined`-style assignments in the A6 world code), now that CI is live
 
@@ -116,6 +118,16 @@ When knockback is blocked by another entity, apply collision damage to the block
 ### Execution Resistance
 
 Replace Execution instant kills with triple Mobility damage against bosses and other resistant enemies after the shipped instant-kill behavior has been ported and verified.
+
+### Boss Redesign
+
+Replace the removed Mode Boss with a fully redesigned boss encounter instead of porting the deprecated reference content. Preliminary concept, to be designed in full before promotion:
+
+- A 2x2-footprint boss fixed in place; it never moves.
+- Ranged area attacks, including an attack covering a quarter of the arena.
+- Summons additional enemies during the encounter.
+- Temporarily mutates terrain with temporary fire cells and temporary rock cells; align with the terrain model in Stable-Base Obstacles And Defensive Structures when both directions land.
+- At half HP the boss becomes immune to damage until the player destroys a destroyable lock object that removes the immunity.
 
 ### Meta Progression
 
