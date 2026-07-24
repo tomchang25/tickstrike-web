@@ -8,65 +8,19 @@ declare global {
 }
 
 test("Bomb commits from the adjacent ring, locks its footprint, and self-destructs on detonation", async ({ page }) => {
-  test.setTimeout(30_000);
-  await page.goto("/debug?scenario=tick-arena");
+  await page.goto("/debug?scenario=bomb-enemy");
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   const canvas = page.getByTestId("game-canvas");
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
+  // Bomb spawns orthogonally adjacent (the bomb-enemy fixture owns that positioning), so the first
+  // in-place command commits its self-destruct from the adjacent ring with no approach walk.
   const committed = await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
     if (!api) {
       throw new Error("Tickstrike debug API is unavailable.");
     }
-    for (let step = 0; step < 20; step += 1) {
-      const state = api.getState();
-      const bomb = state.entities.find((entity) => entity.id === "enemy-bomb");
-      const player = state.entities.find((entity) => entity.id === "player");
-      if (!bomb || bomb.phase !== "alive" || !player || player.phase !== "alive") {
-        break;
-      }
-      if (bomb.activity === "telegraphing") {
-        break;
-      }
-      const isFree = (cell: { x: number; y: number }) => {
-        if (cell.x < 0 || cell.y < 0 || cell.x >= state.arena.width || cell.y >= state.arena.height) {
-          return false;
-        }
-        if (state.arena.tiles[cell.y * state.arena.width + cell.x] !== "floor") {
-          return false;
-        }
-        return !state.entities.some(
-          (entity) => entity.phase === "alive" && entity.cell.x === cell.x && entity.cell.y === cell.y,
-        );
-      };
-      const chebyshev = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-        Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
-      // Pick, among the legal cardinal steps, whichever gets closest to Bomb; break
-      // ties toward the more axis-imbalanced landing so the final approach step
-      // tends to land orthogonally adjacent rather than diagonally adjacent.
-      const direction = [
-        { x: 1, y: 0 },
-        { x: -1, y: 0 },
-        { x: 0, y: 1 },
-        { x: 0, y: -1 },
-      ]
-        .map((candidate) => ({
-          direction: candidate,
-          cell: { x: player.cell.x + candidate.x, y: player.cell.y + candidate.y },
-        }))
-        .filter(({ cell }) => isFree(cell))
-        .map(({ direction: candidate, cell }) => ({
-          direction: candidate,
-          distance: chebyshev(cell, bomb.cell),
-          axisBalance: Math.abs(Math.abs(cell.x - bomb.cell.x) - Math.abs(cell.y - bomb.cell.y)),
-        }))
-        .sort((a, b) => a.distance - b.distance || b.axisBalance - a.axisBalance)[0]?.direction;
-      if (!direction) {
-        break;
-      }
-      await api.execute({ type: "move", actorId: "player", direction });
-    }
+    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
     return api.getState().entities.find((entity) => entity.id === "enemy-bomb");
   });
 
