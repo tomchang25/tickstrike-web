@@ -54,22 +54,10 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
   await expect(page.getByTestId("tick-value")).toHaveText("3");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "4");
-  const committed = await page.evaluate(
-    () => window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack,
-  );
-  // The Player approaches from due north/south, a non-tie dominant axis, so Ranged faces south at
-  // commit (facing the target per src/core/enemies/behaviors/ranged-enemy.ts) and the rotated
-  // Cross offsets list south/north before west/east.
-  expect(committed).toMatchObject({
-    metadata: { targetCenter: { x: 6, y: 6 } },
-    cells: [
-      { x: 6, y: 6 },
-      { x: 6, y: 7 },
-      { x: 6, y: 5 },
-      { x: 5, y: 6 },
-      { x: 7, y: 6 },
-    ],
-  });
+  // The committed Cross footprint and target-facing geometry are core, owned by
+  // test/unit/core/enemies/ranged-enemy-actions.test.ts ("commits a player-centered Cross ...",
+  // "locks the center and cells through warning ..."). This spec asserts only the browser-observable
+  // presentation-state transitions. See dev/standards/test_economy_standard.md.
   await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-ranged:enemy\.ranged:eye:prepareAttack/);
 
   const holdRanged = () =>
@@ -81,15 +69,9 @@ test("Ranged enemy moves into its band, locks Cross cells, recovers, and resets 
       await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: 1 } });
     });
 
-  // The 4-tick windup counts down one tick per in-place command; the committed footprint stays
-  // locked the whole way down.
+  // The 4-tick windup counts down one tick per in-place command, surfaced on the presenter.
   await holdRanged();
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "3");
-  const lockedDuringWarning = await page.evaluate(
-    () =>
-      window.__TICKSTRIKE__?.getState().entities.find((entity) => entity.id === "enemy-ranged")?.committedAttack?.cells,
-  );
-  expect(lockedDuringWarning).toEqual(committed?.cells);
 
   await holdRanged();
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");

@@ -1,43 +1,29 @@
 import { expect, test } from "@playwright/test";
 
+// The inspection values themselves — and the read-only runtime (`getContentInspection`, command
+// refusal, reset) — are owned by test/unit/harness/content-catalog-inspection.scenario.test.ts.
+// This spec only proves the inspection panel renders those values into the DOM (component test
+// layer is not configured yet) and that the read-only UI behaves. It asserts a couple of
+// representative fields spanning character and artifact, not every field. See
+// dev/standards/test_economy_standard.md.
 test("content catalog inspection is visible and read-only", async ({ page }) => {
   await page.goto("/debug?scenario=content-catalog-inspection");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
   await expect(page.getByTestId("content-inspection")).toBeVisible();
   await expect(page.getByTestId("inspection-ninja-name")).toHaveText("Ninja");
-  await expect(page.getByTestId("inspection-ninja-mobility")).toHaveText("dash");
-  await expect(page.getByTestId("inspection-ninja-mobility-range")).toHaveText("5");
-  await expect(page.getByTestId("inspection-charge-enemy-guard")).toHaveText("Heavy");
-  await expect(page.getByTestId("inspection-charge-enemy-attacks")).toContainText("Charge");
-  await expect(page.getByTestId("inspection-demo-09-group")).toHaveText("charge");
-  await expect(page.getByTestId("inspection-demo-09-warning")).toHaveText("1");
-  await expect(page.getByTestId("inspection-demo-09-level-offset")).toHaveText("0");
   await expect(page.getByTestId("inspection-guard-shredder-category")).toHaveText("major");
-  await expect(page.getByTestId("inspection-guard-shredder-mobility")).toHaveText("dash");
-  await expect(page.getByTestId("inspection-guard-shredder-trigger")).toHaveText("guard-shredder");
 
   await expect(page.getByTestId("tick-value")).toHaveText("0");
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
-  await expect(page.getByTestId("event-log")).toContainText("No command executed.");
-  await expect(page.locator(".semantic-mirror [data-testid^='entity-']")).toHaveCount(0);
   await expect(page.getByTestId("active-mobility")).toHaveText("Mobility: Dash");
 
-  const debugProjection = await page.evaluate(() => window.__TICKSTRIKE__?.getContentInspection());
-  expect(debugProjection).toMatchObject({
-    ninja: { name: "Ninja", mobility: { kind: "dash", range: 5 } },
-    chargeEnemy: { guard: { name: "Heavy" } },
-    demoWave09: { slot: { levelOffset: 0, isBoss: false } },
-    guardShredder: { category: "major", requiredMobility: "dash", trigger: "guard-shredder" },
-  });
-
+  // Gameplay input is inert and Reset keeps the read-only board at tick 0 with the panel intact.
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("tick-value")).toHaveText("0");
-  await expect(page.getByTestId("enemy-count")).toHaveText("0");
 
   await page.getByRole("button", { name: "Reset scenario" }).click();
   await expect(page.getByTestId("tick-value")).toHaveText("0");
-  await expect(page.getByTestId("enemy-count")).toHaveText("0");
   await expect(page.getByTestId("inspection-ninja-name")).toHaveText("Ninja");
 });
 

@@ -122,13 +122,12 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
     .toBe(true);
 });
 
-for (const [scenario, profile] of [
-  ["water-thrust", "enemy.thrust"],
-  ["water-slash", "enemy.slash"],
-  ["water-charge", "enemy.charge"],
-  ["water-ranged", "enemy.ranged"],
-  ["water-bomb", "enemy.bomb"],
-] as const) {
+// The drowning water sheet is one presentation capability, so one representative profile proves it
+// in the browser; every enemy profile's own water frames are content, covered by the renderer's
+// entered-water unit test (test/unit/presentation/pixi/enemy-sprites.test.ts). See
+// dev/standards/test_economy_standard.md. The other water scenarios remain in the registry for the
+// scenario-switch test below.
+for (const [scenario, profile] of [["water-ranged", "enemy.ranged"]] as const) {
   test(`${profile} plays its four-direction water sheet while drowning`, async ({ page }) => {
     await page.goto(`/debug?scenario=${scenario}`);
     const canvas = page.getByTestId("game-canvas");

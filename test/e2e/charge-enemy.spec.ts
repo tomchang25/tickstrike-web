@@ -108,30 +108,8 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   await expect(canvas).toHaveAttribute("data-player-animation", "idle");
 });
 
-test("Charge retains its facing-direction telegraph when the Player moves aside", async ({ page }) => {
-  await page.goto("/debug?scenario=charge-enemy");
-  await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
-
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    if (!api) {
-      throw new Error("Tickstrike debug API is unavailable.");
-    }
-    await api.execute({ type: "move", actorId: "player", direction: { x: -1, y: 0 } });
-  });
-  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute("data-activity", "telegraphing");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-telegraph-labels", /8,3:3.*7,3:3.*6,3:3/);
-
-  await page.evaluate(async () => {
-    const api = window.__TICKSTRIKE__;
-    if (!api) {
-      throw new Error("Tickstrike debug API is unavailable.");
-    }
-    await api.execute({ type: "move", actorId: "player", direction: { x: 0, y: -1 } });
-  });
-
-  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
-  await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "2");
-  await expect(page.getByTestId("entity-enemy-charge")).toHaveAttribute("data-attack-warning-ticks", "2");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-telegraph-labels", /8,3:2.*7,3:2.*6,3:2/);
-});
+// Charge retaining its locked telegraph when the Player steps off the range line is core, not
+// presentation: test/unit/core/enemies/charge-enemy-actions.test.ts owns it ("retains the last
+// valid target once the Player leaves the range rule" and "declines a warning-time retarget onto a
+// cell already claimed"). The telegraph-label rendering path (data-telegraph-labels) is exercised
+// by pointer-input.spec.ts. See dev/standards/test_economy_standard.md.
