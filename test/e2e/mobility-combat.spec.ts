@@ -4,8 +4,9 @@ import { canvasPointForCell } from "./canvas-geometry";
 test("Dash uses directional Guard results and ignores a committed enemy hit during release", async ({ page }) => {
   await page.goto("/debug?scenario=mobility-combat");
 
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
+  // Player sprite profile and idle/dashLand animation selection are owned by the character-sprites
+  // and presentation-director unit suites; this spec is about the directional Guard result and
+  // dash-release invulnerability. See dev/standards/test_economy_standard.md.
   const canvas = page.getByTestId("game-canvas");
   const box = await canvas.boundingBox();
   if (!box) {
@@ -46,8 +47,6 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
   await expect(page.getByTestId("event-log")).toContainText("enemy_guard_broken");
   await expect(page.getByTestId("event-log")).toContainText("enemy_attack_detonated");
   await expect(page.getByTestId("event-log")).not.toContainText("player_damaged");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "dashLand");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
   await page.getByRole("button", { name: "Reset scenario" }).click();

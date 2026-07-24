@@ -51,12 +51,9 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "6");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "6");
   await expect(page.getByTestId("enemy-count")).toHaveText("0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
-  // The shipped board's dimensions and land/sea terrain counts are owned by
-  // test/unit/core/world/arena.test.ts; this spec keeps only the browser-observable deterministic
-  // start and player presentation. See dev/standards/test_economy_standard.md.
+  // The shipped board's dimensions and terrain counts are owned by test/unit/core/world/arena.test.ts,
+  // and the player sprite/facing/idle-animation selection by the character-sprites unit suite; this
+  // spec is only the browser boot smoke and deterministic start. See dev/standards/test_economy_standard.md.
 });
 
 test("Held movement queues steps and settles each player presentation in order", async ({ page }) => {
@@ -107,10 +104,6 @@ test("Foundation arena resets its generation without stale presentation state", 
   await expect(page.getByTestId("enemy-hp-enemy-thrust")).toContainText("100/100");
   await expect(page.getByTestId("enemy-guard-enemy-thrust")).toContainText("32/32");
   await expect(page.getByTestId("entity-enemy-ranged")).toBeAttached();
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
-    "data-enemy-presentations",
-    /enemy-thrust:enemy\.thrust:green:idle.*enemy-slash:enemy\.slash:purple:idle/,
-  );
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-activity", "ready");
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-facing-x", "1");
@@ -124,10 +117,9 @@ test("Foundation arena resets its generation without stale presentation state", 
   await page.getByTestId("debug-mode").check();
   await expect(page.getByTestId("enemies-state")).toHaveCount(0);
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-debug-mode", "true");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute(
-    "data-enemy-presentations",
-    /enemy-thrust:enemy\.thrust:green:idle.*enemy-slash:enemy\.slash:purple:idle/,
-  );
+  // Enemy sprite/pose selection (thrust green idle, slash purple idle) is owned by the enemy-sprites
+  // and presentation-director unit suites; this spec verifies reset restores identical semantic state
+  // and clears stale telegraphs. See dev/standards/test_economy_standard.md.
 
   const initial = await page.evaluate(() => window.__TICKSTRIKE__?.getState());
   await page.keyboard.press("ArrowRight");

@@ -33,13 +33,10 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
       }
       await api.execute({ type: "attack", actorId: "player", direction: { x: -1, y: 0 } });
     });
-  const canvas = page.getByTestId("game-canvas");
-
+  // Which sprite/pose Charge selects (skull idle / prepare / idle) is owned by the presentation unit
+  // suites; this spec keeps the one browser-only observation — logical state settles before the rAF
+  // tween does. See dev/standards/test_economy_standard.md.
   await executeLeft();
-  await expect(canvas).toHaveAttribute(
-    "data-enemy-presentations",
-    /enemy-charge:enemy\.charge:skull:idle:action:prepare:/,
-  );
   await executeLeft();
   await executeLeft();
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "4");
@@ -88,7 +85,6 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   await expect(page.getByTestId("event-log")).toContainText("charge_landed");
 
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-charge:enemy\.charge:skull:idle(\||$)/);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;
@@ -105,7 +101,6 @@ test("Charge owns sequential Player motion before reconciling the final cell", a
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-cell-y", "3");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-  await expect(canvas).toHaveAttribute("data-player-animation", "idle");
 });
 
 // Charge retaining its locked telegraph when the Player steps off the range line is core, not
