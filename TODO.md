@@ -35,6 +35,8 @@ Queued work that has a plan in `dev/docs/plans/`. Execute the port entries from 
 
 - [port_13_visual_parity] Audit port-ref and match the reference board, entities, feedback, HUD, and presentation quality - [ref plans/port_13_visual_parity_and_polish.md]
 - [port_14_hardening] Harden responsive behavior, shell lifecycle, teardown, and browser/Windows packaging for the same path - [ref plans/port_14_platform_and_release_hardening.md]
+- [time_order] Make within-tick enemy resolution order explicit and player-visible: linear slot resolution plus a single-segment order bar - [ref plans/explicit_time_order.md]
+- [action_points] Replace the Speed free-action model with player-round Action Points, an AP HUD, and overflow-aware Chain Dash - [ref plans/tick_arena_action_points_and_relative_timing.md]
 
 ---
 
@@ -99,10 +101,6 @@ Extend the entity presentation profile catalog only after Port 13's shared autho
 
 Godot plans, dormant scaffolds, and post-parity product ideas live here. They are not reference-parity requirements and must not enter an ordered port batch unless the user explicitly promotes them.
 
-### Action Points And Relative Timing
-
-Replace the shipped Speed-funded free-action model with player-round Action Points, overflow-aware Chain Dash, and round-relative timing only after parity is complete and the new behavior is approved for the Web product.
-
 ### Enemy Commitment And Replanning
 
 Remove the current facing action tax, replace the shipped delayed hit-facing response with immediate hit-facing, add multi-step movement commitments, and replan movement conflicts within one enemy-phase action as a post-parity enemy-system redesign.
@@ -145,11 +143,11 @@ Expand Dash and Smash with additional Mobility-specific Major effects after Ninj
 
 ### Mobility Dash Effect Layer
 
-Add the Chain Dash lightning effect and the Speed-funded free-Dash aura effect as a presentation layer only after the Chain Dash route rework and the future Speed action model settle what those actions are; port 13 visual parity ships without them.
+Add the Chain Dash lightning effect and the Speed-funded free-Dash aura effect as a presentation layer only after the Chain Dash route rework and the Action Points plan settle what those actions are; port 13 visual parity ships without them.
 
 ### Chain Dash Route Rework
 
-Keep `chain_dash` as validated but unavailable authored content until its replacement is designed. The approved direction is a player-directed multi-target Dash route that automatically resolves Slash-style Dash hits from A to B to C, never targets the same enemy twice within one route, and defines its route selection, legality, timing, cooldown, interruption, preview, and presentation rules before implementation. The reference cooldown-clear and prepared free-action behavior remains deferred with the future Speed action model.
+Keep `chain_dash` as validated but unavailable authored content until its replacement is designed. The approved direction is a player-directed multi-target Dash route that automatically resolves Slash-style Dash hits from A to B to C, never targets the same enemy twice within one route, and defines its route selection, legality, timing, cooldown, interruption, preview, and presentation rules before implementation. The reference cooldown-clear and prepared free-action behavior remains deferred with the Action Points plan.
 
 ### Player Baseline Balance Pass
 
