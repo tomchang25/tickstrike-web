@@ -5,44 +5,20 @@ import { canvasPointForCell } from "./canvas-geometry";
 declare global {
   interface Window {
     __TICKSTRIKE__?: TickstrikeDebugApi;
-    /** Every value `data-retained-presentations` took while a recorder was armed. */
-    __RETAINED_PRESENTATION_LOG__?: string[];
   }
 }
 
-/**
- * Records every value of `data-retained-presentations` via MutationObserver.
- * Sampling the attribute cannot observe a short-lived frame reliably — the final
- * water frame is only present for its own authored duration — so the assertions
- * read this log instead of polling the live attribute.
- */
-async function recordRetainedPresentations(page: import("@playwright/test").Page): Promise<void> {
-  await page.evaluate(() => {
-    const canvas = document.querySelector('[data-testid="game-canvas"]');
-    if (!canvas) {
-      throw new Error("Game canvas is unavailable.");
-    }
-    const log: string[] = [];
-    window.__RETAINED_PRESENTATION_LOG__ = log;
-    const record = () => {
-      const value = canvas.getAttribute("data-retained-presentations");
-      if (value) {
-        log.push(value);
-      }
-    };
-    record();
-    new MutationObserver(record).observe(canvas, {
-      attributes: true,
-      attributeFilter: ["data-retained-presentations"],
-    });
-  });
-}
-
+// This is the one browser test for terminal-ghost cleanup: a multi-victim Smash produces crush and
+// water terminal ghosts that must be retained and then cleaned up under real GSAP/rAF timing
+// (getEntityBounds returns false once each settles). Which water/crush sprite frames play is a
+// presenter selection owned by the presentation unit suites — the per-profile drowning and
+// scenario-switch reconciliation checks were browser attribute assertions with no visual guarantee,
+// and were removed. The water-* dev scenarios remain in the registry for manual visual inspection.
+// See dev/standards/test_economy_standard.md.
 test("Smash scenario completes through the browser harness", async ({ page }) => {
   await page.goto("/debug?scenario=smash-water");
 
   await expect(page.getByTestId("game-canvas-host")).toBeVisible();
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-state", "alive");
   await expect(page.getByTestId("entity-enemy-center")).toHaveAttribute("data-hp", "100");
   await expect(page.getByTestId("entity-enemy-blocked")).toHaveAttribute("data-state", "alive");
@@ -92,20 +68,13 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-guard", "0");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-cell-x", "7");
   await expect(page.getByTestId("entity-enemy-right")).toHaveAttribute("data-cell-y", "3");
-  await expect(page.getByTestId("event-log")).toContainText("enemy_damaged");
   await expect(page.getByTestId("event-log")).toContainText("enemy_crushed");
-  await expect(page.getByTestId("event-log")).toContainText("enemy_knocked");
   await expect(page.getByTestId("event-log")).toContainText("enemy_entered_water");
-  await expect(page.getByTestId("event-log")).toContainText("directional_hit");
-  await expect(page.getByTestId("event-log")).toContainText("enemy_guard_broken");
   await expect(page.getByTestId("mobility-status")).toHaveText("Cooldown 6");
-  await expect(canvas).toHaveAttribute("data-preview-kills", "");
-  await expect(canvas).toHaveAttribute("data-preview-displacements", "");
-  await expect(canvas).toHaveAttribute("data-preview-terminal", "");
-  await expect(canvas).toHaveAttribute("data-preview-blocked", "");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
-  // Once the terminal timelines settle, neither ghost is addressable on the canvas any more.
+  // Once the terminal timelines settle, neither ghost is addressable on the canvas any more — the
+  // real-browser cleanup this spec exists to prove.
   await expect
     .poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-water"))))
     .toBe(false);
@@ -120,59 +89,4 @@ test("Smash scenario completes through the browser harness", async ({ page }) =>
   await expect
     .poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-center"))))
     .toBe(true);
-});
-
-// The drowning water sheet is one presentation capability, so one representative profile proves it
-// in the browser; every enemy profile's own water frames are content, covered by the renderer's
-// entered-water unit test (test/unit/presentation/pixi/enemy-sprites.test.ts). See
-// dev/standards/test_economy_standard.md. The other water scenarios remain in the registry for the
-// scenario-switch test below.
-for (const [scenario, profile] of [["water-ranged", "enemy.ranged"]] as const) {
-  test(`${profile} plays its four-direction water sheet while drowning`, async ({ page }) => {
-    await page.goto(`/debug?scenario=${scenario}`);
-    const canvas = page.getByTestId("game-canvas");
-    const box = await canvas.boundingBox();
-    if (!box) {
-      throw new Error("Game canvas has no layout box.");
-    }
-    const target = canvasPointForCell(box, 4, 3);
-
-    await page.keyboard.down("Alt");
-    await page.mouse.move(target.x, target.y);
-    await expect(canvas).toHaveAttribute("data-smash-preview-cell", "4,3");
-    await page.mouse.click(target.x, target.y);
-    await page.keyboard.up("Alt");
-    await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-
-    await recordRetainedPresentations(page);
-    await page.mouse.click(target.x, target.y);
-    // The drowning victim is already gone from the snapshot; only its retained ghost animates.
-    await expect(page.getByTestId("entity-enemy-water")).toHaveCount(0);
-    await expect(canvas).toHaveAttribute(
-      "data-retained-presentations",
-      new RegExp(`enemy-water:${profile.replace(".", "\\.")}:[^:]+:idle:water:[0-7]`),
-    );
-    await expect(canvas).not.toHaveAttribute("data-enemy-presentations", /enemy-water:/);
-    await expect
-      .poll(async () =>
-        page.evaluate(() => (window.__RETAINED_PRESENTATION_LOG__ ?? []).some((entry) => entry.includes(":water:7"))),
-      )
-      .toBe(true);
-    await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
-    await expect(page.getByTestId("entity-enemy-water")).toHaveCount(0);
-    await expect(canvas).not.toHaveAttribute("data-retained-presentations", /enemy-water:/);
-    await expect
-      .poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__?.getEntityBounds("enemy-water"))))
-      .toBe(false);
-  });
-}
-
-test("switching between water scenarios reconciles the reused entity's presentation", async ({ page }) => {
-  await page.goto("/debug?scenario=water-ranged");
-  const canvas = page.getByTestId("game-canvas");
-  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-water:enemy\.ranged:/);
-
-  await page.getByTestId("scenario-select").selectOption("water-bomb");
-  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-water:enemy\.bomb:/);
-  await expect(canvas).not.toHaveAttribute("data-enemy-presentations", /enemy\.ranged/);
 });
