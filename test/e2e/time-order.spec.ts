@@ -40,16 +40,35 @@ test("Turn Order rail shows canonical order, exceptional badges, and cross-highl
   await page.getByTestId("settings-turn-order-pacing").selectOption("normal");
   await page.keyboard.press("Escape");
 
+  // The player slot is highlighted only briefly at the head of playback, so record every active
+  // highlight the canvas surfaces rather than racing a single poll against that transient window.
   await page.evaluate(() => {
     const api = window.__TICKSTRIKE__;
     if (!api) {
       throw new Error("Tickstrike debug API is unavailable.");
     }
+    const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=game-canvas]");
+    if (!canvas) {
+      throw new Error("Game canvas is unavailable.");
+    }
+    const owner = window as Window & { __turnOrderActiveHistory?: string[] };
+    owner.__turnOrderActiveHistory = [canvas.dataset.turnOrderActive ?? ""];
+    new MutationObserver(() => {
+      owner.__turnOrderActiveHistory?.push(canvas.dataset.turnOrderActive ?? "");
+    }).observe(canvas, { attributes: true, attributeFilter: ["data-turn-order-active"] });
     void api.execute({ type: "move", actorId: "player", direction: { x: 1, y: 0 } });
   });
 
   await expect(page.getByTestId("turn-order-token-player")).toHaveAttribute("data-active", "true");
-  await expect(canvas).toHaveAttribute("data-turn-order-active", "player");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Boolean(
+          (window as Window & { __turnOrderActiveHistory?: string[] }).__turnOrderActiveHistory?.includes("player"),
+        ),
+      ),
+    )
+    .toBe(true);
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
   await expect(rail.locator(".turn-order-status")).toHaveCount(3);
   await expect(rail.locator(".turn-order-status-attack")).toHaveCount(3);

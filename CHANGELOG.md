@@ -16,6 +16,11 @@ Rules:
 
 ## [unreleased]
 
+### E2E Regression Fix
+
+- 2026-07-24 - [e2e_regression] Fixed 8 Playwright e2e specs left stale by the enemy timing nerf, the Charge side-push rework, and the Ranged sprite redraw — corrected windup tick counts and Cross cell order, the held `dashLand` pose, the removed `enemy.ranged` catalog override, a turn-order highlight race, and the enemy-navigation scenario's settle timeout
+- 2026-07-24 - [e2e_regression] Hardened the Charge side-push motion-ownership assertion against frame-drop-sensitive presentation sampling and capped local e2e worker parallelism (8 → 4) plus raised the default assertion timeout, eliminating boot-timeout flakiness from CPU contention against the shared dev server
+
 ### Input Feel Fast-Forward
 
 - 2026-07-21 - [input_feel] Player input issued while the previous turn's effects are still animating now fast-forwards them to their end states, and held-direction movement steps at a fixed cadence instead of waiting out animation tails

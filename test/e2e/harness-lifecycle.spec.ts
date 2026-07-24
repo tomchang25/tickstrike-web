@@ -38,7 +38,9 @@ test("Enemy navigation testbed exposes blocked and reserved grid cells", async (
   await expect(page.getByTestId("tick-value")).toHaveText("1");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-hp", "100");
   await expect(page.getByTestId("entity-player")).toHaveAttribute("data-mobility-cooldown", "0");
-  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
+  // Twenty enemies each take a turn-order playback slot, so settling runs longer than the default
+  // poll window.
+  await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle()), { timeout: 20_000 }).toBe(true);
 });
 
 test("Empty arena presents the shipped board and deterministic start", async ({ page }) => {

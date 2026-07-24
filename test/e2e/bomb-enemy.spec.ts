@@ -72,17 +72,29 @@ test("Bomb commits from the adjacent ring, locks its footprint, and self-destruc
 
   expect(committed?.activity).toBe("telegraphing");
   expect(committed?.committedAttack).toMatchObject({
-    warningTicks: 3,
+    warningTicks: 5,
     damage: 50,
     metadata: { selfDestruct: true },
   });
   expect(committed?.committedAttack?.cells).toContainEqual(committed?.cell);
   await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-activity", "telegraphing");
-  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-attack-warning-ticks", "3");
+  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-attack-warning-ticks", "5");
   await expect(canvas).toHaveAttribute(
     "data-enemy-presentations",
     /enemy-bomb:enemy\.bomb:lantern:idle:action:prepare:/,
   );
+
+  await page.evaluate(async () => {
+    const api = window.__TICKSTRIKE__;
+    if (!api) {
+      throw new Error("Tickstrike debug API is unavailable.");
+    }
+    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+    await api.execute({ type: "attack", actorId: "player", direction: { x: 0, y: -1 } });
+  });
+  // The 5-tick fuse counts down one tick per in-place command.
+  await expect(page.getByTestId("entity-enemy-bomb")).toHaveAttribute("data-attack-warning-ticks", "3");
+  await expect(canvas).toHaveAttribute("data-enemy-presentations", /enemy-bomb:.*:action:prepare:/);
 
   await page.evaluate(async () => {
     const api = window.__TICKSTRIKE__;

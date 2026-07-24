@@ -27,7 +27,7 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("entity-enemy-thrust")).toHaveAttribute("data-attack-warning-ticks", "2");
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-attack-warning-ticks", "2");
   await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-activity", "telegraphing");
-  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "2");
+  await expect(page.getByTestId("entity-enemy-ranged")).toHaveAttribute("data-attack-warning-ticks", "4");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute(
     "data-enemy-presentations",
     /enemy-thrust:enemy\.thrust:green:prepareAttack.*enemy-slash:enemy\.slash:purple:prepareAttack.*enemy-ranged:enemy\.ranged:eye:prepareAttack/,
@@ -63,7 +63,7 @@ test("Tick Arena presents mobility controls without a Normal Attack panel", asyn
   await expect(page.getByTestId("entity-enemy-slash")).toHaveAttribute("data-hp", "90");
   await expect(page.getByTestId("event-log")).toContainText("player_dashed");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "dashLand");
   const dashEvent = await page.evaluate(() => window.__TICKSTRIKE__?.getState().lastEvents[1]);
   expect(dashEvent).toMatchObject({
     type: "player_dashed",

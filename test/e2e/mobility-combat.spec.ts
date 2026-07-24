@@ -47,7 +47,7 @@ test("Dash uses directional Guard results and ignores a committed enemy hit duri
   await expect(page.getByTestId("event-log")).toContainText("enemy_attack_detonated");
   await expect(page.getByTestId("event-log")).not.toContainText("player_damaged");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
-  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
+  await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "dashLand");
   await expect.poll(async () => page.evaluate(() => window.__TICKSTRIKE__?.isIdle())).toBe(true);
 
   await page.getByRole("button", { name: "Reset scenario" }).click();
