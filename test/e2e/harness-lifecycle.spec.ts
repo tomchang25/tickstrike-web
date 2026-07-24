@@ -54,11 +54,9 @@ test("Empty arena presents the shipped board and deterministic start", async ({ 
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-profile", "character.ninja");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-facing", "1,0");
   await expect(page.getByTestId("game-canvas")).toHaveAttribute("data-player-animation", "idle");
-
-  const arena = await page.evaluate(() => window.__TICKSTRIKE__?.getState().arena);
-  expect(arena).toMatchObject({ width: 18, height: 12 });
-  expect(arena?.terrain.filter((terrain) => terrain === "land")).toHaveLength(112);
-  expect(arena?.terrain.filter((terrain) => terrain === "sea")).toHaveLength(104);
+  // The shipped board's dimensions and land/sea terrain counts are owned by
+  // test/unit/core/world/arena.test.ts; this spec keeps only the browser-observable deterministic
+  // start and player presentation. See dev/standards/test_economy_standard.md.
 });
 
 test("Held movement queues steps and settles each player presentation in order", async ({ page }) => {
