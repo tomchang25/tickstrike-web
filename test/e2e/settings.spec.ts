@@ -63,10 +63,9 @@ test("the settings panel persists volume levels across reload", async ({ page })
   await page.getByTestId("settings-open").click();
   const master = page.getByTestId("settings-volume-master");
   await expect(master).toBeVisible();
-  await expect(page.getByTestId("settings-volume-effect")).toBeVisible();
-  await expect(page.getByTestId("settings-volume-music")).toBeVisible();
 
-  // The stored value is a 0..1 fraction; the slider works in whole percent.
+  // Slider rendering and the 0..1-fraction ↔ percent mapping are owned by
+  // test/component/settings-panel.test.tsx; this spec proves the value survives a real page reload.
   await master.fill("40");
   await expect(master).toHaveValue("40");
 

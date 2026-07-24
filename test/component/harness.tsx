@@ -10,5 +10,5 @@ afterEach(() => {
   cleanup();
 });
 
-export { render, screen, within } from "@testing-library/react";
+export { render, screen, within, fireEvent } from "@testing-library/react";
 export { default as userEvent } from "@testing-library/user-event";

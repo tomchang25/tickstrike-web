@@ -8,19 +8,16 @@ declare global {
   }
 }
 
-test("Turn Order rail shows canonical order, exceptional badges, and cross-highlights", async ({ page }) => {
+test("Turn Order rail cross-highlights with the canvas and anchors its layout", async ({ page }) => {
   await page.goto("/debug?scenario=tick-arena");
   await expect.poll(async () => page.evaluate(() => Boolean(window.__TICKSTRIKE__))).toBe(true);
 
   const rail = page.getByTestId("turn-order-rail");
   await expect(rail).toBeVisible();
-  const tokens = rail.locator(".turn-order-token");
-  await expect(tokens).toHaveCount(6);
-  await expect
-    .poll(() => tokens.evaluateAll((items) => items.map((item) => item.getAttribute("data-entity-id"))))
-    .toEqual(["player", "enemy-thrust", "enemy-slash", "enemy-ranged", "enemy-charge", "enemy-bomb"]);
-  await expect(rail.locator(".turn-order-status")).toHaveCount(0);
-  await expect(rail).not.toContainText("W1");
+  // The rail's token order and status badges are owned by test/component/turn-order-bar.test.tsx
+  // (state → DOM mapping) and test/unit/runtime/turn-order-controller.test.ts (order/status
+  // derivation from a snapshot). This spec keeps only the canvas<->rail cross-highlighting and
+  // layout that need a real browser. See dev/standards/test_economy_standard.md.
 
   const canvas = page.getByTestId("game-canvas");
   await page.getByTestId("turn-order-token-enemy-thrust").hover();
