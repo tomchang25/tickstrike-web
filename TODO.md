@@ -22,6 +22,7 @@ Actionable line format: `[scope] one sentence - [ref plans/<name>.md if any]`
 > Ship a phase: remove it from that file and append its outcome to `CHANGELOG.md`, leaving this line until every phase ships.
 > When every phase ships: archive the plan file and delete this line.
 
+- [shared_rework] Upgrade the pinned foundation to v0.11.0, then align local debug and ordinary-route composition with its shared Web development-tool route contract.
 - [telegraph_rework] Rework telegraph readability: move the turn order bar to top-center (wave display moves below), draw each attacker's telegraph as a faint outline around its whole attack-cell set, replace floor countdown numbers with a countdown over the attacker's head, cue imminent execution on the turn order bar plus a red flash on the enemy and its telegraph outline, and add a setting that numbers each board entity with its turn-order index - [ref plans/telegraph_rework.implementation_spec.md]
 - [charge_targeting] Make Charge commit to the farthest legal cell along the player's direction up to its range instead of tracking the player's cell — the committed target never changes, blocked paths replan to a suitable origin, and an illegal landing cell (wall/water) falls back one cell at a time until legal - [spec pending]
 - [knockback_feel] Make charge pushes read as impacts: player keeps facing with a jolt, pushes fire as the charger passes each cell, dash scales with distance, and the dead time between charge arrival and knockback is eliminated - [ref plans/charge_knockback_feel.implementation_spec.md]
@@ -58,6 +59,8 @@ One line, no rationale, no backing document.
 ## Bug
 
 One line, no rationale, no backing document.
+
+- [input_feel] Enqueue-triggered fast-forward snaps the player's own move/dash motion track along with enemy VFX, so inputs faster than the ~0.26 s turn window render as a teleport chain instead of a fast advance; scope `finishActive()` to the tails the player is not watching
 
 ---
 

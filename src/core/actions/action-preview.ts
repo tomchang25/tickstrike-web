@@ -221,7 +221,7 @@ function smashVictimPreviews(
   const victims = [...victimsById.values()].sort((a, b) => {
     const aCenter = sameCell(a.cell, target) ? 0 : 1;
     const bCenter = sameCell(b.cell, target) ? 0 : 1;
-    return aCenter - bCenter || a.id.localeCompare(b.id);
+    return aCenter - bCenter || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   });
   const occupied = new Set(
     snapshot.entities.filter((entity) => entity.phase === "alive").flatMap((entity) => footprintKeys(entity.footprint)),
